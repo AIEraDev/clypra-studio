@@ -1,0 +1,6 @@
+{
+  "name": "Clypra Text Effect Studio",
+  "description": "An interactive design and exporting workbench for Canvas 2D text effects, supporting live previews, presets, and real-time Clypra-compliant TypeScript generation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
