@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Editor / IDE settings
+.vscode/
+.cursor/
+.cursorrules

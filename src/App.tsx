@@ -43,10 +43,25 @@ import { TextEffectRenderer } from "./renderer";
 import { generateEngineClass, generateEffectDefinition, toKebabCase, toPascalCase, stripTypesToJS, generateHTMLFile, getEnrichedEffectName } from "./codeGenerator";
 import { SYSTEM_FONTS, GOOGLE_FONTS, GOOGLE_FONTS_LINK } from "./constants";
 import { FontCompare } from "./components/FontCompare";
+import { LayerPanel } from "./components/LayerPanel";
+import { TimelinePanel } from "./components/TimelinePanel";
+import {
+  textEffectConfigToScene,
+  sceneToConfig,
+  evaluateScene,
+  blendConfigs,
+  type SceneDocument,
+} from "./engine";
+import { getPresetScene } from "./engine/recipes";
 
 export default function App() {
   // Primary state configuration
   const [config, setConfig] = useState<TextEffectConfig>(defaultConfig);
+  const [scene, setScene] = useState<SceneDocument>(() => textEffectConfigToScene(defaultConfig));
+  const [uiMode, setUiMode] = useState<"basic" | "advanced">("basic");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [previewTime, setPreviewTime] = useState(0);
+  const skipConfigToScene = useRef(false);
   
   // Custom localStorage presets
   const [customPresets, setCustomPresets] = useState<Preset[]>([]);
@@ -116,6 +131,8 @@ export default function App() {
   const redoStack = useRef<string[]>([]);
   const lastSavedStateString = useRef<string>(JSON.stringify(defaultConfig));
   const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [canUndo, setCanUndo] = useState<boolean>(false);
+  const [canRedo, setCanRedo] = useState<boolean>(false);
 
   // Target canvas reference
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -293,6 +310,8 @@ export default function App() {
       undoStack.current = [...undoStack.current, lastSavedStateString.current].slice(-20);
       redoStack.current = []; // Wipe redo stack
       lastSavedStateString.current = newStateStr;
+      setCanUndo(undoStack.current.length > 0);
+      setCanRedo(false);
     }, 300); // 300ms debounce
   };
 
@@ -304,6 +323,8 @@ export default function App() {
     undoStack.current = [...undoStack.current, lastSavedStateString.current].slice(-20);
     redoStack.current = [];
     lastSavedStateString.current = sourceStr;
+    setCanUndo(undoStack.current.length > 0);
+    setCanRedo(false);
   };
 
   const triggerUndo = () => {
@@ -314,7 +335,10 @@ export default function App() {
     try {
       const parsed = JSON.parse(previousStateStr);
       setConfig(parsed);
+      setScene(textEffectConfigToScene(parsed));
       lastSavedStateString.current = previousStateStr;
+      setCanUndo(undoStack.current.length > 0);
+      setCanRedo(redoStack.current.length > 0);
     } catch (err) {
       console.error(err);
     }
@@ -328,7 +352,10 @@ export default function App() {
     try {
       const parsed = JSON.parse(nextStateStr);
       setConfig(parsed);
+      setScene(textEffectConfigToScene(parsed));
       lastSavedStateString.current = nextStateStr;
+      setCanUndo(undoStack.current.length > 0);
+      setCanRedo(redoStack.current.length > 0);
     } catch (err) {
       console.error(err);
     }
@@ -339,11 +366,30 @@ export default function App() {
     setConfig((prev) => {
       const next = typeof updater === "function" ? updater(prev) : { ...prev, ...updater };
       
-      // Handle auto-generation fonts or effects
-      pushHistoryState(next);
+      // Handle auto-generation fonts or effects outside the updater to comply with pure-function paradigms
+      setTimeout(() => pushHistoryState(next), 0);
       return next;
     });
   };
+
+  const modifyScene = (updater: SceneDocument | ((prev: SceneDocument) => SceneDocument)) => {
+    setScene((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      skipConfigToScene.current = true;
+      const cfg = sceneToConfig({ ...next, legacyConfig: sceneToConfig(next) });
+      setConfig(cfg);
+      setTimeout(() => pushHistoryState(cfg), 0);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (skipConfigToScene.current) {
+      skipConfigToScene.current = false;
+      return;
+    }
+    setScene(textEffectConfigToScene(config));
+  }, [config]);
 
   // Keep state matching across refresh reloads
   useEffect(() => {
@@ -354,6 +400,27 @@ export default function App() {
       console.error("Failed to sync working session to localStorage", e);
     }
   }, [config, activePresetId]);
+
+  // Animation preview loop
+  useEffect(() => {
+    if (!isPlaying) return;
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      setPreviewTime((t) => {
+        const duration = scene.timeline.duration || 2;
+        let next = t + dt;
+        if (scene.timeline.loop) next = duration > 0 ? next % duration : next;
+        else next = Math.min(next, duration);
+        return next;
+      });
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isPlaying, scene.timeline.duration, scene.timeline.loop]);
 
   // Trigger immediate Canvas Ref Redraws whenever parameters modify
   useEffect(() => {
@@ -379,12 +446,15 @@ export default function App() {
     canvas.width = config.canvasWidth || 800;
     canvas.height = config.canvasHeight || 200;
 
+    const draw = () => evaluateScene(scene, previewTime, ctx);
+
     // Redraw after ensuring fonts layout is calculated
-    document.fonts.ready.then(() => {
-      // Small debounce of 16ms is natively met by standard react state loop, we draw directly
-      TextEffectRenderer.draw(ctx, config);
-    });
-  }, [config]);
+    if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(draw);
+    } else {
+      draw();
+    }
+  }, [config, scene, previewTime]);
 
   // Format code strings
   const engineCode = generateEngineClass(config);
@@ -452,11 +522,14 @@ export default function App() {
   // Preset Applicator
   const handleApplyPreset = (preset: Preset) => {
     forceSaveHistoryImmediately(config);
-    setConfig({
+    const nextCfg = {
       ...preset.config,
-      effectName: preset.config.effectName || preset.name, // keep preset names
-    });
+      effectName: preset.config.effectName || preset.name,
+    };
+    setConfig(nextCfg);
+    setScene(getPresetScene(preset));
     setActivePresetId(preset.id);
+    setPreviewTime(0);
   };
 
   // Start from Scratch (pushed history first)
@@ -471,7 +544,7 @@ export default function App() {
     setActivePresetId("scratch");
   };
 
-  // Blend Presets logic
+  // Blend Presets logic (layer-aware)
   const handlePerformBlend = () => {
     const list = [...customPresets, ...builtInPresets];
     const presetA = list.find((p) => p.id === blendAId) || builtInPresets[0];
@@ -481,150 +554,14 @@ export default function App() {
 
     forceSaveHistoryImmediately(config);
 
-    const mixNum = (v1: number, v2: number, ratio: number) => {
-      return Math.round(v1 + (v2 - v1) * ratio);
-    };
-
-    const mixFloat = (v1: number, v2: number, ratio: number) => {
-      return parseFloat((v1 + (v2 - v1) * ratio).toFixed(2));
-    };
-
-    const mixColor = (c1: string, c2: string, ratio: number) => {
-      const hexToRgb = (hex: string) => {
-        const cleaned = hex.replace("#", "");
-        let r = 255, g = 255, b = 255;
-        if (cleaned.length === 3) {
-          r = parseInt(cleaned[0] + cleaned[0], 16);
-          g = parseInt(cleaned[1] + cleaned[1], 16);
-          b = parseInt(cleaned[2] + cleaned[2], 16);
-        } else if (cleaned.length === 6) {
-          r = parseInt(cleaned.substring(0, 2), 16);
-          g = parseInt(cleaned.substring(2, 4), 16);
-          b = parseInt(cleaned.substring(4, 6), 16);
-        }
-        return { r, g, b };
-      };
-
-      const rgbToHex = (r: number, g: number, b: number) => {
-        const clamp = (val: number) => Math.max(0, Math.min(255, Math.round(val)));
-        return (
-          "#" +
-          [clamp(r), clamp(g), clamp(b)]
-            .map((x) => x.toString(16).padStart(2, "0"))
-            .join("")
-            .toUpperCase()
-        );
-      };
-
-      try {
-        const rgb1 = hexToRgb(c1);
-        const rgb2 = hexToRgb(c2);
-        const rSub = rgb1.r + (rgb2.r - rgb1.r) * ratio;
-        const gSub = rgb1.g + (rgb2.g - rgb1.g) * ratio;
-        const bSub = rgb1.b + (rgb2.b - rgb1.b) * ratio;
-        return rgbToHex(rSub, gSub, bSub);
-      } catch (err) {
-        return ratio > 0.5 ? c2 : c1;
-      }
-    };
-
-    const cfgA = presetA.config;
-    const cfgB = presetB.config;
-
-    // Mixed Stops
-    const mixedStops: GradientStop[] = [];
-    const stopsCount = Math.max(cfgA.fillGradientStops?.length || 0, cfgB.fillGradientStops?.length || 0);
-    for (let i = 0; i < stopsCount; i++) {
-      const stopA = cfgA.fillGradientStops?.[i] || cfgA.fillGradientStops?.[cfgA.fillGradientStops.length - 1] || { color: "#FFFFFF", offset: 0 };
-      const stopB = cfgB.fillGradientStops?.[i] || cfgB.fillGradientStops?.[cfgB.fillGradientStops.length - 1] || { color: "#FFFFFF", offset: 100 };
-      mixedStops.push({
-        color: mixColor(stopA.color, stopB.color, blendRatio),
-        offset: mixNum(stopA.offset, stopB.offset, blendRatio)
-      });
-    }
-
-    // Mixed Glow Layers
-    const mixedGlows: GlowLayer[] = [];
-    for (let i = 0; i < 3; i++) {
-      const gA = cfgA.glowLayers?.[i] || { enabled: false, color: "#000000", blur: 10, opacity: 50, type: "outer" };
-      const gB = cfgB.glowLayers?.[i] || { enabled: false, color: "#000000", blur: 10, opacity: 50, type: "outer" };
-      mixedGlows.push({
-        enabled: blendRatio > 0.5 ? gB.enabled : gA.enabled,
-        color: mixColor(gA.color, gB.color, blendRatio),
-        blur: mixNum(gA.blur, gB.blur, blendRatio),
-        opacity: mixNum(gA.opacity, gB.opacity, blendRatio),
-        type: blendRatio > 0.5 ? gB.type : gA.type
-      });
-    }
-
-    const blendedConfig: TextEffectConfig = {
-      ...cfgA,
-      text: config.text, // retain active user text
-      effectName: `Blend ${presetA.name.substring(0, 8)} × ${presetB.name.substring(0, 8)}`,
-      fontFamily: blendRatio > 0.5 ? cfgB.fontFamily : cfgA.fontFamily,
-      fontWeight: blendRatio > 0.5 ? cfgB.fontWeight : cfgA.fontWeight,
-      fontStyle: blendRatio > 0.5 ? cfgB.fontStyle : cfgA.fontStyle,
-      fontSize: mixNum(cfgA.fontSize, cfgB.fontSize, blendRatio),
-      letterSpacing: mixNum(cfgA.letterSpacing, cfgB.letterSpacing, blendRatio),
-      lineHeight: mixFloat(cfgA.lineHeight, cfgB.lineHeight, blendRatio),
-      fillType: blendRatio > 0.5 ? cfgB.fillType : cfgA.fillType,
-      fillColor: mixColor(cfgA.fillColor || "#FFFFFF", cfgB.fillColor || "#FFFFFF", blendRatio),
-      fillGradientAngle: mixNum(cfgA.fillGradientAngle || 90, cfgB.fillGradientAngle || 90, blendRatio),
-      fillGradientStops: mixedStops,
-      strokeEnabled: blendRatio > 0.5 ? cfgB.strokeEnabled : cfgA.strokeEnabled,
-      strokeColor: mixColor(cfgA.strokeColor || "#000000", cfgB.strokeColor || "#000000", blendRatio),
-      strokeWidth: mixNum(cfgA.strokeWidth || 1, cfgB.strokeWidth || 1, blendRatio),
-      strokePosition: blendRatio > 0.5 ? cfgB.strokePosition : cfgA.strokePosition,
-      strokeOpacity: mixNum(cfgA.strokeOpacity || 100, cfgB.strokeOpacity || 100, blendRatio),
-      strokeLineJoin: blendRatio > 0.5 ? cfgB.strokeLineJoin : cfgA.strokeLineJoin,
-      strokeBlur: mixNum(cfgA.strokeBlur || 0, cfgB.strokeBlur || 0, blendRatio),
-      strokeType: blendRatio > 0.5 ? cfgB.strokeType || "single" : cfgA.strokeType || "single",
-      strokeColorSecondary: mixColor(cfgA.strokeColorSecondary || "#FFFFFF", cfgB.strokeColorSecondary || "#FFFFFF", blendRatio),
-      strokeWidthSecondary: mixNum(cfgA.strokeWidthSecondary || 4, cfgB.strokeWidthSecondary || 4, blendRatio),
-      strokeFadeRange: mixNum(cfgA.strokeFadeRange || 0, cfgB.strokeFadeRange || 0, blendRatio),
-      glowLayers: mixedGlows,
-      shadowEnabled: blendRatio > 0.5 ? cfgB.shadowEnabled : cfgA.shadowEnabled,
-      shadowColor: mixColor(cfgA.shadowColor || "#000000", cfgB.shadowColor || "#000000", blendRatio),
-      shadowBlur: mixNum(cfgA.shadowBlur || 0, cfgB.shadowBlur || 0, blendRatio),
-      shadowOffsetX: mixNum(cfgA.shadowOffsetX || 0, cfgB.shadowOffsetX || 0, blendRatio),
-      shadowOffsetY: mixNum(cfgA.shadowOffsetY || 0, cfgB.shadowOffsetY || 0, blendRatio),
-      shadowOpacity: mixNum(cfgA.shadowOpacity || 80, cfgB.shadowOpacity || 80, blendRatio),
-      shadowType: blendRatio > 0.5 ? cfgB.shadowType : cfgA.shadowType,
-      bevelEnabled: blendRatio > 0.5 ? cfgB.bevelEnabled : cfgA.bevelEnabled,
-      bevelDepth: mixNum(cfgA.bevelDepth || 0, cfgB.bevelDepth || 0, blendRatio),
-      bevelHighlight: mixColor(cfgA.bevelHighlight || "#FFFFFF", cfgB.bevelHighlight || "#FFFFFF", blendRatio),
-      bevelShadow: mixColor(cfgA.bevelShadow || "#000000", cfgB.bevelShadow || "#000000", blendRatio),
-      bevelDirection: blendRatio > 0.5 ? cfgB.bevelDirection : cfgA.bevelDirection,
-      bevelCoreColor: mixColor(cfgA.bevelCoreColor || "#000000", cfgB.bevelCoreColor || "#000000", blendRatio),
-      bevelEdgeColor: mixColor(cfgA.bevelEdgeColor || "#2A2A38", cfgB.bevelEdgeColor || "#2A2A38", blendRatio),
-      bevelEdgeWidth: mixNum(cfgA.bevelEdgeWidth || 0, cfgB.bevelEdgeWidth || 0, blendRatio),
-      bevelBlur: mixNum(cfgA.bevelBlur || 0, cfgB.bevelBlur || 0, blendRatio),
-      bevelBlurColor: mixColor(cfgA.bevelBlurColor || "#000000", cfgB.bevelBlurColor || "#000000", blendRatio),
-      bevelPerspectiveEnabled: blendRatio > 0.5 ? cfgB.bevelPerspectiveEnabled : cfgA.bevelPerspectiveEnabled,
-      bevelVanishingPointX: mixNum(cfgA.bevelVanishingPointX !== undefined ? cfgA.bevelVanishingPointX : 40, cfgB.bevelVanishingPointX !== undefined ? cfgB.bevelVanishingPointX : 40, blendRatio),
-      bevelVanishingPointY: mixNum(cfgA.bevelVanishingPointY !== undefined ? cfgA.bevelVanishingPointY : 80, cfgB.bevelVanishingPointY !== undefined ? cfgB.bevelVanishingPointY : 80, blendRatio),
-      bevelFocalLength: mixNum(cfgA.bevelFocalLength !== undefined ? cfgA.bevelFocalLength : 400, cfgB.bevelFocalLength !== undefined ? cfgB.bevelFocalLength : 400, blendRatio),
-      stackEnabled: blendRatio > 0.5 ? cfgB.stackEnabled : cfgA.stackEnabled,
-      stackCount: mixNum(cfgA.stackCount || 3, cfgB.stackCount || 3, blendRatio),
-      stackOffsetX: mixNum(cfgA.stackOffsetX || 10, cfgB.stackOffsetX || 10, blendRatio),
-      stackOffsetY: mixNum(cfgA.stackOffsetY || -10, cfgB.stackOffsetY || -10, blendRatio),
-      stackOpacityDecay: mixNum(cfgA.stackOpacityDecay || 20, cfgB.stackOpacityDecay || 20, blendRatio),
-      stackColor1: mixColor(cfgA.stackColor1 || "#FF7C00", cfgB.stackColor1 || "#FF7C00", blendRatio),
-      stackColor2: mixColor(cfgA.stackColor2 || "#00FFDD", cfgB.stackColor2 || "#00FFDD", blendRatio),
-      stackColor3: mixColor(cfgA.stackColor3 || "#FF00AA", cfgB.stackColor3 || "#FF00AA", blendRatio),
-      stackColor4: mixColor(cfgA.stackColor4 || "#AA00FF", cfgB.stackColor4 || "#AA00FF", blendRatio),
-      panelEnabled: blendRatio > 0.5 ? cfgB.panelEnabled : cfgA.panelEnabled,
-      panelColor: mixColor(cfgA.panelColor || "#000000", cfgB.panelColor || "#000000", blendRatio),
-      panelOpacity: mixNum(cfgA.panelOpacity || 80, cfgB.panelOpacity || 80, blendRatio),
-      panelRadius: mixNum(cfgA.panelRadius || 0, cfgB.panelRadius || 0, blendRatio),
-      panelPaddingX: mixNum(cfgA.panelPaddingX || 0, cfgB.panelPaddingX || 0, blendRatio),
-      panelPaddingY: mixNum(cfgA.panelPaddingY || 0, cfgB.panelPaddingY || 0, blendRatio),
-      panelStrokeEnabled: blendRatio > 0.5 ? cfgB.panelStrokeEnabled : cfgA.panelStrokeEnabled,
-      panelStrokeColor: mixColor(cfgA.panelStrokeColor || "#000000", cfgB.panelStrokeColor || "#000000", blendRatio),
-      panelStrokeWidth: mixNum(cfgA.panelStrokeWidth || 1, cfgB.panelStrokeWidth || 1, blendRatio),
-    };
-
-    setConfig(blendedConfig);
+    const blended = blendConfigs(
+      { ...presetA.config, text: config.text },
+      { ...presetB.config, text: config.text },
+      blendRatio
+    );
+    blended.effectName = `Blend ${presetA.name.substring(0, 8)} × ${presetB.name.substring(0, 8)}`;
+    setConfig(blended);
+    setScene(textEffectConfigToScene(blended));
     setActivePresetId("blended");
   };
 
@@ -1158,9 +1095,9 @@ const PresetChip: React.FC<PresetChipProps> = ({
               id="global-undo-btn"
               title="Undo parameter edit (Ctrl+Z)"
               onClick={triggerUndo}
-              disabled={undoStack.current.length === 0}
+              disabled={!canUndo}
               className={`p-1.5 rounded transition-all cursor-pointer ${
-                undoStack.current.length === 0 
+                !canUndo 
                   ? "text-gray-700 hover:bg-transparent cursor-not-allowed" 
                   : "text-white hover:bg-[#2A2A38] hover:text-[#7C6FFF]"
               }`}
@@ -1171,9 +1108,9 @@ const PresetChip: React.FC<PresetChipProps> = ({
               id="global-redo-btn"
               title="Redo parameters (Ctrl+Y)"
               onClick={triggerRedo}
-              disabled={redoStack.current.length === 0}
+              disabled={!canRedo}
               className={`p-1.5 rounded transition-all cursor-pointer ${
-                redoStack.current.length === 0 
+                !canRedo 
                   ? "text-gray-700 hover:bg-transparent cursor-not-allowed" 
                   : "text-white hover:bg-[#2A2A38] hover:text-[#7C6FFF]"
               }`}
@@ -1189,6 +1126,23 @@ const PresetChip: React.FC<PresetChipProps> = ({
           >
             <HelpCircle size={13} className="text-[#7C6FFF]" /> Guide & Tutorial
           </button>
+
+          <div className="flex items-center rounded-lg border border-[#2A2A38] overflow-hidden text-[10px] font-mono">
+            <button
+              type="button"
+              onClick={() => setUiMode("basic")}
+              className={`px-2.5 py-1 cursor-pointer ${uiMode === "basic" ? "bg-[#7C6FFF] text-white" : "bg-[#1E1E26] text-gray-400"}`}
+            >
+              Basic
+            </button>
+            <button
+              type="button"
+              onClick={() => setUiMode("advanced")}
+              className={`px-2.5 py-1 cursor-pointer ${uiMode === "advanced" ? "bg-[#7C6FFF] text-white" : "bg-[#1E1E26] text-gray-400"}`}
+            >
+              Advanced
+            </button>
+          </div>
 
           <button
             id="font-compare-launcher-btn"
@@ -1385,6 +1339,7 @@ const PresetChip: React.FC<PresetChipProps> = ({
             isMobile && mobileActiveTab !== "controls" ? "hidden" : "flex"
           } w-full md:w-[320px] flex-col border-r border-[#2A2A38] bg-[#15151C] shrink-0 overflow-y-auto select-none`}
         >
+          <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode={uiMode} />
           <div className="p-4 flex flex-col gap-4">
             
             {/* ──────────────────────────────────────────────────────
@@ -3786,6 +3741,16 @@ const PresetChip: React.FC<PresetChipProps> = ({
               onClose={() => setShowFontCompare(false)}
             />
           )}
+
+          <TimelinePanel
+            scene={scene}
+            previewTime={previewTime}
+            isPlaying={isPlaying}
+            onPlayToggle={() => setIsPlaying((p) => !p)}
+            onReset={() => setPreviewTime(0)}
+            onTimeChange={setPreviewTime}
+            onSceneChange={modifyScene}
+          />
         </section>
 
         {/* RIGHT PANEL — EXPORT CODE (360px) */}

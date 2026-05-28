@@ -1,5 +1,7 @@
 import { TextEffectConfig, Preset } from "./types";
 
+/** Style recipes (layer graphs): see `builtInRecipes` in src/engine/recipes.ts */
+
 export const defaultConfig: TextEffectConfig = {
   text: "CLYPRA",
   effectName: "My Effect",
@@ -296,7 +298,7 @@ export const builtInPresets: Preset[] = [
   {
     id: "ink-brush",
     name: "16. Ink Brush",
-    category: "Grunge",
+    category: "Experimental",
     config: {
       ...defaultConfig,
       text: "TEXT",

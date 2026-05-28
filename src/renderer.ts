@@ -1,5 +1,17 @@
 import { TextEffectConfig, GradientStop, GlowLayer } from "./types";
 
+function createCanvas(w: number, h: number): HTMLCanvasElement | OffscreenCanvas {
+  if (typeof document !== "undefined") {
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    return canvas;
+  } else if (typeof OffscreenCanvas !== "undefined") {
+    return new OffscreenCanvas(w, h);
+  }
+  throw new Error("No canvas implementation found in this environment.");
+}
+
 function seededRandom(seed: number): () => number {
   let s = seed;
   return function() {
@@ -179,14 +191,7 @@ export class InkBrushEngine {
 
     const rand = seededRandom(textSeed(text));
 
-    let canvas: any;
-    if (typeof document !== "undefined") {
-      canvas = document.createElement("canvas");
-    } else if (typeof OffscreenCanvas !== "undefined") {
-      canvas = new OffscreenCanvas(width, height);
-    } else {
-      return;
-    }
+    let canvas = createCanvas(width, height);
 
     canvas.width = width;
     canvas.height = height;
@@ -629,14 +634,7 @@ export class FireEngine {
     const height = canvasHeight;
     const rand = seededRandom(textSeed(text) + 88);
 
-    let canvas: any;
-    if (typeof document !== "undefined") {
-      canvas = document.createElement("canvas");
-    } else if (typeof OffscreenCanvas !== "undefined") {
-      canvas = new OffscreenCanvas(width, height);
-    } else {
-      return;
-    }
+    let canvas = createCanvas(width, height);
 
     canvas.width = width;
     canvas.height = height;
@@ -1211,14 +1209,7 @@ export class IceEngine {
     const height = canvasHeight;
     const rand = seededRandom(textSeed(text) + 999);
 
-    let canvas: any;
-    if (typeof document !== "undefined") {
-      canvas = document.createElement("canvas");
-    } else if (typeof OffscreenCanvas !== "undefined") {
-      canvas = new OffscreenCanvas(width, height);
-    } else {
-      return;
-    }
+    let canvas = createCanvas(width, height);
 
     canvas.width = width;
     canvas.height = height;
@@ -1775,14 +1766,7 @@ export class AuraEngine {
     const height = canvasHeight;
     const rand = seededRandom(textSeed(text) + 1234);
 
-    let canvas: any;
-    if (typeof document !== "undefined") {
-      canvas = document.createElement("canvas");
-    } else if (typeof OffscreenCanvas !== "undefined") {
-      canvas = new OffscreenCanvas(width, height);
-    } else {
-      return;
-    }
+    let canvas = createCanvas(width, height);
 
     canvas.width = width;
     canvas.height = height;
@@ -2146,11 +2130,10 @@ export class AuraEngine {
   }
 }
 
-export class TextEffectRenderer {
-  public static draw(
-    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    cfg: TextEffectConfig
-  ): void {
+export function renderTextEffectCore(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  cfg: TextEffectConfig
+): void {
     if (cfg.customRenderer === "InkBrushEngine") {
       const engine = new InkBrushEngine(cfg);
       engine.drawFrame(ctx);
@@ -2950,7 +2933,7 @@ export class TextEffectRenderer {
       const pType = patternType || "chalk";
       const patColor = fillColor || "#ffffff";
       
-      const patCanvas = document.createElement("canvas");
+      const patCanvas = createCanvas(128, 128);
       // Pick ideal canvas dimension per pattern style
       if (pType === "carbon") {
         patCanvas.width = 8;
@@ -3521,7 +3504,7 @@ export class TextEffectRenderer {
 
     if (isInkStyle) {
       // 1. Create offscreen canvas for the ink layer to yield a perfect text shape scanning
-      const tCanvas = document.createElement("canvas");
+      const tCanvas = createCanvas(cWidth, cHeight);
       tCanvas.width = cWidth;
       tCanvas.height = cHeight;
       const tCtx = tCanvas.getContext("2d");
@@ -3682,7 +3665,7 @@ export class TextEffectRenderer {
         
         // Finalize canvas layers: Tint offscreen result to user textFill color & blend on screen
         ctx.save();
-        const tintCanvas = document.createElement("canvas");
+        const tintCanvas = createCanvas(cWidth, cHeight);
         tintCanvas.width = cWidth;
         tintCanvas.height = cHeight;
         const tintCtx = tintCanvas.getContext("2d");
@@ -3767,5 +3750,14 @@ export class TextEffectRenderer {
       }
       ctx.restore();
     }
+}
+
+export class TextEffectRenderer {
+  public static draw(
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    cfg: TextEffectConfig,
+    _time = 0
+  ): void {
+    renderTextEffectCore(ctx, cfg);
   }
 }

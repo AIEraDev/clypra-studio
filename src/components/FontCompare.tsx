@@ -45,13 +45,31 @@ const MiniFontCanvas: React.FC<{
       canvasWidth: width,
       canvasHeight: height,
       textPosX: "center",
-      textPosY: "middle"
+      textPosY: "middle",
+      shadowOffsetX: config.shadowOffsetX * scale,
+      shadowOffsetY: config.shadowOffsetY * scale,
+      shadowBlur: config.shadowBlur * scale,
+      glowLayers: config.glowLayers.map((g) => ({
+        ...g,
+        blur: g.blur * scale,
+        spread: g.spread ? g.spread * scale : undefined
+      })),
+      fireFlameHeight: config.fireFlameHeight ? config.fireFlameHeight * scale : undefined,
+      iceIcicleHeight: config.iceIcicleHeight ? config.iceIcicleHeight * scale : undefined,
+      iceSnowHeight: config.iceSnowHeight ? config.iceSnowHeight * scale : undefined,
+      auraReach: config.auraReach ? config.auraReach * scale : undefined
     };
 
     // Make sure font is loaded
-    document.fonts.ready.then(() => {
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        TextEffectRenderer.draw(ctx, miniConfig);
+      }).catch(() => {
+        TextEffectRenderer.draw(ctx, miniConfig);
+      });
+    } else {
       TextEffectRenderer.draw(ctx, miniConfig);
-    });
+    }
   }, [fontFamily, config]);
 
   return (

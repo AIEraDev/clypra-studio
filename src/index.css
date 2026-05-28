@@ -4,6 +4,13 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-clypra-bg: #0E0E12;
+  --color-clypra-surface: #1E1E26;
+  --color-clypra-border: #2A2A38;
+  --color-clypra-accent: #7C6FFF;
+  --color-clypra-muted: #666677;
+  --color-clypra-text: #FFFFFF;
 }
 
 body {

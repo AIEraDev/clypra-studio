@@ -138,6 +138,8 @@ export interface Preset {
   id: string;
   name: string;
   config: TextEffectConfig;
+  /** Cached scene graph (optional; built-ins use recipes cache) */
+  scene?: import("./engine/schema").SceneDocument;
   isCustom?: boolean;
   category?: "Classic" | "Neon" | "Experimental" | string;
   createdAt?: number;
