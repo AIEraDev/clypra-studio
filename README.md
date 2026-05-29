@@ -217,12 +217,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Abdul Kabir Musa**
 
-- Website: [clypra.abdulkabirmusa.com](https://clypra.abdulkabirmusa.com)
+- Website: [clypra.abdulkabirmusa.com](https://abdulkabirmusa.com)
 - GitHub: [@AIEraDev](https://github.com/AIEraDev)
 
 ---
 
 <div align="center">
-  <p>Made with ❤️ by Abdul Kabir Musa</p>
+  <p>Made with ❤️ by AbdulKabir Musa</p>
   <p>⭐ Star this repo if you find it useful!</p>
 </div>
