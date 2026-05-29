@@ -3,7 +3,7 @@ import { TextEffectConfig, Preset } from "./types";
 /** Style recipes (layer graphs): see `builtInRecipes` in src/engine/recipes.ts */
 
 export const defaultConfig: TextEffectConfig = {
-  text: "CLYPRA",
+  text: "CLYPRA STUDIO",
   effectName: "My Effect",
   fontFamily: "Poppins",
   fontWeight: 700,
@@ -16,9 +16,9 @@ export const defaultConfig: TextEffectConfig = {
   fillGradientAngle: 90,
   fillGradientStops: [
     { color: "#FFFFFF", offset: 0 },
-    { color: "#E0E0E0", offset: 100 }
+    { color: "#E0E0E0", offset: 100 },
   ],
-  strokeEnabled: true,
+  strokeEnabled: false,
   strokeColor: "#7C6FFF",
   strokeWidth: 4,
   strokePosition: "outside",
@@ -27,7 +27,7 @@ export const defaultConfig: TextEffectConfig = {
   glowLayers: [
     { enabled: false, color: "#7C6FFF", blur: 20, opacity: 80, type: "outer" },
     { enabled: false, color: "#FF007C", blur: 40, opacity: 60, type: "outer" },
-    { enabled: false, color: "#00F0FF", blur: 60, opacity: 40, type: "outer" }
+    { enabled: false, color: "#00F0FF", blur: 60, opacity: 40, type: "outer" },
   ],
   shadowEnabled: false,
   shadowColor: "#000000",
@@ -78,8 +78,8 @@ export const defaultConfig: TextEffectConfig = {
   // Ink Brush custom properties
   inkColor: "#FFFFFF",
   bristleDensity: 0.8,
-  bristleSkipRate: 0.20,
-  dripRate: 0.30,
+  bristleSkipRate: 0.2,
+  dripRate: 0.3,
   dripMaxLength: 40,
   grainDensity: 0.15,
   skewX: -0.2,
@@ -102,7 +102,7 @@ export const defaultConfig: TextEffectConfig = {
   auraGlowColor: "#6B21A8",
   auraIntensity: 6,
   auraReach: 35,
-  auraParticleCount: 160
+  auraParticleCount: 160,
 };
 
 export const builtInPresets: Preset[] = [
@@ -147,8 +147,8 @@ export const builtInPresets: Preset[] = [
       panelOpacity: 100,
       panelRadius: 16,
       panelPaddingX: 60,
-      panelPaddingY: 45
-    }
+      panelPaddingY: 45,
+    },
   },
   {
     id: "3d-block-extrusion",
@@ -187,8 +187,8 @@ export const builtInPresets: Preset[] = [
       panelOpacity: 100,
       panelRadius: 16,
       panelPaddingX: 60,
-      panelPaddingY: 40
-    }
+      panelPaddingY: 40,
+    },
   },
   {
     id: "premium-sticker",
@@ -208,7 +208,7 @@ export const builtInPresets: Preset[] = [
       fillGradientAngle: 90,
       fillGradientStops: [
         { color: "#FFCE00", offset: 0 },
-        { color: "#E05300", offset: 100 }
+        { color: "#E05300", offset: 100 },
       ],
       strokeEnabled: true,
       strokeColor: "#FFFFFF",
@@ -238,8 +238,8 @@ export const builtInPresets: Preset[] = [
       shadowOffsetX: 6,
       shadowOffsetY: 8,
       shadowOpacity: 65,
-      shadowType: "drop"
-    }
+      shadowType: "drop",
+    },
   },
   {
     id: "premium-holo",
@@ -262,7 +262,7 @@ export const builtInPresets: Preset[] = [
         { color: "#D196FF", offset: 25 },
         { color: "#FF9CEE", offset: 50 },
         { color: "#FFE49E", offset: 75 },
-        { color: "#D4FFF1", offset: 100 }
+        { color: "#D4FFF1", offset: 100 },
       ],
       strokeEnabled: true,
       strokeColor: "#FFFFFF",
@@ -270,9 +270,7 @@ export const builtInPresets: Preset[] = [
       strokePosition: "outside",
       strokeType: "single",
       strokeOpacity: 100,
-      glowLayers: [
-        { enabled: true, color: "#D196FF", blur: 15, opacity: 50, type: "outer" }
-      ],
+      glowLayers: [{ enabled: true, color: "#D196FF", blur: 15, opacity: 50, type: "outer" }],
       bevelEnabled: true,
       bevelDepth: 4,
       bevelDirection: "bottom-right",
@@ -294,8 +292,8 @@ export const builtInPresets: Preset[] = [
       shadowOffsetX: 6,
       shadowOffsetY: 10,
       shadowOpacity: 90,
-      shadowType: "drop"
-    }
+      shadowType: "drop",
+    },
   },
   {
     id: "ink-brush",
@@ -327,12 +325,12 @@ export const builtInPresets: Preset[] = [
       // Custom ink controls
       inkColor: "#FFFFFF",
       bristleDensity: 0.8,
-      bristleSkipRate: 0.20,
-      dripRate: 0.30,
+      bristleSkipRate: 0.2,
+      dripRate: 0.3,
       dripMaxLength: 40,
       grainDensity: 0.15,
-      skewX: -0.2
-    }
+      skewX: -0.2,
+    },
   },
   {
     id: "realistic-fire",
@@ -364,8 +362,8 @@ export const builtInPresets: Preset[] = [
       fireColor: "#FF5500",
       fireIntensity: 5.5,
       fireFlameHeight: 75,
-      fireEmberCount: 160
-    }
+      fireEmberCount: 160,
+    },
   },
   {
     id: "realistic-ice",
@@ -398,8 +396,8 @@ export const builtInPresets: Preset[] = [
       iceThickness: 6,
       iceIcicleHeight: 25,
       iceFrostDensity: 0.7,
-      iceSnowHeight: 10
-    }
+      iceSnowHeight: 10,
+    },
   },
   {
     id: "realistic-aura",
@@ -432,8 +430,8 @@ export const builtInPresets: Preset[] = [
       auraGlowColor: "#581C87",
       auraIntensity: 7.0,
       auraReach: 48,
-      auraParticleCount: 220
-    }
+      auraParticleCount: 220,
+    },
   },
   {
     id: "classic-ink",
@@ -453,7 +451,7 @@ export const builtInPresets: Preset[] = [
       fillGradientAngle: 90,
       fillGradientStops: [
         { color: "#FDFBF7", offset: 0 },
-        { color: "#EAE5D9", offset: 100 }
+        { color: "#EAE5D9", offset: 100 },
       ],
       strokeEnabled: true,
       strokeColor: "#1E1E26",
@@ -467,8 +465,8 @@ export const builtInPresets: Preset[] = [
       shadowOffsetX: 6,
       shadowOffsetY: 6,
       shadowOpacity: 90,
-      shadowType: "drop"
-    }
+      shadowType: "drop",
+    },
   },
   {
     id: "neon-crimson",
@@ -494,10 +492,10 @@ export const builtInPresets: Preset[] = [
       glowLayers: [
         { enabled: true, color: "#FF003C", blur: 12, opacity: 100, type: "outer" },
         { enabled: true, color: "#FF003C", blur: 35, opacity: 80, type: "outer" },
-        { enabled: true, color: "#FF003C", blur: 80, opacity: 60, type: "outer" }
+        { enabled: true, color: "#FF003C", blur: 80, opacity: 60, type: "outer" },
       ],
-      shadowEnabled: false
-    }
+      shadowEnabled: false,
+    },
   },
   {
     id: "molten-gold",
@@ -518,7 +516,7 @@ export const builtInPresets: Preset[] = [
       fillGradientStops: [
         { color: "#FFE259", offset: 0 },
         { color: "#FFA751", offset: 50 },
-        { color: "#8B5A00", offset: 100 }
+        { color: "#8B5A00", offset: 100 },
       ],
       strokeEnabled: true,
       strokeColor: "#4A2E00",
@@ -536,8 +534,8 @@ export const builtInPresets: Preset[] = [
       shadowBlur: 12,
       shadowOffsetX: 4,
       shadowOffsetY: 6,
-      shadowOpacity: 85
-    }
+      shadowOpacity: 85,
+    },
   },
   {
     id: "cyberpunk-yellow",
@@ -567,8 +565,8 @@ export const builtInPresets: Preset[] = [
       shadowOffsetX: 4,
       shadowOffsetY: 4,
       shadowOpacity: 95,
-      shadowType: "drop"
-    }
+      shadowType: "drop",
+    },
   },
   {
     id: "glitch-corrupt",
@@ -591,8 +589,8 @@ export const builtInPresets: Preset[] = [
       strokeWidth: 4,
       strokePosition: "outside",
       strokeOpacity: 100,
-      strokeLineJoin: "miter"
-    }
+      strokeLineJoin: "miter",
+    },
   },
   {
     id: "frosted-mint",
@@ -612,7 +610,7 @@ export const builtInPresets: Preset[] = [
       fillGradientAngle: 45,
       fillGradientStops: [
         { color: "#E0F7FA", offset: 0 },
-        { color: "#80CBC4", offset: 100 }
+        { color: "#80CBC4", offset: 100 },
       ],
       strokeEnabled: true,
       strokeColor: "#2E5B55",
@@ -620,16 +618,14 @@ export const builtInPresets: Preset[] = [
       strokePosition: "outside",
       strokeOpacity: 70,
       strokeLineJoin: "round",
-      glowLayers: [
-        { enabled: true, color: "#B2DFDB", blur: 25, opacity: 70, type: "outer" }
-      ],
+      glowLayers: [{ enabled: true, color: "#B2DFDB", blur: 25, opacity: 70, type: "outer" }],
       shadowEnabled: true,
       shadowColor: "#004D40",
       shadowBlur: 16,
       shadowOffsetX: 0,
       shadowOffsetY: 4,
-      shadowOpacity: 45
-    }
+      shadowOpacity: 45,
+    },
   },
   {
     id: "deep-ocean",
@@ -649,7 +645,7 @@ export const builtInPresets: Preset[] = [
       fillGradientAngle: 135,
       fillGradientStops: [
         { color: "#00F2FE", offset: 0 },
-        { color: "#4FACFE", offset: 100 }
+        { color: "#4FACFE", offset: 100 },
       ],
       strokeEnabled: true,
       strokeColor: "#001D3D",
@@ -657,10 +653,8 @@ export const builtInPresets: Preset[] = [
       strokePosition: "outside",
       strokeOpacity: 100,
       strokeLineJoin: "round",
-      glowLayers: [
-        { enabled: true, color: "#00F2FE", blur: 20, opacity: 60, type: "outer" }
-      ]
-    }
+      glowLayers: [{ enabled: true, color: "#00F2FE", blur: 20, opacity: 60, type: "outer" }],
+    },
   },
   {
     id: "studio-broadcast",
@@ -685,8 +679,8 @@ export const builtInPresets: Preset[] = [
       shadowOffsetX: 0,
       shadowOffsetY: 15,
       shadowOpacity: 60,
-      shadowType: "drop"
-    }
+      shadowType: "drop",
+    },
   },
   {
     id: "retro-comic",
@@ -713,7 +707,7 @@ export const builtInPresets: Preset[] = [
       glowLayers: [
         { enabled: true, color: "#000000", blur: 0, opacity: 100, type: "outer", strength: 1, spread: 3 },
         { enabled: false, color: "#FF007C", blur: 40, opacity: 60, type: "outer" },
-        { enabled: false, color: "#00F0FF", blur: 60, opacity: 40, type: "outer" }
+        { enabled: false, color: "#00F0FF", blur: 60, opacity: 40, type: "outer" },
       ],
       panelEnabled: true,
       panelColor: "#FFE100",
@@ -730,8 +724,8 @@ export const builtInPresets: Preset[] = [
       shadowOffsetX: 8,
       shadowOffsetY: 8,
       shadowOpacity: 100,
-      shadowType: "drop"
-    }
+      shadowType: "drop",
+    },
   },
   {
     id: "ink-spill",
@@ -750,9 +744,7 @@ export const builtInPresets: Preset[] = [
       fillType: "solid",
       fillColor: "#FFFFFF",
       strokeEnabled: false,
-      glowLayers: [
-        { enabled: true, color: "#000000", blur: 15, opacity: 80, type: "outer", strength: 1, spread: 2 }
-      ],
+      glowLayers: [{ enabled: true, color: "#000000", blur: 15, opacity: 80, type: "outer", strength: 1, spread: 2 }],
       panelEnabled: true,
       panelColor: "#121216",
       panelOpacity: 100,
@@ -768,8 +760,8 @@ export const builtInPresets: Preset[] = [
       shadowOffsetX: 0,
       shadowOffsetY: 5,
       shadowOpacity: 50,
-      shadowType: "drop"
-    }
+      shadowType: "drop",
+    },
   },
   {
     id: "luxury-double",
@@ -791,7 +783,7 @@ export const builtInPresets: Preset[] = [
         { color: "#FFFFFF", offset: 0 },
         { color: "#E5E7EB", offset: 45 },
         { color: "#9CA3AF", offset: 55 },
-        { color: "#D1D5DB", offset: 100 }
+        { color: "#D1D5DB", offset: 100 },
       ],
       strokeEnabled: true,
       strokeColor: "#0F172A",
@@ -813,8 +805,8 @@ export const builtInPresets: Preset[] = [
       shadowBlur: 15,
       shadowOffsetX: 6,
       shadowOffsetY: 8,
-      shadowOpacity: 75
-    }
+      shadowOpacity: 75,
+    },
   },
   {
     id: "chalk-sketch",
@@ -854,8 +846,8 @@ export const builtInPresets: Preset[] = [
       panelPaddingY: 25,
       panelStrokeEnabled: true,
       panelStrokeColor: "#1E293B",
-      panelStrokeWidth: 1
-    }
+      panelStrokeWidth: 1,
+    },
   },
   {
     id: "vintage-film",
@@ -895,8 +887,8 @@ export const builtInPresets: Preset[] = [
       panelPaddingY: 25,
       panelStrokeEnabled: true,
       panelStrokeColor: "#1E293B",
-      panelStrokeWidth: 1
-    }
+      panelStrokeWidth: 1,
+    },
   },
   {
     id: "brushed-steel",
@@ -940,8 +932,8 @@ export const builtInPresets: Preset[] = [
       panelPaddingY: 25,
       panelStrokeEnabled: true,
       panelStrokeColor: "#1E293B",
-      panelStrokeWidth: 1
-    }
+      panelStrokeWidth: 1,
+    },
   },
   {
     id: "ancient-marble",
@@ -985,8 +977,8 @@ export const builtInPresets: Preset[] = [
       panelPaddingY: 25,
       panelStrokeEnabled: true,
       panelStrokeColor: "#292524",
-      panelStrokeWidth: 1
-    }
+      panelStrokeWidth: 1,
+    },
   },
   {
     id: "pop-art-halftone",
@@ -1025,8 +1017,8 @@ export const builtInPresets: Preset[] = [
       panelPaddingY: 25,
       panelStrokeEnabled: true,
       panelStrokeColor: "#000000",
-      panelStrokeWidth: 3
-    }
+      panelStrokeWidth: 3,
+    },
   },
   {
     id: "vintage-paper",
@@ -1066,7 +1058,7 @@ export const builtInPresets: Preset[] = [
       panelPaddingY: 25,
       panelStrokeEnabled: true,
       panelStrokeColor: "#332B1C",
-      panelStrokeWidth: 1
-    }
-  }
+      panelStrokeWidth: 1,
+    },
+  },
 ];
