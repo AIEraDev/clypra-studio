@@ -1028,12 +1028,11 @@ export default function App() {
           TOP MENUBAR
           ────────────────────────────────────────────────────────────────── */}
       <header id="studio-header" className="flex h-12 items-center justify-between border-b border-[var(--studio-border)] bg-[var(--studio-shell)] px-3 select-none shrink-0 z-20">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-md bg-[var(--studio-active)] flex items-center justify-center text-white font-bold select-none">C</div>
-          <div className="min-w-0">
-            <input aria-label="Project effect name" value={config.effectName} onChange={(event) => modifyConfig({ effectName: event.target.value })} className="h-6 w-[220px] rounded border border-transparent bg-transparent px-1 text-sm font-semibold text-white outline-none hover:border-[var(--studio-border)] focus:border-[var(--studio-accent)]" />
-            <p className="px-1 text-[10px] font-mono uppercase tracking-wider text-[var(--studio-muted)]">Saved locally · {activeEffectId}</p>
-          </div>
+        <div className="flex items-center gap-3">
+          <a href="/" aria-label="Back to home" title="Back to Clypra home" className="flex items-center gap-2 group">
+            <img src="/clypra.svg" alt="Clypra" className="w-8 h-8 select-none transition-transform group-hover:scale-105" />
+            <span className="text-base font-bold text-white tracking-tight">Clypra Studio</span>
+          </a>
         </div>
 
         <ModeSwitcher value={workspaceMode} onChange={handleWorkspaceModeChange} />
