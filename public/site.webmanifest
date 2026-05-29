@@ -1,0 +1,39 @@
+{
+  "name": "Clypra Studio",
+  "short_name": "Clypra Studio",
+  "description": "AI-assisted creative studio for designing and exporting Clypra-ready Canvas text effects.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0E0E12",
+  "theme_color": "#0E0E12",
+  "icons": [
+    {
+      "src": "/clypra.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/clypra.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Clypra Studio",
+      "short_name": "Studio",
+      "description": "Launch the AI text effects creative editor.",
+      "url": "/studio",
+      "icons": [
+        {
+          "src": "/clypra.png",
+          "sizes": "1024x1024",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
