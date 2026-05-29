@@ -30,6 +30,19 @@ describe("textEffectConfigToScene migration", () => {
     expect(a.effectName).toBe(b.effectName);
   });
 
+  it("round-trips per-character fill colors", () => {
+    const cfg = {
+      ...builtInPresets[0].config,
+      fillType: "solid" as const,
+      perCharFillEnabled: true,
+      charFillColors: ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff"],
+    };
+    const scene = textEffectConfigToScene(cfg);
+    const back = sceneToConfig(scene);
+    expect(back.perCharFillEnabled).toBe(true);
+    expect(back.charFillColors?.slice(0, 3)).toEqual(["#ff0000", "#00ff00", "#0000ff"]);
+  });
+
   it("blends two configs", () => {
     const a = builtInPresets[0].config;
     const b = builtInPresets[1].config;

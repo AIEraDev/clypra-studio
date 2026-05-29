@@ -21,6 +21,48 @@ body {
   overflow: hidden;
 }
 
+:root {
+  --studio-bg: #0b0b0f;
+  --studio-shell: #111117;
+  --studio-panel: #17171f;
+  --studio-raised: #1d1d27;
+  --studio-control: #0f0f15;
+  --studio-hover: #242432;
+  --studio-border: #2a2a36;
+  --studio-border-soft: #20202a;
+  --studio-accent: #7c6fff;
+  --studio-active: #6558e8;
+  --studio-active-strong: #7468ff;
+  --studio-active-soft: rgba(124, 111, 255, 0.14);
+  --studio-text: #f4f4f7;
+  --studio-muted: #8a8a99;
+  --studio-disabled: #4b4b58;
+  --studio-focus: #a49bff;
+  color-scheme: dark;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* Custom Scrollbar for a premium Clypra Studio atmosphere */
 ::-webkit-scrollbar {
   width: 6px;
@@ -63,3 +105,29 @@ pre {
   margin: 0 !important;
 }
 
+/* Composition preview: safe-area guide inside frame */
+.composition-safe-area {
+  position: absolute;
+  inset: 6%;
+  border-radius: 2px;
+  border: 1px dashed rgba(124, 111, 255, 0.22);
+  pointer-events: none;
+}
+
+.composition-viewport {
+  background-image: radial-gradient(ellipse at center, rgba(124, 111, 255, 0.04) 0%, transparent 70%);
+}
+
+.timeline-panel .timeline-playhead {
+  box-shadow: 0 0 12px rgba(124, 111, 255, 0.45);
+}
+
+.timeline-lane {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent calc(10% - 1px),
+    rgba(42, 42, 56, 0.35) calc(10% - 1px),
+    rgba(42, 42, 56, 0.35) 10%
+  );
+}

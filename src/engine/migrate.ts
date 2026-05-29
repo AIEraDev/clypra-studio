@@ -8,6 +8,7 @@ import {
   LEGACY_RENDERER_MAP,
   ENGINE_ID_TO_LEGACY,
 } from "./schema";
+import { ensureDefaultTimeline } from "./timelineDefaults";
 
 function layer(
   type: EffectLayer["type"],
@@ -169,6 +170,8 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
         fillGradientAngle: cfg.fillGradientAngle,
         fillGradientStops: cfg.fillGradientStops,
         patternType: cfg.patternType,
+        perCharFillEnabled: cfg.perCharFillEnabled,
+        charFillColors: cfg.charFillColors,
       },
       { enabled: cfg.fillType !== "none" }
     )
@@ -182,7 +185,7 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
     layer("filter", "Compositor FX", { blur: 0, bloom: 0 }, { enabled: false, target: "previous" })
   );
 
-  return {
+  const doc: SceneDocument = {
     version: 1,
     effectName: cfg.effectName,
     canvas: {
@@ -200,6 +203,10 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
       lineHeight: cfg.lineHeight,
       textPosX: cfg.textPosX,
       textPosY: cfg.textPosY,
+      wrapText: cfg.wrapText !== false,
+      autoFitText: !!cfg.autoFitText,
+      perCharFillEnabled: cfg.perCharFillEnabled,
+      charFillColors: cfg.charFillColors,
     },
     effectLayers: layers,
     customEngineId: engineId,
@@ -208,6 +215,8 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
     timeline: { duration: 2, fps: 30, loop: true, tracks: [] },
     legacyConfig: { ...cfg },
   };
+
+  return ensureDefaultTimeline(doc);
 }
 
 function collectEngineParams(cfg: TextEffectConfig, id: CustomEngineId): Record<string, unknown> {
@@ -277,6 +286,8 @@ export function sceneToConfig(doc: SceneDocument): TextEffectConfig {
   base.lineHeight = doc.text.lineHeight;
   base.textPosX = doc.text.textPosX;
   base.textPosY = doc.text.textPosY;
+  base.wrapText = doc.text.wrapText !== false;
+  base.autoFitText = !!doc.text.autoFitText;
   base.canvasWidth = doc.canvas.width;
   base.canvasHeight = doc.canvas.height;
 
@@ -333,6 +344,9 @@ export function sceneToConfig(doc: SceneDocument): TextEffectConfig {
   const fill = getLayerParams<Record<string, unknown>>(doc, "fill");
   if (fill) Object.assign(base, fill);
 
+  base.perCharFillEnabled = doc.text.perCharFillEnabled ?? (fill?.perCharFillEnabled as boolean);
+  base.charFillColors = doc.text.charFillColors ?? (fill?.charFillColors as string[] | undefined);
+
   if (doc.customEngineId) {
     base.customRenderer = ENGINE_ID_TO_LEGACY[doc.customEngineId];
     Object.assign(base, doc.engineParams || {});
@@ -340,13 +354,33 @@ export function sceneToConfig(doc: SceneDocument): TextEffectConfig {
     base.customRenderer = undefined;
   }
 
-  const filter = getLayerParams<{ blur?: number; bloom?: number }>(doc, "filter");
-  if (filter) {
-    doc.compositor.blur = filter.blur ?? doc.compositor.blur;
-    doc.compositor.bloom = filter.bloom ?? doc.compositor.bloom;
-  }
+  base.glowLayers = base.glowLayers.slice(0, 6);
+
+  const filterLayers = doc.effectLayers.filter((l) => l.type === "filter" && l.enabled);
+  const filter = filterLayers[filterLayers.length - 1]?.params as { blur?: number; bloom?: number };
+  const compositor = {
+    blur: filter?.blur ?? doc.compositor.blur ?? 0,
+    bloom: filter?.bloom ?? doc.compositor.bloom ?? 0,
+    bloomThreshold: doc.compositor.bloomThreshold ?? 0.6,
+  };
 
   return base;
+}
+
+export function syncCompositorFromScene(doc: SceneDocument): CompositorFromScene {
+  const filterLayers = doc.effectLayers.filter((l) => l.type === "filter" && l.enabled);
+  const filter = filterLayers[filterLayers.length - 1]?.params as { blur?: number; bloom?: number };
+  return {
+    blur: filter?.blur ?? doc.compositor.blur ?? 0,
+    bloom: filter?.bloom ?? doc.compositor.bloom ?? 0,
+    bloomThreshold: doc.compositor.bloomThreshold ?? 0.6,
+  };
+}
+
+export interface CompositorFromScene {
+  blur: number;
+  bloom: number;
+  bloomThreshold: number;
 }
 
 function createDefaultFromScene(doc: SceneDocument): TextEffectConfig {

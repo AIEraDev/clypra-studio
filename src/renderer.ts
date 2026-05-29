@@ -1,4 +1,9 @@
 import { TextEffectConfig, GradientStop, GlowLayer } from "./types";
+import { computeTextLayout } from "./engine/textLayout";
+import { drawPerCharText, shouldUsePerCharFill } from "./engine/perCharFill";
+
+type Canvas2DContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+type NodeCanvasFactory = (width: number, height: number) => HTMLCanvasElement;
 
 function createCanvas(w: number, h: number): HTMLCanvasElement | OffscreenCanvas {
   if (typeof document !== "undefined") {
@@ -6,10 +11,29 @@ function createCanvas(w: number, h: number): HTMLCanvasElement | OffscreenCanvas
     canvas.width = w;
     canvas.height = h;
     return canvas;
-  } else if (typeof OffscreenCanvas !== "undefined") {
+  }
+  if (typeof OffscreenCanvas !== "undefined") {
     return new OffscreenCanvas(w, h);
   }
-  throw new Error("No canvas implementation found in this environment.");
+  const runtimeCanvasFactory = (globalThis as typeof globalThis & { __clypraCreateCanvas?: NodeCanvasFactory })
+    .__clypraCreateCanvas;
+  if (runtimeCanvasFactory) {
+    return runtimeCanvasFactory(w, h);
+  }
+  try {
+    // Keep the native canvas package out of Vite/esbuild browser prebundles.
+    const nodeRequire = (0, eval)("require") as (id: string) => unknown;
+    const nodeCanvas = nodeRequire("@napi-rs/canvas") as {
+      createCanvas: (width: number, height: number) => HTMLCanvasElement;
+    };
+    return nodeCanvas.createCanvas(w, h);
+  } catch {
+    throw new Error("No canvas implementation found in this environment.");
+  }
+}
+
+function getCanvas2DContext(canvas: HTMLCanvasElement | OffscreenCanvas): Canvas2DContext | null {
+  return canvas.getContext("2d") as Canvas2DContext | null;
 }
 
 function seededRandom(seed: number): () => number {
@@ -73,6 +97,10 @@ export class InkBrushEngine {
       fontSize: 96,
       letterSpacing: 2,
       lineHeight: 1.1,
+      wrapText: true,
+      autoFitText: false,
+      perCharFillEnabled: false,
+      charFillColors: [],
       fillType: "solid",
       fillColor: "#FFFFFF",
       fillGradientAngle: 90,
@@ -195,7 +223,7 @@ export class InkBrushEngine {
 
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext("2d");
+    const ctx = getCanvas2DContext(canvas);
     if (!ctx) return;
 
     const lines = text.split("\n");
@@ -520,6 +548,10 @@ export class FireEngine {
       fontSize: 96,
       letterSpacing: 2,
       lineHeight: 1.1,
+      wrapText: true,
+      autoFitText: false,
+      perCharFillEnabled: false,
+      charFillColors: [],
       fillType: "solid",
       fillColor: "#FFFFFF",
       fillGradientAngle: 90,
@@ -638,7 +670,7 @@ export class FireEngine {
 
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext("2d");
+    const ctx = getCanvas2DContext(canvas);
     if (!ctx) return;
 
     const lines = text.split("\n");
@@ -1096,6 +1128,10 @@ export class IceEngine {
       fontSize: 96,
       letterSpacing: 2,
       lineHeight: 1.1,
+      wrapText: true,
+      autoFitText: false,
+      perCharFillEnabled: false,
+      charFillColors: [],
       fillType: "solid",
       fillColor: "#FFFFFF",
       fillGradientAngle: 90,
@@ -1213,7 +1249,7 @@ export class IceEngine {
 
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext("2d");
+    const ctx = getCanvas2DContext(canvas);
     if (!ctx) return;
 
     const lines = text.split("\n");
@@ -1653,6 +1689,10 @@ export class AuraEngine {
       fontSize: 96,
       letterSpacing: 2,
       lineHeight: 1.1,
+      wrapText: true,
+      autoFitText: false,
+      perCharFillEnabled: false,
+      charFillColors: [],
       fillType: "solid",
       fillColor: "#FFFFFF",
       fillGradientAngle: 90,
@@ -1770,7 +1810,7 @@ export class AuraEngine {
 
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext("2d");
+    const ctx = getCanvas2DContext(canvas);
     if (!ctx) return;
 
     const lines = text.split("\n");
@@ -2231,67 +2271,38 @@ export function renderTextEffectCore(
     // 1. Initial configuration
     ctx.imageSmoothingEnabled = true;
 
-    // Apply font settings
-    // Check if letterSpacing is custom
-    const fontStr = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFamily}"`;
-    ctx.font = fontStr;
     ctx.lineJoin = strokeLineJoin;
 
-    // Split paragraphs
-    const lines = text.split("\n");
-    const numLines = lines.length;
-
-    // Setup measurements
-    const textBlockHeight = fontSize + (numLines - 1) * fontSize * lineHeight;
-    
-    // Track horizontal alignment
     const cWidth = canvasWidth || 800;
     const cHeight = canvasHeight || 200;
 
-    let startX = cWidth / 2;
-    let align: CanvasTextAlign = "center";
-    if (textPosX === "left") {
-      startX = panelEnabled ? panelPaddingX + 20 : 50;
-      align = "left";
-    } else if (textPosX === "right") {
-      startX = cWidth - (panelEnabled ? panelPaddingX + 20 : 50);
-      align = "right";
-    }
-
-    // Track vertical alignment
-    let startY = (cHeight - textBlockHeight) / 2 + fontSize * 0.8;
-    if (textPosY === "top") {
-      startY = (panelEnabled ? panelPaddingY + 20 : 40) + fontSize * 0.8;
-    } else if (textPosY === "bottom") {
-      startY = cHeight - (panelEnabled ? panelPaddingY + 20 : 40) - textBlockHeight + fontSize * 0.8;
-    }
-
-    ctx.textAlign = align;
-
-    // Calculate bounding box for background panel and gradients
-    let maxLineWidth = 0;
-    const lineWidths = lines.map((line) => {
-      // In advanced browsers, canvas context supports letterSpacing as property
-      const originalLetterSpacing = (ctx as any).letterSpacing || "normal";
-      if (letterSpacing !== 0) {
-        (ctx as any).letterSpacing = `${letterSpacing}px`;
-      }
-      const w = ctx.measureText(line).width;
-      (ctx as any).letterSpacing = originalLetterSpacing;
-      return w;
+    const layout = computeTextLayout(ctx, cfg, {
+      wrap: cfg.wrapText !== false,
+      autoFit: !!cfg.autoFitText,
     });
 
-    maxLineWidth = Math.max(...lineWidths, 10);
+    const lines = layout.lines;
+    const numLines = lines.length;
+    const effectiveFontSize = layout.fontSize;
+    const lineAdvance = effectiveFontSize * lineHeight;
+    const textBlockHeight = layout.bounds.textBlockHeight;
+    let startX = layout.startX;
+    let startY = layout.startY;
+    const align = layout.align;
+    const maxLineWidth = layout.bounds.maxLineWidth;
+    const lineWidths = layout.lineWidths;
 
-    let xMin = startX;
-    if (align === "center") {
-      xMin = startX - maxLineWidth / 2;
-    } else if (align === "right") {
-      xMin = startX - maxLineWidth;
+    const fontStr = `${fontStyle} ${fontWeight} ${effectiveFontSize}px "${fontFamily}"`;
+    ctx.font = fontStr;
+    ctx.textAlign = align;
+    if (letterSpacing !== 0) {
+      (ctx as any).letterSpacing = `${letterSpacing}px`;
     }
-    let xMax = xMin + maxLineWidth;
-    let yMin = startY - fontSize * 0.8;
-    let yMax = yMin + textBlockHeight;
+
+    let xMin = layout.bounds.xMin;
+    let xMax = layout.bounds.xMax;
+    let yMin = layout.bounds.yMin;
+    let yMax = layout.bounds.yMax;
 
     // Calculate 3D extrusion offsets and shift coordinate system to center the entire block
     let shiftX_half = 0;
@@ -2373,12 +2384,38 @@ export function renderTextEffectCore(
     }
 
     // Helper to apply letter spacing to individual lines during render
+    const usePerCharFill = shouldUsePerCharFill(cfg);
+    const perCharColors = cfg.charFillColors ?? [];
+
     const renderLines = (
       mode: "fill" | "stroke",
       overrideStyle?: string | CanvasGradient | CanvasPattern,
       offsetX = 0,
-      offsetY = 0
+      offsetY = 0,
+      options?: { perCharFill?: boolean }
     ) => {
+      if (
+        options?.perCharFill &&
+        usePerCharFill &&
+        mode === "fill" &&
+        !overrideStyle
+      ) {
+        drawPerCharText(ctx, {
+          lines,
+          startX,
+          startY,
+          lineAdvance,
+          align,
+          letterSpacing,
+          charFillColors: perCharColors,
+          defaultColor: fillColor,
+          mode: "fill",
+          offsetX,
+          offsetY,
+        });
+        return;
+      }
+
       const savedLetterSpacing = (ctx as any).letterSpacing || "normal";
       if (letterSpacing !== 0) {
         (ctx as any).letterSpacing = `${letterSpacing}px`;
@@ -2393,7 +2430,7 @@ export function renderTextEffectCore(
       }
 
       lines.forEach((line, index) => {
-        const py = startY + index * fontSize * lineHeight;
+        const py = startY + index * lineAdvance;
         if (mode === "fill") {
           ctx.fillText(line, startX + offsetX, py + offsetY);
         } else {
@@ -2446,7 +2483,7 @@ export function renderTextEffectCore(
       }
 
       lines.forEach((line, index) => {
-        const py = startY + index * fontSize * lineHeight;
+        const py = startY + index * lineAdvance;
         if (mode === "fill") {
           if (spread > 0) {
             ctx.strokeText(line, startX - shiftX, py);
@@ -2958,7 +2995,7 @@ export function renderTextEffectCore(
         patCanvas.height = 120;
       }
       
-      const patCtx = patCanvas.getContext("2d")!;
+      const patCtx = getCanvas2DContext(patCanvas)!;
       
       // Fast stable linear congruential seeded random helper (prevents render flickering)
       const seedRandom = (initSeed: number) => {
@@ -3507,7 +3544,7 @@ export function renderTextEffectCore(
       const tCanvas = createCanvas(cWidth, cHeight);
       tCanvas.width = cWidth;
       tCanvas.height = cHeight;
-      const tCtx = tCanvas.getContext("2d");
+      const tCtx = getCanvas2DContext(tCanvas);
       
       if (tCtx) {
         tCtx.font = fontStr;
@@ -3524,7 +3561,7 @@ export function renderTextEffectCore(
         }
         
         lines.forEach((line, index) => {
-          const py = startY + index * fontSize * lineHeight;
+          const py = startY + index * lineAdvance;
           tCtx.fillText(line, startX, py);
         });
         
@@ -3668,7 +3705,7 @@ export function renderTextEffectCore(
         const tintCanvas = createCanvas(cWidth, cHeight);
         tintCanvas.width = cWidth;
         tintCanvas.height = cHeight;
-        const tintCtx = tintCanvas.getContext("2d");
+        const tintCtx = getCanvas2DContext(tintCanvas);
         if (tintCtx) {
           tintCtx.drawImage(tCanvas, 0, 0);
           tintCtx.globalCompositeOperation = "source-in";
@@ -3681,7 +3718,11 @@ export function renderTextEffectCore(
     } else {
       ctx.save();
       if (fillType !== "none") {
-        renderLines("fill", textFill);
+        if (usePerCharFill && fillType === "solid") {
+          renderLines("fill", undefined, 0, 0, { perCharFill: true });
+        } else {
+          renderLines("fill", textFill);
+        }
       }
       ctx.restore();
     }

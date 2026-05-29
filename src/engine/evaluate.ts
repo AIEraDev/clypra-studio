@@ -4,6 +4,7 @@ import { sceneToConfig, textEffectConfigToScene } from "./migrate";
 import { applyTimelineAtTime } from "./animation";
 import type { SceneDocument } from "./schema";
 import { WebGLCompositor } from "../compositor";
+import { applyMaskReveal } from "./mask";
 
 export interface EvaluateOptions {
   compositor?: WebGLCompositor | null;
@@ -35,14 +36,22 @@ export function evaluateScene(
   const w = cfg.canvasWidth || 800;
   const h = cfg.canvasHeight || 200;
 
+  const filterLayers = animated.effectLayers.filter((l) => l.type === "filter" && l.enabled);
+  const lastFilter = filterLayers[filterLayers.length - 1]?.params as { blur?: number; bloom?: number };
+  const comp = {
+    blur: lastFilter?.blur ?? animated.compositor.blur ?? 0,
+    bloom: lastFilter?.bloom ?? animated.compositor.bloom ?? 0,
+    bloomThreshold: animated.compositor.bloomThreshold ?? 0.6,
+  };
+
   const usePostFx =
-    !options.skipPostFx &&
-    (animated.compositor.blur > 0 ||
-      animated.compositor.bloom > 0 ||
-      animated.effectLayers.some((l) => l.type === "filter" && l.enabled));
+    !options.skipPostFx && (comp.blur > 0 || comp.bloom > 0);
+
+  const finishFrame = () => applyMaskReveal(ctx, animated, w, h);
 
   if (!usePostFx) {
     renderTextEffectCore(ctx, cfg);
+    finishFrame();
     return;
   }
 
@@ -55,12 +64,14 @@ export function evaluateScene(
     const offCtx = off.getContext("2d");
     if (!offCtx) {
       renderTextEffectCore(ctx, cfg);
+      finishFrame();
       return;
     }
     renderTextEffectCore(offCtx, cfg);
+    applyMaskReveal(offCtx, animated, w, h);
     const compositor = options.compositor ?? getCompositor();
     if (compositor?.isSupported) {
-      compositor.renderToContext(ctx, off, animated.compositor);
+      compositor.renderToContext(ctx, off, comp);
       return;
     }
     ctx.clearRect(0, 0, w, h);
@@ -76,9 +87,10 @@ export function evaluateScene(
     const tctx = temp.getContext("2d");
     if (tctx) {
       renderTextEffectCore(tctx, cfg);
+      applyMaskReveal(tctx, animated, w, h);
       const compositor = options.compositor ?? getCompositor();
       if (compositor?.isSupported) {
-        compositor.renderToContext(ctx, temp, animated.compositor);
+        compositor.renderToContext(ctx, temp, comp);
         return;
       }
       ctx.clearRect(0, 0, w, h);
@@ -88,6 +100,7 @@ export function evaluateScene(
   }
 
   renderTextEffectCore(ctx, cfg);
+  finishFrame();
 }
 
 export function evaluateConfig(

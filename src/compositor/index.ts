@@ -93,12 +93,7 @@ export class WebGLCompositor {
     }
     this.program = program;
 
-    const positions = new Float32Array([
-      -1, -1, 0, 1,
-      1, -1, 1, 1,
-      -1, 1, 0, 0,
-      1, 1, 1, 0,
-    ]);
+    const positions = new Float32Array([-1, -1, 0, 1, 1, -1, 1, 1, -1, 1, 0, 0, 1, 1, 1, 0]);
     const vao = gl.createVertexArray();
     const vbo = gl.createBuffer();
     gl.bindVertexArray(vao);
@@ -117,11 +112,7 @@ export class WebGLCompositor {
     return true;
   }
 
-  private compileShader(
-    gl: WebGL2RenderingContext,
-    type: number,
-    source: string
-  ): WebGLShader | null {
+  private compileShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader | null {
     const shader = gl.createShader(type);
     if (!shader) return null;
     gl.shaderSource(shader, source);
@@ -133,11 +124,7 @@ export class WebGLCompositor {
     return shader;
   }
 
-  renderToContext(
-    targetCtx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    source: HTMLCanvasElement | OffscreenCanvas,
-    settings: CompositorSettings
-  ): void {
+  renderToContext(targetCtx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, source: HTMLCanvasElement | OffscreenCanvas, settings: CompositorSettings): void {
     const gl = this.gl;
     const program = this.program;
     if (!gl || !program || !this.isSupported) {
@@ -173,10 +160,7 @@ export class WebGLCompositor {
     gl.uniform2f(gl.getUniformLocation(program, "u_texel"), 1 / w, 1 / h);
     gl.uniform1f(gl.getUniformLocation(program, "u_blur"), settings.blur ?? 0);
     gl.uniform1f(gl.getUniformLocation(program, "u_bloom"), settings.bloom ?? 0);
-    gl.uniform1f(
-      gl.getUniformLocation(program, "u_bloomThreshold"),
-      settings.bloomThreshold ?? 0.6
-    );
+    gl.uniform1f(gl.getUniformLocation(program, "u_bloomThreshold"), settings.bloomThreshold ?? 0.6);
 
     gl.bindVertexArray(this.vao);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

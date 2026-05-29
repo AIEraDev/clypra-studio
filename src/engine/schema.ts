@@ -50,6 +50,10 @@ export interface SceneText {
   lineHeight: number;
   textPosX: "left" | "center" | "right";
   textPosY: "top" | "middle" | "bottom";
+  wrapText?: boolean;
+  autoFitText?: boolean;
+  perCharFillEnabled?: boolean;
+  charFillColors?: string[];
 }
 
 export interface EffectLayer {
@@ -100,6 +104,8 @@ export interface SceneDocument {
   timeline: Timeline;
   /** Legacy flat config cache for gradual UI migration */
   legacyConfig?: TextEffectConfig;
+  /** Deep Research extension snippet (not executed until sandboxed) */
+  extensionCode?: string | null;
 }
 
 export interface StyleRecipe {

@@ -55,9 +55,14 @@ export function applyTimelineAtTime(doc: SceneDocument, time: number): SceneDocu
       : Math.min(time, doc.timeline.duration);
 
   const layers = doc.effectLayers.map((layer) => {
+    let opacity = layer.opacity;
     const params = { ...layer.params };
     for (const track of doc.timeline.tracks) {
       if (track.layerId !== layer.id) continue;
+      if (track.paramPath === "layerOpacity") {
+        opacity = resolveAnimatedScalar(doc, layer.id, track.paramPath, opacity, looped);
+        continue;
+      }
       const parts = track.paramPath.split(".");
       let target: Record<string, unknown> = params;
       for (let i = 0; i < parts.length - 1; i++) {
@@ -71,7 +76,7 @@ export function applyTimelineAtTime(doc: SceneDocument, time: number): SceneDocu
       const current = typeof target[leaf] === "number" ? (target[leaf] as number) : 0;
       target[leaf] = resolveAnimatedScalar(doc, layer.id, track.paramPath, current, looped);
     }
-    return { ...layer, params };
+    return { ...layer, opacity, params };
   });
 
   return { ...doc, effectLayers: layers };

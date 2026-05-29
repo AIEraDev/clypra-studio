@@ -72,6 +72,8 @@ export const defaultConfig: TextEffectConfig = {
   canvasHeight: 200,
   textPosX: "center",
   textPosY: "middle",
+  wrapText: true,
+  autoFitText: false,
 
   // Ink Brush custom properties
   inkColor: "#FFFFFF",

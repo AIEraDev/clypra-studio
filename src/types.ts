@@ -33,6 +33,10 @@ export interface TextEffectConfig {
   fillGradientStops: GradientStop[];
   patternType?: "chalk" | "noise" | "grunge" | "carbon" | "stripes" | "film" | "brushed" | "marble" | "halftone" | "paper";
 
+  /** Pro: independent solid fill color per visible character (reading order) */
+  perCharFillEnabled?: boolean;
+  charFillColors?: string[];
+
   // Stroke
   strokeEnabled: boolean;
   strokeColor: string;
@@ -101,6 +105,11 @@ export interface TextEffectConfig {
   canvasHeight: number; // default 200
   textPosX: "left" | "center" | "right";
   textPosY: "top" | "middle" | "bottom";
+
+  /** Scale type to fit safe area inside canvas */
+  autoFitText?: boolean;
+  /** Wrap long lines to composition safe width */
+  wrapText?: boolean;
 
   // Ink Brush specific controls
   inkColor?: string;
