@@ -1,18 +1,61 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { RailItem, WorkspaceMode } from "../components/StudioChrome";
 
 export type StudioPanelTab = "engine" | "definition" | "lab";
 
+// Parse workspace mode from URL
+function getWorkspaceModeFromURL(): WorkspaceMode {
+  const path = window.location.pathname;
+  const segments = path.split("/").filter(Boolean);
+
+  // /studio/design, /studio/animate, /studio/ai, /studio/export
+  if (segments.length >= 2 && segments[0] === "studio") {
+    const mode = segments[1];
+    if (mode === "design" || mode === "animate" || mode === "ai" || mode === "export") {
+      return mode;
+    }
+  }
+
+  return "design"; // default
+}
+
 export function useStudioWorkspaceState() {
   const [uiMode, setUiMode] = useState<"basic" | "advanced">("basic");
-  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("design");
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(() => getWorkspaceModeFromURL());
   const [activeRailItem, setActiveRailItem] = useState<RailItem>("templates");
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<StudioPanelTab>("engine");
 
+  // Sync URL with workspace mode on mount and browser navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const mode = getWorkspaceModeFromURL();
+      setWorkspaceMode(mode);
+
+      // Update related states based on mode
+      if (mode === "animate") {
+        setUiMode("advanced");
+        setActiveRailItem("layers");
+      } else if (mode === "ai") {
+        setActiveRailItem("ai");
+        setActiveTab("lab");
+      } else if (mode === "export") {
+        setActiveTab("engine");
+        setActiveRailItem("templates");
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   const handleWorkspaceModeChange = useCallback((mode: WorkspaceMode) => {
     setWorkspaceMode(mode);
+
+    // Update URL without page reload
+    const newPath = `/studio/${mode}`;
+    window.history.pushState({ mode }, "", newPath);
 
     if (mode === "animate") {
       setUiMode("advanced");
