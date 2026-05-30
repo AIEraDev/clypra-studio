@@ -5,7 +5,7 @@ import type { RailItem, WorkspaceMode } from "../components/StudioChrome";
 export type StudioPanelTab = "engine" | "definition" | "lab";
 
 // Parse workspace mode from URL
-function getWorkspaceModeFromURL(): WorkspaceMode {
+function getWorkspaceModeFromURL(): { mode: WorkspaceMode; isValid: boolean } {
   const path = window.location.pathname;
   const segments = path.split("/").filter(Boolean);
 
@@ -13,16 +13,25 @@ function getWorkspaceModeFromURL(): WorkspaceMode {
   if (segments.length >= 2 && segments[0] === "studio") {
     const mode = segments[1];
     if (mode === "design" || mode === "animate" || mode === "ai" || mode === "export") {
-      return mode;
+      return { mode, isValid: true };
     }
+    // Invalid mode found
+    return { mode: "design", isValid: false };
   }
 
-  return "design"; // default
+  return { mode: "design", isValid: true }; // default
 }
 
 export function useStudioWorkspaceState() {
   const [uiMode, setUiMode] = useState<"basic" | "advanced">("basic");
-  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(() => getWorkspaceModeFromURL());
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(() => {
+    const { mode, isValid } = getWorkspaceModeFromURL();
+    // Redirect invalid modes to /studio/design
+    if (!isValid) {
+      window.history.replaceState({}, "", "/studio/design");
+    }
+    return mode;
+  });
   const [activeRailItem, setActiveRailItem] = useState<RailItem>("templates");
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<StudioPanelTab>("engine");
@@ -30,7 +39,13 @@ export function useStudioWorkspaceState() {
   // Sync URL with workspace mode on mount and browser navigation
   useEffect(() => {
     const handlePopState = () => {
-      const mode = getWorkspaceModeFromURL();
+      const { mode, isValid } = getWorkspaceModeFromURL();
+
+      // Redirect invalid modes
+      if (!isValid) {
+        window.history.replaceState({}, "", "/studio/design");
+      }
+
       setWorkspaceMode(mode);
 
       // Update related states based on mode
