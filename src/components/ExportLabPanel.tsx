@@ -9,9 +9,9 @@ import { GitHubConfigModal } from "./GitHubConfigModal";
 
 type CodeTab = "engine" | "definition" | "lab";
 
-const EFFECT_API_CATEGORIES = ["3d", "classic", "clean", "gradient", "grunge", "metallic", "neon", "organic", "retro"] as const;
+const EFFECT_API_CATEGORIES = ["3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury"] as const;
 
-export type EffectApiCategory = typeof EFFECT_API_CATEGORIES[number];
+export type EffectApiCategory = (typeof EFFECT_API_CATEGORIES)[number];
 
 interface ResearchResult {
   themeName: string;
@@ -259,15 +259,11 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
                   <Download size={11} className="text-[#a89fff]" />
                   Download
                 </button>
-                <select
-                  id="effect-api-category-select"
-                  value={effectApiCategory}
-                  onChange={(event) => onEffectApiCategoryChange(event.target.value as EffectApiCategory)}
-                  className="rounded border border-[#2A2A38] bg-[#0A0A0E] px-2 py-1 text-[10px] font-semibold text-white outline-none hover:bg-[#15151C] focus:border-teal-500"
-                  title="API category for PR publishing"
-                >
+                <select id="effect-api-category-select" value={effectApiCategory} onChange={(event) => onEffectApiCategoryChange(event.target.value as EffectApiCategory)} className="rounded border border-[#2A2A38] bg-[#0A0A0E] px-2 py-1 text-[10px] font-semibold text-white outline-none hover:bg-[#15151C] focus:border-teal-500" title="API category for PR publishing">
                   {EFFECT_API_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
                   ))}
                 </select>
                 <button id="github-settings-btn" type="button" onClick={() => setShowGithubConfig(true)} className="flex items-center gap-1.5 rounded border border-[#2A2A38] bg-[#1E1E26] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#2A2A38]" title="GitHub settings">

@@ -45,7 +45,7 @@ export default function App() {
   const [activePresetId, setActivePresetId] = useState<string>("classic-ink");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [sortBy, setSortBy] = useState<"recency" | "name" | "category">("recency");
-  const [effectApiCategory, setEffectApiCategory] = useState<EffectApiCategory>("classic");
+  const [effectApiCategory, setEffectApiCategory] = useState<EffectApiCategory>("3d");
 
   // Interaction workspace states
   const [engineFormat, setEngineFormat] = useState<"ts" | "js" | "txt" | "html">("ts");

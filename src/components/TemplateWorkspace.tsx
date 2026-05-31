@@ -15,7 +15,7 @@ export interface TemplateWorkspaceProps {
   onBackToDesign: () => void;
 }
 
-export type TemplateCategory = "lower-third" | "title-card" | "outro" | "kinetic" | "broadcast" | "social" | "cinematic" | "minimal" | "energetic" | "documentary";
+export type TemplateCategory = "lower-third" | "title-card" | "callout" | "caption" | "outro" | "social" | "broadcast" | "sports" | "countdown" | "cinematic";
 
 export interface TextLayer {
   layerName: string;
@@ -24,7 +24,7 @@ export interface TextLayer {
   role: "primary" | "secondary" | "accent";
 }
 
-const CATEGORIES: TemplateCategory[] = ["lower-third", "title-card", "outro", "kinetic", "broadcast", "social", "cinematic", "minimal", "energetic", "documentary"];
+const CATEGORIES: TemplateCategory[] = ["lower-third", "title-card", "callout", "caption", "outro", "social", "broadcast", "sports", "countdown", "cinematic"];
 
 const PLACEMENTS = ["lower-third", "center", "top", "full-frame"] as const;
 

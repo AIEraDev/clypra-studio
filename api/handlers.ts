@@ -176,8 +176,8 @@ export async function handleGenerateLottieMetadata(req: Request, res: Response) 
 
     const ai = createGeminiClient(getRequestGeminiApiKey(req));
 
-    // Available categories
-    const availableCategories = ["lower-third", "title-card", "outro", "kinetic", "broadcast", "social", "cinematic", "minimal", "energetic", "documentary"];
+    // Available categories - aligned with professional NLE standards
+    const availableCategories = ["lower-third", "title-card", "callout", "caption", "outro", "social", "broadcast", "sports", "countdown", "cinematic"];
 
     // Build context about the Lottie animation
     let context = `Template Name: ${templateName || "Untitled"}\n`;
@@ -210,17 +210,17 @@ ${context}
 Available Categories (you MUST choose ONE from this list):
 ${availableCategories.map((c) => `- ${c}`).join("\n")}
 
-Category Definitions:
-- lower-third: Text overlays at bottom of screen (news, interviews, captions)
-- title-card: Opening titles, intro screens, chapter headers
-- outro: Ending screens, credits, call-to-action
-- kinetic: Dynamic, fast-paced motion graphics with lots of movement
-- broadcast: Professional TV/news style graphics
-- social: Social media posts, stories, reels
-- cinematic: Film-style, dramatic, high-production value
-- minimal: Clean, simple, understated design
-- energetic: High-energy, vibrant, exciting animations
-- documentary: Informative, educational, storytelling style
+Category Definitions (aligned with professional NLE standards):
+- lower-third: Text overlays at bottom of screen (news, interviews, name tags, location labels)
+- title-card: Opening titles, intro screens, chapter headers, section dividers
+- callout: Animated arrows, lines, and labels pointing to elements (product features, highlights, annotations)
+- caption: Styled subtitles and captions (word-by-word, pill backgrounds, pop-up text)
+- outro: Ending screens, credits, call-to-action, subscribe prompts
+- social: Social media posts, stories, reels, TikTok, Instagram content
+- broadcast: Professional TV/news style graphics, breaking news, sports coverage
+- sports: Athletic graphics, scoreboards, player stats, game highlights
+- countdown: Timers, countdowns, clocks, deadline graphics, event countdowns
+- cinematic: Film-style, dramatic, high-production value, movie titles
 
 Create:
 1. **category**: Choose the MOST appropriate category from the available list above
@@ -233,7 +233,7 @@ Make the metadata unique, professional, and SEO-friendly. Focus on the animation
         },
       ],
       config: {
-        systemInstruction: "You are an expert in motion graphics, animation, and digital content metadata. You create unique, descriptive, and professional metadata for Lottie animations that helps users discover and understand templates. You MUST select a category from the provided list.",
+        systemInstruction: "You are an expert in motion graphics, animation, and digital content metadata. You create unique, descriptive, and professional metadata for Lottie animations that helps users discover and understand templates. You MUST select a category from the provided list based on professional NLE standards (Premiere Pro, Final Cut Pro, DaVinci Resolve, After Effects).",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
