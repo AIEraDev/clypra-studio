@@ -21,14 +21,18 @@ function extractErrorMessage(error: any): string {
   // If it's already a string, return it
   if (typeof error === "string") return error;
 
+  // Try to extract from response.error.message (Gemini API format)
+  if (error?.response?.error?.message) return error.response.error.message;
+
+  // Try to extract from error.message
+  if (error?.error?.message) return error.error.message;
+
   // Try to extract message from error object
   if (error?.message) return error.message;
 
-  // Try to extract from error response
-  if (error?.error?.message) return error.error.message;
-
-  // Try to extract from status
-  if (error?.status) {
+  // Try to extract from response.error.code
+  if (error?.response?.error?.code) {
+    const code = error.response.error.code;
     const statusMessages: Record<number, string> = {
       400: "Invalid request. Please check your input.",
       401: "Invalid API key. Please check your Gemini API key in Settings.",
@@ -37,6 +41,20 @@ function extractErrorMessage(error: any): string {
       429: "Rate limit exceeded. Please try again in a moment.",
       500: "Gemini service error. Please try again later.",
       503: "Gemini service temporarily unavailable. Please try again later.",
+    };
+    return statusMessages[code] || `Request failed with code ${code}`;
+  }
+
+  // Try to extract from status
+  if (error?.status) {
+    const statusMessages: Record<string, string> = {
+      INVALID_ARGUMENT: "Invalid request. Please check your input.",
+      UNAUTHENTICATED: "Invalid API key. Please check your Gemini API key in Settings.",
+      PERMISSION_DENIED: "Access denied. Please verify your API key permissions.",
+      NOT_FOUND: "Model not found. The requested Gemini model may not be available.",
+      RESOURCE_EXHAUSTED: "Rate limit exceeded. Please try again in a moment.",
+      INTERNAL: "Gemini service error. Please try again later.",
+      UNAVAILABLE: "Gemini service temporarily unavailable. Please try again later.",
     };
     return statusMessages[error.status] || `Request failed with status ${error.status}`;
   }
