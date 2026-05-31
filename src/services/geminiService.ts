@@ -16,6 +16,35 @@ function createGeminiClient() {
   });
 }
 
+// Helper to extract clean error messages
+function extractErrorMessage(error: any): string {
+  // If it's already a string, return it
+  if (typeof error === "string") return error;
+
+  // Try to extract message from error object
+  if (error?.message) return error.message;
+
+  // Try to extract from error response
+  if (error?.error?.message) return error.error.message;
+
+  // Try to extract from status
+  if (error?.status) {
+    const statusMessages: Record<number, string> = {
+      400: "Invalid request. Please check your input.",
+      401: "Invalid API key. Please check your Gemini API key in Settings.",
+      403: "Access denied. Please verify your API key permissions.",
+      404: "Model not found. The requested Gemini model may not be available.",
+      429: "Rate limit exceeded. Please try again in a moment.",
+      500: "Gemini service error. Please try again later.",
+      503: "Gemini service temporarily unavailable. Please try again later.",
+    };
+    return statusMessages[error.status] || `Request failed with status ${error.status}`;
+  }
+
+  // Default fallback
+  return "An unexpected error occurred. Please try again.";
+}
+
 // Schema definitions
 const textEffectConfigResponseSchema = {
   type: Type.OBJECT,
@@ -81,80 +110,92 @@ const deepResearchResponseSchema = {
 };
 
 export async function analyzeStyleFromImage(image: string, mimeType: string = "image/png"): Promise<TextEffectConfig> {
-  const ai = createGeminiClient();
-  const cleanBase64 = image.includes("base64,") ? image.split("base64,")[1] : image;
+  try {
+    const ai = createGeminiClient();
+    const cleanBase64 = image.includes("base64,") ? image.split("base64,")[1] : image;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash-exp",
-    contents: [
-      {
-        inlineData: {
-          mimeType,
-          data: cleanBase64,
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: [
+        {
+          inlineData: {
+            mimeType,
+            data: cleanBase64,
+          },
         },
-      },
-      {
-        text: `Analyze the text effect in the provided sample image. Deconstruct its styling characteristics to generate a JSON configuration object that matches the following strict system parameters. Ensure colors are returned in Hex format (e.g. "#FF0000").
+        {
+          text: `Analyze the text effect in the provided sample image. Deconstruct its styling characteristics to generate a JSON configuration object that matches the following strict system parameters. Ensure colors are returned in Hex format (e.g. "#FF0000").
 Observe if it is minimalist, standard classic, vibrant neon (with heavy glow outer layers), 3D extruded (with bevel enabled), or gothic text.
 Be very precise and creative in mapping the visual colors, gradient stops, stroke rules, background panel backing, 3D/bevel depth, and multi-layer glows.`,
+        },
+      ],
+      config: {
+        systemInstruction: "You are an expert typography and graphics designer who specializes in reversing custom 2D canvas text styling from sample images.",
+        responseMimeType: "application/json",
+        responseSchema: textEffectConfigResponseSchema,
       },
-    ],
-    config: {
-      systemInstruction: "You are an expert typography and graphics designer who specializes in reversing custom 2D canvas text styling from sample images.",
-      responseMimeType: "application/json",
-      responseSchema: textEffectConfigResponseSchema,
-    },
-  });
+    });
 
-  return JSON.parse((response.text || "{}").trim());
+    return JSON.parse((response.text || "{}").trim());
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
 }
 
 export async function generateStyleFromPrompt(prompt: string): Promise<TextEffectConfig> {
-  const ai = createGeminiClient();
+  try {
+    const ai = createGeminiClient();
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash-exp",
-    contents: [
-      {
-        text: `Based on the user's creative visual styling prompt: "${prompt}", design a high-quality, professional 2D canvas text effect.
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: [
+        {
+          text: `Based on the user's creative visual styling prompt: "${prompt}", design a high-quality, professional 2D canvas text effect.
 Translate this style metaphor into standard configuration parameters. Configure colors precisely using Hex format. Fully populate all fields including bevel, panel, and glowLayers (up to 3 layer slots if applicable).`,
+        },
+      ],
+      config: {
+        systemInstruction: "You are an elite web graphics designer who specializes in generating beautiful 2D canvas font styling from text descriptions.",
+        responseMimeType: "application/json",
+        responseSchema: textEffectConfigResponseSchema,
       },
-    ],
-    config: {
-      systemInstruction: "You are an elite web graphics designer who specializes in generating beautiful 2D canvas font styling from text descriptions.",
-      responseMimeType: "application/json",
-      responseSchema: textEffectConfigResponseSchema,
-    },
-  });
+    });
 
-  return JSON.parse((response.text || "{}").trim());
+    return JSON.parse((response.text || "{}").trim());
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
 }
 
 export async function generateEffectName(config: TextEffectConfig): Promise<string> {
-  const ai = createGeminiClient();
+  try {
+    const ai = createGeminiClient();
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash-exp",
-    contents: [
-      {
-        text: `Generate a creative premium name (1 to 3 words) for this typography style:\n${JSON.stringify(config, null, 2)}`,
-      },
-    ],
-    config: {
-      systemInstruction: "You are an elite brand naming specialist for typography presets.",
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          suggestedName: { type: Type.STRING },
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: [
+        {
+          text: `Generate a creative premium name (1 to 3 words) for this typography style:\n${JSON.stringify(config, null, 2)}`,
         },
-        required: ["suggestedName"],
+      ],
+      config: {
+        systemInstruction: "You are an elite brand naming specialist for typography presets.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            suggestedName: { type: Type.STRING },
+          },
+          required: ["suggestedName"],
+        },
       },
-    },
-  });
+    });
 
-  const resultData = JSON.parse((response.text || "{}").trim());
-  return resultData.suggestedName;
+    const resultData = JSON.parse((response.text || "{}").trim());
+    return resultData.suggestedName;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
 }
 
 export async function performDeepResearch(topic: string): Promise<{
@@ -165,24 +206,28 @@ export async function performDeepResearch(topic: string): Promise<{
   config: TextEffectConfig;
   extensionCode: string;
 }> {
-  const ai = createGeminiClient();
+  try {
+    const ai = createGeminiClient();
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash-exp",
-    contents: [
-      {
-        text: `Perform typography design research on: "${topic}".
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: [
+        {
+          text: `Perform typography design research on: "${topic}".
 Return theme name, historical context, 3 visual rules, palette notes, a complete TextEffectConfig JSON, and extensionCode (canvas2d snippet for procedural extensions).`,
+        },
+      ],
+      config: {
+        systemInstruction: "You are a senior typographic design researcher and computational artist.",
+        responseMimeType: "application/json",
+        responseSchema: deepResearchResponseSchema,
       },
-    ],
-    config: {
-      systemInstruction: "You are a senior typographic design researcher and computational artist.",
-      responseMimeType: "application/json",
-      responseSchema: deepResearchResponseSchema,
-    },
-  });
+    });
 
-  return JSON.parse((response.text || "{}").trim());
+    return JSON.parse((response.text || "{}").trim());
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
 }
 
 export async function generateLottieMetadata(params: { templateName?: string; currentId?: string; currentDescription?: string; currentTags?: string; currentCategory?: string; lottieData?: any }): Promise<{
@@ -192,38 +237,39 @@ export async function generateLottieMetadata(params: { templateName?: string; cu
   description: string;
   tags: string[];
 }> {
-  const ai = createGeminiClient();
+  try {
+    const ai = createGeminiClient();
 
-  const { templateName, currentId, currentDescription, currentTags, currentCategory, lottieData } = params;
+    const { templateName, currentId, currentDescription, currentTags, currentCategory, lottieData } = params;
 
-  // Available categories - aligned with professional NLE standards
-  const availableCategories = ["lower-third", "title-card", "callout", "caption", "outro", "social", "broadcast", "sports", "countdown", "cinematic"];
+    // Available categories - aligned with professional NLE standards
+    const availableCategories = ["lower-third", "title-card", "callout", "caption", "outro", "social", "broadcast", "sports", "countdown", "cinematic"];
 
-  // Build context about the Lottie animation
-  let context = `Template Name: ${templateName || "Untitled"}\n`;
-  if (currentId) context += `Current ID: ${currentId}\n`;
-  if (currentCategory) context += `Current Category: ${currentCategory}\n`;
-  if (currentDescription) context += `Current Description: ${currentDescription}\n`;
-  if (currentTags) context += `Current Tags: ${currentTags}\n`;
+    // Build context about the Lottie animation
+    let context = `Template Name: ${templateName || "Untitled"}\n`;
+    if (currentId) context += `Current ID: ${currentId}\n`;
+    if (currentCategory) context += `Current Category: ${currentCategory}\n`;
+    if (currentDescription) context += `Current Description: ${currentDescription}\n`;
+    if (currentTags) context += `Current Tags: ${currentTags}\n`;
 
-  // Add Lottie structure info if available
-  if (lottieData) {
-    const layers = lottieData.layers || [];
-    const textLayers = layers.filter((l: any) => l.ty === 5);
-    const shapeLayers = layers.filter((l: any) => l.ty === 4);
-    context += `\nAnimation Info:\n`;
-    context += `- Duration: ${lottieData.op || 0} frames at ${lottieData.fr || 30}fps\n`;
-    context += `- Dimensions: ${lottieData.w}x${lottieData.h}\n`;
-    context += `- Text Layers: ${textLayers.length}\n`;
-    context += `- Shape Layers: ${shapeLayers.length}\n`;
-    context += `- Total Layers: ${layers.length}\n`;
-  }
+    // Add Lottie structure info if available
+    if (lottieData) {
+      const layers = lottieData.layers || [];
+      const textLayers = layers.filter((l: any) => l.ty === 5);
+      const shapeLayers = layers.filter((l: any) => l.ty === 4);
+      context += `\nAnimation Info:\n`;
+      context += `- Duration: ${lottieData.op || 0} frames at ${lottieData.fr || 30}fps\n`;
+      context += `- Dimensions: ${lottieData.w}x${lottieData.h}\n`;
+      context += `- Text Layers: ${textLayers.length}\n`;
+      context += `- Shape Layers: ${shapeLayers.length}\n`;
+      context += `- Total Layers: ${layers.length}\n`;
+    }
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash-exp",
-    contents: [
-      {
-        text: `Generate unique, professional metadata for a Lottie animation template based on this information:
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: [
+        {
+          text: `Generate unique, professional metadata for a Lottie animation template based on this information:
 
 ${context}
 
@@ -250,24 +296,27 @@ Create:
 5. **tags**: 5-8 relevant tags (lowercase, single words or hyphenated phrases)
 
 Make the metadata unique, professional, and SEO-friendly. Focus on the animation's style, purpose, and visual characteristics.`,
-      },
-    ],
-    config: {
-      systemInstruction: "You are an expert in motion graphics, animation, and digital content metadata. You create unique, descriptive, and professional metadata for Lottie animations that helps users discover and understand templates. You MUST select a category from the provided list based on professional NLE standards (Premiere Pro, Final Cut Pro, DaVinci Resolve, After Effects).",
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          category: { type: Type.STRING },
-          id: { type: Type.STRING },
-          name: { type: Type.STRING },
-          description: { type: Type.STRING },
-          tags: { type: Type.ARRAY, items: { type: Type.STRING } },
         },
-        required: ["category", "id", "name", "description", "tags"],
+      ],
+      config: {
+        systemInstruction: "You are an expert in motion graphics, animation, and digital content metadata. You create unique, descriptive, and professional metadata for Lottie animations that helps users discover and understand templates. You MUST select a category from the provided list based on professional NLE standards (Premiere Pro, Final Cut Pro, DaVinci Resolve, After Effects).",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            category: { type: Type.STRING },
+            id: { type: Type.STRING },
+            name: { type: Type.STRING },
+            description: { type: Type.STRING },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+          },
+          required: ["category", "id", "name", "description", "tags"],
+        },
       },
-    },
-  });
+    });
 
-  return JSON.parse((response.text || "{}").trim());
+    return JSON.parse((response.text || "{}").trim());
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
 }
