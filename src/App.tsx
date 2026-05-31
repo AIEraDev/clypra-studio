@@ -1215,6 +1215,10 @@ export default function App() {
               <Grid2X2 size={13} /> Fonts
             </button>
 
+            <button id="gemini-key-header-btn" onClick={() => setShowGeminiKeyModal(true)} className="h-8 rounded-md border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-2.5 text-xs font-semibold text-[#B9B2FF] hover:bg-[#7C6FFF]/15 flex items-center gap-1.5 cursor-pointer font-sans">
+              <KeyRound size={13} /> API Key
+            </button>
+
             <a href="/lottie" className="h-8 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-2.5 text-xs font-semibold text-purple-300 hover:bg-[var(--studio-hover)] flex items-center gap-1.5 cursor-pointer font-sans no-underline">
               <Video size={13} /> Lottie
             </a>

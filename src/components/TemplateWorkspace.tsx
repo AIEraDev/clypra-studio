@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import lottie from "lottie-web";
 import JSZip from "jszip";
-import { Download, Copy, Plus, Play, Pause, Loader2, HelpCircle, FolderPlus, ArrowLeft, Sparkles, Code, FileJson, UploadCloud, X, RefreshCw, AlertTriangle, CheckCircle, Info, Layers, Lock, Unlock, Eye, EyeOff, Trash2, Move, CornerDownRight, Maximize2, RotateCw, CircleDot, ToggleLeft, ToggleRight, Image as ImageIcon, ChevronUp, ChevronDown, Settings } from "lucide-react";
+import { Download, Copy, Plus, Play, Pause, Loader2, HelpCircle, FolderPlus, ArrowLeft, Sparkles, Code, FileJson, UploadCloud, X, RefreshCw, AlertTriangle, CheckCircle, Info, Layers, Lock, Unlock, Eye, EyeOff, Trash2, Move, CornerDownRight, Maximize2, RotateCw, CircleDot, ToggleLeft, ToggleRight, Image as ImageIcon, ChevronUp, ChevronDown, Settings, KeyRound } from "lucide-react";
 
 import { scanTextLayers, parseLottieJson, LottieFileInfo, ParsedTextLayer, getDefaultText } from "../engine/lottieParser";
 import { injectText, injectColor, TextLayerConfig, TextCustomization } from "../engine/lottieInjector";
 import { useGitHubPublish } from "../hooks/useGitHubPublish";
 import { GitHubConfigModal } from "./GitHubConfigModal";
 import { PublishTemplateModal } from "./PublishTemplateModal";
+import { GeminiKeyModal } from "./GeminiKeyModal";
 
 import { createBlankLottie, addSolidLayer, addTextLayer, addShapeLayer, addVectorShape, updateStaticProperty, enableKeyframing, addOrUpdateKeyframe, deleteKeyframe, LottiePropertyPath, addImageLayer, updateTrackMatte } from "../engine/lottieEditor";
 
@@ -100,6 +101,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [thumbnailSetFeedback, setThumbnailSetFeedback] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showGithubConfig, setShowGithubConfig] = useState(false);
+  const [showGeminiKeyModal, setShowGeminiKeyModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "published" | "failed">("idle");
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
@@ -1175,6 +1177,11 @@ export default ${camelId};
                 Export
               </button>
 
+              <button onClick={() => setShowGeminiKeyModal(true)} className="flex-1 px-2.5 py-1 border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 hover:bg-[#7C6FFF]/15 text-[#B9B2FF] rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors" title="Gemini API Key for AI metadata generation">
+                <KeyRound size={14} />
+                API Key
+              </button>
+
               <button onClick={() => setShowGithubConfig(true)} className="flex-1 px-2.5 py-1 border border-[var(--studio-border)] bg-[var(--studio-control)] hover:bg-[var(--studio-hover)] text-white rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors" title="GitHub Settings">
                 <Settings size={14} />
                 Github
@@ -2234,6 +2241,8 @@ export default ${camelId};
           </div>
 
           <GitHubConfigModal open={showGithubConfig} onClose={() => setShowGithubConfig(false)} />
+
+          <GeminiKeyModal open={showGeminiKeyModal} onClose={() => setShowGeminiKeyModal(false)} />
 
           <PublishTemplateModal open={showPublishModal} onClose={() => setShowPublishModal(false)} templateId={templateId} templateName={templateName} category={category} description={description} tagsInput={tagsInput} placement={placement} thumbnailFrame={thumbnailFrame} durationFrames={durationFrames} validationErrors={validationErrors} lottieData={rawJson} thumbnailDataUrl={thumbnailDataUrl || undefined} width={width} height={height} onTemplateIdChange={setTemplateId} onTemplateNameChange={setTemplateName} onCategoryChange={setCategory} onDescriptionChange={setDescription} onTagsInputChange={setTagsInput} onPlacementChange={setPlacement} onThumbnailFrameChange={setThumbnailFrame} onUseCurrentFrame={handleUseCurrentFrameAsThumbnail} onPreviewThumbnail={handlePreviewThumbnailFrame} onPublish={handlePublishTemplate} publishStatus={publishStatus} publishMessage={publishMessage} publishPrUrl={publishPrUrl} />
 
