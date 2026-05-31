@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, MapPin, Image as ImageIcon, ExternalLink, Sparkles } from "lucide-react";
-import { getGeminiRequestHeaders } from "../hooks/useGeminiApiKey";
+import { generateLottieMetadata } from "../services/geminiService";
 
 export type TemplateCategory = "lower-third" | "title-card" | "outro" | "kinetic" | "broadcast" | "social" | "cinematic" | "minimal" | "energetic" | "documentary";
 
@@ -61,45 +61,20 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
     setAiError(null);
 
     try {
-      const headers = getGeminiRequestHeaders();
-      if (!headers["X-Clypra-Gemini-Key"]) {
-        setAiError("Gemini API key not configured. Please set it up in Studio settings.");
-        setIsGeneratingMetadata(false);
-        return;
-      }
-
-      const response = await fetch("/api/generate-lottie-metadata", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        body: JSON.stringify({
-          templateName,
-          currentId: templateId,
-          currentCategory: category,
-          currentDescription: description,
-          currentTags: tagsInput,
-          lottieData,
-        }),
+      const result = await generateLottieMetadata({
+        templateName,
+        currentId: templateId,
+        currentCategory: category,
+        currentDescription: description,
+        currentTags: tagsInput,
+        lottieData,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to generate metadata");
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        if (data.category) onCategoryChange(data.category as TemplateCategory);
-        onTemplateIdChange(data.id);
-        onTemplateNameChange(data.name);
-        onDescriptionChange(data.description);
-        onTagsInputChange(data.tags.join(", "));
-      } else {
-        throw new Error("AI generation failed");
-      }
+      if (result.category) onCategoryChange(result.category as TemplateCategory);
+      onTemplateIdChange(result.id);
+      onTemplateNameChange(result.name);
+      onDescriptionChange(result.description);
+      onTagsInputChange(result.tags.join(", "));
     } catch (error) {
       console.error("Metadata generation error:", error);
       setAiError(error instanceof Error ? error.message : "Failed to generate metadata");

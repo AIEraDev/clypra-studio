@@ -16,7 +16,7 @@ import { COMPOSITION_PRESETS } from "./engine/textLayout";
 import { useCollapsibleSections } from "./hooks/useCollapsibleSections";
 import { useResponsiveMobileTab } from "./hooks/useResponsiveMobileTab";
 import { useStudioWorkspaceState } from "./hooks/useStudioWorkspaceState";
-import { getGeminiRequestHeaders } from "./hooks/useGeminiApiKey";
+import { analyzeStyleFromImage, generateStyleFromPrompt, generateEffectName, performDeepResearch } from "./services/geminiService";
 
 const FontCompare = lazy(() => import("./components/FontCompare").then((module) => ({ default: module.FontCompare })));
 const InspectorPanel = lazy(() => import("./components/InspectorPanel").then((module) => ({ default: module.InspectorPanel })));
@@ -687,41 +687,25 @@ export default function App() {
     setResearchStatus("researching");
     setResearchError(null);
     setResearchResult(null);
-    setResearchLogs(["Constructing deep analytical research criteria...", "Connecting server-side Gemini Design Specialist..."]);
+    setResearchLogs(["Constructing deep analytical research criteria...", "Connecting to Gemini Design Specialist..."]);
 
     const timers = [setTimeout(() => setResearchLogs((prev) => [...prev, "Deconstructing visual history and key styling laws..."]), 800), setTimeout(() => setResearchLogs((prev) => [...prev, "Extracting professional hexagonal color palette offsets..."]), 1600), setTimeout(() => setResearchLogs((prev) => [...prev, "Synthesizing custom Canvas2D tool extension code snippet..."]), 2400)];
 
     try {
-      const response = await fetch("/api/deep-research", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getGeminiRequestHeaders(),
-        },
-        body: JSON.stringify({ topic: researchTopic }),
-      });
+      const resData = await performDeepResearch(researchTopic);
 
       timers.forEach(clearTimeout);
 
-      if (!response.ok) {
-        throw new Error("Gemini design research server returned an error.");
-      }
-
-      const resData = await response.json();
-      if (resData.success) {
-        setResearchResult({
-          themeName: resData.themeName,
-          historicalContext: resData.historicalContext,
-          visualRules: resData.visualRules || [],
-          paletteDeconstruction: resData.paletteDeconstruction || [],
-          config: resData.config,
-          extensionCode: resData.extensionCode || "",
-        });
-        setResearchStatus("completed");
-        setResearchLogs((prev) => [...prev, "Research completed successfully! Visual models mapped."]);
-      } else {
-        throw new Error("Unable to parse structured typography data.");
-      }
+      setResearchResult({
+        themeName: resData.themeName,
+        historicalContext: resData.historicalContext,
+        visualRules: resData.visualRules || [],
+        paletteDeconstruction: resData.paletteDeconstruction || [],
+        config: resData.config,
+        extensionCode: resData.extensionCode || "",
+      });
+      setResearchStatus("completed");
+      setResearchLogs((prev) => [...prev, "Research completed successfully! Visual models mapped."]);
     } catch (err: any) {
       timers.forEach(clearTimeout);
       setResearchError(err.message || "An unexpected error occurred during deep research.");
@@ -771,21 +755,8 @@ export default function App() {
   const handleGenerateAiPresetName = async () => {
     setIsGeneratingName(true);
     try {
-      const response = await fetch("/api/generate-name", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getGeminiRequestHeaders(),
-        },
-        body: JSON.stringify({ config }),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to contact Gemini API");
-      }
-      const data = await response.json();
-      if (data.success && data.suggestedName) {
-        setCustomPresetName(data.suggestedName);
-      }
+      const suggestedName = await generateEffectName(config);
+      setCustomPresetName(suggestedName);
     } catch (err: any) {
       console.error("AI Naming error:", err);
       // Fallback
@@ -803,21 +774,8 @@ export default function App() {
   const handleGenerateAiEffectName = async () => {
     setIsGeneratingName(true);
     try {
-      const response = await fetch("/api/generate-name", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getGeminiRequestHeaders(),
-        },
-        body: JSON.stringify({ config }),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to contact Gemini API");
-      }
-      const data = await response.json();
-      if (data.success && data.suggestedName) {
-        modifyConfig({ effectName: data.suggestedName });
-      }
+      const suggestedName = await generateEffectName(config);
+      modifyConfig({ effectName: suggestedName });
     } catch (err: any) {
       console.error("AI Naming error:", err);
       const adjectives = ["Vesper", "Cyber", "Super", "Aether", "Cosmos", "Lumen", "Hydro", "Pyro", "Tox", "Magma"];
@@ -854,42 +812,28 @@ export default function App() {
       setScanLogs((prev) => [...prev, msg]);
     };
 
-    const timer1 = setTimeout(() => appendLog("AI is sending image payload to server-side Gemini model..."), 600);
+    const timer1 = setTimeout(() => appendLog("AI is analyzing image with Gemini model..."), 600);
     const timer2 = setTimeout(() => appendLog("Deconstructing font styling, letter family & stroke boundaries..."), 1500);
     const timer3 = setTimeout(() => appendLog("Evaluating pixel maps, primary colors and linear gradients..."), 2400);
     const timer4 = setTimeout(() => appendLog("Parsing shadow displacements, depths, panel properties and glow layers..."), 3300);
 
     try {
-      const response = await fetch("/api/analyze-style", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getGeminiRequestHeaders() },
-        body: JSON.stringify({ image: scanImage }),
-      });
+      const resultConfig = await analyzeStyleFromImage(scanImage);
 
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
       clearTimeout(timer4);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server returned code ${response.status}: ${errorText || "Unknown response defect."}`);
-      }
-
-      const data = await response.json();
-      if (data.success && data.config) {
-        // Guarantee retention of user's core custom typed words and canvas dimensions
-        const mergedConfig: TextEffectConfig = {
-          ...config,
-          ...data.config,
-          text: config.text || "STUDIO EFFECT",
-        };
-        appendLog("AI deconstruction succeeded! Custom configuration mappings resolved.");
-        setScanResultConfig(mergedConfig);
-        setScanStatus("completed");
-      } else {
-        throw new Error(data.error || "Analysis format did not match expected structure.");
-      }
+      // Guarantee retention of user's core custom typed words and canvas dimensions
+      const mergedConfig: TextEffectConfig = {
+        ...config,
+        ...resultConfig,
+        text: config.text || "STUDIO EFFECT",
+      };
+      appendLog("AI deconstruction succeeded! Custom configuration mappings resolved.");
+      setScanResultConfig(mergedConfig);
+      setScanStatus("completed");
     } catch (err: any) {
       clearTimeout(timer1);
       clearTimeout(timer2);
@@ -928,36 +872,22 @@ export default function App() {
     const timer4 = setTimeout(() => appendLog("Configuring optimal bevel displacements and shadows..."), 2850);
 
     try {
-      const response = await fetch("/api/generate-prompt-style", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getGeminiRequestHeaders() },
-        body: JSON.stringify({ prompt: promptInput }),
-      });
+      const resultConfig = await generateStyleFromPrompt(promptInput);
 
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
       clearTimeout(timer4);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server returned code ${response.status}: ${errorText || "Unknown response defect."}`);
-      }
-
-      const data = await response.json();
-      if (data.success && data.config) {
-        // Guarantee retention of user's core custom typed words and canvas dimensions
-        const mergedConfig: TextEffectConfig = {
-          ...config,
-          ...data.config,
-          text: config.text || "STUDIO EFFECT",
-        };
-        appendLog("AI generation succeeded! Visual configuration loaded successfully.");
-        setPromptResultConfig(mergedConfig);
-        setPromptStatus("completed");
-      } else {
-        throw new Error(data.error || "Generation format did not match expected structure.");
-      }
+      // Guarantee retention of user's core custom typed words and canvas dimensions
+      const mergedConfig: TextEffectConfig = {
+        ...config,
+        ...resultConfig,
+        text: config.text || "STUDIO EFFECT",
+      };
+      appendLog("AI generation succeeded! Visual configuration loaded successfully.");
+      setPromptResultConfig(mergedConfig);
+      setPromptStatus("completed");
     } catch (err: any) {
       clearTimeout(timer1);
       clearTimeout(timer2);
