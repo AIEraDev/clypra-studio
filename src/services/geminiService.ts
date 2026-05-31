@@ -133,7 +133,7 @@ export async function analyzeStyleFromImage(image: string, mimeType: string = "i
     const cleanBase64 = image.includes("base64,") ? image.split("base64,")[1] : image;
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3.5-flash",
       contents: [
         {
           inlineData: {
@@ -165,7 +165,7 @@ export async function generateStyleFromPrompt(prompt: string): Promise<TextEffec
     const ai = createGeminiClient();
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3.5-flash",
       contents: [
         {
           text: `Based on the user's creative visual styling prompt: "${prompt}", design a high-quality, professional 2D canvas text effect.
@@ -190,7 +190,7 @@ export async function generateEffectName(config: TextEffectConfig): Promise<stri
     const ai = createGeminiClient();
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3.5-flash",
       contents: [
         {
           text: `Generate a creative premium name (1 to 3 words) for this typography style:\n${JSON.stringify(config, null, 2)}`,
@@ -228,7 +228,7 @@ export async function performDeepResearch(topic: string): Promise<{
     const ai = createGeminiClient();
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3.5-flash",
       contents: [
         {
           text: `Perform typography design research on: "${topic}".
@@ -284,7 +284,7 @@ export async function generateLottieMetadata(params: { templateName?: string; cu
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3.5-flash",
       contents: [
         {
           text: `Generate unique, professional metadata for a Lottie animation template based on this information:
