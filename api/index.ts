@@ -1,11 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import {
-  handleAnalyzeStyle,
-  handleDeepResearch,
-  handleGenerateName,
-  handleGeneratePromptStyle,
-} from "./handlers";
+import { handleAnalyzeStyle, handleDeepResearch, handleGenerateName, handleGeneratePromptStyle, handleGenerateLottieMetadata } from "./handlers";
 
 dotenv.config();
 
@@ -18,5 +13,6 @@ app.post("/api/analyze-style", handleAnalyzeStyle);
 app.post("/api/generate-prompt-style", handleGeneratePromptStyle);
 app.post("/api/generate-name", handleGenerateName);
 app.post("/api/deep-research", handleDeepResearch);
+app.post("/api/generate-lottie-metadata", handleGenerateLottieMetadata);
 
 export default app;

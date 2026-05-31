@@ -9,17 +9,18 @@ function getWorkspaceModeFromURL(): { mode: WorkspaceMode; isValid: boolean } {
   const path = window.location.pathname;
   const segments = path.split("/").filter(Boolean);
 
-  // /studio/design, /studio/animate, /studio/ai, /studio/export
+  // /studio/design, /studio/animate, /studio/ai, /studio/export, /studio/lottie
   if (segments.length >= 2 && segments[0] === "studio") {
     const mode = segments[1];
-    if (mode === "design" || mode === "animate" || mode === "ai" || mode === "export") {
+    if (mode === "design" || mode === "animate" || mode === "ai" || mode === "export" || mode === "lottie") {
       return { mode, isValid: true };
     }
     // Invalid mode found
     return { mode: "design", isValid: false };
   }
 
-  return { mode: "design", isValid: true }; // default
+  // Just /studio or /studio/ - will be handled by RootApp redirect
+  return { mode: "design", isValid: true };
 }
 
 export function useStudioWorkspaceState() {
@@ -58,6 +59,9 @@ export function useStudioWorkspaceState() {
       } else if (mode === "export") {
         setActiveTab("engine");
         setActiveRailItem("templates");
+      } else if (mode === "lottie") {
+        setActiveRailItem("templates");
+        setActiveTab("engine");
       }
     };
 
@@ -87,6 +91,12 @@ export function useStudioWorkspaceState() {
     if (mode === "export") {
       setActiveTab("engine");
       setActiveRailItem("templates");
+      return;
+    }
+
+    if (mode === "lottie") {
+      setActiveRailItem("templates");
+      setActiveTab("engine");
       return;
     }
 

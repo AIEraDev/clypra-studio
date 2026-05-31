@@ -1,4 +1,159 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Permanent+Marker&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Poppins:ital,wght@0,400;0,700;1,400;1,700&family=Montserrat:ital,wght@0,400;0,700;0,800;0,900;1,400;1,700;1,800;1,900&family=Permanent+Marker&display=swap");
+
+/* 
+ * Font variant aliases for Lottie-web
+ * These create separate font-family names that lottie-web can look up.
+ * We use a CSS trick: define the font-family name, then use Poppins as fallback
+ * with the correct weight/style applied via font-face descriptor.
+ */
+
+/* Poppins Regular - maps to Poppins 400 normal */
+@font-face {
+  font-family: "Poppins-Regular";
+  src: local("Poppins Regular"), local("Poppins-Regular"), local("Poppins");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Poppins Bold - maps to Poppins 700 normal */
+@font-face {
+  font-family: "Poppins-Bold";
+  src: local("Poppins Bold"), local("Poppins-Bold"), local("Poppins");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Poppins Italic - maps to Poppins 400 italic */
+@font-face {
+  font-family: "Poppins-Italic";
+  src: local("Poppins Italic"), local("Poppins-Italic"), local("Poppins");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Poppins Bold Italic - maps to Poppins 700 italic */
+@font-face {
+  font-family: "Poppins-BoldItalic";
+  src: local("Poppins Bold Italic"), local("Poppins-BoldItalic"), local("Poppins");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Montserrat Regular - maps to Montserrat 400 normal */
+@font-face {
+  font-family: "Montserrat-Regular";
+  src: local("Montserrat Regular"), local("Montserrat-Regular"), local("Montserrat");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Montserrat Bold - maps to Montserrat 700 normal */
+@font-face {
+  font-family: "Montserrat-Bold";
+  src: local("Montserrat Bold"), local("Montserrat-Bold"), local("Montserrat");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Montserrat ExtraBold - maps to Montserrat 800 normal */
+@font-face {
+  font-family: "Montserrat-ExtraBold";
+  src: local("Montserrat ExtraBold"), local("Montserrat-ExtraBold"), local("Montserrat");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Montserrat Black - maps to Montserrat 900 normal */
+@font-face {
+  font-family: "Montserrat-Black";
+  src: local("Montserrat Black"), local("Montserrat-Black"), local("Montserrat");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Montserrat Italic - maps to Montserrat 400 italic */
+@font-face {
+  font-family: "Montserrat-Italic";
+  src: local("Montserrat Italic"), local("Montserrat-Italic"), local("Montserrat");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Montserrat Bold Italic - maps to Montserrat 700 italic */
+@font-face {
+  font-family: "Montserrat-BoldItalic";
+  src: local("Montserrat Bold Italic"), local("Montserrat-BoldItalic"), local("Montserrat");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Montserrat ExtraBold Italic - maps to Montserrat 800 italic */
+@font-face {
+  font-family: "Montserrat-ExtraBoldItalic";
+  src: local("Montserrat ExtraBold Italic"), local("Montserrat-ExtraBoldItalic"), local("Montserrat");
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Montserrat Black Italic - maps to Montserrat 900 italic */
+@font-face {
+  font-family: "Montserrat-BlackItalic";
+  src: local("Montserrat Black Italic"), local("Montserrat-BlackItalic"), local("Montserrat");
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Arial variants - system fonts */
+@font-face {
+  font-family: "Arial";
+  src: local("Arial");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Arial-Bold";
+  src: local("Arial Bold"), local("Arial-Bold"), local("Arial");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Arial-Italic";
+  src: local("Arial Italic"), local("Arial-Italic"), local("Arial");
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Arial-BoldItalic";
+  src: local("Arial Bold Italic"), local("Arial-BoldItalic"), local("Arial");
+  font-weight: 700;
+  font-style: italic;
+}
+
+/* 
+ * Fallback: Use Poppins directly with font-synthesis
+ * This ensures italic rendering even if @font-face lookup fails
+ */
+.lottie-text-poppins-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  font-style: italic;
+  font-synthesis: none;
+}
 @import "tailwindcss";
 
 @theme {

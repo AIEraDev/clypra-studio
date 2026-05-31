@@ -1,10 +1,17 @@
-import React from "react";
-import { ArrowUpDown, Beaker, Copy, Download, FileCode, Loader2, Sparkles } from "lucide-react";
+import React, { useState } from "react";
+import { ArrowUpDown, Beaker, Copy, Download, Loader2, Settings, Sparkles, UploadCloud } from "lucide-react";
 import type { Preset, TextEffectConfig } from "../types";
 import type { SceneDocument } from "../engine";
 import { ExportBadge } from "./StudioChrome";
+import { getEffectRepresentation } from "../codeGenerator";
+import { useGitHubPublish } from "../hooks/useGitHubPublish";
+import { GitHubConfigModal } from "./GitHubConfigModal";
 
 type CodeTab = "engine" | "definition" | "lab";
+
+const EFFECT_API_CATEGORIES = ["3d", "classic", "clean", "gradient", "grunge", "metallic", "neon", "organic", "retro"] as const;
+
+export type EffectApiCategory = typeof EFFECT_API_CATEGORIES[number];
 
 interface ResearchResult {
   themeName: string;
@@ -48,10 +55,55 @@ interface ExportLabPanelProps {
   onBlendRatioChange: (ratio: number) => void;
   onPerformBlend: () => void;
   presets: Preset[];
+  onCaptureEffectThumbnail: () => string | null;
+  effectApiCategory: EffectApiCategory;
+  onEffectApiCategoryChange: (category: EffectApiCategory) => void;
 }
 
-export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveTabChange, engineFormat, onEngineFormatChange, definitionFormat, onDefinitionFormatChange, activeEffectId, config, scene, highlightedCode, currentCodeText, copiedCodeFeedback, onCopyCode, onDownloadCode, researchTopic, onResearchTopicChange, researchStatus, researchError, researchLogs, researchResult, onExecuteResearch, onApplyResearchResult, blendAId, blendBId, blendRatio, onBlendAIdChange, onBlendBIdChange, onBlendRatioChange, onPerformBlend, presets }: ExportLabPanelProps) {
+export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveTabChange, engineFormat, onEngineFormatChange, definitionFormat, onDefinitionFormatChange, activeEffectId, config, scene, highlightedCode, currentCodeText, copiedCodeFeedback, onCopyCode, onDownloadCode, researchTopic, onResearchTopicChange, researchStatus, researchError, researchLogs, researchResult, onExecuteResearch, onApplyResearchResult, blendAId, blendBId, blendRatio, onBlendAIdChange, onBlendBIdChange, onBlendRatioChange, onPerformBlend, presets, onCaptureEffectThumbnail, effectApiCategory, onEffectApiCategoryChange }: ExportLabPanelProps) {
   const virtualTarget = activeTab === "engine" ? (engineFormat === "html" ? `${activeEffectId}-sandbox.html` : `${activeEffectId}-engine.${engineFormat}`) : definitionFormat === "html" ? `${activeEffectId}-sandbox.html` : `${activeEffectId}-definition.${definitionFormat}`;
+  const { publishEffect, getGithubConfig } = useGitHubPublish();
+  const [showGithubConfig, setShowGithubConfig] = useState(false);
+  const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "published" | "failed">("idle");
+  const [publishMessage, setPublishMessage] = useState<string | null>(null);
+  const [publishPrUrl, setPublishPrUrl] = useState<string | null>(null);
+
+  const handlePublishEffect = async () => {
+    const thumbnailDataUrl = onCaptureEffectThumbnail();
+    if (!thumbnailDataUrl) {
+      setPublishStatus("failed");
+      setPublishMessage("Preview canvas is not ready.");
+      return;
+    }
+
+    if (!getGithubConfig()) {
+      setShowGithubConfig(true);
+      return;
+    }
+
+    setPublishStatus("publishing");
+    setPublishPrUrl(null);
+    setPublishMessage("Creating publish branch, uploading files, and opening PR…");
+
+    try {
+      const definition = getEffectRepresentation(config) as any;
+      definition.id = activeEffectId;
+      definition.category = effectApiCategory;
+      const result = await publishEffect({
+        id: definition.id,
+        category: definition.category,
+        definition,
+        thumbnailDataUrl,
+      });
+      setPublishStatus("published");
+      setPublishPrUrl(result.prUrl);
+      setPublishMessage(`PR ready: ${result.branch} · ${result.files.length} files`);
+    } catch (error) {
+      setPublishStatus("failed");
+      setPublishPrUrl(null);
+      setPublishMessage(error instanceof Error ? error.message : "Publish failed.");
+    }
+  };
 
   return (
     <section id="right-code-panel" className={`${isMobile && mobileActiveTab !== "code" ? "hidden" : "flex"} relative w-full shrink-0 flex-col overflow-hidden border-l border-[#2A2A38] bg-[#15151C] md:w-[360px]`}>
@@ -207,9 +259,38 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
                   <Download size={11} className="text-[#a89fff]" />
                   Download
                 </button>
+                <select
+                  id="effect-api-category-select"
+                  value={effectApiCategory}
+                  onChange={(event) => onEffectApiCategoryChange(event.target.value as EffectApiCategory)}
+                  className="rounded border border-[#2A2A38] bg-[#0A0A0E] px-2 py-1 text-[10px] font-semibold text-white outline-none hover:bg-[#15151C] focus:border-teal-500"
+                  title="API category for PR publishing"
+                >
+                  {EFFECT_API_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+                <button id="github-settings-btn" type="button" onClick={() => setShowGithubConfig(true)} className="flex items-center gap-1.5 rounded border border-[#2A2A38] bg-[#1E1E26] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#2A2A38]" title="GitHub settings">
+                  <Settings size={11} />
+                </button>
+                <button id="publish-effect-api-btn" type="button" onClick={handlePublishEffect} disabled={publishStatus === "publishing"} className="flex items-center gap-1.5 rounded border border-teal-500/45 bg-teal-500/20 px-3 py-1 text-[10px] font-bold text-teal-200 hover:bg-teal-500/30 disabled:opacity-50">
+                  {publishStatus === "publishing" ? <Loader2 size={11} className="animate-spin" /> : <UploadCloud size={11} />}
+                  Publish to API
+                </button>
               </div>
             </div>
           </div>
+
+          {publishMessage ? (
+            <div className={`flex items-center justify-between gap-3 border-b border-[#2A2A38] px-4 py-2 font-mono text-[10px] ${publishStatus === "failed" ? "bg-red-950/30 text-red-300" : publishStatus === "published" ? "bg-teal-950/30 text-teal-300" : "bg-[#111116] text-[#888899]"}`}>
+              <span className="min-w-0 truncate">{publishMessage}</span>
+              {publishPrUrl ? (
+                <a href={publishPrUrl} target="_blank" rel="noreferrer" className="shrink-0 rounded border border-teal-500/40 bg-teal-500/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-teal-200 hover:bg-teal-500/20">
+                  Open PR
+                </a>
+              ) : null}
+            </div>
+          ) : null}
 
           <div id="hljs-code-scroller" className="flex flex-1 overflow-auto bg-[#09090D] p-4 font-mono">
             <div className="mr-2.5 flex w-[18px] select-none flex-col border-r border-[#1E1E26] pr-2.5 text-right font-mono text-[10px] font-semibold leading-5 text-[#313142]">
@@ -227,6 +308,7 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
           </div>
         </>
       )}
+      <GitHubConfigModal open={showGithubConfig} onClose={() => setShowGithubConfig(false)} />
     </section>
   );
 }

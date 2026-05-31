@@ -2,12 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
-import {
-  handleAnalyzeStyle,
-  handleDeepResearch,
-  handleGenerateName,
-  handleGeneratePromptStyle,
-} from "./api/handlers";
+import { handleAnalyzeStyle, handleDeepResearch, handleGenerateName, handleGeneratePromptStyle, handleGenerateLottieMetadata } from "./api/handlers";
 
 dotenv.config();
 
@@ -21,6 +16,7 @@ app.post("/api/analyze-style", handleAnalyzeStyle);
 app.post("/api/generate-prompt-style", handleGeneratePromptStyle);
 app.post("/api/generate-name", handleGenerateName);
 app.post("/api/deep-research", handleDeepResearch);
+app.post("/api/generate-lottie-metadata", handleGenerateLottieMetadata);
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
