@@ -1177,7 +1177,7 @@ export default ${camelId};
                 Export
               </button>
 
-              <button onClick={() => setShowGeminiKeyModal(true)} className="flex-1 px-2.5 py-1 border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 hover:bg-[#7C6FFF]/15 text-[#B9B2FF] rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors" title="Gemini API Key for AI metadata generation">
+              <button onClick={() => setShowGeminiKeyModal(true)} className="flex-1 px-2.5 py-1 border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 hover:bg-[#7C6FFF]/15 text-[#B9B2FF] rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap" title="Gemini API Key for AI metadata generation">
                 <KeyRound size={14} />
                 API Key
               </button>
