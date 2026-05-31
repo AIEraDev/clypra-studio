@@ -41,7 +41,7 @@ export function LayerPanel({ scene, onSceneChange, uiMode, selectedLayerId, onSe
   if (uiMode === "basic") {
     return (
       <div className="px-4 py-3 border-b border-[#2A2A38] bg-[#12121A]">
-        <p className="text-[10px] font-mono uppercase text-[#666677] tracking-wider mb-1">Effect layers</p>
+        <p className="text-[10px] font-mono uppercase text-clypra-muted tracking-wider mb-1">Effect layers</p>
         <p className="text-xs text-gray-500">
           Switch to <span className="text-[#7C6FFF]">Advanced</span> to reorder and edit layers.
         </p>
@@ -103,7 +103,7 @@ export function LayerPanel({ scene, onSceneChange, uiMode, selectedLayerId, onSe
           ))}
         </div>
       </div>
-      <ul className="max-h-48 overflow-y-auto custom-scrollbar">
+      <ul className="">
         {scene.effectLayers.map((layer, index) => (
           <li key={layer.id} className={`flex items-center gap-2 px-3 py-1.5 border-b border-[#1A1A26]/50 hover:bg-[#1A1A26]/40 text-xs ${selectedLayerId === layer.id ? "bg-[#7C6FFF]/10" : ""}`}>
             <button type="button" onClick={() => toggleLayer(layer.id)} className="text-gray-500 hover:text-white cursor-pointer">

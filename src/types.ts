@@ -17,7 +17,7 @@ export interface TextEffectConfig {
   // Text
   text: string;
   effectName: string;
-  
+
   // Font
   fontFamily: string;
   fontWeight: number; // 400 - 900
@@ -150,6 +150,6 @@ export interface Preset {
   /** Cached scene graph (optional; built-ins use recipes cache) */
   scene?: import("./engine/schema").SceneDocument;
   isCustom?: boolean;
-  category?: "Classic" | "Neon" | "Experimental" | string;
+  category?: "3d" | "Neon" | "Metallic" | "Glitch" | "Retro" | "Gradient" | "Grunge" | "Outline" | "Shadow" | "Elements" | "Luxury" | "Classic" | "Experimental" | string;
   createdAt?: number;
 }

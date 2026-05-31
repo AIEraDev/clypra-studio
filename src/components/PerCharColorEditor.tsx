@@ -49,7 +49,7 @@ export function PerCharColorEditor({ config, onChange }: PerCharColorEditorProps
   return (
     <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-[#0E0E12] border border-[#2A2A38]">
       <div className="flex items-center justify-between gap-2">
-        <label className="flex items-center gap-2 text-[10px] uppercase font-mono text-[#666677] cursor-pointer">
+        <label className="flex items-center gap-2 text-[10px] uppercase font-mono text-clypra-muted cursor-pointer">
           <input type="checkbox" checked={enabled} onChange={(e) => toggleEnabled(e.target.checked)} className="accent-[#7C6FFF]" />
           <Palette size={12} className="text-[#7C6FFF]" />
           Per-character color
@@ -69,7 +69,7 @@ export function PerCharColorEditor({ config, onChange }: PerCharColorEditorProps
       {enabled && (
         <>
           <p className="text-[9px] text-gray-600 leading-snug">Solid fill only. Each chip is one character in reading order (spaces shown as ␣).</p>
-          <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto custom-scrollbar">
+          <div className="flex flex-wrap gap-1 custom-scrollbar">
             {glyphs.map(({ char, index }) => (
               <label key={index} className="group flex flex-col items-center gap-0.5 cursor-pointer" title={`Character ${index + 1}: ${char === "␣" ? "space" : char}`}>
                 <input type="color" value={(colors[index] || config.fillColor || "#ffffff").startsWith("#") ? colors[index] || config.fillColor : "#ffffff"} onChange={(e) => patchColors(setCharFillColor(colors, index, e.target.value))} className="w-7 h-7 rounded border border-[#2A2A38] bg-transparent cursor-pointer p-0" />

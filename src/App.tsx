@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useState, useEffect, useRef, useMemo } from "react";
-import { Download, Copy, Undo2, Redo2, Sparkles, Grid2X2, Plus, Camera, Loader2, HelpCircle, Beaker, FolderPlus, Video } from "lucide-react";
+import { Download, Copy, Undo2, Redo2, Sparkles, Grid2X2, Plus, Camera, Loader2, HelpCircle, Beaker, FolderPlus, Video, RefreshCw, KeyRound } from "lucide-react";
 
 import { TextEffectConfig, Preset } from "./types";
 import { defaultConfig, builtInPresets } from "./presets";
@@ -9,28 +9,33 @@ import { LayerPanel } from "./components/LayerPanel";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { PresetChip } from "./components/PresetChip";
-import { DrawerIntro, LeftRail, ModeSwitcher, type RailItem } from "./components/StudioChrome";
+import { DrawerIntro, LeftRail, type RailItem } from "./components/StudioChrome";
 import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout } from "./engine";
 import { getPresetScene } from "./engine/recipes";
 import { COMPOSITION_PRESETS } from "./engine/textLayout";
 import { useCollapsibleSections } from "./hooks/useCollapsibleSections";
 import { useResponsiveMobileTab } from "./hooks/useResponsiveMobileTab";
 import { useStudioWorkspaceState } from "./hooks/useStudioWorkspaceState";
+import { getGeminiRequestHeaders } from "./hooks/useGeminiApiKey";
 
 const FontCompare = lazy(() => import("./components/FontCompare").then((module) => ({ default: module.FontCompare })));
 const InspectorPanel = lazy(() => import("./components/InspectorPanel").then((module) => ({ default: module.InspectorPanel })));
 const ExportLabPanel = lazy(() => import("./components/ExportLabPanel").then((module) => ({ default: module.ExportLabPanel })));
+import type { EffectApiCategory } from "./components/ExportLabPanel";
 const LegacyControlsPanel = lazy(() => import("./components/LegacyControlsPanel").then((module) => ({ default: module.LegacyControlsPanel })));
 const SavePresetModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.SavePresetModal })));
 const ImageScanModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.ImageScanModal })));
 const PromptStyleModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.PromptStyleModal })));
 const TutorialModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.TutorialModal })));
+const GeminiKeyModal = lazy(() => import("./components/GeminiKeyModal").then((module) => ({ default: module.GeminiKeyModal })));
+
+const CREATOR_SESSION_KEY = "clypra_studio_creator_session";
 
 export default function App() {
   // Primary state configuration
   const [config, setConfig] = useState<TextEffectConfig>(defaultConfig);
   const [scene, setScene] = useState<SceneDocument>(() => textEffectConfigToScene(defaultConfig));
-  const { activeRailItem, activeTab, handleWorkspaceModeChange, selectedLayerId, setActiveRailItem, setActiveTab, setSelectedLayerId, uiMode, workspaceMode } = useStudioWorkspaceState();
+  const { activeRailItem, activeTab, handleWorkspaceModeChange, selectedLayerId, setActiveRailItem, setActiveTab, setSelectedLayerId, setUiMode, uiMode, workspaceMode } = useStudioWorkspaceState();
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
   const skipConfigToScene = useRef(false);
@@ -40,6 +45,7 @@ export default function App() {
   const [activePresetId, setActivePresetId] = useState<string>("classic-ink");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [sortBy, setSortBy] = useState<"recency" | "name" | "category">("recency");
+  const [effectApiCategory, setEffectApiCategory] = useState<EffectApiCategory>("3d");
 
   // Interaction workspace states
   const [engineFormat, setEngineFormat] = useState<"ts" | "js" | "txt" | "html">("ts");
@@ -78,6 +84,7 @@ export default function App() {
   const [customPresetCategory, setCustomPresetCategory] = useState<string>("Classic");
   const [showSavePresetModal, setShowSavePresetModal] = useState<boolean>(false);
   const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
+  const [showGeminiKeyModal, setShowGeminiKeyModal] = useState<boolean>(false);
   const [tutorialActiveTab, setTutorialActiveTab] = useState<string>("typography");
   const [isGeneratingName, setIsGeneratingName] = useState<boolean>(false);
 
@@ -99,6 +106,9 @@ export default function App() {
 
   // Active Mobile View Tab (Controls | Preview | Code)
   const { mobileActiveTab, setMobileActiveTab, isMobile } = useResponsiveMobileTab();
+  const [isCreatorSessionLoaded, setIsCreatorSessionLoaded] = useState(false);
+  const [creatorSaveStatus, setCreatorSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const creatorSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Undo / Redo history stacks
   const undoStack = useRef<string[]>([]);
@@ -114,7 +124,7 @@ export default function App() {
   // Collapsible control sections state
   const { collapsedSections, toggleSection } = useCollapsibleSections();
 
-  // Load custom presets and setup responsive bounds
+  // Load custom presets and restore the main creator workspace session
   useEffect(() => {
     // Inject combined google fonts stylesheet on mount to warm cache
     const warmLink = document.createElement("link");
@@ -122,7 +132,6 @@ export default function App() {
     warmLink.href = GOOGLE_FONTS_LINK;
     document.head.appendChild(warmLink);
 
-    // Read custom presets
     const saved = localStorage.getItem("clypra_custom_presets");
     if (saved) {
       try {
@@ -132,25 +141,98 @@ export default function App() {
       }
     }
 
-    // Initial load: Restore previous active session config or fallback to built-in classic-ink
-    const savedActive = localStorage.getItem("clypra_active_session_config");
-    if (savedActive) {
+    const restoreDefaultPreset = () => {
+      const preset = builtInPresets[0];
+      const nextCfg = {
+        ...preset.config,
+        effectName: preset.config.effectName || preset.name,
+      };
+      const nextScene = getPresetScene({ ...preset, config: nextCfg });
+      skipConfigToScene.current = true;
+      setConfig(nextCfg);
+      setScene(nextScene);
+      setActivePresetId(preset.id);
+      lastSavedStateString.current = JSON.stringify(nextScene);
+    };
+
+    const savedSession = localStorage.getItem(CREATOR_SESSION_KEY);
+    if (savedSession) {
       try {
-        const parsed = JSON.parse(savedActive);
-        setConfig(parsed);
-        const savedPresetId = localStorage.getItem("clypra_active_preset_id");
-        if (savedPresetId) {
-          setActivePresetId(savedPresetId);
+        const session = JSON.parse(savedSession);
+        const restoredScene = session.scene || textEffectConfigToScene(session.config || defaultConfig);
+        const restoredConfig = session.config || sceneToConfig(restoredScene);
+
+        skipConfigToScene.current = true;
+        setConfig(restoredConfig);
+        setScene(restoredScene);
+        setActivePresetId(session.activePresetId || "scratch");
+        lastSavedStateString.current = JSON.stringify(restoredScene);
+
+        if (session.ui) {
+          if (session.ui.workspaceMode && session.ui.workspaceMode !== "lottie") {
+            handleWorkspaceModeChange(session.ui.workspaceMode);
+          }
+          if (session.ui.uiMode) setUiMode(session.ui.uiMode);
+          if (session.ui.activeRailItem) setActiveRailItem(session.ui.activeRailItem);
+          if (session.ui.activeTab) setActiveTab(session.ui.activeTab);
+          if (session.ui.selectedLayerId !== undefined) setSelectedLayerId(session.ui.selectedLayerId);
+          if (session.ui.mobileActiveTab) setMobileActiveTab(session.ui.mobileActiveTab);
         }
+
+        if (session.exportSettings) {
+          if (session.exportSettings.engineFormat) setEngineFormat(session.exportSettings.engineFormat);
+          if (session.exportSettings.definitionFormat) setDefinitionFormat(session.exportSettings.definitionFormat);
+        }
+
+        if (session.preview) {
+          if (session.preview.bgMode) setBgMode(session.preview.bgMode);
+          if (typeof session.preview.zoom === "number") setZoom(session.preview.zoom);
+          if (session.preview.zoomMode) setZoomMode(session.preview.zoomMode);
+        }
+
+        if (session.blend) {
+          if (session.blend.blendAId) setBlendAId(session.blend.blendAId);
+          if (session.blend.blendBId) setBlendBId(session.blend.blendBId);
+          if (typeof session.blend.blendRatio === "number") setBlendRatio(session.blend.blendRatio);
+        }
+
+        if (session.library) {
+          if (session.library.selectedCategory) setSelectedCategory(session.library.selectedCategory);
+          if (session.library.sortBy) setSortBy(session.library.sortBy);
+          if (session.library.effectApiCategory) setEffectApiCategory(session.library.effectApiCategory);
+        }
+
+        setCreatorSaveStatus("saved");
       } catch (e) {
-        console.error("Could not parse saved active config", e);
-        handleApplyPreset(builtInPresets[0]);
+        console.error("Could not parse saved creator session", e);
+        restoreDefaultPreset();
       }
     } else {
-      handleApplyPreset(builtInPresets[0]);
+      const savedActive = localStorage.getItem("clypra_active_session_config");
+      if (savedActive) {
+        try {
+          const parsed = JSON.parse(savedActive);
+          const restoredScene = textEffectConfigToScene(parsed);
+          skipConfigToScene.current = true;
+          setConfig(parsed);
+          setScene(restoredScene);
+          lastSavedStateString.current = JSON.stringify(restoredScene);
+          const savedPresetId = localStorage.getItem("clypra_active_preset_id");
+          if (savedPresetId) setActivePresetId(savedPresetId);
+          setCreatorSaveStatus("saved");
+        } catch (e) {
+          console.error("Could not parse saved active config", e);
+          restoreDefaultPreset();
+        }
+      } else {
+        restoreDefaultPreset();
+      }
     }
 
-    return undefined;
+    setIsCreatorSessionLoaded(true);
+    return () => {
+      document.head.removeChild(warmLink);
+    };
   }, []);
 
   // Sync effect names and kebab IDs
@@ -359,15 +441,68 @@ export default function App() {
     setScene(textEffectConfigToScene(config));
   }, [config]);
 
-  // Keep state matching across refresh reloads
+  // Keep the full creator workspace matching across refresh reloads
   useEffect(() => {
-    try {
-      localStorage.setItem("clypra_active_session_config", JSON.stringify(config));
-      localStorage.setItem("clypra_active_preset_id", activePresetId);
-    } catch (e) {
-      console.error("Failed to sync working session to localStorage", e);
+    if (!isCreatorSessionLoaded || workspaceMode === "lottie") return;
+
+    setCreatorSaveStatus("saving");
+    if (creatorSaveTimeoutRef.current) {
+      clearTimeout(creatorSaveTimeoutRef.current);
     }
-  }, [config, activePresetId]);
+
+    creatorSaveTimeoutRef.current = setTimeout(() => {
+      try {
+        const sessionData = {
+          version: 1,
+          savedAt: new Date().toISOString(),
+          config,
+          scene,
+          activePresetId,
+          ui: {
+            workspaceMode,
+            uiMode,
+            activeRailItem,
+            activeTab,
+            selectedLayerId,
+            mobileActiveTab,
+          },
+          exportSettings: {
+            engineFormat,
+            definitionFormat,
+          },
+          preview: {
+            bgMode,
+            zoom,
+            zoomMode,
+          },
+          blend: {
+            blendAId,
+            blendBId,
+            blendRatio,
+          },
+          library: {
+            selectedCategory,
+            sortBy,
+            effectApiCategory,
+          },
+        };
+
+        localStorage.setItem(CREATOR_SESSION_KEY, JSON.stringify(sessionData));
+        localStorage.setItem("clypra_active_session_config", JSON.stringify(config));
+        localStorage.setItem("clypra_active_preset_id", activePresetId);
+        setCreatorSaveStatus("saved");
+      } catch (e) {
+        console.error("Failed to sync creator session to localStorage", e);
+        setCreatorSaveStatus("idle");
+      }
+    }, 500);
+
+    return () => {
+      if (creatorSaveTimeoutRef.current) {
+        clearTimeout(creatorSaveTimeoutRef.current);
+      }
+    };
+  }, [isCreatorSessionLoaded, config, scene, activePresetId, workspaceMode, uiMode, activeRailItem, activeTab, selectedLayerId, mobileActiveTab, engineFormat, definitionFormat, bgMode, zoom, zoomMode, blendAId, blendBId, blendRatio, selectedCategory, sortBy, effectApiCategory]);
 
   // Animation preview loop
   useEffect(() => {
@@ -518,6 +653,15 @@ export default function App() {
     setActivePresetId("scratch");
   };
 
+  const handleResetCreatorSession = () => {
+    if (!confirm("Clear the autosaved creator session and start from a blank slate?")) return;
+    localStorage.removeItem(CREATOR_SESSION_KEY);
+    localStorage.removeItem("clypra_active_session_config");
+    localStorage.removeItem("clypra_active_preset_id");
+    setCreatorSaveStatus("idle");
+    handleStartFromScratch();
+  };
+
   // Blend Presets logic (layer-aware)
   const handlePerformBlend = () => {
     const list = [...customPresets, ...builtInPresets];
@@ -552,6 +696,7 @@ export default function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...getGeminiRequestHeaders(),
         },
         body: JSON.stringify({ topic: researchTopic }),
       });
@@ -630,6 +775,7 @@ export default function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...getGeminiRequestHeaders(),
         },
         body: JSON.stringify({ config }),
       });
@@ -661,6 +807,7 @@ export default function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...getGeminiRequestHeaders(),
         },
         body: JSON.stringify({ config }),
       });
@@ -715,7 +862,7 @@ export default function App() {
     try {
       const response = await fetch("/api/analyze-style", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getGeminiRequestHeaders() },
         body: JSON.stringify({ image: scanImage }),
       });
 
@@ -783,7 +930,7 @@ export default function App() {
     try {
       const response = await fetch("/api/generate-prompt-style", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getGeminiRequestHeaders() },
         body: JSON.stringify({ prompt: promptInput }),
       });
 
@@ -950,10 +1097,15 @@ export default function App() {
     }
   };
 
-  const downloadPng = () => {
+  const getPreviewPngDataUrl = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const url = canvas.toDataURL("image/png");
+    if (!canvas) return null;
+    return canvas.toDataURL("image/png");
+  };
+
+  const downloadPng = () => {
+    const url = getPreviewPngDataUrl();
+    if (!url) return;
     const link = document.createElement("a");
     link.download = `${activeEffectId}.png`;
     link.href = url;
@@ -1025,45 +1177,58 @@ export default function App() {
   return (
     <div id="studio-workspace-wrapper" className="flex flex-col h-screen bg-[#0E0E12]" style={{ fontFamily: "Inter, sans-serif" }}>
       {/* ──────────────────────────────────────────────────────────────────
-          TOP MENUBAR
+          TOP MENUBAR (Hidden in Lottie mode)
           ────────────────────────────────────────────────────────────────── */}
-      <header id="studio-header" className="flex h-12 items-center justify-between border-b border-[var(--studio-border)] bg-[var(--studio-shell)] px-3 select-none shrink-0 z-20">
-        <div className="flex items-center gap-3">
-          <a href="/" aria-label="Back to home" title="Back to Clypra home" className="flex items-center gap-2 group">
-            <img src="/clypra.svg" alt="Clypra" className="w-8 h-8 select-none transition-transform group-hover:scale-105" />
-            <span className="text-base font-bold text-white tracking-tight">Clypra Studio</span>
-          </a>
-        </div>
-
-        <ModeSwitcher value={workspaceMode} onChange={handleWorkspaceModeChange} />
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 border-r border-[var(--studio-border)] pr-2">
-            <button id="global-undo-btn" aria-label="Undo" title="Undo parameter edit (Ctrl+Z)" onClick={triggerUndo} disabled={!canUndo} className={`p-1.5 rounded transition-all ${!canUndo ? "text-gray-700 hover:bg-transparent cursor-not-allowed" : "text-white hover:bg-[var(--studio-hover)] hover:text-[var(--studio-accent)] cursor-pointer"}`}>
-              <Undo2 size={15} />
-            </button>
-            <button id="global-redo-btn" aria-label="Redo" title="Redo parameters (Ctrl+Y)" onClick={triggerRedo} disabled={!canRedo} className={`p-1.5 rounded transition-all ${!canRedo ? "text-gray-700 hover:bg-transparent cursor-not-allowed" : "text-white hover:bg-[var(--studio-hover)] hover:text-[var(--studio-accent)] cursor-pointer"}`}>
-              <Redo2 size={15} />
-            </button>
+      {workspaceMode !== "lottie" && (
+        <header id="studio-header" className="flex h-12 items-center justify-between border-b border-[var(--studio-border)] bg-[var(--studio-shell)] px-3 select-none shrink-0 z-20">
+          <div className="flex items-center gap-3">
+            <a href="/" aria-label="Back to home" title="Back to Clypra home" className="flex items-center gap-2 group">
+              <img src="/clypra.svg" alt="Clypra" className="w-8 h-8 select-none transition-transform group-hover:scale-105" />
+              <span className="text-base font-bold text-white tracking-tight">Clypra Studio</span>
+            </a>
           </div>
 
-          <button id="open-tutorial-btn" onClick={() => setShowTutorialModal(true)} className="h-8 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-2.5 text-xs text-gray-200 hover:bg-[var(--studio-hover)] flex items-center gap-1.5 cursor-pointer font-sans">
-            <HelpCircle size={13} className="text-[var(--studio-accent)]" /> Guide
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-1.5 rounded-md border border-[var(--studio-border)] bg-[#13131a] px-2 py-0.5 text-[10px] text-[var(--studio-muted)] md:flex">
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${creatorSaveStatus === "saving" ? "bg-amber-400 animate-pulse" : creatorSaveStatus === "saved" ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" : "bg-gray-500"}`} />
+              <span className="font-mono text-[9px] uppercase tracking-wider">{creatorSaveStatus === "saving" ? "Saving..." : creatorSaveStatus === "saved" ? "Autosaved" : "Unsaved"}</span>
+            </div>
 
-          <button id="font-compare-launcher-btn" onClick={() => setShowFontCompare(!showFontCompare)} className="h-8 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-2.5 text-xs text-white hover:bg-[var(--studio-hover)] flex items-center gap-1.5 cursor-pointer font-sans">
-            <Grid2X2 size={13} /> Fonts
-          </button>
+            <button id="reset-creator-session-btn" onClick={handleResetCreatorSession} className="h-8 rounded-md border border-red-500/20 bg-red-500/10 px-2.5 text-xs font-semibold text-red-300 hover:border-red-500/35 hover:bg-red-500/15 flex items-center gap-1.5 cursor-pointer font-sans" title="Clear autosaved creator session and start blank">
+              <RefreshCw size={13} /> Reset
+            </button>
 
-          <button type="button" onClick={() => handleWorkspaceModeChange("ai")} className="h-8 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-2.5 text-xs font-semibold text-teal-300 hover:bg-[var(--studio-hover)] flex items-center gap-1.5 cursor-pointer font-sans">
-            <Sparkles size={13} /> AI
-          </button>
+            <div className="flex items-center gap-1 border-r border-[var(--studio-border)] pr-2">
+              <button id="global-undo-btn" aria-label="Undo" title="Undo parameter edit (Ctrl+Z)" onClick={triggerUndo} disabled={!canUndo} className={`p-1.5 rounded transition-all ${!canUndo ? "text-gray-700 hover:bg-transparent cursor-not-allowed" : "text-white hover:bg-[var(--studio-hover)] hover:text-[var(--studio-accent)] cursor-pointer"}`}>
+                <Undo2 size={15} />
+              </button>
+              <button id="global-redo-btn" aria-label="Redo" title="Redo parameters (Ctrl+Y)" onClick={triggerRedo} disabled={!canRedo} className={`p-1.5 rounded transition-all ${!canRedo ? "text-gray-700 hover:bg-transparent cursor-not-allowed" : "text-white hover:bg-[var(--studio-hover)] hover:text-[var(--studio-accent)] cursor-pointer"}`}>
+                <Redo2 size={15} />
+              </button>
+            </div>
 
-          <button type="button" onClick={() => handleWorkspaceModeChange("export")} className="h-8 rounded-md bg-[var(--studio-active)] px-3 text-xs font-semibold text-white hover:bg-[var(--studio-active-strong)] flex items-center gap-1.5 cursor-pointer font-sans">
-            <Download size={13} /> Export
-          </button>
-        </div>
-      </header>
+            <button id="open-tutorial-btn" onClick={() => setShowTutorialModal(true)} className="h-8 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-2.5 text-xs text-gray-200 hover:bg-[var(--studio-hover)] flex items-center gap-1.5 cursor-pointer font-sans">
+              <HelpCircle size={13} className="text-[var(--studio-accent)]" /> Guide
+            </button>
+
+            <button id="font-compare-launcher-btn" onClick={() => setShowFontCompare(!showFontCompare)} className="h-8 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-2.5 text-xs text-white hover:bg-[var(--studio-hover)] flex items-center gap-1.5 cursor-pointer font-sans">
+              <Grid2X2 size={13} /> Fonts
+            </button>
+
+            <a href="/lottie" className="h-8 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-2.5 text-xs font-semibold text-purple-300 hover:bg-[var(--studio-hover)] flex items-center gap-1.5 cursor-pointer font-sans no-underline">
+              <Video size={13} /> Lottie
+            </a>
+
+            <button type="button" onClick={() => handleWorkspaceModeChange("ai")} className="h-8 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-2.5 text-xs font-semibold text-teal-300 hover:bg-[var(--studio-hover)] flex items-center gap-1.5 cursor-pointer font-sans">
+              <Sparkles size={13} /> AI
+            </button>
+
+            <button type="button" onClick={() => handleWorkspaceModeChange("export")} className="h-8 rounded-md bg-[var(--studio-active)] px-3 text-xs font-semibold text-white hover:bg-[var(--studio-active-strong)] flex items-center gap-1.5 cursor-pointer font-sans">
+              <Download size={13} /> Export
+            </button>
+          </div>
+        </header>
+      )}
 
       {/* Mobile viewport navigation tab-selector */}
       {isMobile && (
@@ -1084,134 +1249,141 @@ export default function App() {
           WORK WORKSPACE CANVAS
           ────────────────────────────────────────────────────────────────── */}
       <main id="primary-workspace-layout" className="flex flex-1 overflow-hidden">
-        {!isMobile && <LeftRail activeItem={activeRailItem} onSelectItem={setActiveRailItem} />}
+        <>
+          {!isMobile && <LeftRail activeItem={activeRailItem} onSelectItem={setActiveRailItem} />}
 
-        {/* LEFT DRAWER — CREATION LIBRARY (304px) */}
-        <aside id="left-controls-panel" data-rail={activeRailItem} className={`${isMobile && mobileActiveTab !== "controls" ? "hidden" : "flex"} w-full md:w-[304px] flex-col border-r border-[var(--studio-border)] bg-[var(--studio-shell)] shrink-0 overflow-y-auto select-none`}>
-          <DrawerIntro activeItem={activeRailItem} mode={workspaceMode} onOpenAI={() => handleWorkspaceModeChange("ai")} onOpenExport={() => handleWorkspaceModeChange("export")} />
+          {/* LEFT DRAWER — CREATION LIBRARY (304px) */}
+          <aside id="left-controls-panel" data-rail={activeRailItem} className={`${isMobile && mobileActiveTab !== "controls" ? "hidden" : "flex"} w-full md:w-[304px] flex-col border-r border-[var(--studio-border)] bg-[var(--studio-shell)] shrink-0 overflow-y-auto select-none`}>
+            <DrawerIntro activeItem={activeRailItem} mode={workspaceMode} onOpenAI={() => handleWorkspaceModeChange("ai")} onOpenExport={() => handleWorkspaceModeChange("export")} />
 
-          {activeRailItem === "templates" && (
-            <div className="border-b border-[var(--studio-border)] p-3">
-              <button id="start-scratch-header-btn" onClick={handleStartFromScratch} className="mb-3 flex w-full items-center justify-center gap-2 rounded-md border border-teal-400/30 bg-teal-400/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-400/15" title="Reset active styles and start designing on a clean default canvas">
-                <FolderPlus size={14} /> Blank Slate
-              </button>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--studio-muted)]">Templates</span>
-                <button type="button" onClick={() => setShowSavePresetModal(true)} className="flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[var(--studio-hover)]">
-                  <Plus size={11} />
-                  Save
+            {activeRailItem === "templates" && (
+              <div className="border-b border-(--studio-border) p-3 flex flex-col">
+                <button id="start-scratch-header-btn" onClick={handleStartFromScratch} className="mb-3 flex w-full items-center justify-center gap-2 rounded-md border border-teal-400/30 bg-teal-400/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-400/15" title="Reset active styles and start designing on a clean default canvas">
+                  <FolderPlus size={14} /> Blank Slate
                 </button>
-              </div>
-              <div className="flex max-h-[280px] flex-col gap-2 overflow-y-auto">
-                {displayPresets.slice(0, 20).map((preset) => (
-                  <PresetChip
-                    key={preset.id}
-                    preset={preset}
-                    activePresetId={activePresetId}
-                    handleApplyPreset={(presetToApply) => {
-                      handleApplyPreset(presetToApply);
-                      setActiveRailItem("text");
-                    }}
-                    handleDeletePreset={handleDeletePreset}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
 
-          {(activeRailItem === "ai" || workspaceMode === "ai") && (
-            <div className="border-b border-[var(--studio-border)] p-3 space-y-2">
-              <button
-                id="prompt-effect-btn"
-                onClick={() => {
-                  setPromptInput("");
-                  setPromptStatus("idle");
-                  setPromptResultConfig(null);
-                  setPromptError(null);
-                  setPromptLogs([]);
-                  setShowPromptModal(true);
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-md border border-teal-500/30 bg-teal-500/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-500/15"
-              >
-                <Sparkles size={14} /> Prompt Style
-              </button>
-              <button
-                id="scan-effect-btn"
-                onClick={() => {
-                  setScanImage(null);
-                  setScanStatus("idle");
-                  setScanResultConfig(null);
-                  setScanError(null);
-                  setScanLogs([]);
-                  setShowImageScanModal(true);
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[var(--studio-hover)]"
-              >
-                <Camera size={14} /> Scan Image
-              </button>
-              <button type="button" onClick={() => setActiveTab("lab")} className="flex w-full items-center justify-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[var(--studio-hover)]">
-                <Beaker size={14} /> Research & Blend
-              </button>
-            </div>
-          )}
-
-          {(activeRailItem === "layers" || workspaceMode === "animate") && <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode="advanced" selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} />}
-
-          {(["text", "effects", "elements", "brand", "assets", "uploads"] as RailItem[]).includes(activeRailItem) && <div className="border-b border-[var(--studio-border)] px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--studio-muted)]">Full controls</div>}
-
-          <Suspense fallback={<div className="p-4 text-xs text-[var(--studio-muted)]">Loading controls...</div>}>
-            <LegacyControlsPanel visible={(["text", "effects", "elements", "brand", "assets", "uploads"] as RailItem[]).includes(activeRailItem)} config={config} activeEffectId={activeEffectId} collapsedSections={collapsedSections} isGeneratingName={isGeneratingName} modifyConfig={modifyConfig} toggleSection={toggleSection} handleGenerateAiEffectName={handleGenerateAiEffectName} applyCompositionPreset={applyCompositionPreset} fitTextToComposition={fitTextToComposition} />
-          </Suspense>
-        </aside>
-
-        <div className={`${isMobile && mobileActiveTab !== "preview" ? "hidden" : "flex"} flex-1 flex-col min-w-0`}>
-          <PreviewCanvas
-            canvasRef={canvasRef}
-            config={config}
-            bgMode={bgMode}
-            zoom={zoom}
-            zoomMode={zoomMode}
-            onZoomChange={setZoom}
-            onZoomModeChange={setZoomMode}
-            onBgModeChange={setBgMode}
-            effectClassLabel={`${toPascalCase(getEnrichedEffectName(config)) || "MyEffect"}Engine`}
-            toolbarExtras={
-              <>
-                <button id="copy-to-clipboard-image-btn" type="button" onClick={copyImageToClipboard} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium border border-[#2A2A38] hover:border-[#7C6FFF] rounded flex items-center gap-1 transition-all cursor-pointer font-sans">
-                  <Copy size={12} className={copiedImageFeedback ? "text-green-500" : "text-white"} />
-                  {copiedImageFeedback ? "Copied" : "Copy"}
-                </button>
-                <button id="download-canvas-image-btn" type="button" onClick={downloadPng} className="p-1.5 px-3 bg-[#7C6FFF] hover:bg-[#6859FF] text-white text-[11px] font-medium rounded flex items-center gap-1 cursor-pointer font-sans">
-                  <Download size={12} /> PNG
-                </button>
-                <button id="download-png-sequence-btn" type="button" onClick={downloadPngSequence} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium rounded border border-[#2A2A38] hover:border-[#7C6FFF] flex items-center gap-1 cursor-pointer font-sans" title={`Export ${webmFrameCount} PNG frames as ZIP`}>
-                  <Download size={12} /> Seq
-                </button>
-                {webmExportSupported && (
-                  <button id="download-webm-btn" type="button" onClick={downloadWebM} disabled={isExportingWebM} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium rounded border border-[#2A2A38] hover:border-[#7C6FFF] flex items-center gap-1 cursor-pointer font-sans disabled:opacity-50 disabled:cursor-wait" title={`Export ${webmFrameCount} frames as WebM (~${(scene.timeline.duration || 2).toFixed(1)}s)`}>
-                    {isExportingWebM ? <Loader2 size={12} className="animate-spin" /> : <Video size={12} />}
-                    {isExportingWebM ? "…" : "WebM"}
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--studio-muted)]">Templates</span>
+                  <button type="button" onClick={() => setShowSavePresetModal(true)} className="flex items-center gap-1 rounded border border-[var(--studio-border)] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[var(--studio-hover)]">
+                    <Plus size={11} />
+                    Save
                   </button>
-                )}
-                {webmExportError && (
-                  <span className="text-[10px] text-red-400 max-w-[140px] truncate" title={webmExportError}>
-                    {webmExportError}
-                  </span>
-                )}
-              </>
-            }
-          />
+                </div>
 
-          {showFontCompare && (
-            <Suspense fallback={null}>
-              <FontCompare config={config} onSelectFont={(font) => modifyConfig({ fontFamily: font })} onClose={() => setShowFontCompare(false)} />
+                <div className="flex h-full flex-col gap-2 overflow-y-auto">
+                  {displayPresets.slice(0, 20).map((preset) => (
+                    <PresetChip
+                      key={preset.id}
+                      preset={preset}
+                      activePresetId={activePresetId}
+                      handleApplyPreset={(presetToApply) => {
+                        handleApplyPreset(presetToApply);
+                        setActiveRailItem("text");
+                      }}
+                      handleDeletePreset={handleDeletePreset}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(activeRailItem === "ai" || workspaceMode === "ai") && (
+              <div className="border-b border-[var(--studio-border)] p-3 space-y-2">
+                <button id="gemini-key-settings-btn" onClick={() => setShowGeminiKeyModal(true)} className="flex w-full items-center justify-center gap-2 rounded-md border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-3 py-2 text-[12px] font-semibold text-[#B9B2FF] hover:bg-[#7C6FFF]/15">
+                  <KeyRound size={14} /> Gemini API Key
+                </button>
+                <button
+                  id="prompt-effect-btn"
+                  onClick={() => {
+                    setPromptInput("");
+                    setPromptStatus("idle");
+                    setPromptResultConfig(null);
+                    setPromptError(null);
+                    setPromptLogs([]);
+                    setShowPromptModal(true);
+                  }}
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-teal-500/30 bg-teal-500/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-500/15"
+                >
+                  <Sparkles size={14} /> Prompt Style
+                </button>
+                <button
+                  id="scan-effect-btn"
+                  onClick={() => {
+                    setScanImage(null);
+                    setScanStatus("idle");
+                    setScanResultConfig(null);
+                    setScanError(null);
+                    setScanLogs([]);
+                    setShowImageScanModal(true);
+                  }}
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[var(--studio-hover)]"
+                >
+                  <Camera size={14} /> Scan Image
+                </button>
+                <button type="button" onClick={() => setActiveTab("lab")} className="flex w-full items-center justify-center gap-2 rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[var(--studio-hover)]">
+                  <Beaker size={14} /> Research & Blend
+                </button>
+              </div>
+            )}
+
+            {(activeRailItem === "layers" || workspaceMode === "animate") && <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode="advanced" selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} />}
+
+            {(["text", "effects", "elements", "brand", "assets", "uploads"] as RailItem[]).includes(activeRailItem) && <div className="border-b border-[var(--studio-border)] px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--studio-muted)]">Full controls</div>}
+
+            <Suspense fallback={<div className="p-4 text-xs text-[var(--studio-muted)]">Loading controls...</div>}>
+              <LegacyControlsPanel visible={(["text", "effects", "elements", "brand", "assets", "uploads"] as RailItem[]).includes(activeRailItem)} config={config} activeEffectId={activeEffectId} collapsedSections={collapsedSections} isGeneratingName={isGeneratingName} modifyConfig={modifyConfig} toggleSection={toggleSection} handleGenerateAiEffectName={handleGenerateAiEffectName} applyCompositionPreset={applyCompositionPreset} fitTextToComposition={fitTextToComposition} />
             </Suspense>
-          )}
+          </aside>
 
-          <TimelinePanel scene={scene} previewTime={previewTime} isPlaying={isPlaying} uiMode={timelinePanelMode} onPlayToggle={() => setIsPlaying((p) => !p)} onReset={() => setPreviewTime(0)} onTimeChange={setPreviewTime} onSceneChange={modifyScene} />
-        </div>
+          <div className={`${isMobile && mobileActiveTab !== "preview" ? "hidden" : "flex"} flex-1 flex-col min-w-0`}>
+            <PreviewCanvas
+              canvasRef={canvasRef}
+              config={config}
+              bgMode={bgMode}
+              zoom={zoom}
+              zoomMode={zoomMode}
+              onZoomChange={setZoom}
+              onZoomModeChange={setZoomMode}
+              onBgModeChange={setBgMode}
+              effectClassLabel={`${toPascalCase(getEnrichedEffectName(config)) || "MyEffect"}Engine`}
+              toolbarExtras={
+                <>
+                  <button id="copy-to-clipboard-image-btn" type="button" onClick={copyImageToClipboard} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium border border-[#2A2A38] hover:border-[#7C6FFF] rounded flex items-center gap-1 transition-all cursor-pointer font-sans">
+                    <Copy size={12} className={copiedImageFeedback ? "text-green-500" : "text-white"} />
+                    {copiedImageFeedback ? "Copied" : "Copy"}
+                  </button>
+                  <button id="download-canvas-image-btn" type="button" onClick={downloadPng} className="p-1.5 px-3 bg-[#7C6FFF] hover:bg-[#6859FF] text-white text-[11px] font-medium rounded flex items-center gap-1 cursor-pointer font-sans">
+                    <Download size={12} /> PNG
+                  </button>
+                  <button id="download-png-sequence-btn" type="button" onClick={downloadPngSequence} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium rounded border border-[#2A2A38] hover:border-[#7C6FFF] flex items-center gap-1 cursor-pointer font-sans" title={`Export ${webmFrameCount} PNG frames as ZIP`}>
+                    <Download size={12} /> Seq
+                  </button>
+                  {webmExportSupported && (
+                    <button id="download-webm-btn" type="button" onClick={downloadWebM} disabled={isExportingWebM} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium rounded border border-[#2A2A38] hover:border-[#7C6FFF] flex items-center gap-1 cursor-pointer font-sans disabled:opacity-50 disabled:cursor-wait" title={`Export ${webmFrameCount} frames as WebM (~${(scene.timeline.duration || 2).toFixed(1)}s)`}>
+                      {isExportingWebM ? <Loader2 size={12} className="animate-spin" /> : <Video size={12} />}
+                      {isExportingWebM ? "…" : "WebM"}
+                    </button>
+                  )}
+                  {webmExportError && (
+                    <span className="text-[10px] text-red-400 max-w-[140px] truncate" title={webmExportError}>
+                      {webmExportError}
+                    </span>
+                  )}
+                </>
+              }
+            />
 
-        <Suspense fallback={<aside className="hidden w-[344px] shrink-0 border-l border-[var(--studio-border)] bg-[var(--studio-panel)] p-4 text-xs text-[var(--studio-muted)] xl:flex">Loading panel...</aside>}>{workspaceMode === "export" || workspaceMode === "ai" ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} /> : <InspectorPanel mode={workspaceMode} config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</Suspense>
+            {showFontCompare && (
+              <Suspense fallback={null}>
+                <FontCompare config={config} onSelectFont={(font) => modifyConfig({ fontFamily: font })} onClose={() => setShowFontCompare(false)} />
+              </Suspense>
+            )}
+
+            <TimelinePanel scene={scene} previewTime={previewTime} isPlaying={isPlaying} uiMode={timelinePanelMode} onPlayToggle={() => setIsPlaying((p) => !p)} onReset={() => setPreviewTime(0)} onTimeChange={setPreviewTime} onSceneChange={modifyScene} />
+          </div>
+
+          <Suspense fallback={<aside className="hidden w-[344px] shrink-0 border-l border-[var(--studio-border)] bg-[var(--studio-panel)] p-4 text-xs text-[var(--studio-muted)] xl:flex">Loading panel...</aside>}>{workspaceMode === "export" || workspaceMode === "ai" ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel mode={workspaceMode} config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</Suspense>
+        </>
       </main>
 
       <Suspense fallback={null}>
@@ -1274,6 +1446,8 @@ export default function App() {
           onGenerate={handleGeneratePromptStyle}
           onApply={handleApplyPromptConfig}
         />
+
+        <GeminiKeyModal open={showGeminiKeyModal} onClose={() => setShowGeminiKeyModal(false)} />
 
         <TutorialModal open={showTutorialModal} activeTab={tutorialActiveTab} onTabChange={setTutorialActiveTab} onClose={() => setShowTutorialModal(false)} />
       </Suspense>
