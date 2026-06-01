@@ -227,9 +227,11 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
             </span>
           </div>
           <div className="flex shrink-0 flex-col border-b border-[#2A2A38] bg-[#111116]">
-            <div className="flex items-center justify-between border-b border-[#2A2A38]/40 bg-[#16161F] px-4 py-2">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-[#666677]">Virtual Export Target</span>
-              <span className="truncate font-mono text-[10px] font-bold text-gray-300">{virtualTarget}</span>
+            <div className="flex items-center gap-3 border-b border-[#2A2A38]/40 bg-[#16161F] px-4 py-2">
+              <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider text-[#666677]">Virtual Export Target</span>
+              <span className="min-w-0 flex-1 truncate font-mono text-[10px] font-bold text-gray-300" title={virtualTarget}>
+                {virtualTarget}
+              </span>
             </div>
             <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 flex-1 items-center gap-1.5">
