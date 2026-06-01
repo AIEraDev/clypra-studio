@@ -252,26 +252,26 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
                   </select>
                 )}
               </div>
-              <div className="flex shrink-0 justify-end gap-1.5">
-                <button id="copy-code-cloner-btn" type="button" onClick={onCopyCode} className="flex items-center gap-1.5 rounded border border-[#2A2A38] bg-[#1E1E26] px-3 py-1 text-[10px] font-semibold text-white hover:bg-[#2A2A38]">
+              <div className="flex shrink-0 flex-wrap justify-end gap-1.5 overflow-x-auto">
+                <button id="copy-code-cloner-btn" type="button" onClick={onCopyCode} className="flex shrink-0 items-center gap-1.5 rounded border border-[#2A2A38] bg-[#1E1E26] px-3 py-1 text-[10px] font-semibold text-white hover:bg-[#2A2A38]">
                   <Copy size={11} className={copiedCodeFeedback ? "text-green-500" : "text-white"} />
                   {copiedCodeFeedback ? "Copied" : "Copy"}
                 </button>
-                <button id="download-code-btn" type="button" onClick={onDownloadCode} className="flex items-center gap-1.5 rounded border border-[#7C6FFF]/45 bg-[#7C6FFF]/25 px-3 py-1 text-[10px] font-bold text-white hover:bg-[#7C6FFF]/35">
+                <button id="download-code-btn" type="button" onClick={onDownloadCode} className="flex shrink-0 items-center gap-1.5 rounded border border-[#7C6FFF]/45 bg-[#7C6FFF]/25 px-3 py-1 text-[10px] font-bold text-white hover:bg-[#7C6FFF]/35">
                   <Download size={11} className="text-[#a89fff]" />
                   Download
                 </button>
-                <select id="effect-api-category-select" value={effectApiCategory} onChange={(event) => onEffectApiCategoryChange(event.target.value as EffectApiCategory)} className="rounded border border-[#2A2A38] bg-[#0A0A0E] px-2 py-1 text-[10px] font-semibold text-white outline-none hover:bg-[#15151C] focus:border-teal-500" title="API category for PR publishing">
+                <select id="effect-api-category-select" value={effectApiCategory} onChange={(event) => onEffectApiCategoryChange(event.target.value as EffectApiCategory)} className="shrink-0 rounded border border-[#2A2A38] bg-[#0A0A0E] px-2 py-1 text-[10px] font-semibold text-white outline-none hover:bg-[#15151C] focus:border-teal-500" title="API category for PR publishing">
                   {EFFECT_API_CATEGORIES.map((category) => (
                     <option key={category} value={category}>
                       {category}
                     </option>
                   ))}
                 </select>
-                <button id="github-settings-btn" type="button" onClick={() => setShowGithubConfig(true)} className="flex items-center gap-1.5 rounded border border-[#2A2A38] bg-[#1E1E26] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#2A2A38]" title="GitHub settings">
+                <button id="github-settings-btn" type="button" onClick={() => setShowGithubConfig(true)} className="flex shrink-0 items-center gap-1.5 rounded border border-[#2A2A38] bg-[#1E1E26] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#2A2A38]" title="GitHub settings">
                   <Settings size={11} />
                 </button>
-                <button id="publish-effect-api-btn" type="button" onClick={handlePublishEffect} disabled={publishStatus === "publishing"} className="flex items-center gap-1.5 rounded border border-teal-500/45 bg-teal-500/20 px-3 py-1 text-[10px] font-bold text-teal-200 hover:bg-teal-500/30 disabled:opacity-50">
+                <button id="publish-effect-api-btn" type="button" onClick={handlePublishEffect} disabled={publishStatus === "publishing"} className="flex shrink-0 items-center gap-1.5 rounded border border-teal-500/45 bg-teal-500/20 px-3 py-1 text-[10px] font-bold text-teal-200 hover:bg-teal-500/30 disabled:opacity-50 whitespace-nowrap">
                   {publishStatus === "publishing" ? <Loader2 size={11} className="animate-spin" /> : <UploadCloud size={11} />}
                   Publish to API
                 </button>
