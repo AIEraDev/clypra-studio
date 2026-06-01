@@ -1185,7 +1185,7 @@ export default function App() {
           {!isMobile && <LeftRail activeItem={activeRailItem} onSelectItem={setActiveRailItem} />}
 
           {/* LEFT DRAWER — CREATION LIBRARY (304px) */}
-          <aside id="left-controls-panel" data-rail={activeRailItem} className={`${isMobile && mobileActiveTab !== "controls" ? "hidden" : "flex"} w-full md:w-[304px] flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 overflow-y-auto select-none`}>
+          <aside id="left-controls-panel" data-rail={activeRailItem} className={`${isMobile && mobileActiveTab !== "controls" ? "hidden" : "flex"} w-full md:w-[${isMobile ? "full" : "360px"}] flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 overflow-y-auto select-none`}>
             <DrawerIntro activeItem={activeRailItem} mode={workspaceMode} onOpenAI={() => handleWorkspaceModeChange("ai")} onOpenExport={() => handleWorkspaceModeChange("export")} />
 
             {activeRailItem === "templates" && (
