@@ -110,8 +110,9 @@ export function PreviewCanvas({ canvasRef, config, bgMode, zoom, zoomMode, onZoo
         <div
           className="composition-stage flex items-center justify-center"
           style={{
-            minWidth: `${(config.canvasWidth || 800) * (effectiveZoom / 100) + 32}px`,
-            minHeight: `${(config.canvasHeight || 200) * (effectiveZoom / 100) + 32}px`,
+            width: (config.canvasWidth || 800) * (effectiveZoom / 100),
+            height: (config.canvasHeight || 200) * (effectiveZoom / 100),
+            flexShrink: 0,
           }}
         >
           <div
