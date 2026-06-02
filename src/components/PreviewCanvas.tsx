@@ -14,11 +14,10 @@ interface PreviewCanvasProps {
   onZoomChange: (zoom: number) => void;
   onZoomModeChange: (mode: ZoomMode) => void;
   onBgModeChange: (mode: "checkerboard" | "black") => void;
-  effectClassLabel: string;
   toolbarExtras?: React.ReactNode;
 }
 
-export function PreviewCanvas({ canvasRef, config, bgMode, zoom, zoomMode, onZoomChange, onZoomModeChange, onBgModeChange, effectClassLabel, toolbarExtras }: PreviewCanvasProps) {
+export function PreviewCanvas({ canvasRef, config, bgMode, zoom, zoomMode, onZoomChange, onZoomModeChange, onBgModeChange, toolbarExtras }: PreviewCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [fitZoom, setFitZoom] = useState(100);
 
@@ -130,9 +129,10 @@ export function PreviewCanvas({ canvasRef, config, bgMode, zoom, zoomMode, onZoo
           </div>
         </div>
 
-        <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-[#1E1E26]/90 backdrop-blur border border-[#2A2A38] px-2.5 py-1.5 rounded-md pointer-events-none">
-          <span className="text-[10px] font-mono text-white">
-            <span className="text-[#7C6FFF] font-bold">{effectClassLabel}</span>
+        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-[#1E1E26]/90 backdrop-blur border border-[#2A2A38] px-2.5 py-1.5 rounded-md pointer-events-none">
+          <img src="/clypra.svg" alt="" className="w-3.5 h-3.5 opacity-80" />
+          <span className="text-[10px] font-semibold text-white tracking-wide">
+            Clypra <span className="text-[#7C6FFF]">Studio</span>
           </span>
         </div>
       </div>

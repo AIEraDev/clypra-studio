@@ -1275,7 +1275,6 @@ export default function App() {
               onZoomChange={setZoom}
               onZoomModeChange={setZoomMode}
               onBgModeChange={setBgMode}
-              effectClassLabel={`${toPascalCase(getEnrichedEffectName(config)) || "MyEffect"}Engine`}
               toolbarExtras={
                 <>
                   <button id="copy-to-clipboard-image-btn" type="button" onClick={copyImageToClipboard} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium border border-[#2A2A38] hover:border-[#7C6FFF] rounded flex items-center gap-1 transition-all cursor-pointer font-sans">
