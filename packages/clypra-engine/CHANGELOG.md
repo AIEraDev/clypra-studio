@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/AIEraDev/clypra-studio/compare/v1.0.0...v1.0.1) (2026-06-02)
+
+
+### Bug Fixes
+
+* **ci:** restore credentials in checkout so semantic-release can detect branch state ([faf2b80](https://github.com/AIEraDev/clypra-studio/commit/faf2b8027f10c46b6f347d0de3700f03fc25f912))
+
 # 1.0.0 (2026-06-02)
 
 
