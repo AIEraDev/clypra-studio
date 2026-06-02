@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "packages/clypra-engine/**"
+      - 'packages/clypra-engine/**'
 
 jobs:
   publish:
@@ -21,10 +21,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
-          # default registry setting for public npm (change to npmjs.org if desired)
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@clypra"
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install Monorepo Dependencies
         run: npm install
@@ -32,19 +30,9 @@ jobs:
       - name: Build Shared Engine
         run: npm run build:engine
 
-      # Option A: Publish to GitHub Packages Registry (Default out-of-the-box, no tokens needed)
-      - name: Publish to GitHub Packages
+      - name: Publish to npm
         run: |
           cd packages/clypra-engine
-          # Inject package scope and registry target
           npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Option B: Publish to Public npm registry (Uncomment below if publishing to npmjs.org)
-      # - name: Publish to npm
-      #   run: |
-      #     cd packages/clypra-engine
-      #     npm publish --access public
-      #   env:
-      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
