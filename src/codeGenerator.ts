@@ -609,7 +609,6 @@ export class ${engineName} {
 `;
 }
 
-
 export function generateEngineClass(cfg: TextEffectConfig): string {
   if (cfg.customRenderer === "InkBrushEngine") {
     return generateInkBrushEngineClass(cfg);
@@ -623,7 +622,9 @@ export function generateEngineClass(cfg: TextEffectConfig): string {
   // Stringify stops and glows properly
   const fillGradientStopsStr = JSON.stringify(cfg.fillGradientStops, null, 2).replace(/\n/g, "\n    ");
   const glowLayersStr = JSON.stringify(cfg.glowLayers, null, 2).replace(/\n/g, "\n    ");
-  const sceneSnapshot = JSON.stringify(textEffectConfigToScene(cfg)).replace(/\\/g, "\\\\").replace(/\x60/g, String.fromCharCode(92) + String.fromCharCode(96));
+  const sceneSnapshot = JSON.stringify(textEffectConfigToScene(cfg))
+    .replace(/\\/g, "\\\\")
+    .replace(/\x60/g, String.fromCharCode(92) + String.fromCharCode(96));
 
   return `// @ts-nocheck
 /**
@@ -1872,7 +1873,7 @@ export function generateHTMLFile(cfg: TextEffectConfig): string {
   <!-- Header -->
   <header class="border-b border-[#1A1A26] bg-[#0E0E14] px-6 py-3.5 flex items-center justify-between shrink-0">
     <div class="flex items-center gap-3">
-      <div class="h-8 w-8 rounded-lg bg-gradient-to-tr from-[#7C6FFF] to-[#AA55FF] flex items-center justify-center shadow-lg shadow-[#7C6FFF]/20">
+      <div class="h-8 w-8 rounded-lg bg-linear-to-tr from-[#7C6FFF] to-[#AA55FF] flex items-center justify-center shadow-lg shadow-[#7C6FFF]/20">
         <svg class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="12 2 2 7 12 12 22 7 12 2" />
           <polyline points="2 17 12 22 22 17" />
@@ -2023,7 +2024,7 @@ export function generateHTMLFile(cfg: TextEffectConfig): string {
       
       <div class="absolute inset-0 flex items-center justify-center p-6">
         <!-- Live container sized properly -->
-        <div id="canvas-wrapper" class="w-full max-w-4xl aspect-[16/5] bg-neutral-950 border border-[#212130] rounded-xl checkerboard-bg relative shadow-2xl overflow-hidden flex items-center justify-center">
+        <div id="canvas-wrapper" class="w-full max-w-4xl aspect-16/5 bg-neutral-950 border border-[#212130] rounded-xl checkerboard-bg relative shadow-2xl overflow-hidden flex items-center justify-center">
           <canvas id="preview-canvas" width="800" height="250" class="max-w-full max-h-full"></canvas>
         </div>
       </div>

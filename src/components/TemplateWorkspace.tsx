@@ -1184,10 +1184,10 @@ export default ${camelId};
   };
 
   return (
-    <div className="flex flex-1 flex-col h-full bg-[#08080c] select-none text-[var(--studio-text)] overflow-hidden font-sans">
+    <div className="flex flex-1 flex-col h-full bg-[#08080c] select-none text-(--studio-text) overflow-hidden font-sans">
       {/* Upper Navigation Action Bar */}
-      <div className="flex h-10 items-center justify-between border-b border-[var(--studio-border)] bg-[var(--studio-shell)] px-4 shrink-0">
-        <button onClick={onBackToDesign} className="flex items-center gap-1.5 text-xs text-[var(--studio-muted)] hover:text-white transition-colors cursor-pointer">
+      <div className="flex h-10 items-center justify-between border-b border-(--studio-border) bg-(--studio-shell) px-4 shrink-0">
+        <button onClick={onBackToDesign} className="flex items-center gap-1.5 text-xs text-(--studio-muted) hover:text-white transition-colors cursor-pointer">
           <ArrowLeft size={14} /> Back to Creator Design
         </button>
         <div className="flex items-center gap-1">
@@ -1200,20 +1200,20 @@ export default ${camelId};
               </button>
 
               {/* Format toggle + export */}
-              <div className="flex items-center rounded border border-[var(--studio-border)] overflow-hidden shrink-0">
-                <button onClick={() => setExportFormat("lottie")} className={`px-2 py-1 text-[10px] font-bold transition-colors cursor-pointer ${exportFormat === "lottie" ? "bg-[var(--studio-accent)] text-white" : "bg-[var(--studio-control)] text-[var(--studio-muted)] hover:text-white"}`}>
+              <div className="flex items-center rounded border border-(--studio-border) overflow-hidden shrink-0">
+                <button onClick={() => setExportFormat("lottie")} className={`px-2 py-1 text-[10px] font-bold transition-colors cursor-pointer ${exportFormat === "lottie" ? "bg-(--studio-accent) text-white" : "bg-(--studio-control) text-(--studio-muted) hover:text-white"}`}>
                   .lottie
                 </button>
-                <button onClick={() => setExportFormat("json")} className={`px-2 py-1 text-[10px] font-bold transition-colors cursor-pointer border-l border-[var(--studio-border)] ${exportFormat === "json" ? "bg-[var(--studio-accent)] text-white" : "bg-[var(--studio-control)] text-[var(--studio-muted)] hover:text-white"}`}>
+                <button onClick={() => setExportFormat("json")} className={`px-2 py-1 text-[10px] font-bold transition-colors cursor-pointer border-l border-(--studio-border) ${exportFormat === "json" ? "bg-(--studio-accent) text-white" : "bg-(--studio-control) text-(--studio-muted) hover:text-white"}`}>
                   .json
                 </button>
               </div>
-              <button onClick={handleExportDotLottie} disabled={isExportingDotLottie} className="px-2.5 py-1 bg-[var(--studio-accent)] hover:bg-[#6859FF] text-white text-xs font-bold rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50">
+              <button onClick={handleExportDotLottie} disabled={isExportingDotLottie} className="px-2.5 py-1 bg-(--studio-accent) hover:bg-[#6859FF] text-white text-xs font-bold rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50">
                 {isExportingDotLottie ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                 Export
               </button>
 
-              <button onClick={handleExportBundle} disabled={isExporting || Object.keys(validationErrors).length > 0} className="px-2.5 py-1 border border-[var(--studio-border)] bg-[var(--studio-control)] hover:bg-[var(--studio-hover)] text-white text-xs font-semibold rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50" title="Export full bundle (.json + .meta.ts)">
+              <button onClick={handleExportBundle} disabled={isExporting || Object.keys(validationErrors).length > 0} className="px-2.5 py-1 border border-(--studio-border) bg-(--studio-control) hover:bg-(--studio-hover) text-white text-xs font-semibold rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50" title="Export full bundle (.json + .meta.ts)">
                 {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                 Bundle
               </button>
@@ -1222,7 +1222,7 @@ export default ${camelId};
                 <KeyRound size={14} />
               </button>
 
-              <button onClick={() => setShowGithubConfig(true)} className="px-2.5 py-1 border border-[var(--studio-border)] bg-[var(--studio-control)] hover:bg-[var(--studio-hover)] text-white rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors" title="GitHub Settings">
+              <button onClick={() => setShowGithubConfig(true)} className="px-2.5 py-1 border border-(--studio-border) bg-(--studio-control) hover:bg-(--studio-hover) text-white rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors" title="GitHub Settings">
                 <Settings size={14} />
               </button>
 
@@ -1252,45 +1252,45 @@ export default ${camelId};
                 processJsonFile(e.dataTransfer.files[0]);
               }
             }}
-            className={`flex flex-col items-center justify-center w-full max-w-sm h-80 border-2 border-dashed rounded-xl transition-all p-6 text-center cursor-pointer ${isDragging ? "border-[var(--studio-accent)] bg-[var(--studio-active-soft)]" : "border-[var(--studio-border)] bg-[var(--studio-panel)] hover:border-gray-500"}`}
+            className={`flex flex-col items-center justify-center w-full max-w-sm h-80 border-2 border-dashed rounded-xl transition-all p-6 text-center cursor-pointer ${isDragging ? "border-(--studio-accent) bg-(--studio-active-oft)]" : "border-(--studio-border) bg-(--studio-panel) hover:border-gray-500"}`}
             onClick={() => document.getElementById("lottie-file-picker")?.click()}
           >
-            <UploadCloud size={40} className="text-[var(--studio-accent)] mb-4 animate-bounce" />
+            <UploadCloud size={40} className="text-(--studio-accent) mb-4 animate-bounce" />
             <h3 className="text-sm font-semibold text-white mb-2">Import Raw Lottie JSON</h3>
-            <p className="text-xs text-[var(--studio-muted)] mb-4 max-w-xs">Drag and drop any standard Lottie `.json` file here, or click to browse files.</p>
-            <span className="text-[11px] px-3 py-1.5 bg-[var(--studio-control)] rounded border border-[var(--studio-border)] text-white hover:bg-[var(--studio-hover)]">Browse Files</span>
+            <p className="text-xs text-(--studio-muted) mb-4 max-w-xs">Drag and drop any standard Lottie `.json` file here, or click to browse files.</p>
+            <span className="text-[11px] px-3 py-1.5 bg-(--studio-control) rounded border border-(--studio-border) text-white hover:bg-(--studio-hover)">Browse Files</span>
             <input type="file" id="lottie-file-picker" className="hidden" accept=".json" onChange={handleFileInputChange} />
           </div>
 
           {/* Right Slate Creator Card */}
-          <div className="w-full max-w-sm h-80 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-panel)] p-5 flex flex-col justify-between">
+          <div className="w-full max-w-sm h-80 rounded-xl border border-(--studio-border) bg-(--studio-panel) p-5 flex flex-col justify-between">
             <div>
               <h3 className="text-sm font-semibold text-white mb-1 flex items-center gap-1.5">
                 <FolderPlus size={16} className="text-teal-400" />
                 Create Blank Motion Slate
               </h3>
-              <p className="text-xs text-[var(--studio-muted)] mb-4">Configure layers and build keyframes entirely from scratch on a clean canvas.</p>
+              <p className="text-xs text-(--studio-muted) mb-4">Configure layers and build keyframes entirely from scratch on a clean canvas.</p>
 
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Width</label>
-                    <input type="number" value={blankW} onChange={(e) => setBlankW(parseInt(e.target.value) || 1920)} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded text-[11px] px-2 text-white focus:outline-none" />
+                    <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Width</label>
+                    <input type="number" value={blankW} onChange={(e) => setBlankW(parseInt(e.target.value) || 1920)} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded text-[11px] px-2 text-white focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Height</label>
-                    <input type="number" value={blankH} onChange={(e) => setBlankH(parseInt(e.target.value) || 1080)} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded text-[11px] px-2 text-white focus:outline-none" />
+                    <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Height</label>
+                    <input type="number" value={blankH} onChange={(e) => setBlankH(parseInt(e.target.value) || 1080)} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded text-[11px] px-2 text-white focus:outline-none" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">FPS</label>
-                    <input type="number" value={blankFps} onChange={(e) => setBlankFps(parseInt(e.target.value) || 30)} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded text-[11px] px-2 text-white focus:outline-none" />
+                    <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">FPS</label>
+                    <input type="number" value={blankFps} onChange={(e) => setBlankFps(parseInt(e.target.value) || 30)} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded text-[11px] px-2 text-white focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Frames</label>
-                    <input type="number" value={blankFrames} onChange={(e) => setBlankFrames(parseInt(e.target.value) || 120)} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded text-[11px] px-2 text-white focus:outline-none" />
+                    <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Frames</label>
+                    <input type="number" value={blankFrames} onChange={(e) => setBlankFrames(parseInt(e.target.value) || 120)} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded text-[11px] px-2 text-white focus:outline-none" />
                   </div>
                 </div>
               </div>
@@ -1304,9 +1304,9 @@ export default ${camelId};
       ) : (
         /* Triple-Column Figma/AE Motion Workspace */
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* <div className="shrink-0 border-b border-[var(--studio-border)] bg-[#05050a] p-2.5 space-y-2 select-none">
+          {/* <div className="shrink-0 border-b border-(--studio-border) bg-[#05050a] p-2.5 space-y-2 select-none">
             {publishMessage ? (
-              <div className={`flex items-center justify-between gap-2 rounded border px-2 py-1 font-mono text-[9px] ${publishStatus === "failed" ? "border-red-900/40 bg-red-950/30 text-red-300" : publishStatus === "published" ? "border-teal-900/40 bg-teal-950/30 text-teal-300" : "border-[var(--studio-border)] bg-[var(--studio-control)] text-[var(--studio-muted)]"}`}>
+              <div className={`flex items-center justify-between gap-2 rounded border px-2 py-1 font-mono text-[9px] ${publishStatus === "failed" ? "border-red-900/40 bg-red-950/30 text-red-300" : publishStatus === "published" ? "border-teal-900/40 bg-teal-950/30 text-teal-300" : "border-(--studio-border) bg-(--studio-control) text-(--studio-muted)"}`}>
                 <span className="min-w-0 truncate">{publishMessage}</span>
                 {publishPrUrl ? (
                   <a href={publishPrUrl} target="_blank" rel="noreferrer" className="shrink-0 rounded border border-teal-500/40 bg-teal-500/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-teal-200 hover:bg-teal-500/20">
@@ -1320,11 +1320,11 @@ export default ${camelId};
           {/* Main Layout containing sidebars and stage */}
           <div className="flex-1 flex overflow-hidden min-h-0">
             {/* LEFT PANEL: Layer Stack & Vector Library */}
-            <aside className="w-80 shrink-0 border-r border-[var(--studio-border)] bg-[var(--studio-panel)] flex flex-col overflow-y-auto select-none">
+            <aside className="w-80 shrink-0 border-r border-(--studio-border) bg-(--studio-panel) flex flex-col overflow-y-auto select-none">
               {/* Left panel tab switcher */}
-              <div className="flex border-b border-[var(--studio-border)] bg-[var(--studio-control)] shrink-0">
+              <div className="flex border-b border-(--studio-border) bg-(--studio-control) shrink-0">
                 {(["layers", "templates", "animations"] as const).map((tab) => (
-                  <button key={tab} onClick={() => setLeftPanelTab(tab)} className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${leftPanelTab === tab ? "text-[var(--studio-accent)] bg-[var(--studio-panel)] border-b-2 border-[var(--studio-accent)]" : "text-[var(--studio-muted)] hover:text-white"}`}>
+                  <button key={tab} onClick={() => setLeftPanelTab(tab)} className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${leftPanelTab === tab ? "text-(--studio-accent) bg-(--studio-panel) border-b-2 border-(--studio-accent)" : "text-(--studio-muted) hover:text-white"}`}>
                     {tab === "layers" ? "⬛ Layers" : tab === "templates" ? "🎬 Templates" : "✨ Animate"}
                   </button>
                 ))}
@@ -1334,22 +1334,22 @@ export default ${camelId};
               {leftPanelTab === "layers" && (
                 <>
                   {/* Insert Library Controls */}
-                  <div className="p-4 border-b border-[var(--studio-border-soft)] space-y-3 shrink-0">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--studio-muted)] flex items-center gap-1.5">
+                  <div className="p-4 border-b border-(--studio-border-oft)] space-y-3 shrink-0">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-(--studio-muted) flex items-center gap-1.5">
                       <Sparkles size={13} className="text-teal-400" /> Layer Library
                     </h3>
 
                     <div className="grid grid-cols-4 gap-1.5">
-                      <button onClick={triggerAddText} className="py-2 bg-[var(--studio-control)] hover:bg-[var(--studio-hover)] border border-[var(--studio-border)] rounded text-[10px] font-semibold text-white cursor-pointer flex flex-col items-center gap-1" title="Add a customizable Vector Text Layer">
+                      <button onClick={triggerAddText} className="py-2 bg-(--studio-control) hover:bg-(--studio-hover) border border-(--studio-border) rounded text-[10px] font-semibold text-white cursor-pointer flex flex-col items-center gap-1" title="Add a customizable Vector Text Layer">
                         <span className="text-xs font-mono font-bold">A</span> Text
                       </button>
-                      <button onClick={triggerAddShape} className="py-2 bg-[var(--studio-control)] hover:bg-[var(--studio-hover)] border border-[var(--studio-border)] rounded text-[10px] font-semibold text-white cursor-pointer flex flex-col items-center gap-1" title="Add a Vector Shape Layer">
+                      <button onClick={triggerAddShape} className="py-2 bg-(--studio-control) hover:bg-(--studio-hover) border border-(--studio-border) rounded text-[10px] font-semibold text-white cursor-pointer flex flex-col items-center gap-1" title="Add a Vector Shape Layer">
                         <span className="text-xs font-mono font-bold">▢</span> Shape
                       </button>
-                      <button onClick={triggerAddSolid} className="py-2 bg-[var(--studio-control)] hover:bg-[var(--studio-hover)] border border-[var(--studio-border)] rounded text-[10px] font-semibold text-white cursor-pointer flex flex-col items-center gap-1" title="Add a Solid color Background backdrop">
+                      <button onClick={triggerAddSolid} className="py-2 bg-(--studio-control) hover:bg-(--studio-hover) border border-(--studio-border) rounded text-[10px] font-semibold text-white cursor-pointer flex flex-col items-center gap-1" title="Add a Solid color Background backdrop">
                         <span className="text-xs font-mono font-bold">■</span> Solid
                       </button>
-                      <button onClick={triggerAddImage} className="py-2 bg-[var(--studio-control)] hover:bg-[var(--studio-hover)] border border-[var(--studio-border)] rounded text-[10px] font-semibold text-white cursor-pointer flex flex-col items-center gap-1" title="Add a local Image Layer (Base64)">
+                      <button onClick={triggerAddImage} className="py-2 bg-(--studio-control) hover:bg-(--studio-hover) border border-(--studio-border) rounded text-[10px] font-semibold text-white cursor-pointer flex flex-col items-center gap-1" title="Add a local Image Layer (Base64)">
                         <ImageIcon size={14} className="text-emerald-400" /> Image
                       </button>
                     </div>
@@ -1374,29 +1374,29 @@ export default ${camelId};
                   <div className="p-4 flex-1 flex flex-col overflow-hidden">
                     {/* Live text preview inputs */}
                     {mappedLayers.length > 0 && (
-                      <div className="mb-3 p-2.5 rounded border border-[var(--studio-border)] bg-[var(--studio-control)] space-y-2 shrink-0">
-                        <p className="text-[9px] font-bold text-[var(--studio-muted)] uppercase tracking-wider">Live Text Preview</p>
+                      <div className="mb-3 p-2.5 rounded border border-(--studio-border) bg-(--studio-control) space-y-2 shrink-0">
+                        <p className="text-[9px] font-bold text-(--studio-muted) uppercase tracking-wider">Live Text Preview</p>
                         {(["primary", "secondary", "accent"] as const)
                           .filter((role) => mappedLayers.some((l) => l.role === role))
                           .map((role) => (
                             <div key={role} className="flex items-center gap-1.5">
                               <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded shrink-0 ${role === "primary" ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" : role === "secondary" ? "bg-teal-500/20 text-teal-300 border border-teal-500/30" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"}`}>{role}</span>
-                              <input type="text" value={customTexts[role]} onChange={(e) => setCustomTexts((prev) => ({ ...prev, [role]: e.target.value }))} className="flex-1 h-6 bg-[var(--studio-shell)] border border-[var(--studio-border)] rounded px-2 text-[10px] text-white focus:outline-none focus:border-[var(--studio-accent)]" placeholder={`${role} text...`} />
+                              <input type="text" value={customTexts[role]} onChange={(e) => setCustomTexts((prev) => ({ ...prev, [role]: e.target.value }))} className="flex-1 h-6 bg-(--studio-shell) border border-(--studio-border) rounded px-2 text-[10px] text-white focus:outline-none focus:border-(--studio-accent)" placeholder={`${role} text...`} />
                             </div>
                           ))}
                       </div>
                     )}
 
                     <div className="flex items-center justify-between mb-3 shrink-0">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--studio-muted)] flex items-center gap-1.5">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-(--studio-muted) flex items-center gap-1.5">
                         <Layers size={13} className="text-purple-400" /> Layers Stack
                       </h3>
-                      <span className="text-[10px] font-mono text-[var(--studio-muted)]">({rawJson.layers ? rawJson.layers.length : 0})</span>
+                      <span className="text-[10px] font-mono text-(--studio-muted)">({rawJson.layers ? rawJson.layers.length : 0})</span>
                     </div>
 
                     <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
                       {!rawJson.layers || rawJson.layers.length === 0 ? (
-                        <div className="text-center p-8 border border-dashed border-[var(--studio-border)] bg-[var(--studio-control)] rounded-md text-[var(--studio-muted)] text-xs">Composition holds no layers. Add layers from library above.</div>
+                        <div className="text-center p-8 border border-dashed border-(--studio-border) bg-(--studio-control) rounded-md text-(--studio-muted) text-xs">Composition holds no layers. Add layers from library above.</div>
                       ) : (
                         rawJson.layers.map((layer: any, idx: number) => {
                           const isSelected = selectedLayerIndex === idx;
@@ -1413,7 +1413,7 @@ export default ${camelId};
                           };
 
                           return (
-                            <div key={`${layer.nm}-${idx}`} onClick={() => setSelectedLayerIndex(idx)} className={`p-2.5 rounded border transition-all flex items-center justify-between gap-3 cursor-pointer ${isSelected ? "bg-[var(--studio-active-soft)] border-[var(--studio-accent)] text-white" : "bg-[var(--studio-control)] border-[var(--studio-border)] hover:border-gray-500 text-[var(--studio-muted)] hover:text-white"}`}>
+                            <div key={`${layer.nm}-${idx}`} onClick={() => setSelectedLayerIndex(idx)} className={`p-2.5 rounded border transition-all flex items-center justify-between gap-3 cursor-pointer ${isSelected ? "bg-(--studio-active-oft)] border-(--studio-accent) text-white" : "bg-(--studio-control) border-(--studio-border) hover:border-gray-500 text-(--studio-muted) hover:text-white"}`}>
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className={`text-[8px] px-1 py-0.5 rounded font-mono font-bold shrink-0 ${layer.ty === 5 ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" : layer.ty === 4 ? "bg-teal-500/20 text-teal-300 border border-teal-500/30" : layer.ty === 2 ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-purple-500/20 text-purple-300 border border-purple-500/30"}`}>{getLayerTypeLabel(layer.ty)}</span>
                                 {editingLayerIndex === idx ? (
@@ -1430,7 +1430,7 @@ export default ${camelId};
                                       }
                                     }}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="text-[11px] font-semibold bg-[var(--studio-control)] border border-[var(--studio-accent)] rounded px-1.5 py-0.5 text-white focus:outline-none focus:ring-1 focus:ring-[var(--studio-accent)] w-32"
+                                    className="text-[11px] font-semibold bg-(--studio-control) border border-(--studio-accent) rounded px-1.5 py-0.5 text-white focus:outline-none focus:ring-1 focus:ring-(--studio-accent) w-32"
                                     autoFocus
                                   />
                                 ) : (
@@ -1457,12 +1457,12 @@ export default ${camelId};
 
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {/* Move Up */}
-                                <button onClick={(e) => handleMoveLayer(idx, "up", e)} disabled={idx === 0} className={`p-0.5 rounded cursor-pointer transition-colors ${idx === 0 ? "text-gray-700 cursor-not-allowed" : "hover:text-white text-[var(--studio-muted)]"}`} title="Move Layer Up">
+                                <button onClick={(e) => handleMoveLayer(idx, "up", e)} disabled={idx === 0} className={`p-0.5 rounded cursor-pointer transition-colors ${idx === 0 ? "text-gray-700 cursor-not-allowed" : "hover:text-white text-(--studio-muted)"}`} title="Move Layer Up">
                                   <ChevronUp size={11} />
                                 </button>
 
                                 {/* Move Down */}
-                                <button onClick={(e) => handleMoveLayer(idx, "down", e)} disabled={idx === rawJson.layers.length - 1} className={`p-0.5 rounded cursor-pointer transition-colors ${idx === rawJson.layers.length - 1 ? "text-gray-700 cursor-not-allowed" : "hover:text-white text-[var(--studio-muted)]"}`} title="Move Layer Down">
+                                <button onClick={(e) => handleMoveLayer(idx, "down", e)} disabled={idx === rawJson.layers.length - 1} className={`p-0.5 rounded cursor-pointer transition-colors ${idx === rawJson.layers.length - 1 ? "text-gray-700 cursor-not-allowed" : "hover:text-white text-(--studio-muted)"}`} title="Move Layer Down">
                                   <ChevronDown size={11} />
                                 </button>
 
@@ -1493,11 +1493,11 @@ export default ${camelId};
               {/* ── TEMPLATES TAB ── */}
               {leftPanelTab === "templates" && (
                 <div className="flex-1 flex flex-col overflow-hidden">
-                  <div className="p-3 border-b border-[var(--studio-border-soft)] shrink-0">
-                    <p className="text-[10px] text-[var(--studio-muted)] mb-2">13 built-in CapCut-style templates. Click to apply.</p>
+                  <div className="p-3 border-b border-(--studio-border-oft)] shrink-0">
+                    <p className="text-[10px] text-(--studio-muted) mb-2">13 built-in CapCut-style templates. Click to apply.</p>
                     <div className="flex flex-wrap gap-1">
                       {(["all", ...TEMPLATE_CATEGORIES] as const).map((cat) => (
-                        <button key={cat} onClick={() => setTemplateCategory(cat as any)} className={`text-[9px] px-2 py-0.5 rounded border font-bold uppercase tracking-wider cursor-pointer transition-colors ${templateCategory === cat ? "bg-[var(--studio-accent)] border-[var(--studio-accent)] text-white" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-white"}`}>
+                        <button key={cat} onClick={() => setTemplateCategory(cat as any)} className={`text-[9px] px-2 py-0.5 rounded border font-bold uppercase tracking-wider cursor-pointer transition-colors ${templateCategory === cat ? "bg-(--studio-accent) border-(--studio-accent) text-white" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:text-white"}`}>
                           {cat}
                         </button>
                       ))}
@@ -1505,17 +1505,17 @@ export default ${camelId};
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
                     {LOTTIE_TEMPLATE_PRESETS.filter((p) => templateCategory === "all" || p.category === templateCategory).map((preset) => (
-                      <div key={preset.id} className="p-3 rounded border border-[var(--studio-border)] bg-[var(--studio-control)] hover:border-[var(--studio-accent)] transition-all cursor-pointer group" onClick={() => handleApplyTemplatePreset(preset)}>
+                      <div key={preset.id} className="p-3 rounded border border-(--studio-border) bg-(--studio-control) hover:border-(--studio-accent) transition-all cursor-pointer group" onClick={() => handleApplyTemplatePreset(preset)}>
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-white group-hover:text-[var(--studio-accent)] transition-colors truncate">{preset.name}</p>
-                            <p className="text-[10px] text-[var(--studio-muted)] mt-0.5 leading-relaxed">{preset.description}</p>
+                            <p className="text-xs font-bold text-white group-hover:text-(--studio-accent) transition-colors truncate">{preset.name}</p>
+                            <p className="text-[10px] text-(--studio-muted) mt-0.5 leading-relaxed">{preset.description}</p>
                           </div>
-                          <span className="text-[8px] px-1.5 py-0.5 rounded bg-[var(--studio-accent)]/20 text-[var(--studio-accent)] border border-[var(--studio-accent)]/30 font-bold uppercase shrink-0">{preset.aspectRatio}</span>
+                          <span className="text-[8px] px-1.5 py-0.5 rounded bg-(--studio-accent)/20 text-(--studio-accent) border border-(--studio-accent)/30 font-bold uppercase shrink-0">{preset.aspectRatio}</span>
                         </div>
                         <div className="flex flex-wrap gap-1 mt-2">
                           {preset.tags.slice(0, 4).map((tag) => (
-                            <span key={tag} className="text-[8px] px-1.5 py-0.5 rounded bg-white/5 text-[var(--studio-muted)] border border-white/10">
+                            <span key={tag} className="text-[8px] px-1.5 py-0.5 rounded bg-white/5 text-(--studio-muted) border border-white/10">
                               {tag}
                             </span>
                           ))}
@@ -1529,18 +1529,18 @@ export default ${camelId};
               {/* ── ANIMATIONS TAB ── */}
               {leftPanelTab === "animations" && (
                 <div className="flex-1 flex flex-col overflow-hidden">
-                  <div className="p-3 border-b border-[var(--studio-border-soft)] shrink-0 space-y-2">
+                  <div className="p-3 border-b border-(--studio-border-oft)] shrink-0 space-y-2">
                     {selectedLayerIndex === null ? (
                       <p className="text-[10px] text-amber-400">⚠️ Select a layer first to apply animations.</p>
                     ) : (
-                      <p className="text-[10px] text-[var(--studio-muted)]">
+                      <p className="text-[10px] text-(--studio-muted)">
                         Apply to: <span className="text-white font-bold">{rawJson?.layers?.[selectedLayerIndex]?.nm || "Layer"}</span>
                       </p>
                     )}
-                    <input value={animSearchQuery} onChange={(e) => setAnimSearchQuery(e.target.value)} placeholder="Search animations..." className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2.5 text-xs text-white focus:outline-none placeholder:text-[var(--studio-muted)]" />
+                    <input value={animSearchQuery} onChange={(e) => setAnimSearchQuery(e.target.value)} placeholder="Search animations..." className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded px-2.5 text-xs text-white focus:outline-none placeholder:text-(--studio-muted)" />
                     <div className="flex gap-1">
                       {(["entrance", "exit", "loop", "emphasis"] as AnimationCategory[]).map((cat) => (
-                        <button key={cat} onClick={() => setAnimCategory(cat)} className={`flex-1 text-[9px] py-1 rounded border font-bold uppercase tracking-wider cursor-pointer transition-colors ${animCategory === cat ? "bg-[var(--studio-accent)] border-[var(--studio-accent)] text-white" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-white"}`}>
+                        <button key={cat} onClick={() => setAnimCategory(cat)} className={`flex-1 text-[9px] py-1 rounded border font-bold uppercase tracking-wider cursor-pointer transition-colors ${animCategory === cat ? "bg-(--studio-accent) border-(--studio-accent) text-white" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:text-white"}`}>
                           {cat}
                         </button>
                       ))}
@@ -1555,11 +1555,11 @@ export default ${camelId};
                     {LOTTIE_ANIM_PRESETS.filter((p) => p.category === animCategory)
                       .filter((p) => !animSearchQuery || p.name.toLowerCase().includes(animSearchQuery.toLowerCase()))
                       .map((preset) => (
-                        <button key={preset.id} onClick={() => handleApplyAnimPreset(preset)} disabled={selectedLayerIndex === null} className="p-2.5 rounded border border-[var(--studio-border)] bg-[var(--studio-control)] hover:border-[var(--studio-accent)] hover:bg-[var(--studio-active-soft)] transition-all cursor-pointer text-left disabled:opacity-40 disabled:cursor-not-allowed group">
+                        <button key={preset.id} onClick={() => handleApplyAnimPreset(preset)} disabled={selectedLayerIndex === null} className="p-2.5 rounded border border-(--studio-border) bg-(--studio-control) hover:border-(--studio-accent) hover:bg-(--studio-active-oft)] transition-all cursor-pointer text-left disabled:opacity-40 disabled:cursor-not-allowed group">
                           <div className="text-lg mb-1">{preset.icon}</div>
-                          <p className="text-[11px] font-bold text-white group-hover:text-[var(--studio-accent)] transition-colors">{preset.name}</p>
-                          <p className="text-[9px] text-[var(--studio-muted)] mt-0.5 leading-tight">{preset.description}</p>
-                          <p className="text-[8px] text-[var(--studio-muted)] mt-1 font-mono">{preset.defaultDurationFrames}f</p>
+                          <p className="text-[11px] font-bold text-white group-hover:text-(--studio-accent) transition-colors">{preset.name}</p>
+                          <p className="text-[9px] text-(--studio-muted) mt-0.5 leading-tight">{preset.description}</p>
+                          <p className="text-[8px] text-(--studio-muted) mt-1 font-mono">{preset.defaultDurationFrames}f</p>
                         </button>
                       ))}
                   </div>
@@ -1568,7 +1568,7 @@ export default ${camelId};
             </aside>
 
             {/* CENTER PANEL: Canvas interactive editor */}
-            <main className="flex-1 flex flex-col bg-[#0e0e12] overflow-hidden relative">
+            <main className="flex-1 flex flex-col bg-clypra-bg overflow-hidden relative">
               {/* Interactive Player Screen */}
               <div ref={stageRef} onMouseMove={handleStageMouseMove} onMouseUp={handleStageMouseUp} onMouseLeave={handleStageMouseUp} className="flex-1 relative flex items-center justify-center p-3 min-h-0">
                 {/* Thumbnail Set Toast Notification */}
@@ -1579,7 +1579,7 @@ export default ${camelId};
                   </div>
                 )}
 
-                <div className={`relative w-[640px] aspect-video border border-[var(--studio-border)] rounded-lg shadow-2xl flex items-center justify-center overflow-hidden ${showCheckerboard ? "checkerboard" : "bg-[#0b0b0f]"}`}>
+                <div className={`relative w-[640px] aspect-video border border-(--studio-border) rounded-lg shadow-2xl flex items-center justify-center overflow-hidden ${showCheckerboard ? "checkerboard" : "bg-[#0b0b0f]"}`}>
                   {/* Player DOM */}
                   <div ref={playerContainerRef} className="w-full h-full" />
 
@@ -1606,7 +1606,7 @@ export default ${camelId};
                       }}
                       className="group/handle flex items-center justify-center"
                     >
-                      <div className="w-6 h-6 border-2 border-[var(--studio-accent)] rounded-full flex items-center justify-center shadow-[0_0_12px_rgba(124,111,255,0.8)] animate-pulse bg-[var(--studio-bg)]/60">
+                      <div className="w-6 h-6 border-2 border-(--studio-accent) rounded-full flex items-center justify-center shadow-[0_0_12px_rgba(124,111,255,0.8)] animate-pulse bg-(--studio-bg)/60">
                         <Move size={12} className="text-white" />
                       </div>
                     </div>
@@ -1618,14 +1618,14 @@ export default ${camelId};
               </div>
 
               {/* HUD Bar controls */}
-              <div className="h-12 shrink-0 border-t border-b border-[var(--studio-border)] bg-[var(--studio-panel)] px-4 flex items-center justify-between gap-4 select-none">
+              <div className="h-12 shrink-0 border-t border-b border-(--studio-border) bg-(--studio-panel) px-4 flex items-center justify-between gap-4 select-none">
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setIsPlaying(!isPlaying)} className="w-8 h-8 rounded bg-[var(--studio-accent)] hover:bg-[#6859FF] text-white flex items-center justify-center cursor-pointer transition-colors">
+                  <button onClick={() => setIsPlaying(!isPlaying)} className="w-8 h-8 rounded bg-(--studio-accent) hover:bg-[#6859FF] text-white flex items-center justify-center cursor-pointer transition-colors">
                     {isPlaying ? <Pause size={14} /> : <Play size={14} />}
                   </button>
 
                   <div className="relative w-48">
-                    <input ref={scrubberRef} type="range" min="0" max={durationFrames - 1} value={currentFrame} onChange={handleScrubberChange} className="w-full accent-[var(--studio-accent)] h-1 rounded-lg bg-[var(--studio-control)] appearance-none cursor-pointer" />
+                    <input ref={scrubberRef} type="range" min="0" max={durationFrames - 1} value={currentFrame} onChange={handleScrubberChange} className="w-full accent-(--studio-accent) h-1 rounded-lg bg-(--studio-control) appearance-none cursor-pointer" />
                     {/* Thumbnail frame indicator */}
                     <div
                       style={{ left: `${(thumbnailFrame / (durationFrames - 1)) * 100}%` }}
@@ -1638,7 +1638,7 @@ export default ${camelId};
                     />
                   </div>
 
-                  <span ref={frameTextRef} className="text-xs font-mono text-[var(--studio-muted)]">
+                  <span ref={frameTextRef} className="text-xs font-mono text-(--studio-muted)">
                     Frame {currentFrame} / {durationFrames}
                   </span>
 
@@ -1648,7 +1648,7 @@ export default ${camelId};
                   </button>
 
                   {/* Save Status Badge */}
-                  <div className="flex items-center gap-1.5 text-[10px] text-[var(--studio-muted)] font-medium bg-[#13131a] border border-[var(--studio-border)] px-2 py-0.5 rounded-md">
+                  <div className="flex items-center gap-1.5 text-[10px] text-(--studio-muted) font-medium bg-[#13131a] border border-(--studio-border) px-2 py-0.5 rounded-md">
                     <span className={`inline-block w-1.5 h-1.5 rounded-full ${saveStatus === "saving" ? "bg-amber-400 animate-pulse" : saveStatus === "saved" ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" : "bg-gray-500"}`} />
                     <span className="font-mono text-[9px] uppercase tracking-wider">{saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Autosaved" : "Unsaved"}</span>
                   </div>
@@ -1657,13 +1657,13 @@ export default ${camelId};
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1">
                     {[0.5, 1.0, 2.0].map((s) => (
-                      <button key={s} onClick={() => setPlaybackSpeed(s)} className={`text-[10px] font-mono font-semibold px-2 py-1 rounded border transition-colors cursor-pointer ${playbackSpeed === s ? "bg-[var(--studio-accent)] border-[var(--studio-accent)] text-white" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:bg-[var(--studio-hover)]"}`}>
+                      <button key={s} onClick={() => setPlaybackSpeed(s)} className={`text-[10px] font-mono font-semibold px-2 py-1 rounded border transition-colors cursor-pointer ${playbackSpeed === s ? "bg-(--studio-accent) border-(--studio-accent) text-white" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:bg-(--studio-hover)"}`}>
                         {s}x
                       </button>
                     ))}
                   </div>
 
-                  <button onClick={() => setShowCheckerboard(!showCheckerboard)} className={`p-1.5 rounded border text-xs cursor-pointer transition-colors ${showCheckerboard ? "bg-teal-500/10 border-teal-500/30 text-teal-300" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-white"}`}>
+                  <button onClick={() => setShowCheckerboard(!showCheckerboard)} className={`p-1.5 rounded border text-xs cursor-pointer transition-colors ${showCheckerboard ? "bg-teal-500/10 border-teal-500/30 text-teal-300" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:text-white"}`}>
                     Backdrop Grid
                   </button>
                 </div>
@@ -1671,24 +1671,24 @@ export default ${camelId};
             </main>
 
             {/* RIGHT PANEL: Vector Properties Inspector */}
-            <aside className="w-80 shrink-0 border-l border-[var(--studio-border)] bg-[var(--studio-panel)] flex flex-col overflow-hidden">
+            <aside className="w-80 shrink-0 border-l border-(--studio-border) bg-(--studio-panel) flex flex-col overflow-hidden">
               {/* Tabs */}
-              <div className="flex border-b border-[var(--studio-border)] bg-[var(--studio-control)] shrink-0 select-none">
-                <button onClick={() => setRightPanelTab("inspector")} className={`flex-1 py-2.5 text-center text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${rightPanelTab === "inspector" ? "text-[var(--studio-accent)] bg-[var(--studio-panel)] border-b-2 border-[var(--studio-accent)]" : "text-[var(--studio-muted)] hover:text-white"}`}>
+              <div className="flex border-b border-(--studio-border) bg-(--studio-control) shrink-0 select-none">
+                <button onClick={() => setRightPanelTab("inspector")} className={`flex-1 py-2.5 text-center text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${rightPanelTab === "inspector" ? "text-(--studio-accent) bg-(--studio-panel) border-b-2 border-(--studio-accent)" : "text-(--studio-muted) hover:text-white"}`}>
                   <Settings size={11} /> Props
                 </button>
                 <button
                   onClick={() => {
                     handleLoadTextStyle();
                   }}
-                  className={`flex-1 py-2.5 text-center text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${rightPanelTab === "style" ? "text-[var(--studio-accent)] bg-[var(--studio-panel)] border-b-2 border-[var(--studio-accent)]" : "text-[var(--studio-muted)] hover:text-white"}`}
+                  className={`flex-1 py-2.5 text-center text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${rightPanelTab === "style" ? "text-(--studio-accent) bg-(--studio-panel) border-b-2 border-(--studio-accent)" : "text-(--studio-muted) hover:text-white"}`}
                 >
                   <span className="text-xs">Aa</span> Style
                 </button>
-                <button onClick={() => setRightPanelTab("meta")} className={`flex-1 py-2.5 text-center text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${rightPanelTab === "meta" ? "text-[var(--studio-accent)] bg-[var(--studio-panel)] border-b-2 border-[var(--studio-accent)]" : "text-[var(--studio-muted)] hover:text-white"}`}>
+                <button onClick={() => setRightPanelTab("meta")} className={`flex-1 py-2.5 text-center text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${rightPanelTab === "meta" ? "text-(--studio-accent) bg-(--studio-panel) border-b-2 border-(--studio-accent)" : "text-(--studio-muted) hover:text-white"}`}>
                   <Code size={11} /> Meta
                 </button>
-                <button onClick={() => setRightPanelTab("json")} className={`flex-1 py-2.5 text-center text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${rightPanelTab === "json" ? "text-[var(--studio-accent)] bg-[var(--studio-panel)] border-b-2 border-[var(--studio-accent)]" : "text-[var(--studio-muted)] hover:text-white"}`}>
+                <button onClick={() => setRightPanelTab("json")} className={`flex-1 py-2.5 text-center text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer ${rightPanelTab === "json" ? "text-(--studio-accent) bg-(--studio-panel) border-b-2 border-(--studio-accent)" : "text-(--studio-muted) hover:text-white"}`}>
                   <FileJson size={11} /> JSON
                 </button>
               </div>
@@ -1699,7 +1699,7 @@ export default ${camelId};
                 {rightPanelTab === "style" &&
                   (() => {
                     const layer = selectedLayerIndex !== null ? rawJson?.layers?.[selectedLayerIndex] : null;
-                    if (!layer || layer.ty !== 5) return <div className="text-center p-8 border border-[var(--studio-border)] bg-[var(--studio-control)] rounded text-[var(--studio-muted)] text-xs">Select a text layer (TEXT) to edit its style.</div>;
+                    if (!layer || layer.ty !== 5) return <div className="text-center p-8 border border-(--studio-border) bg-(--studio-control) rounded text-(--studio-muted) text-xs">Select a text layer (TEXT) to edit its style.</div>;
                     const style = textStyleDraft || readStyleFromLottieLayer(layer);
                     const update = (patch: Partial<TextLayerStyle>) => {
                       const next = { ...style, ...patch };
@@ -1712,7 +1712,7 @@ export default ${camelId};
 
                         {/* Font Family */}
                         <div className="space-y-1">
-                          <label className="block text-[9px] text-[var(--studio-muted)] uppercase">Font Family</label>
+                          <label className="block text-[9px] text-(--studio-muted) uppercase">Font Family</label>
                           <select
                             value={style.fontFamily}
                             onChange={(e) => {
@@ -1720,7 +1720,7 @@ export default ${camelId};
                               preloadGoogleFont(fam, [400, 700, 800, 900]);
                               update({ fontFamily: fam, fontName: buildLottieFontName(fam, style.fontWeight, style.fontStyle) });
                             }}
-                            className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none cursor-pointer"
+                            className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none cursor-pointer"
                           >
                             {SUPPORTED_FONT_FAMILIES.map((f) => (
                               <option key={f} value={f}>
@@ -1733,14 +1733,14 @@ export default ${camelId};
                         {/* Weight + Style */}
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
-                            <label className="block text-[9px] text-[var(--studio-muted)] uppercase">Weight</label>
+                            <label className="block text-[9px] text-(--studio-muted) uppercase">Weight</label>
                             <select
                               value={style.fontWeight}
                               onChange={(e) => {
                                 const w = Number(e.target.value);
                                 update({ fontWeight: w, fontName: buildLottieFontName(style.fontFamily, w, style.fontStyle) });
                               }}
-                              className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none cursor-pointer"
+                              className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none cursor-pointer"
                             >
                               {FONT_WEIGHT_OPTIONS.map((o) => (
                                 <option key={o.value} value={o.value}>
@@ -1750,14 +1750,14 @@ export default ${camelId};
                             </select>
                           </div>
                           <div className="space-y-1">
-                            <label className="block text-[9px] text-[var(--studio-muted)] uppercase">Style</label>
+                            <label className="block text-[9px] text-(--studio-muted) uppercase">Style</label>
                             <select
                               value={style.fontStyle}
                               onChange={(e) => {
                                 const s = e.target.value as "normal" | "italic";
                                 update({ fontStyle: s, fontName: buildLottieFontName(style.fontFamily, style.fontWeight, s) });
                               }}
-                              className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none cursor-pointer"
+                              className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none cursor-pointer"
                             >
                               <option value="normal">Normal</option>
                               <option value="italic">Italic</option>
@@ -1768,21 +1768,21 @@ export default ${camelId};
                         {/* Size + Tracking */}
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
-                            <label className="block text-[9px] text-[var(--studio-muted)] uppercase">Size (px)</label>
-                            <input type="number" value={style.fontSize} min={8} max={400} onChange={(e) => update({ fontSize: Number(e.target.value) || 72 })} className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none" />
+                            <label className="block text-[9px] text-(--studio-muted) uppercase">Size (px)</label>
+                            <input type="number" value={style.fontSize} min={8} max={400} onChange={(e) => update({ fontSize: Number(e.target.value) || 72 })} className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none" />
                           </div>
                           <div className="space-y-1">
-                            <label className="block text-[9px] text-[var(--studio-muted)] uppercase">Tracking</label>
-                            <input type="number" value={style.tracking} min={-200} max={1000} onChange={(e) => update({ tracking: Number(e.target.value) })} className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none" />
+                            <label className="block text-[9px] text-(--studio-muted) uppercase">Tracking</label>
+                            <input type="number" value={style.tracking} min={-200} max={1000} onChange={(e) => update({ tracking: Number(e.target.value) })} className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none" />
                           </div>
                         </div>
 
                         {/* Alignment */}
                         <div className="space-y-1">
-                          <label className="block text-[9px] text-[var(--studio-muted)] uppercase">Alignment</label>
+                          <label className="block text-[9px] text-(--studio-muted) uppercase">Alignment</label>
                           <div className="flex gap-1">
                             {(["left", "center", "right"] as const).map((a) => (
-                              <button key={a} onClick={() => update({ align: a })} className={`flex-1 py-1.5 text-[10px] font-bold rounded border cursor-pointer transition-colors ${style.align === a ? "bg-[var(--studio-accent)] border-[var(--studio-accent)] text-white" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-white"}`}>
+                              <button key={a} onClick={() => update({ align: a })} className={`flex-1 py-1.5 text-[10px] font-bold rounded border cursor-pointer transition-colors ${style.align === a ? "bg-(--studio-accent) border-(--studio-accent) text-white" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:text-white"}`}>
                                 {a === "left" ? "⬅" : a === "center" ? "⬛" : "➡"}
                               </button>
                             ))}
@@ -1791,61 +1791,61 @@ export default ${camelId};
 
                         {/* Fill Color */}
                         <div className="space-y-1">
-                          <label className="block text-[9px] text-[var(--studio-muted)] uppercase">Fill Color</label>
+                          <label className="block text-[9px] text-(--studio-muted) uppercase">Fill Color</label>
                           <div className="flex items-center gap-2">
-                            <input type="color" value={style.fillColor} onChange={(e) => update({ fillColor: e.target.value })} className="w-10 h-8 rounded border border-[var(--studio-border)] cursor-pointer bg-transparent" />
-                            <input type="text" value={style.fillColor} onChange={(e) => update({ fillColor: e.target.value })} className="flex-1 h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none font-mono uppercase" />
+                            <input type="color" value={style.fillColor} onChange={(e) => update({ fillColor: e.target.value })} className="w-10 h-8 rounded border border-(--studio-border) cursor-pointer bg-transparent" />
+                            <input type="text" value={style.fillColor} onChange={(e) => update({ fillColor: e.target.value })} className="flex-1 h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none font-mono uppercase" />
                           </div>
                         </div>
 
                         {/* Stroke */}
-                        <div className="space-y-2 pt-2 border-t border-[var(--studio-border-soft)]">
+                        <div className="space-y-2 pt-2 border-t border-(--studio-border-oft)]">
                           <div className="flex items-center justify-between">
-                            <label className="text-[9px] text-[var(--studio-muted)] uppercase font-bold">Stroke</label>
-                            <button onClick={() => update({ strokeEnabled: !style.strokeEnabled })} className={`text-[9px] px-2 py-0.5 rounded border cursor-pointer font-bold transition-colors ${style.strokeEnabled ? "bg-teal-500/20 border-teal-500/40 text-teal-300" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)]"}`}>
+                            <label className="text-[9px] text-(--studio-muted) uppercase font-bold">Stroke</label>
+                            <button onClick={() => update({ strokeEnabled: !style.strokeEnabled })} className={`text-[9px] px-2 py-0.5 rounded border cursor-pointer font-bold transition-colors ${style.strokeEnabled ? "bg-teal-500/20 border-teal-500/40 text-teal-300" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted)"}`}>
                               {style.strokeEnabled ? "ON" : "OFF"}
                             </button>
                           </div>
                           {style.strokeEnabled && (
                             <div className="grid grid-cols-2 gap-2">
                               <div className="flex items-center gap-1.5">
-                                <input type="color" value={style.strokeColor} onChange={(e) => update({ strokeColor: e.target.value })} className="w-8 h-7 rounded border border-[var(--studio-border)] cursor-pointer bg-transparent" />
-                                <span className="text-[10px] font-mono text-[var(--studio-muted)]">{style.strokeColor}</span>
+                                <input type="color" value={style.strokeColor} onChange={(e) => update({ strokeColor: e.target.value })} className="w-8 h-7 rounded border border-(--studio-border) cursor-pointer bg-transparent" />
+                                <span className="text-[10px] font-mono text-(--studio-muted)">{style.strokeColor}</span>
                               </div>
                               <div className="space-y-0.5">
-                                <label className="block text-[9px] text-[var(--studio-muted)]">Width</label>
-                                <input type="number" value={style.strokeWidth} min={0} max={40} onChange={(e) => update({ strokeWidth: Number(e.target.value) })} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none" />
+                                <label className="block text-[9px] text-(--studio-muted)">Width</label>
+                                <input type="number" value={style.strokeWidth} min={0} max={40} onChange={(e) => update({ strokeWidth: Number(e.target.value) })} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none" />
                               </div>
                             </div>
                           )}
                         </div>
 
                         {/* Shadow */}
-                        <div className="space-y-2 pt-2 border-t border-[var(--studio-border-soft)]">
+                        <div className="space-y-2 pt-2 border-t border-(--studio-border-oft)]">
                           <div className="flex items-center justify-between">
-                            <label className="text-[9px] text-[var(--studio-muted)] uppercase font-bold">Shadow</label>
-                            <button onClick={() => update({ shadowEnabled: !style.shadowEnabled })} className={`text-[9px] px-2 py-0.5 rounded border cursor-pointer font-bold transition-colors ${style.shadowEnabled ? "bg-teal-500/20 border-teal-500/40 text-teal-300" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)]"}`}>
+                            <label className="text-[9px] text-(--studio-muted) uppercase font-bold">Shadow</label>
+                            <button onClick={() => update({ shadowEnabled: !style.shadowEnabled })} className={`text-[9px] px-2 py-0.5 rounded border cursor-pointer font-bold transition-colors ${style.shadowEnabled ? "bg-teal-500/20 border-teal-500/40 text-teal-300" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted)"}`}>
                               {style.shadowEnabled ? "ON" : "OFF"}
                             </button>
                           </div>
                           {style.shadowEnabled && (
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
-                                <input type="color" value={style.shadowColor} onChange={(e) => update({ shadowColor: e.target.value })} className="w-8 h-7 rounded border border-[var(--studio-border)] cursor-pointer bg-transparent" />
-                                <span className="text-[10px] font-mono text-[var(--studio-muted)]">{style.shadowColor}</span>
+                                <input type="color" value={style.shadowColor} onChange={(e) => update({ shadowColor: e.target.value })} className="w-8 h-7 rounded border border-(--studio-border) cursor-pointer bg-transparent" />
+                                <span className="text-[10px] font-mono text-(--studio-muted)">{style.shadowColor}</span>
                               </div>
                               <div className="grid grid-cols-3 gap-1.5">
                                 <div>
-                                  <label className="block text-[9px] text-[var(--studio-muted)]">Blur</label>
-                                  <input type="number" value={style.shadowBlur} min={0} max={80} onChange={(e) => update({ shadowBlur: Number(e.target.value) })} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-1.5 text-xs text-white focus:outline-none" />
+                                  <label className="block text-[9px] text-(--studio-muted)">Blur</label>
+                                  <input type="number" value={style.shadowBlur} min={0} max={80} onChange={(e) => update({ shadowBlur: Number(e.target.value) })} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded px-1.5 text-xs text-white focus:outline-none" />
                                 </div>
                                 <div>
-                                  <label className="block text-[9px] text-[var(--studio-muted)]">X</label>
-                                  <input type="number" value={style.shadowOffsetX} min={-80} max={80} onChange={(e) => update({ shadowOffsetX: Number(e.target.value) })} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-1.5 text-xs text-white focus:outline-none" />
+                                  <label className="block text-[9px] text-(--studio-muted)">X</label>
+                                  <input type="number" value={style.shadowOffsetX} min={-80} max={80} onChange={(e) => update({ shadowOffsetX: Number(e.target.value) })} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded px-1.5 text-xs text-white focus:outline-none" />
                                 </div>
                                 <div>
-                                  <label className="block text-[9px] text-[var(--studio-muted)]">Y</label>
-                                  <input type="number" value={style.shadowOffsetY} min={-80} max={80} onChange={(e) => update({ shadowOffsetY: Number(e.target.value) })} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-1.5 text-xs text-white focus:outline-none" />
+                                  <label className="block text-[9px] text-(--studio-muted)">Y</label>
+                                  <input type="number" value={style.shadowOffsetY} min={-80} max={80} onChange={(e) => update({ shadowOffsetY: Number(e.target.value) })} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded px-1.5 text-xs text-white focus:outline-none" />
                                 </div>
                               </div>
                             </div>
@@ -1853,16 +1853,16 @@ export default ${camelId};
                         </div>
 
                         {/* Opacity + Scale */}
-                        <div className="space-y-2 pt-2 border-t border-[var(--studio-border-soft)]">
-                          <label className="block text-[9px] text-[var(--studio-muted)] uppercase font-bold">Transform</label>
+                        <div className="space-y-2 pt-2 border-t border-(--studio-border-oft)]">
+                          <label className="block text-[9px] text-(--studio-muted) uppercase font-bold">Transform</label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-[9px] text-[var(--studio-muted)]">Opacity %</label>
-                              <input type="number" value={style.opacity} min={0} max={100} onChange={(e) => update({ opacity: Number(e.target.value) })} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none" />
+                              <label className="block text-[9px] text-(--studio-muted)">Opacity %</label>
+                              <input type="number" value={style.opacity} min={0} max={100} onChange={(e) => update({ opacity: Number(e.target.value) })} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none" />
                             </div>
                             <div>
-                              <label className="block text-[9px] text-[var(--studio-muted)]">Rotation °</label>
-                              <input type="number" value={style.rotation} min={-360} max={360} onChange={(e) => update({ rotation: Number(e.target.value) })} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none" />
+                              <label className="block text-[9px] text-(--studio-muted)">Rotation °</label>
+                              <input type="number" value={style.rotation} min={-360} max={360} onChange={(e) => update({ rotation: Number(e.target.value) })} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none" />
                             </div>
                           </div>
                         </div>
@@ -1873,14 +1873,14 @@ export default ${camelId};
                 {/* ── INSPECTOR TAB ── */}
                 {rightPanelTab === "inspector" &&
                   (selectedLayerIndex === null ? (
-                    <div className="text-center p-8 border border-[var(--studio-border)] bg-[var(--studio-control)] rounded text-[var(--studio-muted)] text-xs">Select a layer from the left stack to edit transforms &amp; keyframes.</div>
+                    <div className="text-center p-8 border border-(--studio-border) bg-(--studio-control) rounded text-(--studio-muted) text-xs">Select a layer from the left stack to edit transforms &amp; keyframes.</div>
                   ) : (
                     <>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--studio-muted)] pb-1.5 border-b border-[var(--studio-border-soft)]">Properties Inspector</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-(--studio-muted) pb-1.5 border-b border-(--studio-border-oft)]">Properties Inspector</h4>
 
                       {/* Layer Name field */}
                       <div className="space-y-1">
-                        <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Layer Name</label>
+                        <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Layer Name</label>
                         <input
                           type="text"
                           value={getSelectedLayer()?.nm || ""}
@@ -1892,7 +1892,7 @@ export default ${camelId};
                             }
                             setRawJson(clone);
                           }}
-                          className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2.5 text-xs text-white focus:outline-none focus:border-[var(--studio-accent)] font-semibold"
+                          className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2.5 text-xs text-white focus:outline-none focus:border-(--studio-accent) font-semibold"
                           placeholder="Layer Name"
                         />
                       </div>
@@ -1909,14 +1909,14 @@ export default ${camelId};
                           return (
                             <div className="space-y-1">
                               <div className="flex justify-between items-center text-[10px]">
-                                <span className="text-[var(--studio-muted)]">Position X / Y</span>
-                                <button onClick={() => handleToggleKeyframing("ks.p")} className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${track.isAnimated ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-white"}`} title="Toggle stopwatch keyframe tracking">
+                                <span className="text-(--studio-muted)">Position X / Y</span>
+                                <button onClick={() => handleToggleKeyframing("ks.p")} className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${track.isAnimated ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:text-white"}`} title="Toggle stopwatch keyframe tracking">
                                   {track.isAnimated ? "⏰ Active" : "⏱️ Static"}
                                 </button>
                               </div>
                               <div className="grid grid-cols-2 gap-2">
-                                <input type="number" value={posX} onChange={(e) => handlePropertyChange("ks.p", [parseInt(e.target.value) || 0, posY, 0])} className="h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded text-[11px] text-white px-2 focus:outline-none" />
-                                <input type="number" value={posY} onChange={(e) => handlePropertyChange("ks.p", [posX, parseInt(e.target.value) || 0, 0])} className="h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded text-[11px] text-white px-2 focus:outline-none" />
+                                <input type="number" value={posX} onChange={(e) => handlePropertyChange("ks.p", [parseInt(e.target.value) || 0, posY, 0])} className="h-7 bg-(--studio-control) border border-(--studio-border) rounded text-[11px] text-white px-2 focus:outline-none" />
+                                <input type="number" value={posY} onChange={(e) => handlePropertyChange("ks.p", [posX, parseInt(e.target.value) || 0, 0])} className="h-7 bg-(--studio-control) border border-(--studio-border) rounded text-[11px] text-white px-2 focus:outline-none" />
                               </div>
                             </div>
                           );
@@ -1930,14 +1930,14 @@ export default ${camelId};
                           return (
                             <div className="space-y-1">
                               <div className="flex justify-between items-center text-[10px]">
-                                <span className="text-[var(--studio-muted)]">Scale Width / Height %</span>
-                                <button onClick={() => handleToggleKeyframing("ks.s")} className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${track.isAnimated ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-white"}`}>
+                                <span className="text-(--studio-muted)">Scale Width / Height %</span>
+                                <button onClick={() => handleToggleKeyframing("ks.s")} className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${track.isAnimated ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:text-white"}`}>
                                   {track.isAnimated ? "⏰ Active" : "⏱️ Static"}
                                 </button>
                               </div>
                               <div className="grid grid-cols-2 gap-2">
-                                <input type="number" value={valX} onChange={(e) => handlePropertyChange("ks.s", [parseInt(e.target.value) || 100, valY, 100])} className="h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded text-[11px] text-white px-2 focus:outline-none" />
-                                <input type="number" value={valY} onChange={(e) => handlePropertyChange("ks.s", [valX, parseInt(e.target.value) || 100, 100])} className="h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded text-[11px] text-white px-2 focus:outline-none" />
+                                <input type="number" value={valX} onChange={(e) => handlePropertyChange("ks.s", [parseInt(e.target.value) || 100, valY, 100])} className="h-7 bg-(--studio-control) border border-(--studio-border) rounded text-[11px] text-white px-2 focus:outline-none" />
+                                <input type="number" value={valY} onChange={(e) => handlePropertyChange("ks.s", [valX, parseInt(e.target.value) || 100, 100])} className="h-7 bg-(--studio-control) border border-(--studio-border) rounded text-[11px] text-white px-2 focus:outline-none" />
                               </div>
                             </div>
                           );
@@ -1950,12 +1950,12 @@ export default ${camelId};
                           return (
                             <div className="space-y-1">
                               <div className="flex justify-between items-center text-[10px]">
-                                <span className="text-[var(--studio-muted)]">Rotation Angle (deg)</span>
-                                <button onClick={() => handleToggleKeyframing("ks.r")} className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${track.isAnimated ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-white"}`}>
+                                <span className="text-(--studio-muted)">Rotation Angle (deg)</span>
+                                <button onClick={() => handleToggleKeyframing("ks.r")} className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${track.isAnimated ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:text-white"}`}>
                                   {track.isAnimated ? "⏰ Active" : "⏱️ Static"}
                                 </button>
                               </div>
-                              <input type="number" value={rot} onChange={(e) => handlePropertyChange("ks.r", parseInt(e.target.value) || 0)} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded text-[11px] text-white px-2 focus:outline-none" />
+                              <input type="number" value={rot} onChange={(e) => handlePropertyChange("ks.r", parseInt(e.target.value) || 0)} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded text-[11px] text-white px-2 focus:outline-none" />
                             </div>
                           );
                         })()}
@@ -1967,12 +1967,12 @@ export default ${camelId};
                           return (
                             <div className="space-y-1">
                               <div className="flex justify-between items-center text-[10px]">
-                                <span className="text-[var(--studio-muted)]">Opacity %</span>
-                                <button onClick={() => handleToggleKeyframing("ks.o")} className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${track.isAnimated ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-white"}`}>
+                                <span className="text-(--studio-muted)">Opacity %</span>
+                                <button onClick={() => handleToggleKeyframing("ks.o")} className={`text-[9px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${track.isAnimated ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:text-white"}`}>
                                   {track.isAnimated ? "⏰ Active" : "⏱️ Static"}
                                 </button>
                               </div>
-                              <input type="number" min="0" max="100" value={opacity} onChange={(e) => handlePropertyChange("ks.o", parseInt(e.target.value) || 100)} className="w-full h-7 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded text-[11px] text-white px-2 focus:outline-none" />
+                              <input type="number" min="0" max="100" value={opacity} onChange={(e) => handlePropertyChange("ks.o", parseInt(e.target.value) || 100)} className="w-full h-7 bg-(--studio-control) border border-(--studio-border) rounded text-[11px] text-white px-2 focus:outline-none" />
                             </div>
                           );
                         })()}
@@ -1982,8 +1982,8 @@ export default ${camelId};
                           const layer = getSelectedLayer();
                           const currentMatte = layer?.tt ?? 0; // 0 = None, 1 = Alpha Matte, 2 = Alpha Inverted Matte
                           return (
-                            <div className="space-y-1 pt-1.5 border-t border-[var(--studio-border-soft)]">
-                              <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Masking (Track Matte)</label>
+                            <div className="space-y-1 pt-1.5 border-t border-(--studio-border-oft)]">
+                              <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Masking (Track Matte)</label>
                               <select
                                 value={currentMatte}
                                 onChange={(e) => {
@@ -1992,13 +1992,13 @@ export default ${camelId};
                                   const result = updateTrackMatte(rawJson, selectedLayerIndex, matteVal);
                                   setRawJson(result);
                                 }}
-                                className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none font-medium cursor-pointer"
+                                className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none font-medium cursor-pointer"
                               >
                                 <option value={0}>None (No clipping)</option>
                                 <option value={1}>Alpha Matte (Use Layer Above as Mask)</option>
                                 <option value={2}>Alpha Inverted Matte</option>
                               </select>
-                              <p className="text-[9px] text-[var(--studio-muted)] leading-relaxed mt-1">
+                              <p className="text-[9px] text-(--studio-muted) leading-relaxed mt-1">
                                 Clipping uses the layer directly <span className="text-teal-400 font-bold">above</span> this layer in the stack as an alpha stencil.
                               </p>
                             </div>
@@ -2020,14 +2020,14 @@ export default ${camelId};
                           const nativeH = asset?.h || 100;
 
                           return (
-                            <div className="space-y-4 pt-3 border-t border-[var(--studio-border-soft)]">
+                            <div className="space-y-4 pt-3 border-t border-(--studio-border-oft)]">
                               <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">📷 Image Asset Inspector</p>
 
                               {/* Image Thumbnail Preview */}
                               {base64Src && (
-                                <div className="flex flex-col items-center justify-center p-3 border border-[var(--studio-border)] bg-[var(--studio-control)] rounded-md">
+                                <div className="flex flex-col items-center justify-center p-3 border border-(--studio-border) bg-(--studio-control) rounded-md">
                                   <img src={base64Src} alt="Preview" className="max-h-24 max-w-full rounded object-contain mb-2 bg-[#0b0b0f] shadow-inner" />
-                                  <span className="text-[9px] font-mono text-[var(--studio-muted)]">
+                                  <span className="text-[9px] font-mono text-(--studio-muted)">
                                     {nativeW} x {nativeH} px
                                   </span>
                                 </div>
@@ -2042,7 +2042,7 @@ export default ${camelId};
                               {/* Native Image Dimensions scaling */}
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Native Width</label>
+                                  <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Native Width</label>
                                   <input
                                     type="number"
                                     value={nativeW}
@@ -2055,11 +2055,11 @@ export default ${camelId};
                                       }
                                       setRawJson(clone);
                                     }}
-                                    className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none"
+                                    className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Native Height</label>
+                                  <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Native Height</label>
                                   <input
                                     type="number"
                                     value={nativeH}
@@ -2072,7 +2072,7 @@ export default ${camelId};
                                       }
                                       setRawJson(clone);
                                     }}
-                                    className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none"
+                                    className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none"
                                   />
                                 </div>
                               </div>
@@ -2110,7 +2110,7 @@ export default ${camelId};
                           const currentMapping = currentMappingIndex !== -1 ? mappedLayers[currentMappingIndex] : null;
 
                           return (
-                            <div className="space-y-4 pt-3 border-t border-[var(--studio-border-soft)]">
+                            <div className="space-y-4 pt-3 border-t border-(--studio-border-oft)]">
                               <div className="flex items-center justify-between">
                                 <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Typography Inspector</p>
                                 <button
@@ -2126,8 +2126,8 @@ export default ${camelId};
 
                               {/* Role Mapping */}
                               {currentMapping && (
-                                <div className="p-2 rounded border border-[var(--studio-border)] bg-[var(--studio-control)] space-y-1.5">
-                                  <p className="text-[9px] text-[var(--studio-muted)] uppercase font-bold">Text Role Binding</p>
+                                <div className="p-2 rounded border border-(--studio-border) bg-(--studio-control) space-y-1.5">
+                                  <p className="text-[9px] text-(--studio-muted) uppercase font-bold">Text Role Binding</p>
                                   <div className="flex gap-1">
                                     {(["primary", "secondary", "accent"] as const).map((role) => (
                                       <button
@@ -2137,14 +2137,14 @@ export default ${camelId};
                                           next[currentMappingIndex] = { ...next[currentMappingIndex], role };
                                           setMappedLayers(next);
                                         }}
-                                        className={`flex-1 py-1 text-[9px] font-bold rounded border cursor-pointer transition-colors capitalize ${currentMapping.role === role ? "bg-indigo-500/30 border-indigo-500/50 text-indigo-200" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-white"}`}
+                                        className={`flex-1 py-1 text-[9px] font-bold rounded border cursor-pointer transition-colors capitalize ${currentMapping.role === role ? "bg-indigo-500/30 border-indigo-500/50 text-indigo-200" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:text-white"}`}
                                       >
                                         {role}
                                       </button>
                                     ))}
                                   </div>
                                   <div className="flex items-center gap-1.5">
-                                    <label className="text-[9px] text-[var(--studio-muted)] shrink-0">Max chars</label>
+                                    <label className="text-[9px] text-(--studio-muted) shrink-0">Max chars</label>
                                     <input
                                       type="number"
                                       value={currentMapping.maxCharacters}
@@ -2155,7 +2155,7 @@ export default ${camelId};
                                         next[currentMappingIndex] = { ...next[currentMappingIndex], maxCharacters: Number(e.target.value) || 30 };
                                         setMappedLayers(next);
                                       }}
-                                      className="w-16 h-6 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-1.5 text-[10px] text-white focus:outline-none"
+                                      className="w-16 h-6 bg-(--studio-control) border border-(--studio-border) rounded px-1.5 text-[10px] text-white focus:outline-none"
                                     />
                                   </div>
                                 </div>
@@ -2163,7 +2163,7 @@ export default ${camelId};
 
                               {/* Text Content */}
                               <div className="space-y-1">
-                                <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Text Content</label>
+                                <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Text Content</label>
                                 <textarea
                                   value={defaultTextVal}
                                   onChange={(e) => {
@@ -2176,7 +2176,7 @@ export default ${camelId};
                                     setRawJson(clone);
                                   }}
                                   rows={2}
-                                  className="w-full bg-[var(--studio-control)] border border-[var(--studio-border)] rounded p-2.5 text-xs text-white focus:outline-none resize-none font-medium"
+                                  className="w-full bg-(--studio-control) border border-(--studio-border) rounded p-2.5 text-xs text-white focus:outline-none resize-none font-medium"
                                   placeholder="Text content..."
                                 />
                               </div>
@@ -2184,7 +2184,7 @@ export default ${camelId};
                               {/* Font Family & Size */}
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1">
-                                  <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Font Weight</label>
+                                  <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Font Weight</label>
                                   <select
                                     value={fontFamilyVal}
                                     onChange={(e) => {
@@ -2196,7 +2196,7 @@ export default ${camelId};
                                       }
                                       setRawJson(clone);
                                     }}
-                                    className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none font-medium cursor-pointer"
+                                    className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none font-medium cursor-pointer"
                                   >
                                     <option value="Poppins-Regular">Poppins Regular</option>
                                     <option value="Poppins-Bold">Poppins Bold</option>
@@ -2209,7 +2209,7 @@ export default ${camelId};
                                   </select>
                                 </div>
                                 <div className="space-y-1">
-                                  <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Font Size</label>
+                                  <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Font Size</label>
                                   <input
                                     type="number"
                                     value={fontSizeVal}
@@ -2222,7 +2222,7 @@ export default ${camelId};
                                       }
                                       setRawJson(clone);
                                     }}
-                                    className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none"
+                                    className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none"
                                   />
                                 </div>
                               </div>
@@ -2230,7 +2230,7 @@ export default ${camelId};
                               {/* Line Height & Letter Spacing */}
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1">
-                                  <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Line Height</label>
+                                  <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Line Height</label>
                                   <input
                                     type="number"
                                     value={lineHeightVal}
@@ -2243,11 +2243,11 @@ export default ${camelId};
                                       }
                                       setRawJson(clone);
                                     }}
-                                    className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none"
+                                    className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none"
                                   />
                                 </div>
                                 <div className="space-y-1">
-                                  <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Letter Spacing</label>
+                                  <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Letter Spacing</label>
                                   <input
                                     type="number"
                                     value={letterSpacingVal}
@@ -2260,14 +2260,14 @@ export default ${camelId};
                                       }
                                       setRawJson(clone);
                                     }}
-                                    className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none"
+                                    className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none"
                                   />
                                 </div>
                               </div>
 
                               {/* Text Alignment (Justification) */}
                               <div className="space-y-1">
-                                <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Alignment</label>
+                                <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Alignment</label>
                                 <div className="grid grid-cols-4 gap-1">
                                   {[
                                     { label: "Left", val: 0 },
@@ -2286,7 +2286,7 @@ export default ${camelId};
                                         }
                                         setRawJson(clone);
                                       }}
-                                      className={`py-1 rounded text-[10px] font-semibold border transition-all cursor-pointer ${alignVal === opt.val ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300 border-indigo-500/50" : "bg-[var(--studio-control)] border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-white"}`}
+                                      className={`py-1 rounded text-[10px] font-semibold border transition-all cursor-pointer ${alignVal === opt.val ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300" : "bg-(--studio-control) border-(--studio-border) text-(--studio-muted) hover:text-white"}`}
                                     >
                                       {opt.label}
                                     </button>
@@ -2296,7 +2296,7 @@ export default ${camelId};
 
                               {/* Text Color Fill */}
                               <div className="flex items-center gap-2">
-                                <label className="text-[9px] text-[var(--studio-muted)] uppercase shrink-0">Text Color</label>
+                                <label className="text-[9px] text-(--studio-muted) uppercase shrink-0">Text Color</label>
                                 <input
                                   type="color"
                                   value={hexColor}
@@ -2313,20 +2313,20 @@ export default ${camelId};
                                     }
                                     setRawJson(clone);
                                   }}
-                                  className="w-8 h-8 rounded border border-[var(--studio-border)] cursor-pointer bg-transparent"
+                                  className="w-8 h-8 rounded border border-(--studio-border) cursor-pointer bg-transparent"
                                 />
-                                <span className="text-[11px] font-mono text-[var(--studio-muted)] uppercase">{hexColor}</span>
+                                <span className="text-[11px] font-mono text-(--studio-muted) uppercase">{hexColor}</span>
                               </div>
 
                               {/* Text Stroke Color & Width */}
-                              <div className="p-2.5 rounded bg-[var(--studio-control)] border border-[var(--studio-border-soft)] space-y-3">
+                              <div className="p-2.5 rounded bg-(--studio-control) border border-(--studio-border-oft)] space-y-3">
                                 <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-bold text-white uppercase tracking-wide">Text Stroke</span>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
                                   <div className="space-y-1">
-                                    <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Stroke Width</label>
+                                    <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Stroke Width</label>
                                     <input
                                       type="number"
                                       min="0"
@@ -2341,11 +2341,11 @@ export default ${camelId};
                                         }
                                         setRawJson(clone);
                                       }}
-                                      className="w-full h-8 bg-[var(--studio-panel)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none"
+                                      className="w-full h-8 bg-(--studio-panel) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none"
                                     />
                                   </div>
                                   <div className="space-y-1">
-                                    <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Stroke Color</label>
+                                    <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Stroke Color</label>
                                     <div className="flex items-center gap-1.5 h-8">
                                       <input
                                         type="color"
@@ -2363,9 +2363,9 @@ export default ${camelId};
                                           }
                                           setRawJson(clone);
                                         }}
-                                        className="w-7 h-7 rounded border border-[var(--studio-border)] cursor-pointer bg-transparent"
+                                        className="w-7 h-7 rounded border border-(--studio-border) cursor-pointer bg-transparent"
                                       />
-                                      <span className="text-[10px] font-mono text-[var(--studio-muted)] uppercase">{strokeHexColor}</span>
+                                      <span className="text-[10px] font-mono text-(--studio-muted) uppercase">{strokeHexColor}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -2377,7 +2377,7 @@ export default ${camelId};
                                   <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider">🏷️ Clypra Editor Role Map</p>
 
                                   <div className="space-y-1">
-                                    <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Editor Variable Role</label>
+                                    <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Editor Variable Role</label>
                                     <select
                                       value={currentMapping.role}
                                       onChange={(e) => {
@@ -2388,7 +2388,7 @@ export default ${camelId};
                                         };
                                         setMappedLayers(next);
                                       }}
-                                      className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none font-semibold cursor-pointer"
+                                      className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none font-semibold cursor-pointer"
                                     >
                                       <option value="primary">Primary (Subscription/CTA)</option>
                                       <option value="secondary">Secondary (Channel/Logo)</option>
@@ -2397,7 +2397,7 @@ export default ${camelId};
                                   </div>
 
                                   <div className="space-y-1">
-                                    <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Max Characters Limit</label>
+                                    <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Max Characters Limit</label>
                                     <input
                                       type="number"
                                       value={currentMapping.maxCharacters}
@@ -2409,7 +2409,7 @@ export default ${camelId};
                                         };
                                         setMappedLayers(next);
                                       }}
-                                      className="w-full h-8 bg-[var(--studio-control)] border border-[var(--studio-border)] rounded px-2 text-xs text-white focus:outline-none"
+                                      className="w-full h-8 bg-(--studio-control) border border-(--studio-border) rounded px-2 text-xs text-white focus:outline-none"
                                     />
                                   </div>
                                 </div>
@@ -2458,9 +2458,9 @@ export default ${camelId};
 
                           if (editableShapes.length === 0) {
                             return (
-                              <div className="space-y-3 pt-3 border-t border-[var(--studio-border-soft)]">
+                              <div className="space-y-3 pt-3 border-t border-(--studio-border-oft)]">
                                 <p className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Vector Shape Inspector</p>
-                                <p className="text-[11px] text-[var(--studio-muted)] italic">No vector shapes inside this layer. Use "+ Rectangle" or "+ Ellipse" in the Left Library to insert one.</p>
+                                <p className="text-[11px] text-(--studio-muted) italic">No vector shapes inside this layer. Use "+ Rectangle" or "+ Ellipse" in the Left Library to insert one.</p>
                               </div>
                             );
                           }
@@ -2475,7 +2475,7 @@ export default ${camelId};
                           };
 
                           return (
-                            <div className="space-y-4 pt-3 border-t border-[var(--studio-border-soft)]">
+                            <div className="space-y-4 pt-3 border-t border-(--studio-border-oft)]">
                               <p className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Vector Shape Inspector</p>
 
                               {editableShapes.map((shape, sIdx) => {
@@ -2487,16 +2487,16 @@ export default ${camelId};
                                 const hexColor = floatToHex(colorVal);
 
                                 return (
-                                  <div key={sIdx} className="p-2.5 rounded bg-[var(--studio-control)] border border-[var(--studio-border-soft)] space-y-3">
+                                  <div key={sIdx} className="p-2.5 rounded bg-(--studio-control) border border-(--studio-border-oft)] space-y-3">
                                     <div className="flex items-center justify-between">
                                       <span className="text-[11px] font-bold text-white uppercase tracking-wide">{shape.name}</span>
-                                      <span className="text-[9px] font-mono text-[var(--studio-muted)] uppercase">{shape.type === "rect" ? "RECTANGLE" : "ELLIPSE"}</span>
+                                      <span className="text-[9px] font-mono text-(--studio-muted) uppercase">{shape.type === "rect" ? "RECTANGLE" : "ELLIPSE"}</span>
                                     </div>
 
                                     {/* Width & Height */}
                                     <div className="grid grid-cols-2 gap-2">
                                       <div>
-                                        <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Width</label>
+                                        <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Width</label>
                                         <input
                                           type="number"
                                           value={widthVal}
@@ -2510,11 +2510,11 @@ export default ${camelId};
                                             }
                                             setRawJson(clone);
                                           }}
-                                          className="w-full h-7 bg-[var(--studio-panel)] border border-[var(--studio-border)] rounded text-[11px] px-2 text-white focus:outline-none"
+                                          className="w-full h-7 bg-(--studio-panel) border border-(--studio-border) rounded text-[11px] px-2 text-white focus:outline-none"
                                         />
                                       </div>
                                       <div>
-                                        <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Height</label>
+                                        <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Height</label>
                                         <input
                                           type="number"
                                           value={heightVal}
@@ -2528,7 +2528,7 @@ export default ${camelId};
                                             }
                                             setRawJson(clone);
                                           }}
-                                          className="w-full h-7 bg-[var(--studio-panel)] border border-[var(--studio-border)] rounded text-[11px] px-2 text-white focus:outline-none"
+                                          className="w-full h-7 bg-(--studio-panel) border border-(--studio-border) rounded text-[11px] px-2 text-white focus:outline-none"
                                         />
                                       </div>
                                     </div>
@@ -2536,7 +2536,7 @@ export default ${camelId};
                                     {/* Corner Radius (Only for Rectangles) */}
                                     {shape.type === "rect" && (
                                       <div>
-                                        <label className="block text-[9px] text-[var(--studio-muted)] uppercase mb-0.5">Corner Radius (Roundness)</label>
+                                        <label className="block text-[9px] text-(--studio-muted) uppercase mb-0.5">Corner Radius (Roundness)</label>
                                         <input
                                           type="number"
                                           value={roundnessVal}
@@ -2550,7 +2550,7 @@ export default ${camelId};
                                             }
                                             setRawJson(clone);
                                           }}
-                                          className="w-full h-7 bg-[var(--studio-panel)] border border-[var(--studio-border)] rounded text-[11px] px-2 text-white focus:outline-none"
+                                          className="w-full h-7 bg-(--studio-panel) border border-(--studio-border) rounded text-[11px] px-2 text-white focus:outline-none"
                                         />
                                       </div>
                                     )}
@@ -2558,7 +2558,7 @@ export default ${camelId};
                                     {/* Color Fill picker */}
                                     {shape.fillItem && (
                                       <div className="flex items-center gap-2 pt-1">
-                                        <label className="text-[9px] text-[var(--studio-muted)] uppercase shrink-0">Fill Color</label>
+                                        <label className="text-[9px] text-(--studio-muted) uppercase shrink-0">Fill Color</label>
                                         <input
                                           type="color"
                                           value={hexColor}
@@ -2576,9 +2576,9 @@ export default ${camelId};
                                             }
                                             setRawJson(clone);
                                           }}
-                                          className="w-8 h-8 rounded border border-[var(--studio-border)] cursor-pointer bg-transparent"
+                                          className="w-8 h-8 rounded border border-(--studio-border) cursor-pointer bg-transparent"
                                         />
-                                        <span className="text-[11px] font-mono text-[var(--studio-muted)] uppercase">{hexColor}</span>
+                                        <span className="text-[11px] font-mono text-(--studio-muted) uppercase">{hexColor}</span>
                                       </div>
                                     )}
                                   </div>
@@ -2591,10 +2591,10 @@ export default ${camelId};
                         if (layer.ty === 1) {
                           // Solid Layer Controls
                           return (
-                            <div className="space-y-3 pt-3 border-t border-[var(--studio-border-soft)]">
+                            <div className="space-y-3 pt-3 border-t border-(--studio-border-oft)]">
                               <p className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Solid Backdrop Inspector</p>
                               <div className="flex items-center gap-2">
-                                <label className="text-[9px] text-[var(--studio-muted)] uppercase shrink-0">Color</label>
+                                <label className="text-[9px] text-(--studio-muted) uppercase shrink-0">Color</label>
                                 <input
                                   type="color"
                                   value={layer.sc || "#1e1e26"}
@@ -2604,9 +2604,9 @@ export default ${camelId};
                                     clone.layers[selectedLayerIndex!].sc = e.target.value;
                                     setRawJson(clone);
                                   }}
-                                  className="w-8 h-8 rounded border border-[var(--studio-border)] cursor-pointer bg-transparent"
+                                  className="w-8 h-8 rounded border border-(--studio-border) cursor-pointer bg-transparent"
                                 />
-                                <span className="text-xs font-mono text-[var(--studio-muted)] uppercase">{layer.sc}</span>
+                                <span className="text-xs font-mono text-(--studio-muted) uppercase">{layer.sc}</span>
                               </div>
                             </div>
                           );
@@ -2616,7 +2616,7 @@ export default ${camelId};
                         if (layer.ty === 4) {
                           const existingOverride = colorOverrides.find((o) => o.layerName === layer.nm);
                           return (
-                            <div className="space-y-3 pt-3 border-t border-[var(--studio-border-soft)]">
+                            <div className="space-y-3 pt-3 border-t border-(--studio-border-oft)]">
                               <p className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Shape Color Override</p>
                               <div className="flex items-center gap-2">
                                 <input
@@ -2629,16 +2629,16 @@ export default ${camelId};
                                       return [...next, { layerName: layer.nm, color }];
                                     });
                                   }}
-                                  className="w-8 h-8 rounded border border-[var(--studio-border)] cursor-pointer bg-transparent"
+                                  className="w-8 h-8 rounded border border-(--studio-border) cursor-pointer bg-transparent"
                                 />
-                                <span className="text-[10px] font-mono text-[var(--studio-muted)]">{existingOverride?.color || "No override"}</span>
+                                <span className="text-[10px] font-mono text-(--studio-muted)">{existingOverride?.color || "No override"}</span>
                                 {existingOverride && (
                                   <button onClick={() => setColorOverrides((prev) => prev.filter((o) => o.layerName !== layer.nm))} className="text-[9px] px-1.5 py-0.5 rounded border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 cursor-pointer">
                                     Clear
                                   </button>
                                 )}
                               </div>
-                              <p className="text-[9px] text-[var(--studio-muted)] leading-relaxed">Overrides all fill colors in this shape layer for live preview.</p>
+                              <p className="text-[9px] text-(--studio-muted) leading-relaxed">Overrides all fill colors in this shape layer for live preview.</p>
                             </div>
                           );
                         }
@@ -2650,13 +2650,13 @@ export default ${camelId};
                 {rightPanelTab === "meta" && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--studio-muted)]">[id].meta.ts</h4>
-                      <button onClick={copyToClipboard} className="text-[10px] px-2 py-1 rounded border border-[var(--studio-border)] bg-[var(--studio-control)] hover:bg-[var(--studio-hover)] text-white cursor-pointer flex items-center gap-1">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-(--studio-muted)">[id].meta.ts</h4>
+                      <button onClick={copyToClipboard} className="text-[10px] px-2 py-1 rounded border border-(--studio-border) bg-(--studio-control) hover:bg-(--studio-hover) text-white cursor-pointer flex items-center gap-1">
                         <Copy size={11} className={copiedCodeFeedback ? "text-green-400" : ""} />
                         {copiedCodeFeedback ? "Copied!" : "Copy"}
                       </button>
                     </div>
-                    <pre className="text-[9px] font-mono text-[var(--studio-muted)] bg-[var(--studio-control)] border border-[var(--studio-border)] rounded p-3 overflow-x-auto whitespace-pre-wrap leading-relaxed">{generatedMetadata}</pre>
+                    <pre className="text-[9px] font-mono text-(--studio-muted) bg-(--studio-control) border border-(--studio-border) rounded p-3 overflow-x-auto whitespace-pre-wrap leading-relaxed">{generatedMetadata}</pre>
                   </div>
                 )}
 
@@ -2664,7 +2664,7 @@ export default ${camelId};
                 {rightPanelTab === "json" && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--studio-muted)]">[id].json</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-(--studio-muted)">[id].json</h4>
                       <button
                         onClick={async () => {
                           try {
@@ -2673,13 +2673,13 @@ export default ${camelId};
                             setTimeout(() => setCopiedCodeFeedback(false), 2000);
                           } catch {}
                         }}
-                        className="text-[10px] px-2 py-1 rounded border border-[var(--studio-border)] bg-[var(--studio-control)] hover:bg-[var(--studio-hover)] text-white cursor-pointer flex items-center gap-1"
+                        className="text-[10px] px-2 py-1 rounded border border-(--studio-border) bg-(--studio-control) hover:bg-(--studio-hover) text-white cursor-pointer flex items-center gap-1"
                       >
                         <Copy size={11} className={copiedCodeFeedback ? "text-green-400" : ""} />
                         {copiedCodeFeedback ? "Copied!" : "Copy JSON"}
                       </button>
                     </div>
-                    <pre className="text-[9px] font-mono text-[var(--studio-muted)] bg-[var(--studio-control)] border border-[var(--studio-border)] rounded p-3 overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-96">
+                    <pre className="text-[9px] font-mono text-(--studio-muted) bg-(--studio-control) border border-(--studio-border) rounded p-3 overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-96">
                       {JSON.stringify(rawJson, null, 2).slice(0, 8000)}
                       {JSON.stringify(rawJson).length > 8000 ? "\n\n... (truncated)" : ""}
                     </pre>
@@ -2696,10 +2696,10 @@ export default ${camelId};
           <PublishTemplateModal open={showPublishModal} onClose={() => setShowPublishModal(false)} templateId={templateId} templateName={templateName} category={category} description={description} tagsInput={tagsInput} placement={placement} thumbnailFrame={thumbnailFrame} durationFrames={durationFrames} validationErrors={validationErrors} lottieData={rawJson} thumbnailDataUrl={thumbnailDataUrl || undefined} width={width} height={height} onTemplateIdChange={setTemplateId} onTemplateNameChange={setTemplateName} onCategoryChange={setCategory} onDescriptionChange={setDescription} onTagsInputChange={setTagsInput} onPlacementChange={setPlacement} onThumbnailFrameChange={setThumbnailFrame} onUseCurrentFrame={handleUseCurrentFrameAsThumbnail} onPreviewThumbnail={handlePreviewThumbnailFrame} onPublish={handlePublishTemplate} publishStatus={publishStatus} publishMessage={publishMessage} publishPrUrl={publishPrUrl} />
 
           {/* BOTTOM PANEL: Keyframe Dope Sheet & Timeline */}
-          <div className="h-44 shrink-0 border-t border-[var(--studio-border)] bg-[var(--studio-shell)] flex flex-col overflow-hidden select-none select-none">
+          <div className="h-44 shrink-0 border-t border-(--studio-border) bg-(--studio-shell) flex flex-col overflow-hidden select-none">
             {/* Timeline ticks header */}
-            <div className="h-8 border-b border-[var(--studio-border-soft)] bg-[var(--studio-control)] flex items-center shrink-0">
-              <div className="w-48 border-r border-[var(--studio-border-soft)] px-3 text-[10px] font-bold text-[var(--studio-muted)] uppercase shrink-0">Layer Anim Tracks</div>
+            <div className="h-8 border-b border-(--studio-border-oft)] bg-(--studio-control) flex items-center shrink-0">
+              <div className="w-48 border-r border-(--studio-border-oft)] px-3 text-[10px] font-bold text-(--studio-muted) uppercase shrink-0">Layer Anim Tracks</div>
               <div
                 className="flex-1 relative h-full flex items-center"
                 onContextMenu={(e) => {
@@ -2721,7 +2721,7 @@ export default ${camelId};
               >
                 {/* Horizontal Ticks */}
                 {Array.from({ length: Math.ceil(durationFrames / 10) }).map((_, idx) => (
-                  <span key={idx} style={{ left: `${(idx * 10 * 100) / durationFrames}%` }} className="absolute text-[8px] font-mono text-[var(--studio-muted)] -translate-x-1/2">
+                  <span key={idx} style={{ left: `${(idx * 10 * 100) / durationFrames}%` }} className="absolute text-[8px] font-mono text-(--studio-muted) -translate-x-1/2">
                     {idx * 10}f
                   </span>
                 ))}
@@ -2730,7 +2730,7 @@ export default ${camelId};
                 <div style={{ left: `${(currentFrame * 100) / durationFrames}%` }} className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10 timeline-playhead" />
 
                 {/* Thumbnail frame indicator */}
-                <div style={{ left: `${(thumbnailFrame * 100) / durationFrames}%` }} className="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-[9] pointer-events-none" />
+                <div style={{ left: `${(thumbnailFrame * 100) / durationFrames}%` }} className="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-9 pointer-events-none" />
                 <div
                   style={{ left: `${(thumbnailFrame * 100) / durationFrames}%` }}
                   className="absolute top-0 w-3 h-3 bg-amber-400 border-2 border-amber-600 rounded-full -translate-x-1/2 shadow-[0_0_8px_rgba(251,191,36,0.6)] cursor-pointer hover:scale-125 transition-transform z-10"
@@ -2769,11 +2769,11 @@ export default ${camelId};
             </div>
 
             {/* Tracks visual Lanes scroll port */}
-            <div className="flex-1 overflow-y-auto min-h-0 bg-[#0e0e12]">
+            <div className="flex-1 overflow-y-auto min-h-0 bg-clypra-bg">
               {selectedLayerIndex === null ? (
-                <div className="text-center py-8 text-xs text-[var(--studio-muted)]">Select a layer to visualize animatable transform tracks.</div>
+                <div className="text-center py-8 text-xs text-(--studio-muted)">Select a layer to visualize animatable transform tracks.</div>
               ) : (
-                <div className="divide-y divide-[var(--studio-border-soft)]">
+                <div className="divide-y divide-(--studio-border-oft)]">
                   {(["ks.p", "ks.s", "ks.r", "ks.o"] as LottiePropertyPath[]).map((trackPath) => {
                     const track = getTrackInfo(trackPath);
                     const label = trackPath === "ks.p" ? "Position" : trackPath === "ks.s" ? "Scale" : trackPath === "ks.r" ? "Rotation" : "Opacity";
@@ -2781,7 +2781,7 @@ export default ${camelId};
                     return (
                       <div key={trackPath} className="h-7 flex items-center">
                         {/* Track Name */}
-                        <div className="w-48 border-r border-[var(--studio-border-soft)] px-3 text-[10px] font-semibold text-[var(--studio-muted)] shrink-0 flex items-center justify-between">
+                        <div className="w-48 border-r border-(--studio-border-oft)] px-3 text-[10px] font-semibold text-(--studio-muted) shrink-0 flex items-center justify-between">
                           <span className={track.isAnimated ? "text-purple-300 font-bold" : ""}>↳ {label}</span>
                           <span className="text-[9px] font-mono font-semibold text-white/50">{track.isAnimated ? "Animated" : "Static"}</span>
                         </div>

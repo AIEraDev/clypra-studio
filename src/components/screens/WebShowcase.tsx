@@ -183,33 +183,33 @@ export const WebShowcase: React.FC = () => {
 
         {/* Layer 3: Massive Drifting Cosmic Nebulas */}
         <div
-          className="absolute -top-[15%] left-[5%] w-[60vw] h-[60vw] rounded-full blur-[140px] opacity-[0.25] animate-nebula-p"
+          className="absolute top-[-15%] left-[5%] w-[60vw] h-[60vw] rounded-full blur-[140px] opacity-[0.25] animate-nebula-p"
           style={{
             background: "radial-gradient(circle, rgba(108, 99, 255, 0.4) 0%, rgba(139, 92, 246, 0.1) 60%, transparent 100%)",
           }}
         />
         <div
-          className="absolute top-[25%] -right-[15%] w-[55vw] h-[55vw] rounded-full blur-[130px] opacity-[0.2] animate-nebula-b"
+          className="absolute top-[25%] right-[-15%] w-[55vw] h-[55vw] rounded-full blur-[130px] opacity-[0.2] animate-nebula-b"
           style={{
             background: "radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, rgba(59, 130, 246, 0.08) 60%, transparent 100%)",
           }}
         />
         <div
-          className="absolute bottom-[15%] -left-[15%] w-[50vw] h-[50vw] rounded-full blur-[150px] opacity-[0.16] animate-nebula-e"
+          className="absolute bottom-[15%] left-[-15%] w-[50vw] h-[50vw] rounded-full blur-[150px] opacity-[0.16] animate-nebula-e"
           style={{
             background: "radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(108, 99, 255, 0.03) 65%, transparent 100%)",
           }}
         />
         <div
-          className="absolute -bottom-[10%] right-[10%] w-[50vw] h-[50vw] rounded-full blur-[140px] opacity-[0.15] animate-nebula-c"
+          className="absolute bottom-[-10%] right-[10%] w-[50vw] h-[50vw] rounded-full blur-[140px] opacity-[0.15] animate-nebula-c"
           style={{
             background: "radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(139, 92, 246, 0.03) 60%, transparent 100%)",
           }}
         />
 
         {/* Layer 4: Vertical and Horizontal Scanning Laser Beams */}
-        <div className="absolute top-0 bottom-0 w-[1px] bg-gradient-to-b from-transparent via-[#6c63ff]/60 to-transparent animate-laser-x pointer-events-none shadow-[0_0_15px_rgba(108,99,255,0.8)]" />
-        <div className="absolute left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent animate-laser-y pointer-events-none shadow-[0_0_15px_rgba(6,182,212,0.8)]" />
+        <div className="absolute top-0 bottom-0 w-px bg-linear-to-b from-transparent via-[#6c63ff]/60 to-transparent animate-laser-x pointer-events-none shadow-[0_0_15px_rgba(108,99,255,0.8)]" />
+        <div className="absolute left-0 right-0 h-px bg-linear-to-r from-transparent via-cyan-500/50 to-transparent animate-laser-y pointer-events-none shadow-[0_0_15px_rgba(6,182,212,0.8)]" />
 
         {/* Layer 5: Floating Micro-Star Particles */}
         <div className="absolute inset-0">
@@ -223,7 +223,7 @@ export const WebShowcase: React.FC = () => {
       </div>
 
       {/* ── Navigation / Header ────────────────────────────────── */}
-      <header className="relative z-10 w-full border-b border-white/[0.03] backdrop-blur-md bg-[#030305]/40 sticky top-0">
+      <header className="relative z-10 w-full border-b border-white/3 backdrop-blur-md bg-[#030305]/40 top-0">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 group">
             <div className="w-10 h-10 flex items-center justify-center relative">
@@ -231,7 +231,7 @@ export const WebShowcase: React.FC = () => {
               <img src="/clypra.svg" alt="Clypra Logo" className="w-9 h-9 object-contain relative z-10 group-hover:rotate-6 transition-transform duration-500" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Clypra</h1>
+              <h1 className="text-lg font-bold tracking-tight bg-linear-to-r from-white to-neutral-400 bg-clip-text text-transparent">Clypra</h1>
               <p className="text-[9px] text-[#666] font-mono tracking-widest uppercase">Premium Video Editor</p>
             </div>
           </div>
@@ -244,7 +244,7 @@ export const WebShowcase: React.FC = () => {
             <a href="https://github.com/AIEraDev/clypra" target="_blank" rel="noopener noreferrer" className="text-xs text-[#a1a1aa] hover:text-white transition-all duration-300 flex items-center gap-1.5 font-medium relative group py-2">
               <span>GitHub Repository</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-              <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#6c63ff] group-hover:w-full transition-all duration-300"></span>
+              <span className="absolute bottom-0 left-0 w-0 h-px bg-[#6c63ff] group-hover:w-full transition-all duration-300"></span>
             </a>
           </div>
         </div>
@@ -264,7 +264,7 @@ export const WebShowcase: React.FC = () => {
           <h2 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.08] font-outfit text-white">
             A Premium
             <br />
-            <span className="bg-gradient-to-r from-[#6c63ff] via-[#8b84ff] to-[#a9a4ff] bg-clip-text text-transparent shimmer-bg">Video Editor.</span>
+            <span className="bg-linear-to-r from-[#6c63ff] via-[#8b84ff] to-[#a9a4ff] bg-clip-text text-transparent shimmer-bg">Video Editor.</span>
           </h2>
 
           {/* Subheading */}
@@ -272,9 +272,9 @@ export const WebShowcase: React.FC = () => {
 
           {/* Quick Platform Badges */}
           <div className="flex justify-center gap-3 mt-4 text-[10px] text-[#666] font-mono">
-            <span className="px-2.5 py-1 rounded bg-white/[0.02] border border-white/[0.04]">macOS Universal</span>
-            <span className="px-2.5 py-1 rounded bg-white/[0.02] border border-white/[0.04]">Windows x64</span>
-            <span className="px-2.5 py-1 rounded bg-white/[0.02] border border-white/[0.04]">Linux AppImage</span>
+            <span className="px-2.5 py-1 rounded bg-white/2 border border-white/4">macOS Universal</span>
+            <span className="px-2.5 py-1 rounded bg-white/2 border border-white/4">Windows x64</span>
+            <span className="px-2.5 py-1 rounded bg-white/2 border border-white/4">Linux AppImage</span>
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center gap-3 mt-2">
@@ -282,7 +282,7 @@ export const WebShowcase: React.FC = () => {
               Launch Clypra Studio
               <ArrowRight className="w-4 h-4" />
             </a>
-            <a href="https://github.com/AIEraDev/Clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="h-12 rounded-xl border border-white/[0.08] bg-white/[0.03] px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:bg-white/[0.07]">
+            <a href="https://github.com/AIEraDev/Clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="h-12 rounded-xl border border-white/8 bg-white/3 px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:bg-white/[0.07]">
               Download Desktop
               <Download className="w-4 h-4" />
             </a>
@@ -307,35 +307,35 @@ export const WebShowcase: React.FC = () => {
                   <h4 className="font-bold text-white text-xl">macOS</h4>
                   <p className="text-[10px] text-[#8b84ff] font-mono tracking-wider uppercase mt-0.5">Universal DMG (.dmg)</p>
                 </div>
-                <div className="w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white text-lg font-semibold group-hover:scale-110 transition-transform duration-300"></div>
+                <div className="w-11 h-11 rounded-xl bg-white/3 border border-white/6 flex items-center justify-center text-white text-lg font-semibold group-hover:scale-110 transition-transform duration-300"></div>
               </div>
 
-              <ul className="text-xs text-[#a1a1aa] flex flex-col gap-3 list-none p-0 my-2 flex-grow">
+              <ul className="text-xs text-[#a1a1aa] flex flex-col gap-3 list-none p-0 my-2 grow">
                 <li className="flex gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-[#8b84ff] flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-[#8b84ff] shrink-0 mt-0.5" />
                   <span>Supports both Apple Silicon & Intel processors natively.</span>
                 </li>
                 <li className="flex gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-[#8b84ff] flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-[#8b84ff] shrink-0 mt-0.5" />
                   <span>Bypasses Gatekeeper controls securely via Cask.</span>
                 </li>
               </ul>
 
-              <div className="mt-auto pt-5 border-t border-white/[0.04] flex flex-col gap-3 z-10">
+              <div className="mt-auto pt-5 border-t border-white/4 flex flex-col gap-3 z-10">
                 <a href="https://github.com/AIEraDev/Clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="w-full h-12 rounded-xl bg-[#6c63ff]/80 hover:bg-[#6c63ff] border border-[#8b84ff]/30 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_4px_20px_rgba(108,99,255,0.25)] hover:shadow-[0_4px_25px_rgba(108,99,255,0.4)]">
                   <Download className="w-4 h-4" />
                   Download DMG
                 </a>
 
                 {/* Homebrew Box */}
-                <div className="p-3 rounded-xl bg-[#09090b]/80 border border-white/[0.03] flex flex-col gap-1.5 text-[11px] text-left transition-colors group-hover:border-white/[0.06]">
+                <div className="p-3 rounded-xl bg-[#09090b]/80 border border-white/3 flex flex-col gap-1.5 text-[11px] text-left transition-colors group-hover:border-white/6">
                   <span className="font-mono text-neutral-400 font-medium flex items-center justify-between">
                     <span>Or run brew command:</span>
                     <button onClick={() => copyToClipboard("brew install AIEraDev/tap/clypra", "mac")} className="text-[#8b84ff] hover:text-white transition-colors cursor-pointer">
                       {copiedMac ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </span>
-                  <code className="text-[#8b84ff] font-mono select-all break-all bg-white/[0.02] p-1.5 rounded border border-white/[0.04] block text-[10px]">brew install AIEraDev/tap/clypra</code>
+                  <code className="text-[#8b84ff] font-mono select-all break-all bg-white/2 p-1.5 rounded border border-white/4 block text-[10px]">brew install AIEraDev/tap/clypra</code>
                 </div>
               </div>
             </div>
@@ -349,24 +349,24 @@ export const WebShowcase: React.FC = () => {
                   <h4 className="font-bold text-white text-xl">Windows</h4>
                   <p className="text-[10px] text-cyan-400 font-mono tracking-wider uppercase mt-0.5">x64 MSI Installer (.msi)</p>
                 </div>
-                <div className="w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-11 h-11 rounded-xl bg-white/3 border border-white/6 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform duration-300">
                   <Monitor className="w-5 h-5" />
                 </div>
               </div>
 
-              <ul className="text-xs text-[#a1a1aa] flex flex-col gap-3 list-none p-0 my-2 flex-grow">
+              <ul className="text-xs text-[#a1a1aa] flex flex-col gap-3 list-none p-0 my-2 grow">
                 <li className="flex gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                   <span>Hardware-accelerated rendering and video scaling.</span>
                 </li>
                 <li className="flex gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                   <span>Packaged with pre-compiled high performance libraries.</span>
                 </li>
               </ul>
 
-              <div className="mt-auto pt-5 border-t border-white/[0.04] z-10">
-                <a href="https://github.com/AIEraDev/clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="w-full h-12 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-white/[0.12] text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_4px_25px_rgba(6,182,212,0.15)]">
+              <div className="mt-auto pt-5 border-t border-white/4 z-10">
+                <a href="https://github.com/AIEraDev/clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="w-full h-12 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/12 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_4px_25px_rgba(6,182,212,0.15)]">
                   <Download className="w-4 h-4" />
                   Download for Windows
                 </a>
@@ -382,24 +382,24 @@ export const WebShowcase: React.FC = () => {
                   <h4 className="font-bold text-white text-xl">Linux</h4>
                   <p className="text-[10px] text-emerald-400 font-mono tracking-wider uppercase mt-0.5">x64 AppImage (.AppImage)</p>
                 </div>
-                <div className="w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-11 h-11 rounded-xl bg-white/3 border border-white/6 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform duration-300">
                   <Terminal className="w-5 h-5" />
                 </div>
               </div>
 
-              <ul className="text-xs text-[#a1a1aa] flex flex-col gap-3 list-none p-0 my-2 flex-grow">
+              <ul className="text-xs text-[#a1a1aa] flex flex-col gap-3 list-none p-0 my-2 grow">
                 <li className="flex gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>Sandbox-compatible executable with no installation needed.</span>
                 </li>
                 <li className="flex gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>Lightweight distribution compatible with major distros.</span>
                 </li>
               </ul>
 
-              <div className="mt-auto pt-5 border-t border-white/[0.04] z-10">
-                <a href="https://github.com/AIEraDev/clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="w-full h-12 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-white/[0.12] text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_4px_25px_rgba(16,185,129,0.15)]">
+              <div className="mt-auto pt-5 border-t border-white/4 z-10">
+                <a href="https://github.com/AIEraDev/clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="w-full h-12 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/12 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_4px_25px_rgba(16,185,129,0.15)]">
                   <Download className="w-4 h-4" />
                   Download for Linux
                 </a>
@@ -419,28 +419,28 @@ export const WebShowcase: React.FC = () => {
                 </div>
 
                 <h4 className="font-extrabold text-white text-2xl md:text-3xl font-outfit">
-                  Clypra Mobile <span className="bg-gradient-to-r from-pink-400 to-[#8b84ff] bg-clip-text text-transparent shimmer-bg">Coming Soon</span>
+                  Clypra Mobile <span className="bg-linear-to-r from-pink-400 to-[#8b84ff] bg-clip-text text-transparent shimmer-bg">Coming Soon</span>
                 </h4>
 
                 <p className="text-xs md:text-sm text-[#a1a1aa] leading-relaxed">We are actively bringing the desktop-class native performance of Clypra to your pocket. Built on the brand-new Tauri v2 mobile core, Clypra Mobile will deliver lightning-fast, GPU-accelerated video editing directly on iOS and Android with local-first project portability.</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-pink-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-white">Tauri Mobile Core</span>
                       <span className="text-[10px] text-[#666]">Native Rust performance</span>
                     </div>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-pink-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-white">Touch-Optimized NLE</span>
                       <span className="text-[10px] text-[#666]">Intuitive gesture timeline</span>
                     </div>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-pink-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-white">Local Portability</span>
                       <span className="text-[10px] text-[#666]">Seamless edit handover</span>
@@ -451,8 +451,8 @@ export const WebShowcase: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row lg:flex-col gap-4 w-full sm:w-auto lg:w-72 justify-center items-stretch z-10">
                 {/* iOS coming soon */}
-                <div className="flex items-center gap-3.5 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] relative group/item hover:bg-white/[0.04] hover:border-white/[0.08] transition-all">
-                  <div className="w-10 h-10 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white text-lg font-bold"></div>
+                <div className="flex items-center gap-3.5 p-4 rounded-xl bg-white/2 border border-white/4 relative group/item hover:bg-white/4 hover:border-white/8 transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-white/3 border border-white/6 flex items-center justify-center text-white text-lg font-bold"></div>
                   <div className="flex flex-col text-left">
                     <span className="text-xs font-bold text-white">iOS App Store</span>
                     <span className="text-[9px] text-[#666] font-mono tracking-wide uppercase mt-0.5">For iPhone and iPad</span>
@@ -461,8 +461,8 @@ export const WebShowcase: React.FC = () => {
                 </div>
 
                 {/* Android coming soon */}
-                <div className="flex items-center gap-3.5 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] relative group/item hover:bg-white/[0.04] hover:border-white/[0.08] transition-all">
-                  <div className="w-10 h-10 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#8b84ff]">
+                <div className="flex items-center gap-3.5 p-4 rounded-xl bg-white/2 border border-white/4 relative group/item hover:bg-white/4 hover:border-white/8 transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-white/3 border border-white/6 flex items-center justify-center text-[#8b84ff]">
                     <Smartphone className="w-5 h-5" />
                   </div>
                   <div className="flex flex-col text-left">
@@ -478,7 +478,7 @@ export const WebShowcase: React.FC = () => {
 
         {/* ── Detailed Installation Bypass Guidelines ──────────────── */}
         <section className="flex flex-col gap-8 animate-fade-up" style={{ animationDelay: "300ms" }}>
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/[0.05] pb-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/5 pb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#6c63ff]/10 flex items-center justify-center text-[#8b84ff]">
                 <Shield className="w-5 h-5" />
@@ -490,7 +490,7 @@ export const WebShowcase: React.FC = () => {
             </div>
 
             {/* Tabs Selector */}
-            <div className="flex bg-[#0c0c10] border border-white/[0.03] p-1 rounded-xl">
+            <div className="flex bg-[#0c0c10] border border-white/3 p-1 rounded-xl">
               <button onClick={() => setActiveTab("mac")} className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${activeTab === "mac" ? "bg-[#6c63ff] text-white" : "text-[#a1a1aa] hover:text-white"}`}>
                 macOS
               </button>
@@ -506,25 +506,25 @@ export const WebShowcase: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Steps Left Panel */}
             <div className="lg:col-span-5 flex flex-col gap-4">
-              <div onClick={() => setActiveTab("mac")} className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${activeTab === "mac" ? "bg-[#6c63ff]/5 border-[#6c63ff]/20 text-white" : "bg-white/[0.01] border-transparent opacity-65 hover:opacity-90"}`}>
+              <div onClick={() => setActiveTab("mac")} className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${activeTab === "mac" ? "bg-[#6c63ff]/5 border-[#6c63ff]/20 text-white" : "bg-white/1 border-transparent opacity-65 hover:opacity-90"}`}>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-white/[0.05] flex items-center justify-center text-[10px] font-mono text-[#8b84ff]">01</span>
+                  <span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-mono text-[#8b84ff]">01</span>
                   <h5 className="font-bold text-sm">macOS Gatekeeper Bypass</h5>
                 </div>
                 <p className="text-xs text-[#a1a1aa] leading-relaxed pl-9">Drag the downloaded DMG application to your Applications folder, Control-click (Right-click) the Clypra icon, and select **Open** to authorize developer execution.</p>
               </div>
 
-              <div onClick={() => setActiveTab("win")} className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${activeTab === "win" ? "bg-cyan-500/5 border-cyan-500/20 text-white" : "bg-white/[0.01] border-transparent opacity-65 hover:opacity-90"}`}>
+              <div onClick={() => setActiveTab("win")} className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${activeTab === "win" ? "bg-cyan-500/5 border-cyan-500/20 text-white" : "bg-white/1 border-transparent opacity-65 hover:opacity-90"}`}>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-white/[0.05] flex items-center justify-center text-[10px] font-mono text-cyan-400">02</span>
+                  <span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-mono text-cyan-400">02</span>
                   <h5 className="font-bold text-sm">Windows SmartScreen</h5>
                 </div>
                 <p className="text-xs text-[#a1a1aa] leading-relaxed pl-9">Windows may warn that Clypra is unrecognized. Click **More Info** in the SmartScreen dialogue, and choose **Run Anyway** to execute.</p>
               </div>
 
-              <div onClick={() => setActiveTab("linux")} className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${activeTab === "linux" ? "bg-emerald-500/5 border-emerald-500/20 text-white" : "bg-white/[0.01] border-transparent opacity-65 hover:opacity-90"}`}>
+              <div onClick={() => setActiveTab("linux")} className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${activeTab === "linux" ? "bg-emerald-500/5 border-emerald-500/20 text-white" : "bg-white/1 border-transparent opacity-65 hover:opacity-90"}`}>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-white/[0.05] flex items-center justify-center text-[10px] font-mono text-emerald-400">03</span>
+                  <span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-mono text-emerald-400">03</span>
                   <h5 className="font-bold text-sm">Linux Executable Rights</h5>
                 </div>
                 <p className="text-xs text-[#a1a1aa] leading-relaxed pl-9">Make the downloaded `.AppImage` file executable via permissions tab or terminal, then run immediately.</p>
@@ -533,9 +533,9 @@ export const WebShowcase: React.FC = () => {
 
             {/* Terminal Widget Right Panel */}
             <div className="lg:col-span-7">
-              <div className="glass-panel rounded-2xl overflow-hidden border border-white/[0.05] shadow-2xl">
+              <div className="glass-panel rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
                 {/* Header bar of window */}
-                <div className="bg-[#0b0b0e] px-5 py-3.5 flex items-center justify-between border-b border-white/[0.03]">
+                <div className="bg-[#0b0b0e] px-5 py-3.5 flex items-center justify-between border-b border-white/3">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#ef4444] opacity-80" />
                     <div className="w-3 h-3 rounded-full bg-[#eab308] opacity-80" />
@@ -553,7 +553,7 @@ export const WebShowcase: React.FC = () => {
                         <span className="text-[#666] select-none">$ </span>
                         <span className="text-neutral-300"># Install Clypra globally via Homebrew Tap</span>
                       </div>
-                      <div className="flex items-center justify-between bg-white/[0.01] p-3 rounded-lg border border-white/[0.03]">
+                      <div className="flex items-center justify-between bg-white/1 p-3 rounded-lg border border-white/3">
                         <code className="text-[#8b84ff] select-all break-all">brew install AIEraDev/tap/clypra</code>
                         <button onClick={() => copyToClipboard("brew install AIEraDev/tap/clypra", "mac")} className="text-[#666] hover:text-white transition-colors p-1">
                           {copiedMac ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -569,7 +569,7 @@ export const WebShowcase: React.FC = () => {
                         <span className="text-[#666] select-none">&gt; </span>
                         <span className="text-neutral-300">rem Open PowerShell and install desktop package</span>
                       </div>
-                      <div className="bg-white/[0.01] p-4 rounded-lg border border-white/[0.03] text-cyan-400 leading-relaxed text-[11px]">
+                      <div className="bg-white/1 p-4 rounded-lg border border-white/3 text-cyan-400 leading-relaxed text-[11px]">
                         Double click "clypra_1.0.1_x64_en-US.msi"
                         <br />
                         ↳ Click "More Info"
@@ -585,7 +585,7 @@ export const WebShowcase: React.FC = () => {
                         <span className="text-[#666] select-none">$ </span>
                         <span className="text-neutral-300"># Authorize application execution permissions</span>
                       </div>
-                      <div className="flex items-center justify-between bg-white/[0.01] p-3 rounded-lg border border-white/[0.03]">
+                      <div className="flex items-center justify-between bg-white/1 p-3 rounded-lg border border-white/3">
                         <code className="text-emerald-400 select-all break-all">chmod +x Clypra*.AppImage && ./Clypra*.AppImage</code>
                         <button onClick={() => copyToClipboard("chmod +x Clypra*.AppImage && ./Clypra*.AppImage", "linux")} className="text-[#666] hover:text-white transition-colors p-1">
                           {copiedLinux ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -609,7 +609,7 @@ export const WebShowcase: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Feature 1 */}
-            <div className="glass-panel rounded-2xl p-6 hover:border-white/[0.08] transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4 relative overflow-hidden group">
+            <div className="glass-panel rounded-2xl p-6 hover:border-white/8 transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#6c63ff]/2 rounded-bl-full filter blur-lg transition-all duration-500 group-hover:bg-[#6c63ff]/5" />
               <div className="w-12 h-12 rounded-xl bg-[#6c63ff]/10 flex items-center justify-center text-[#8b84ff] border border-[#6c63ff]/15 group-hover:scale-110 transition-transform duration-300">
                 <Layers className="w-5 h-5" />
@@ -621,7 +621,7 @@ export const WebShowcase: React.FC = () => {
             </div>
 
             {/* Feature 2 */}
-            <div className="glass-panel rounded-2xl p-6 hover:border-white/[0.08] transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4 relative overflow-hidden group">
+            <div className="glass-panel rounded-2xl p-6 hover:border-white/8 transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/2 rounded-bl-full filter blur-lg transition-all duration-500 group-hover:bg-cyan-500/5" />
               <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/15 group-hover:scale-110 transition-transform duration-300">
                 <Play className="w-5 h-5" />
@@ -633,7 +633,7 @@ export const WebShowcase: React.FC = () => {
             </div>
 
             {/* Feature 3 */}
-            <div className="glass-panel rounded-2xl p-6 hover:border-white/[0.08] transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4 relative overflow-hidden group">
+            <div className="glass-panel rounded-2xl p-6 hover:border-white/8 transition-all duration-300 hover:scale-[1.02] flex flex-col gap-4 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/2 rounded-bl-full filter blur-lg transition-all duration-500 group-hover:bg-emerald-500/5" />
               <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/15 group-hover:scale-110 transition-transform duration-300">
                 <Sparkles className="w-5 h-5" />
@@ -648,7 +648,7 @@ export const WebShowcase: React.FC = () => {
       </main>
 
       {/* ── Footer ──────────────────────────────────────────────── */}
-      <footer className="relative z-10 w-full border-t border-white/[0.03] mt-24">
+      <footer className="relative z-10 w-full border-t border-white/3 mt-24">
         <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#666]">
           <div>© {new Date().getFullYear()} Clypra Contributors. Released under the MIT License.</div>
           <div className="flex items-center gap-6">

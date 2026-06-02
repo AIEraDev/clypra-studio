@@ -142,16 +142,17 @@ export default function App() {
     }
 
     const restoreDefaultPreset = () => {
-      const preset = builtInPresets[0];
       const nextCfg = {
-        ...preset.config,
-        effectName: preset.config.effectName || preset.name,
+        ...defaultConfig,
+        text: "MY TEXT",
+        effectName: "Custom Effect",
+        customRenderer: undefined,
       };
-      const nextScene = getPresetScene({ ...preset, config: nextCfg });
+      const nextScene = textEffectConfigToScene(nextCfg);
       skipConfigToScene.current = true;
       setConfig(nextCfg);
       setScene(nextScene);
-      setActivePresetId(preset.id);
+      setActivePresetId("scratch");
       lastSavedStateString.current = JSON.stringify(nextScene);
     };
 
