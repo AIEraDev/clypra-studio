@@ -9,12 +9,17 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      packages: write
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          # Fetch all history for all tags and branches (critical for semantic-release)
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -28,9 +33,10 @@ jobs:
       - name: Build Shared Engine
         run: npm run build:engine
 
-      - name: Publish to npm
+      - name: Run Semantic Release
         run: |
           cd packages/clypra-engine
-          npm publish
+          npx semantic-release
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
