@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/AIEraDev/clypra-studio/compare/v1.0.2...v1.0.3) (2026-06-02)
+
+
+### Bug Fixes
+
+* **engine:** retrigger publish with refreshed NPM_TOKEN ([d8e1e90](https://github.com/AIEraDev/clypra-studio/commit/d8e1e90211771e1ec3c035f76782ee99ce2512ea))
+
 ## [1.0.2](https://github.com/AIEraDev/clypra-studio/compare/v1.0.1...v1.0.2) (2026-06-02)
 
 
