@@ -428,22 +428,51 @@ export function renderTextEffectCore(ctx: CanvasRenderingContext2D | OffscreenCa
   }
 
   // ──────────────────────────────────────────────────────────────────
-  // 5. Bevel Stacked Copies (3D Bevel)
+  // 5. Bevel Stacked Copies (3D Bevel) — Gradient-shaded depth faces
   // ──────────────────────────────────────────────────────────────────
   if (bevelEnabled && bevelDepth > 0) {
+    // ── Shared helpers ─────────────────────────────────────────────
+    const shadowRgb = hexToRgb(bevelShadow || "#1A0A00");
+    const coreRgb = hexToRgb(bevelCoreColor || bevelShadow || "#3A1A00");
+    const highlightRgb = hexToRgb(bevelHighlight || "#FFFFFF");
+
+    /**
+     * Interpolate across a 3-stop gradient:
+     *   t=0   → bevelShadow     (deepest back slab)
+     *   t=0.5 → bevelCoreColor  (mid-depth)
+     *   t=1   → bevelHighlight  (closest to front face)
+     * Uses ease-in-out curve for more realistic falloff.
+     */
+    const shadeForDepth = (t: number): string => {
+      // ease-in-out
+      const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      if (eased <= 0.5) {
+        const u = eased * 2;
+        const r = Math.round(shadowRgb.r + (coreRgb.r - shadowRgb.r) * u);
+        const g = Math.round(shadowRgb.g + (coreRgb.g - shadowRgb.g) * u);
+        const b = Math.round(shadowRgb.b + (coreRgb.b - shadowRgb.b) * u);
+        return `rgb(${r},${g},${b})`;
+      } else {
+        const u = (eased - 0.5) * 2;
+        const r = Math.round(coreRgb.r + (highlightRgb.r - coreRgb.r) * u);
+        const g = Math.round(coreRgb.g + (highlightRgb.g - coreRgb.g) * u);
+        const b = Math.round(coreRgb.b + (highlightRgb.b - coreRgb.b) * u);
+        return `rgb(${r},${g},${b})`;
+      }
+    };
+
     if (bevelPerspectiveEnabled) {
       const vpx = cWidth / 2 + ((bevelVanishingPointX !== undefined ? bevelVanishingPointX : 40) / 100) * (cWidth / 2);
       const vpy = cHeight / 2 + ((bevelVanishingPointY !== undefined ? bevelVanishingPointY : 80) / 100) * (cHeight / 2);
       const fl = Math.max(100, bevelFocalLength !== undefined ? bevelFocalLength : 400);
 
-      // 5a. Extrusion Blur / Soft 3D Glow (drawn underneath)
+      // 5a. Ambient occlusion / depth glow blur underneath
       if (bevelBlur && bevelBlur > 0) {
         ctx.save();
         ctx.filter = `blur(${bevelBlur}px)`;
         const blurColor = bevelBlurColor || bevelShadow || "#000000";
         for (let i = bevelDepth; i > 0; i -= Math.max(1, Math.floor(bevelDepth / 4))) {
-          const z = i;
-          const scale = fl / (fl + z);
+          const scale = fl / (fl + i);
           ctx.save();
           ctx.translate(vpx, vpy);
           ctx.scale(scale, scale);
@@ -454,27 +483,30 @@ export function renderTextEffectCore(ctx: CanvasRenderingContext2D | OffscreenCa
         ctx.restore();
       }
 
-      // 5b. Solid Extrusion Core & Edge Layering
+      // 5b. Gradient-shaded extrusion slabs (back to front)
       ctx.save();
       for (let i = bevelDepth; i > 0; i--) {
-        const z = i;
-        const scale = fl / (fl + z);
-        const ratio = (bevelDepth - i) / Math.max(1, bevelDepth);
+        // t=0 at deepest slab, t→1 approaching front face
+        const t = 1 - (i - 1) / Math.max(1, bevelDepth - 1);
+        // Ambient occlusion: deep slabs are darkened further
+        const aoFactor = 0.35 + 0.65 * (1 - (i - 1) / Math.max(1, bevelDepth));
+        const baseColor = shadeForDepth(t);
 
-        let color = mixHexColor(bevelShadow, bevelCoreColor || bevelShadow, ratio);
-        if (i === 1) {
-          color = bevelHighlight;
-        }
+        // Apply AO darkening by blending base color toward black
+        const bRgb = hexToRgb(baseColor.startsWith("#") ? baseColor : "#000000");
+        const baseRgbParsed = (() => {
+          const m = baseColor.match(/rgb\((\d+),(\d+),(\d+)\)/);
+          return m ? { r: +m[1], g: +m[2], b: +m[3] } : bRgb;
+        })();
+        const aoColor = `rgb(${Math.round(baseRgbParsed.r * aoFactor)},${Math.round(baseRgbParsed.g * aoFactor)},${Math.round(baseRgbParsed.b * aoFactor)})`;
 
+        const scale = fl / (fl + i);
         ctx.save();
         ctx.translate(vpx, vpy);
         ctx.scale(scale, scale);
         ctx.translate(-vpx, -vpy);
+        renderLines("fill", aoColor);
 
-        // Render filled body slicing
-        renderLines("fill", color);
-
-        // Render optional face border edge stroke per slicing
         if (bevelEdgeWidth && bevelEdgeWidth > 0) {
           ctx.save();
           ctx.strokeStyle = bevelEdgeColor || "#000000";
@@ -486,58 +518,66 @@ export function renderTextEffectCore(ctx: CanvasRenderingContext2D | OffscreenCa
         ctx.restore();
       }
       ctx.restore();
+
+      // 5c. Specular highlight stroke on front-face top edge
+      if (bevelEdgeWidth && bevelEdgeWidth > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = bevelHighlight;
+        ctx.lineWidth = Math.max(0.5, (bevelEdgeWidth || 1) * 0.5);
+        ctx.lineJoin = strokeLineJoin || "round";
+        renderLines("stroke");
+        ctx.restore();
+      }
     } else {
-      // 5a. Extrusion Blur / Soft 3D Glow (drawn underneath)
+      // ── Flat-direction extrusion (bottom-right / bottom / right) ──
+
+      const getDirOffset = (i: number): { dx: number; dy: number } => {
+        if (bevelDirection === "bottom-right") return { dx: i, dy: i };
+        if (bevelDirection === "bottom") return { dx: 0, dy: i };
+        if (bevelDirection === "right") return { dx: i, dy: 0 };
+        return { dx: i, dy: i };
+      };
+
+      // 5a. Ambient occlusion blur
       if (bevelBlur && bevelBlur > 0) {
         ctx.save();
         ctx.filter = `blur(${bevelBlur}px)`;
         const blurColor = bevelBlurColor || bevelShadow || "#000000";
-
-        // Draw step layers for soft ambient occlusion / glowing leak shape
         for (let i = bevelDepth; i > 0; i -= Math.max(1, Math.floor(bevelDepth / 4))) {
-          let dx = 0;
-          let dy = 0;
-          if (bevelDirection === "bottom-right") {
-            dx = i;
-            dy = i;
-          } else if (bevelDirection === "bottom") {
-            dy = i;
-          } else if (bevelDirection === "right") {
-            dx = i;
-          }
+          const { dx, dy } = getDirOffset(i);
           renderLines("fill", blurColor, dx, dy);
         }
         ctx.restore();
       }
 
-      // 5b. Solid Extrusion Core & Edge Layering
+      // 5b. Gradient-shaded extrusion slabs
       ctx.save();
       for (let i = bevelDepth; i > 0; i--) {
-        let dx = 0;
-        let dy = 0;
-        if (bevelDirection === "bottom-right") {
-          dx = i;
-          dy = i;
-        } else if (bevelDirection === "bottom") {
-          dy = i;
-        } else if (bevelDirection === "right") {
-          dx = i;
-        }
+        const { dx, dy } = getDirOffset(i);
 
-        // Assign colors based on depths to sandwich-layer core vs highlights
-        let color = bevelShadow;
-        if (i === 1) {
-          color = bevelHighlight;
-        } else if (i < bevelDepth) {
-          color = bevelCoreColor || bevelShadow;
-        }
+        // t=0 at deepest, t=1 at front
+        const t = 1 - (i - 1) / Math.max(1, bevelDepth - 1);
 
-        // Render filled body slicing
-        renderLines("fill", color, dx, dy);
+        // AO darkening: corners/edges of deep slabs get extra shadow
+        // For bottom-right, the diagonal slabs are darkest; side-facing
+        // surfaces should be darker than the front face.
+        const depthRatio = (i - 1) / Math.max(1, bevelDepth - 1); // 0=front, 1=back
+        const aoFactor = 0.25 + 0.75 * (1 - depthRatio * 0.8);
 
-        // Render optional face border edge stroke per slicing
+        const baseColor = shadeForDepth(t);
+        const baseRgbParsed = (() => {
+          const m = baseColor.match(/rgb\((\d+),(\d+),(\d+)\)/);
+          return m ? { r: +m[1], g: +m[2], b: +m[3] } : shadowRgb;
+        })();
+        const shadedColor = `rgb(${Math.round(baseRgbParsed.r * aoFactor)},${Math.round(baseRgbParsed.g * aoFactor)},${Math.round(baseRgbParsed.b * aoFactor)})`;
+
+        renderLines("fill", shadedColor, dx, dy);
+
         if (bevelEdgeWidth && bevelEdgeWidth > 0) {
           ctx.save();
+          // Edge gets progressively darker toward back
+          ctx.globalAlpha = 0.4 + 0.6 * (1 - depthRatio);
           ctx.strokeStyle = bevelEdgeColor || "#000000";
           ctx.lineWidth = bevelEdgeWidth;
           ctx.lineJoin = strokeLineJoin || "round";
@@ -545,6 +585,15 @@ export function renderTextEffectCore(ctx: CanvasRenderingContext2D | OffscreenCa
           ctx.restore();
         }
       }
+      ctx.restore();
+
+      // 5c. Specular rim highlight on front-face edge (top-left catch light)
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = bevelHighlight;
+      ctx.lineWidth = Math.max(0.5, bevelEdgeWidth || 1.5);
+      ctx.lineJoin = "round";
+      renderLines("stroke", bevelHighlight, 0, 0);
       ctx.restore();
     }
   }

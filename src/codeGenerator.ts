@@ -1072,22 +1072,42 @@ export class ${engineName} {
       ctx.restore();
     }
 
-    // 5. Bevel 3D Layers
+    // 5. Bevel 3D Layers — gradient-shaded depth faces
     if (bevelEnabled && bevelDepth > 0) {
+      const _shadowRgb    = hexToRgb(bevelShadow    || "#1A0A00");
+      const _coreRgb      = hexToRgb(bevelCoreColor || bevelShadow || "#3A1A00");
+      const _highlightRgb = hexToRgb(bevelHighlight || "#FFFFFF");
+      const _shadeForDepth = (t: number): string => {
+        const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        if (eased <= 0.5) {
+          const u = eased * 2;
+          return \`rgb(\${Math.round(_shadowRgb.r + (_coreRgb.r - _shadowRgb.r) * u)},\${Math.round(_shadowRgb.g + (_coreRgb.g - _shadowRgb.g) * u)},\${Math.round(_shadowRgb.b + (_coreRgb.b - _shadowRgb.b) * u)})\`;
+        }
+        const u = (eased - 0.5) * 2;
+        return \`rgb(\${Math.round(_coreRgb.r + (_highlightRgb.r - _coreRgb.r) * u)},\${Math.round(_coreRgb.g + (_highlightRgb.g - _coreRgb.g) * u)},\${Math.round(_coreRgb.b + (_highlightRgb.b - _coreRgb.b) * u)})\`;
+      };
       ctx.save();
       for (let i = bevelDepth; i > 0; i--) {
-        let dx = 0;
-        let dy = 0;
-        if (bevelDirection === "bottom-right") {
-          dx = i; dy = i;
-        } else if (bevelDirection === "bottom") {
-          dy = i;
-        } else if (bevelDirection === "right") {
-          dx = i;
-        }
-        const sliceColor = i === 1 ? bevelHighlight : bevelShadow;
-        renderLines("fill", sliceColor, dx, dy);
+        let dx = 0, dy = 0;
+        if (bevelDirection === "bottom-right") { dx = i; dy = i; }
+        else if (bevelDirection === "bottom") { dy = i; }
+        else if (bevelDirection === "right")  { dx = i; }
+        const t = 1 - (i - 1) / Math.max(1, bevelDepth - 1);
+        const aoFactor = 0.25 + 0.75 * (1 - ((i - 1) / Math.max(1, bevelDepth - 1)) * 0.8);
+        const base = _shadeForDepth(t);
+        const m = base.match(/rgb\((\d+),(\d+),(\d+)\)/);
+        const br = m ? +m[1] : 0, bg = m ? +m[2] : 0, bb = m ? +m[3] : 0;
+        const shaded = \`rgb(\${Math.round(br * aoFactor)},\${Math.round(bg * aoFactor)},\${Math.round(bb * aoFactor)})\`;
+        renderLines("fill", shaded, dx, dy);
       }
+      ctx.restore();
+      // Specular rim highlight
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = bevelHighlight;
+      ctx.lineWidth = Math.max(0.5, (bevelEdgeWidth || 1.5));
+      ctx.lineJoin = "round";
+      renderLines("stroke", bevelHighlight, 0, 0);
       ctx.restore();
     }
 
