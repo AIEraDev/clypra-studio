@@ -526,32 +526,36 @@ export default function App() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Dynamically inject Google Fonts if selected
-    if (GOOGLE_FONTS.includes(config.fontFamily)) {
-      const fontId = `gfont-${config.fontFamily.replace(/\s+/g, "-").toLowerCase()}`;
-      if (!document.getElementById(fontId)) {
-        const link = document.createElement("link");
-        link.id = fontId;
-        link.rel = "stylesheet";
-        link.href = `https://fonts.googleapis.com/css2?family=${config.fontFamily.replace(/\s+/g, "+")}:wght@400;500;600;700;800;900&display=swap`;
-        document.head.appendChild(link);
-      }
-    }
-
-    // Set size
+    // Set canvas dimensions first
     canvas.width = config.canvasWidth || 800;
     canvas.height = config.canvasHeight || 200;
 
     const draw = () => evaluateScene(scene, previewTime, ctx);
 
-    // Redraw after ensuring fonts layout is calculated
-    if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(draw);
+    if (GOOGLE_FONTS.includes(config.fontFamily)) {
+      const family = config.fontFamily;
+      const fontId = `gfont-${family.replace(/\s+/g, "-").toLowerCase()}`;
+
+      // Inject the stylesheet if not already present
+      if (!document.getElementById(fontId)) {
+        const link = document.createElement("link");
+        link.id = fontId;
+        link.rel = "stylesheet";
+        link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/\s+/g, "+")}:wght@400;500;600;700;800;900&display=swap`;
+        document.head.appendChild(link);
+      }
+
+      // Wait for THIS specific font + weight to be ready, then draw.
+      // document.fonts.load() polls the font until it's truly available,
+      // fixing the race condition where fonts.ready resolved before the
+      // newly injected stylesheet was parsed and the face downloaded.
+      const fontSpec = `${config.fontWeight} ${config.fontSize}px "${family}"`;
+      document.fonts.load(fontSpec).then(draw).catch(draw);
     } else {
+      // System font — draw immediately, no loading needed
       draw();
     }
   }, [config, scene, previewTime]);
