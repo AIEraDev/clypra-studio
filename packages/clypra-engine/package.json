@@ -15,6 +15,15 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AIEraDev/clypra-studio.git",
+    "directory": "packages/clypra-engine"
+  },
+  "homepage": "https://github.com/AIEraDev/clypra-studio/tree/main/packages/clypra-engine#readme",
+  "bugs": {
+    "url": "https://github.com/AIEraDev/clypra-studio/issues"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
