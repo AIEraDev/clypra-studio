@@ -8,7 +8,7 @@ export type TextAlign = "left" | "center" | "right" | "justify";
 export type FillType = "solid" | "gradient";
 export type GradientDir = "horizontal" | "vertical" | "diagonal" | "radial";
 
-export interface GradientStop {
+export interface LottieGradientStop {
   color: string; // hex
   position: number; // 0–1
 }
@@ -27,7 +27,7 @@ export interface TextLayerStyle {
   // Fill
   fillType: FillType;
   fillColor: string; // hex, used when fillType === "solid"
-  gradientStops: GradientStop[];
+  gradientStops: LottieGradientStop[];
   gradientDir: GradientDir;
 
   // Stroke

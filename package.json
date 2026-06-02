@@ -1,38 +1,25 @@
 {
-  "name": "react-example",
+  "name": "clypra-studio-monorepo",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "clean": "rm -rf dist",
-    "lint": "tsc --noEmit",
+    "dev": "npm run dev --workspace=apps/studio",
+    "build:engine": "npm run build --workspace=packages/clypra-engine",
+    "build:studio": "npm run build --workspace=apps/studio",
+    "build": "npm run build:engine && npm run build:studio",
+    "clean": "npm run clean --workspaces",
+    "lint": "npm run lint --workspaces",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "dependencies": {
-    "@google/genai": "^2.4.0",
-    "@lottiefiles/react-lottie-player": "^3.6.0",
-    "@tailwindcss/vite": "^4.1.14",
-    "@vercel/analytics": "^2.0.1",
-    "@vercel/speed-insights": "^2.0.0",
-    "@vitejs/plugin-react": "^5.0.4",
-    "jszip": "^3.10.1",
-    "lottie-web": "^5.13.0",
-    "lucide-react": "^0.546.0",
-    "react": "^19.0.1",
-    "react-dom": "^19.0.1",
-    "vite": "^6.2.3"
-  },
   "devDependencies": {
-    "@napi-rs/canvas": "^0.1.70",
     "@types/node": "^22.14.0",
-    "autoprefixer": "^10.4.21",
-    "tailwindcss": "^4.1.14",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3",
     "vitest": "^3.2.4"
   }
 }

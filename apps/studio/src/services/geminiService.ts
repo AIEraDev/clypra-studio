@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { getGeminiApiKey } from "../hooks/useGeminiApiKey";
-import type { TextEffectConfig } from "../types";
+import type { TextEffectConfig } from "@clypra/engine";
 
 function createGeminiClient() {
   const apiKey = getGeminiApiKey();

@@ -1,0 +1,50 @@
+name: Publish Core Engine
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/clypra-engine/**"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          # default registry setting for public npm (change to npmjs.org if desired)
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@clypra"
+
+      - name: Install Monorepo Dependencies
+        run: npm install
+
+      - name: Build Shared Engine
+        run: npm run build:engine
+
+      # Option A: Publish to GitHub Packages Registry (Default out-of-the-box, no tokens needed)
+      - name: Publish to GitHub Packages
+        run: |
+          cd packages/clypra-engine
+          # Inject package scope and registry target
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Option B: Publish to Public npm registry (Uncomment below if publishing to npmjs.org)
+      # - name: Publish to npm
+      #   run: |
+      #     cd packages/clypra-engine
+      #     npm publish --access public
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

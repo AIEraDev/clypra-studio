@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, Image as ImageIcon, ExternalLink, Sparkles } from "lucide-react";
 import { generateEffectName } from "../services/geminiService";
-import type { TextEffectConfig } from "../types";
+import type { TextEffectConfig } from "@clypra/engine";
 
 export type EffectApiCategory = "3d" | "neon" | "metallic" | "glitch" | "retro" | "gradient" | "grunge" | "outline" | "shadow" | "elements" | "luxury";
 

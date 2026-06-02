@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Palette, RotateCcw, Sparkles } from "lucide-react";
-import type { TextEffectConfig } from "../types";
-import { applyFillColorToAll, countTextGlyphs, rainbowCharFillColors, resizeCharFillColors, setCharFillColor } from "../engine/perCharFill";
+import type { TextEffectConfig } from "@clypra/engine";
+import { applyFillColorToAll, countTextGlyphs, rainbowCharFillColors, resizeCharFillColors, setCharFillColor } from "@clypra/engine";
 
 interface PerCharColorEditorProps {
   config: TextEffectConfig;

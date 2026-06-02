@@ -1,6 +1,6 @@
 import React from "react";
 import { Camera, HelpCircle, Loader2, Sparkles, UploadCloud } from "lucide-react";
-import type { TextEffectConfig } from "../types";
+import type { TextEffectConfig } from "@clypra/engine";
 
 interface SavePresetModalProps {
   open: boolean;

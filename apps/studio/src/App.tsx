@@ -1,8 +1,8 @@
 import React, { lazy, Suspense, useState, useEffect, useRef, useMemo } from "react";
 import { Download, Copy, Undo2, Redo2, Sparkles, Grid2X2, Plus, Camera, Loader2, HelpCircle, Beaker, FolderPlus, Video, RefreshCw, KeyRound } from "lucide-react";
 
-import { TextEffectConfig, Preset } from "./types";
-import { defaultConfig, builtInPresets } from "./presets";
+import { TextEffectConfig, Preset } from "@clypra/engine";
+import { defaultConfig, builtInPresets } from "@clypra/engine";
 import { generateEngineClass, generateEffectDefinition, toKebabCase, toPascalCase, stripTypesToJS, generateHTMLFile, getEnrichedEffectName } from "./codeGenerator";
 import { GOOGLE_FONTS, GOOGLE_FONTS_LINK } from "./constants";
 import { LayerPanel } from "./components/LayerPanel";
@@ -10,9 +10,9 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { PresetChip } from "./components/PresetChip";
 import { DrawerIntro, LeftRail, type RailItem } from "./components/StudioChrome";
-import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout } from "./engine";
-import { getPresetScene } from "./engine/recipes";
-import { COMPOSITION_PRESETS } from "./engine/textLayout";
+import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout } from "@clypra/engine";
+import { getPresetScene } from "@clypra/engine";
+import { COMPOSITION_PRESETS } from "@clypra/engine";
 import { useCollapsibleSections } from "./hooks/useCollapsibleSections";
 import { useResponsiveMobileTab } from "./hooks/useResponsiveMobileTab";
 import { useStudioWorkspaceState } from "./hooks/useStudioWorkspaceState";

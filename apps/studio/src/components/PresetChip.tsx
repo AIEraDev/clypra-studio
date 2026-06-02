@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Trash2 } from "lucide-react";
-import type { Preset, TextEffectConfig } from "../types";
-import { TextEffectRenderer } from "../renderer";
+import type { Preset, TextEffectConfig } from "@clypra/engine";
+import { TextEffectRenderer } from "@clypra/engine";
 
 interface PresetChipProps {
   preset: Preset;

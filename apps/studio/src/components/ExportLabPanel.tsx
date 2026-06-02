@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ArrowUpDown, Beaker, Copy, Download, Loader2, Settings, Sparkles, UploadCloud } from "lucide-react";
-import type { Preset, TextEffectConfig } from "../types";
-import type { SceneDocument } from "../engine";
+import type { Preset, TextEffectConfig } from "@clypra/engine";
+import type { SceneDocument } from "@clypra/engine";
 import { ExportBadge } from "./StudioChrome";
 import { getEffectRepresentation } from "../codeGenerator";
 import { useGitHubPublish } from "../hooks/useGitHubPublish";

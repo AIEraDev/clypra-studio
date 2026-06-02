@@ -1,9 +1,9 @@
 import React from "react";
 import { Brush, ChevronDown, ChevronUp, Compass, Flame, Layers, Layout, Loader2, Monitor, Moon, Plus, Snowflake, Sparkles, Trash2, Type } from "lucide-react";
-import type { TextEffectConfig } from "../types";
+import type { TextEffectConfig } from "@clypra/engine";
 import { SYSTEM_FONTS, GOOGLE_FONTS } from "../constants";
-import { COMPOSITION_PRESETS } from "../engine/textLayout";
-import { resizeCharFillColors } from "../engine/perCharFill";
+import { COMPOSITION_PRESETS } from "@clypra/engine";
+import { resizeCharFillColors } from "@clypra/engine";
 import { PerCharColorEditor } from "./PerCharColorEditor";
 
 type ConfigUpdater = Partial<TextEffectConfig> | ((config: TextEffectConfig) => TextEffectConfig);

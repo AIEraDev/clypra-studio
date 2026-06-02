@@ -130,5 +130,3 @@ export function createEmptyScene(overrides?: Partial<SceneDocument>): SceneDocum
 export function newLayerId(): string {
   return `layer-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
-
-export type { GlowLayer, GradientStop, TextEffectConfig };

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ZoomIn, ZoomOut, Maximize2, Grid2X2 } from "lucide-react";
-import type { TextEffectConfig } from "../types";
-import { computeFitZoom } from "../engine/textLayout";
+import type { TextEffectConfig } from "@clypra/engine";
+import { computeFitZoom } from "@clypra/engine";
 
 type ZoomMode = "fit" | "manual";
 

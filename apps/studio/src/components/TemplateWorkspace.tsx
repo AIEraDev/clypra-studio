@@ -3,19 +3,19 @@ import lottie from "lottie-web";
 import JSZip from "jszip";
 import { Download, Copy, Plus, Play, Pause, Loader2, HelpCircle, FolderPlus, ArrowLeft, Sparkles, Code, FileJson, UploadCloud, X, RefreshCw, AlertTriangle, CheckCircle, Info, Layers, Lock, Unlock, Eye, EyeOff, Trash2, Move, CornerDownRight, Maximize2, RotateCw, CircleDot, ToggleLeft, ToggleRight, Image as ImageIcon, ChevronUp, ChevronDown, Settings, KeyRound } from "lucide-react";
 
-import { scanTextLayers, parseLottieJson, LottieFileInfo, ParsedTextLayer, getDefaultText } from "../engine/lottieParser";
-import { injectText, injectColor, injectBatch, type TextLayerConfig, type TextCustomization, type TextStyleOverride } from "../engine/lottieInjector";
+import { scanTextLayers, parseLottieJson, LottieFileInfo, ParsedTextLayer, getDefaultText } from "@clypra/engine";
+import { injectText, injectColor, injectBatch, type TextLayerConfig, type TextCustomization, type TextStyleOverride } from "@clypra/engine";
 import { useGitHubPublish } from "../hooks/useGitHubPublish";
 import { GitHubConfigModal } from "./GitHubConfigModal";
 import { PublishTemplateModal } from "./PublishTemplateModal";
 import { GeminiKeyModal } from "./GeminiKeyModal";
 
-import { createBlankLottie, addSolidLayer, addTextLayer, addShapeLayer, addVectorShape, updateStaticProperty, enableKeyframing, addOrUpdateKeyframe, deleteKeyframe, LottiePropertyPath, addImageLayer, updateTrackMatte } from "../engine/lottieEditor";
-import { LOTTIE_ANIM_PRESETS, ENTRANCE_PRESETS, EXIT_PRESETS, LOOP_PRESETS, EMPHASIS_PRESETS, bakeAnimationIntoLayer, clearAnimationFromLayer, type LottieAnimPreset, type AnimationCategory } from "../engine/lottieTextAnimations";
-import { readStyleFromLottieLayer, applyStyleToLottie, hexToLottieColor, lottieColorToHex, buildLottieFontName, SUPPORTED_FONT_FAMILIES, FONT_WEIGHT_OPTIONS, buildFontEntries, ensureFontInLottie, type TextLayerStyle, DEFAULT_TEXT_STYLE } from "../engine/lottieTextStyle";
-import { LOTTIE_TEMPLATE_PRESETS, TEMPLATE_CATEGORIES, type LottieTemplatePreset, type TemplatePresetCategory } from "../engine/lottieTemplatePresets";
-import { downloadDotLottie, downloadLottieJson } from "../engine/lottieExport";
-import { loadLottieFonts, waitForFontsReady, preloadGoogleFont } from "../engine/lottieGoogleFonts";
+import { createBlankLottie, addSolidLayer, addTextLayer, addShapeLayer, addVectorShape, updateStaticProperty, enableKeyframing, addOrUpdateKeyframe, deleteKeyframe, LottiePropertyPath, addImageLayer, updateTrackMatte } from "@clypra/engine";
+import { LOTTIE_ANIM_PRESETS, ENTRANCE_PRESETS, EXIT_PRESETS, LOOP_PRESETS, EMPHASIS_PRESETS, bakeAnimationIntoLayer, clearAnimationFromLayer, type LottieAnimPreset, type AnimationCategory } from "@clypra/engine";
+import { readStyleFromLottieLayer, applyStyleToLottie, hexToLottieColor, lottieColorToHex, buildLottieFontName, SUPPORTED_FONT_FAMILIES, FONT_WEIGHT_OPTIONS, buildFontEntries, ensureFontInLottie, type TextLayerStyle, DEFAULT_TEXT_STYLE } from "@clypra/engine";
+import { LOTTIE_TEMPLATE_PRESETS, TEMPLATE_CATEGORIES, type LottieTemplatePreset, type TemplatePresetCategory } from "@clypra/engine";
+import { downloadDotLottie, downloadLottieJson } from "@clypra/engine";
+import { loadLottieFonts, waitForFontsReady, preloadGoogleFont } from "@clypra/engine";
 
 export interface TemplateWorkspaceProps {
   onBackToDesign: () => void;
@@ -915,7 +915,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       .replace(/"defaultText":/g, "defaultText:")
       .replace(/"maxCharacters":/g, "maxCharacters:");
 
-    return `import { TemplateDefinition } from "../types";
+    return `import { TemplateDefinition } from "@clypra/engine";
 import lottieData from "./${templateId || "template"}.json";
 
 export const ${camelId}: TemplateDefinition = {
