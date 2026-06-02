@@ -44,6 +44,7 @@ export function evaluateScene(doc: SceneDocument, time: number, ctx: CanvasRende
   const finishFrame = () => applyMaskReveal(ctx, animated, w, h);
 
   if (!usePostFx) {
+    ctx.clearRect(0, 0, w, h);
     renderTextEffectCore(ctx, cfg);
     finishFrame();
     return;
