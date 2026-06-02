@@ -2,16 +2,22 @@
   "name": "@clypra/engine",
   "version": "1.0.0",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
@@ -21,13 +27,15 @@
   },
   "devDependencies": {
     "@napi-rs/canvas": "^0.1.70",
-    "semantic-release": "^23.0.0",
-    "@semantic-release/commit-analyzer": "^11.1.0",
-    "@semantic-release/release-notes-generator": "^12.1.0",
     "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/npm": "^11.0.2",
+    "@semantic-release/commit-analyzer": "^11.1.0",
+    "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^9.2.6",
-    "@semantic-release/git": "^10.0.1"
+    "@semantic-release/npm": "^11.0.2",
+    "@semantic-release/release-notes-generator": "^12.1.0",
+    "semantic-release": "^23.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "~5.8.2"
   },
   "publishConfig": {
     "access": "public",
