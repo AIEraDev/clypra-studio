@@ -1,3 +1,12 @@
+## [1.0.2](https://github.com/AIEraDev/clypra-studio/compare/v1.0.1...v1.0.2) (2026-06-02)
+
+
+### Bug Fixes
+
+* **engine:** add README.md for npm package page ([4cf12a7](https://github.com/AIEraDev/clypra-studio/commit/4cf12a7c0c0a980f60af517f075879507645b7b6))
+* **engine:** trigger release to publish readme ([5c09b52](https://github.com/AIEraDev/clypra-studio/commit/5c09b523a638bec7b9a63f7d417a4bceb20e572e))
+* **engine:** trigger release to publish readme ([c8cd1bd](https://github.com/AIEraDev/clypra-studio/commit/c8cd1bd7ea1ca1f833e3e27465a79e0e6fa360f2))
+
 ## [1.0.1](https://github.com/AIEraDev/clypra-studio/compare/v1.0.0...v1.0.1) (2026-06-02)
 
 
