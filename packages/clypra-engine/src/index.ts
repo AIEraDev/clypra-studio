@@ -1,3 +1,7 @@
+/**
+ * @clypra/engine — Canvas 2D text effects, Lottie tooling, and animation engine.
+ * @version 1.0.0
+ */
 export * from "./types.js";
 export * from "./renderer.js";
 export * from "./presets.js";
