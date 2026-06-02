@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "apps/studio/dist",
+  "installCommand": "npm install --workspaces --include-workspace-root",
+  "framework": null,
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
