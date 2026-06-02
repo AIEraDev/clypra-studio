@@ -25,7 +25,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
-          registry-url: "https://registry.npmjs.org"
+          # No registry-url here — setup-node with registry-url injects a .npmrc
+          # that overrides NPM_TOKEN with NODE_AUTH_TOKEN, breaking semantic-release.
+          # Let semantic-release manage npm auth directly via NPM_TOKEN env var.
 
       - name: Install monorepo dependencies
         run: npm install --workspaces --include-workspace-root
@@ -38,9 +40,7 @@ jobs:
         run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # NPM_TOKEN is not needed — authentication uses OIDC Trusted Publishing
-          # Configure at: https://www.npmjs.com/settings/<your-org>/packages
-          # npm trust command: npm trust add github AIEraDev/clypra-studio
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GIT_AUTHOR_NAME: "github-actions[bot]"
           GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
           GIT_COMMITTER_NAME: "github-actions[bot]"
