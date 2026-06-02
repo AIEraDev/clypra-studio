@@ -14,7 +14,15 @@ function mixFloat(a: number, b: number, t: number): number {
 function mixColor(hexA: string, hexB: string, t: number): string {
   const parse = (h: string) => {
     const x = h.replace("#", "");
-    const n = parseInt(x.length === 3 ? x.split("").map((c) => c + c).join("") : x, 16);
+    const n = parseInt(
+      x.length === 3
+        ? x
+            .split("")
+            .map((c) => c + c)
+            .join("")
+        : x,
+      16,
+    );
     return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
   };
   try {
@@ -29,11 +37,7 @@ function mixColor(hexA: string, hexB: string, t: number): string {
   }
 }
 
-function blendLayerParams(
-  paramsA: Record<string, unknown>,
-  paramsB: Record<string, unknown>,
-  t: number
-): Record<string, unknown> {
+function blendLayerParams(paramsA: Record<string, unknown>, paramsB: Record<string, unknown>, t: number): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   const keys = new Set([...Object.keys(paramsA), ...Object.keys(paramsB)]);
   for (const key of keys) {
@@ -73,11 +77,7 @@ function matchLayersByType(a: EffectLayer[], b: EffectLayer[]): Array<[EffectLay
 }
 
 /** Blend two scenes by layer params (Lab preset blend) */
-export function blendScenes(
-  sceneA: SceneDocument,
-  sceneB: SceneDocument,
-  ratio: number
-): SceneDocument {
+export function blendScenes(sceneA: SceneDocument, sceneB: SceneDocument, ratio: number): SceneDocument {
   const pairs = matchLayersByType(sceneA.effectLayers, sceneB.effectLayers);
   const layers: EffectLayer[] = [];
 
@@ -121,33 +121,16 @@ export function blendScenes(
     },
     effectLayers: layers,
     customEngineId: ratio > 0.5 ? sceneB.customEngineId : sceneA.customEngineId,
-    engineParams:
-      sceneA.engineParams && sceneB.engineParams
-        ? blendLayerParams(
-            sceneA.engineParams as Record<string, unknown>,
-            sceneB.engineParams as Record<string, unknown>,
-            ratio
-          )
-        : ratio > 0.5
-          ? sceneB.engineParams
-          : sceneA.engineParams,
+    engineParams: sceneA.engineParams && sceneB.engineParams ? blendLayerParams(sceneA.engineParams as Record<string, unknown>, sceneB.engineParams as Record<string, unknown>, ratio) : ratio > 0.5 ? sceneB.engineParams : sceneA.engineParams,
     compositor: {
       blur: mixFloat(sceneA.compositor.blur, sceneB.compositor.blur, ratio),
       bloom: mixFloat(sceneA.compositor.bloom, sceneB.compositor.bloom, ratio),
-      bloomThreshold: mixFloat(
-        sceneA.compositor.bloomThreshold ?? 0.6,
-        sceneB.compositor.bloomThreshold ?? 0.6,
-        ratio
-      ),
+      bloomThreshold: mixFloat(sceneA.compositor.bloomThreshold ?? 0.6, sceneB.compositor.bloomThreshold ?? 0.6, ratio),
     },
     timeline: ratio > 0.5 ? sceneB.timeline : sceneA.timeline,
   };
 }
 
-export function blendConfigs(
-  cfgA: TextEffectConfig,
-  cfgB: TextEffectConfig,
-  ratio: number
-): TextEffectConfig {
+export function blendConfigs(cfgA: TextEffectConfig, cfgB: TextEffectConfig, ratio: number): TextEffectConfig {
   return sceneToConfig(blendScenes(textEffectConfigToScene(cfgA), textEffectConfigToScene(cfgB), ratio));
 }

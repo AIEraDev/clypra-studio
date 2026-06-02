@@ -24,10 +24,10 @@ export function SavePresetModal({ open, name, category, isGeneratingName, onName
           <Sparkles size={14} className="text-[#7C6FFF]" />
           Save Visual Preset
         </h3>
-        <p className="mb-4 font-sans text-xs leading-normal text-[#666677]">Store this composition style in local presets for reuse in Templates.</p>
+        <p className="mb-4 font-sans text-xs leading-normal text-clypra-muted">Store this composition style in local presets for reuse in Templates.</p>
 
         <label className="mb-3 block">
-          <span className="mb-1 block font-mono text-[10px] uppercase text-[#666677]">Preset name</span>
+          <span className="mb-1 block font-mono text-[10px] uppercase text-clypra-muted">Preset name</span>
           <div className="flex gap-1.5">
             <input id="input-save-preset-name" type="text" placeholder="e.g. Acid Neon" value={name} onChange={(event) => onNameChange(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-[#2A2A38] bg-[#0E0E12] p-2 font-sans text-xs text-white focus:border-[#7C6FFF] focus:outline-none" />
             <button type="button" onClick={onGenerateName} disabled={isGeneratingName} className="flex shrink-0 items-center justify-center gap-1 rounded-lg border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-2.5 font-sans text-xs text-[#7C6FFF] transition-all hover:bg-[#7C6FFF]/20 disabled:cursor-not-allowed disabled:opacity-50">
@@ -38,7 +38,7 @@ export function SavePresetModal({ open, name, category, isGeneratingName, onName
         </label>
 
         <label className="mb-4 block">
-          <span className="mb-1 block font-mono text-[10px] uppercase text-[#666677]">Category</span>
+          <span className="mb-1 block font-mono text-[10px] uppercase text-clypra-muted">Category</span>
           <select id="select-save-preset-category" value={category} onChange={(event) => onCategoryChange(event.target.value)} className="w-full rounded-lg border border-[#2A2A38] bg-[#0E0E12] p-2 font-sans text-xs text-white focus:border-[#7C6FFF] focus:outline-none">
             <option value="Classic">Classic</option>
             <option value="Neon">Neon</option>

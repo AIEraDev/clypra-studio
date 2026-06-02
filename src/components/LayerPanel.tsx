@@ -43,7 +43,7 @@ export function LayerPanel({ scene, onSceneChange, uiMode, selectedLayerId, onSe
       <div className="px-4 py-3 border-b border-[#2A2A38] bg-[#12121A]">
         <p className="text-[10px] font-mono uppercase text-clypra-muted tracking-wider mb-1">Effect layers</p>
         <p className="text-xs text-gray-500">
-          Switch to <span className="text-[#7C6FFF]">Advanced</span> to reorder and edit layers.
+          Select <span className="text-[#7C6FFF]">Layers</span> from the left rail to reorder and edit.
         </p>
         <p className="text-[10px] text-gray-600 mt-1">{scene.effectLayers.length} layers active</p>
       </div>

@@ -99,9 +99,9 @@ export const FontCompare: React.FC<FontCompareProps> = ({ config, onSelectFont, 
       <div className="flex items-center justify-between border-b border-[#2A2A38] pb-4 mb-4">
         <div>
           <h3 className="text-lg font-semibold text-white font-sans">Google Font Comparative Matrix</h3>
-          <p className="text-xs text-[#666677] font-sans mt-0.5">Click any typography specimen below to instantly apply it to your workbench.</p>
+          <p className="text-xs text-clypra-muted font-sans mt-0.5">Click any typography specimen below to instantly apply it to your workbench.</p>
         </div>
-        <button id="close-font-compare-btn" onClick={onClose} className="p-1 px-3 text-sm text-[#666677] hover:text-white border border-[#2A2A38] hover:border-[#7C6FFF] rounded transition-all duration-150 flex items-center gap-1.5 cursor-pointer bg-[#1E1E26]">
+        <button id="close-font-compare-btn" onClick={onClose} className="p-1 px-3 text-sm text-clypra-muted hover:text-white border border-[#2A2A38] hover:border-[#7C6FFF] rounded transition-all duration-150 flex items-center gap-1.5 cursor-pointer bg-[#1E1E26]">
           <X size={15} /> Close Comparison
         </button>
       </div>
@@ -120,7 +120,7 @@ export const FontCompare: React.FC<FontCompareProps> = ({ config, onSelectFont, 
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-white font-sans group-hover:text-[#7C6FFF] transition-colors truncate">{font}</span>
-              <span className="text-[9px] font-mono text-[#666677] bg-[#2A2A38]/50 px-1.5 py-0.5 rounded uppercase">google webfont</span>
+              <span className="text-[9px] font-mono text-clypra-muted bg-[#2A2A38]/50 px-1.5 py-0.5 rounded uppercase">google webfont</span>
             </div>
             <MiniFontCanvas id={`canvas-mini-${toKebabCase(font)}`} fontFamily={font} config={config} />
           </div>
@@ -129,7 +129,7 @@ export const FontCompare: React.FC<FontCompareProps> = ({ config, onSelectFont, 
 
       {/* Pagination Footer */}
       <div className="flex items-center justify-between border-t border-[#2A2A38] pt-4 mt-6">
-        <span className="text-xs text-[#666677] font-mono">
+        <span className="text-xs text-clypra-muted font-mono">
           Showing specimen {startIndex + 1} - {Math.min(startIndex + itemsPerPage, GOOGLE_FONTS.length)} of {GOOGLE_FONTS.length} Google Web Fonts
         </span>
 

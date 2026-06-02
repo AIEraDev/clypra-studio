@@ -67,9 +67,7 @@ export function GitHubConfigModal({ open, onClose }: GitHubConfigModalProps) {
               </div>
               <div className="min-w-0">
                 <h3 className="text-sm font-bold text-white">Create GitHub Pull Request</h3>
-                <p className="mt-1 text-[11px] leading-relaxed text-[#9A9AAA]">
-                  Studio creates a branch, uploads the JSON and PNG thumbnail, updates indexes, then opens a PR.
-                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-[#9A9AAA]">Studio creates a branch, uploads the JSON and PNG thumbnail, updates indexes, then opens a PR.</p>
               </div>
             </div>
             <button type="button" onClick={onClose} className="rounded-lg border border-[#2A2A38] p-1.5 text-[#888899] hover:bg-[#2A2A38] hover:text-white">
@@ -81,12 +79,7 @@ export function GitHubConfigModal({ open, onClose }: GitHubConfigModalProps) {
         <div className="space-y-4 p-4">
           <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899]">
             Repository
-            <input
-              value={repositoryInput}
-              onChange={(event) => setRepositoryInput(event.target.value)}
-              placeholder="AIEraDev/clypra-api or https://github.com/AIEraDev/clypra-api"
-              className="mt-1 w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs normal-case text-white outline-none placeholder:text-[#555566] focus:border-[#7C6FFF]"
-            />
+            <input value={repositoryInput} onChange={(event) => setRepositoryInput(event.target.value)} placeholder="AIEraDev/clypra-api or https://github.com/AIEraDev/clypra-api" className="mt-1 w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs normal-case text-white outline-none placeholder:text-[#555566] focus:border-[#7C6FFF]" />
           </label>
 
           <div className="grid grid-cols-2 gap-3">
@@ -104,16 +97,8 @@ export function GitHubConfigModal({ open, onClose }: GitHubConfigModalProps) {
             <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#888899]">
               <KeyRound size={12} className="text-[#7C6FFF]" /> Personal Access Token
             </div>
-            <input
-              type="password"
-              value={config.token}
-              onChange={(event) => updateToken(event.target.value)}
-              placeholder="Fine-scoped token with Contents + Pull requests access"
-              className="w-full rounded-lg border border-[#2A2A38] bg-[#060609] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-[#7C6FFF]"
-            />
-            <p className="mt-2 text-[10px] leading-relaxed text-[#666677]">
-              Stored only in this browser localStorage. A public repo still requires write permission to create branches and PRs.
-            </p>
+            <input type="password" value={config.token} onChange={(event) => updateToken(event.target.value)} placeholder="Fine-scoped token with Contents + Pull requests access" className="w-full rounded-lg border border-[#2A2A38] bg-[#060609] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-[#7C6FFF]" />
+            <p className="mt-2 text-[10px] leading-relaxed text-clypra-muted">Stored only in this browser localStorage. A public repo still requires write permission to create branches and PRs.</p>
           </div>
 
           <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-3">
@@ -121,10 +106,24 @@ export function GitHubConfigModal({ open, onClose }: GitHubConfigModalProps) {
               <ListChecks size={12} className="text-teal-300" /> Required token setup
             </div>
             <ol className="list-decimal space-y-1.5 pl-4 text-[10px] leading-relaxed text-[#8F8FA0]">
-              <li>Open <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noreferrer" className="text-teal-300 hover:underline">GitHub fine-grained tokens</a> and create a new token.</li>
+              <li>
+                Open{" "}
+                <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noreferrer" className="text-teal-300 hover:underline">
+                  GitHub fine-grained tokens
+                </a>{" "}
+                and create a new token.
+              </li>
               <li>Resource owner must own or have write access to the target repo.</li>
-              <li>Repository access: select only <span className="font-mono text-[#D0D0DA]">{normalized.owner}/{normalized.repo}</span>.</li>
-              <li>Repository permissions: <span className="font-mono text-[#D0D0DA]">Contents: Read and write</span> and <span className="font-mono text-[#D0D0DA]">Pull requests: Read and write</span>.</li>
+              <li>
+                Repository access: select only{" "}
+                <span className="font-mono text-[#D0D0DA]">
+                  {normalized.owner}/{normalized.repo}
+                </span>
+                .
+              </li>
+              <li>
+                Repository permissions: <span className="font-mono text-[#D0D0DA]">Contents: Read and write</span> and <span className="font-mono text-[#D0D0DA]">Pull requests: Read and write</span>.
+              </li>
             </ol>
           </div>
 
@@ -132,7 +131,9 @@ export function GitHubConfigModal({ open, onClose }: GitHubConfigModalProps) {
             <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#888899]">Resolved Target</div>
             {repoUrl ? (
               <a href={repoUrl} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1.5 truncate rounded-lg border border-[#2A2A38] bg-[#15151C] px-2.5 py-1.5 font-mono text-[11px] text-teal-300 hover:border-teal-500/40 hover:bg-teal-500/10">
-                <span className="truncate">{normalized.owner}/{normalized.repo}</span>
+                <span className="truncate">
+                  {normalized.owner}/{normalized.repo}
+                </span>
                 <ExternalLink size={11} className="shrink-0" />
               </a>
             ) : (
@@ -142,8 +143,12 @@ export function GitHubConfigModal({ open, onClose }: GitHubConfigModalProps) {
         </div>
 
         <div className="flex justify-end gap-2 border-t border-[#2A2A38] bg-[#15151C] p-4">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[#2A2A38] px-3 py-2 text-xs font-semibold text-white hover:bg-[#2A2A38]">Cancel</button>
-          <button type="button" onClick={save} disabled={!canSave} className="rounded-lg bg-[#7C6FFF] px-3 py-2 text-xs font-bold text-white hover:bg-[#6859FF] disabled:cursor-not-allowed disabled:opacity-50">Save PR Settings</button>
+          <button type="button" onClick={onClose} className="rounded-lg border border-[#2A2A38] px-3 py-2 text-xs font-semibold text-white hover:bg-[#2A2A38]">
+            Cancel
+          </button>
+          <button type="button" onClick={save} disabled={!canSave} className="rounded-lg bg-[#7C6FFF] px-3 py-2 text-xs font-bold text-white hover:bg-[#6859FF] disabled:cursor-not-allowed disabled:opacity-50">
+            Save PR Settings
+          </button>
         </div>
       </div>
     </div>

@@ -49,7 +49,7 @@ export function PreviewCanvas({ canvasRef, config, bgMode, zoom, zoomMode, onZoo
             <span className="w-1.5 h-1.5 rounded-full bg-[#7C6FFF] animate-pulse" />
             Composition
           </span>
-          <span className="text-[10px] font-mono text-[#666677] bg-[#2A2A38]/50 px-2 py-0.5 rounded border border-[#2A2A38]/20">
+          <span className="text-[10px] font-mono text-clypra-muted bg-[#2A2A38]/50 px-2 py-0.5 rounded border border-[#2A2A38]/20">
             {config.canvasWidth}×{config.canvasHeight}
           </span>
           <span className="text-[10px] font-mono text-[#7C6FFF]/80 hidden sm:inline">
@@ -59,10 +59,10 @@ export function PreviewCanvas({ canvasRef, config, bgMode, zoom, zoomMode, onZoo
 
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <div className="flex items-center bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg">
-            <button type="button" onClick={() => onZoomModeChange("fit")} className={`p-1 px-2 rounded text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-all ${zoomMode === "fit" ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-white"}`} title="Fit composition to viewport">
+            <button type="button" onClick={() => onZoomModeChange("fit")} className={`p-1 px-2 rounded text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-all ${zoomMode === "fit" ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-white"}`} title="Fit composition to viewport">
               <Maximize2 size={12} /> Fit
             </button>
-            <button type="button" onClick={() => onZoomModeChange("manual")} className={`p-1 px-2 rounded text-[10px] font-mono cursor-pointer transition-all ${zoomMode === "manual" ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-white"}`}>
+            <button type="button" onClick={() => onZoomModeChange("manual")} className={`p-1 px-2 rounded text-[10px] font-mono cursor-pointer transition-all ${zoomMode === "manual" ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-white"}`}>
               Manual
             </button>
           </div>
@@ -74,19 +74,19 @@ export function PreviewCanvas({ canvasRef, config, bgMode, zoom, zoomMode, onZoo
                 onZoomModeChange("manual");
                 onZoomChange(Math.max(25, effectiveZoom - 25));
               }}
-              className="p-1 text-[#666677] hover:text-white cursor-pointer"
+              className="p-1 text-clypra-muted hover:text-white cursor-pointer"
               title="Zoom out"
             >
               <ZoomOut size={13} />
             </button>
-            <span className="text-[10px] font-mono text-[#666677] w-9 text-center">{effectiveZoom}%</span>
+            <span className="text-[10px] font-mono text-clypra-muted w-9 text-center">{effectiveZoom}%</span>
             <button
               type="button"
               onClick={() => {
                 onZoomModeChange("manual");
                 onZoomChange(Math.min(200, effectiveZoom + 25));
               }}
-              className="p-1 text-[#666677] hover:text-white cursor-pointer"
+              className="p-1 text-clypra-muted hover:text-white cursor-pointer"
               title="Zoom in"
             >
               <ZoomIn size={13} />
@@ -94,10 +94,10 @@ export function PreviewCanvas({ canvasRef, config, bgMode, zoom, zoomMode, onZoo
           </div>
 
           <div className="flex items-center bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded">
-            <button type="button" onClick={() => onBgModeChange("checkerboard")} className={`p-1 px-2.5 rounded text-[10px] font-mono cursor-pointer ${bgMode === "checkerboard" ? "bg-[#1E1E26] text-[#7C6FFF]" : "text-[#666677] hover:text-white"}`} title="Alpha checkerboard">
+            <button type="button" onClick={() => onBgModeChange("checkerboard")} className={`p-1 px-2.5 rounded text-[10px] font-mono cursor-pointer ${bgMode === "checkerboard" ? "bg-[#1E1E26] text-[#7C6FFF]" : "text-clypra-muted hover:text-white"}`} title="Alpha checkerboard">
               Alpha
             </button>
-            <button type="button" onClick={() => onBgModeChange("black")} className={`p-1 px-2.5 rounded text-[10px] font-mono cursor-pointer ${bgMode === "black" ? "bg-[#1E1E26] text-[#7C6FFF]" : "text-[#666677] hover:text-white"}`}>
+            <button type="button" onClick={() => onBgModeChange("black")} className={`p-1 px-2.5 rounded text-[10px] font-mono cursor-pointer ${bgMode === "black" ? "bg-[#1E1E26] text-[#7C6FFF]" : "text-clypra-muted hover:text-white"}`}>
               Black
             </button>
           </div>

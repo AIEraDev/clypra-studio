@@ -11,9 +11,7 @@ export function toKebabCase(str: string): string {
 
 // Helper to sanitize class name to PascalCase
 export function toPascalCase(str: string): string {
-  return str
-    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase())
-    .replace(/[\s-_]+/g, "");
+  return str.replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase()).replace(/[\s-_]+/g, "");
 }
 
 // Generate highly unique and descriptive name taking in all core effect attributes
@@ -23,14 +21,14 @@ export function getEnrichedEffectName(cfg: TextEffectConfig): string {
     .trim()
     .split(/[\s-_]+/)
     .filter(Boolean);
-    
+
   const genericTerms = new Set(["custom", "effect", "my", "text", "sandbox", "engine", "definition", "design"]);
-  let words = rawWords.filter(w => !genericTerms.has(w.toLowerCase()));
-  
+  let words = rawWords.filter((w) => !genericTerms.has(w.toLowerCase()));
+
   if (words.length === 0) {
     words.push("Studio");
   }
-  
+
   // Style words based on fill & pattern texture
   const styleWords: string[] = [];
   if (cfg.fillType === "pattern") {
@@ -50,21 +48,21 @@ export function getEnrichedEffectName(cfg: TextEffectConfig): string {
   } else if (cfg.fillType === "solid") {
     styleWords.push("Classic", "Solid");
   }
-  
+
   // Add some stylistic words if we need more depth
   if (cfg.bevelEnabled) styleWords.push("Bevel");
   if (cfg.shadowEnabled) styleWords.push("Glow");
   if (cfg.strokeEnabled && cfg.strokeWidth > 0) styleWords.push("Contour");
-  
+
   // Merge lists without duplicates
   const wordSet = new Set<string>();
   // Push primary effect name words first
-  words.forEach(w => wordSet.add(toPascalCase(w)));
+  words.forEach((w) => wordSet.add(toPascalCase(w)));
   // Then style words
-  styleWords.forEach(w => wordSet.add(w));
-  
+  styleWords.forEach((w) => wordSet.add(w));
+
   let finalWords = Array.from(wordSet);
-  
+
   // Ensure we have at least 3 words, otherwise expand with nice design descriptors
   const fallbacks = ["Aesthetic", "Modern", "Canvas", "Artistry", "Type"];
   let fallbackIdx = 0;
@@ -74,14 +72,14 @@ export function getEnrichedEffectName(cfg: TextEffectConfig): string {
       finalWords.push(candidate);
     }
   }
-  
+
   // Clamp length strictly to 3-5 words
   if (finalWords.length > 5) {
     finalWords = finalWords.slice(0, 5);
   } else if (finalWords.length < 3) {
     finalWords = finalWords.slice(0, 3);
   }
-  
+
   // Join them as PascalCase for unique identifiers
   return finalWords.join("");
 }
@@ -97,7 +95,7 @@ export function getEffectRepresentation(cfg: TextEffectConfig) {
   let category = "Classic";
   if (customRenderer) {
     category = "Experimental";
-  } else if (cfg.glowLayers && cfg.glowLayers.some(l => l.enabled)) {
+  } else if (cfg.glowLayers && cfg.glowLayers.some((l) => l.enabled)) {
     category = "Neon";
   } else {
     category = "Classic";
@@ -106,16 +104,10 @@ export function getEffectRepresentation(cfg: TextEffectConfig) {
   let description = `A custom Canvas 2D text effect named ${name} with ${cfg.fillType} fill.`;
   if (isInk) {
     description = `A highly optimized, procedural Grunge custom ink brush text effect named ${name}.`;
-  } else if (customRenderer === "FireEngine") {
-    description = `An advanced, procedural Fire text effect named ${name}.`;
-  } else if (customRenderer === "IceEngine") {
-    description = `A highly detailed, static/physically simulated frosted Ice text effect named ${name}.`;
-  } else if (customRenderer === "AuraEngine") {
-    description = `A dynamic electric plasma Aura particle text effect named ${name}.`;
   }
 
   const tags = ["studio-export", "custom-canvas", cfg.fillType];
-  if (cfg.glowLayers && cfg.glowLayers.some(l => l.enabled)) {
+  if (cfg.glowLayers && cfg.glowLayers.some((l) => l.enabled)) {
     tags.push("glow");
   }
   if (cfg.bevelEnabled) {
@@ -148,50 +140,63 @@ export function getEffectRepresentation(cfg: TextEffectConfig) {
       letterSpacing: cfg.letterSpacing,
       lineHeight: cfg.lineHeight,
     },
-    fills: cfg.fillType === "none" ? [] : [
-      {
-        type: cfg.fillType,
-        color: cfg.fillColor,
-        gradient: {
-          angle: cfg.fillGradientAngle,
-          stops: cfg.fillGradientStops,
+    fills:
+      cfg.fillType === "none"
+        ? []
+        : [
+            {
+              type: cfg.fillType,
+              color: cfg.fillColor,
+              gradient: {
+                angle: cfg.fillGradientAngle,
+                stops: cfg.fillGradientStops,
+              },
+            },
+          ],
+    strokes: cfg.strokeEnabled
+      ? [
+          {
+            color: cfg.strokeColor,
+            width: cfg.strokeWidth,
+            position: cfg.strokePosition,
+            opacity: cfg.strokeOpacity,
+            lineJoin: cfg.strokeLineJoin,
+          },
+        ]
+      : [],
+    shadows: cfg.shadowEnabled
+      ? [
+          {
+            type: cfg.shadowType,
+            color: cfg.shadowColor,
+            blur: cfg.shadowBlur,
+            offset: { x: cfg.shadowOffsetX, y: cfg.shadowOffsetY },
+            opacity: cfg.shadowOpacity,
+          },
+        ]
+      : [],
+    glows: cfg.glowLayers
+      .filter((g) => g.enabled)
+      .map((g) => ({
+        color: g.color,
+        blur: g.blur,
+        opacity: g.opacity,
+        type: g.type,
+      })),
+    panel: cfg.panelEnabled
+      ? {
+          color: cfg.panelColor,
+          opacity: cfg.panelOpacity,
+          radius: cfg.panelRadius,
+          padding: { x: cfg.panelPaddingX, y: cfg.panelPaddingY },
+          stroke: cfg.panelStrokeEnabled
+            ? {
+                color: cfg.panelStrokeColor,
+                width: cfg.panelStrokeWidth,
+              }
+            : null,
         }
-      }
-    ],
-    strokes: cfg.strokeEnabled ? [
-      {
-        color: cfg.strokeColor,
-        width: cfg.strokeWidth,
-        position: cfg.strokePosition,
-        opacity: cfg.strokeOpacity,
-        lineJoin: cfg.strokeLineJoin,
-      }
-    ] : [],
-    shadows: cfg.shadowEnabled ? [
-      {
-        type: cfg.shadowType,
-        color: cfg.shadowColor,
-        blur: cfg.shadowBlur,
-        offset: { x: cfg.shadowOffsetX, y: cfg.shadowOffsetY },
-        opacity: cfg.shadowOpacity,
-      }
-    ] : [],
-    glows: cfg.glowLayers.filter(g => g.enabled).map(g => ({
-      color: g.color,
-      blur: g.blur,
-      opacity: g.opacity,
-      type: g.type
-    })),
-    panel: cfg.panelEnabled ? {
-      color: cfg.panelColor,
-      opacity: cfg.panelOpacity,
-      radius: cfg.panelRadius,
-      padding: { x: cfg.panelPaddingX, y: cfg.panelPaddingY },
-      stroke: cfg.panelStrokeEnabled ? {
-        color: cfg.panelStrokeColor,
-        width: cfg.panelStrokeWidth
-      } : null
-    } : null
+      : null,
   };
 }
 
@@ -199,7 +204,7 @@ export function generateInkBrushEngineClass(cfg: TextEffectConfig): string {
   const className = toPascalCase(getEnrichedEffectName(cfg)) || "InkBrush";
   const engineName = `${className}Engine`;
   const configName = `${className}Config`;
-  const escText = (cfg.text || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+  const escText = (cfg.text || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
 
   return `// @ts-nocheck
 /**
@@ -251,8 +256,8 @@ export class ${engineName} {
       fontSize: ${cfg.fontSize || 96},
       inkColor: "${cfg.inkColor || cfg.fillColor || "#FFFFFF"}",
       bristleDensity: ${cfg.bristleDensity ?? 0.8},
-      bristleSkipRate: ${cfg.bristleSkipRate ?? 0.20},
-      dripRate: ${cfg.dripRate ?? 0.30},
+      bristleSkipRate: ${cfg.bristleSkipRate ?? 0.2},
+      dripRate: ${cfg.dripRate ?? 0.3},
       dripMaxLength: ${cfg.dripMaxLength ?? 40},
       grainDensity: ${cfg.grainDensity ?? 0.15},
       skewX: ${cfg.skewX ?? -0.2},
@@ -604,1413 +609,21 @@ export class ${engineName} {
 `;
 }
 
-export function generateFireEngineClass(cfg: TextEffectConfig): string {
-  const className = toPascalCase(getEnrichedEffectName(cfg)) || "FireEffect";
-  const engineName = `${className}Engine`;
-  const configName = `${className}Config`;
-  const escText = (cfg.text || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, '\\n');
-
-  return `// @ts-nocheck
-/**
- * Clypra Text Effect Code Output - Clypra Integration Engine Core
- * Auto-generated by Clypra Text Effect Studio on ${new Date().toISOString().split("T")[0]}
- * File: ${className}.ts
- * Special custom renderer: FireEngine
- */
-
-function createCanvas(w: number, h: number): HTMLCanvasElement | OffscreenCanvas {
-  if (typeof document !== "undefined") {
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    return canvas;
-  } else if (typeof OffscreenCanvas !== "undefined") {
-    return new OffscreenCanvas(w, h);
-  }
-  throw new Error("No canvas implementation found in this environment.");
-}
-
-export interface ${configName} {
-  width: number;
-  height: number;
-  text: string;
-  fireColor: string;
-  fireIntensity: number;
-  fireFlameHeight: number;
-  fireEmberCount: number;
-  fontFamily?: string;
-  fontWeight?: number;
-  fontStyle?: "normal" | "italic";
-  fontSize?: number;
-  letterSpacing?: number;
-  lineHeight?: number;
-  skewX?: number;
-}
-
-export class ${engineName} {
-  private cfg: Required<${configName}>;
-  private contourPoints: Array<{ x: number; y: number; seed: number }> = [];
-  private topEdgePoints: Array<{ x: number; y: number; seed: number }> = [];
-  private embers: Array<{
-    x: number;
-    y: number;
-    size: number;
-    alpha: number;
-    speedY: number;
-    windOffset: number;
-    color: string;
-  }> = [];
-  private minX = 0;
-  private maxX = 0;
-  private minY = 0;
-  private maxY = 0;
-
-  constructor(config: Partial<${configName}>) {
-    const defaults: Required<${configName}> = {
-      width: ${cfg.canvasWidth || 800},
-      height: ${cfg.canvasHeight || 200},
-      text: "${escText}",
-      fireColor: "${cfg.fireColor || "#FF5500"}",
-      fireIntensity: ${cfg.fireIntensity ?? 5},
-      fireFlameHeight: ${cfg.fireFlameHeight ?? 80},
-      fireEmberCount: ${cfg.fireEmberCount ?? 150},
-      fontFamily: "${cfg.fontFamily || "Impact"}",
-      fontWeight: ${cfg.fontWeight || 900},
-      fontStyle: "${cfg.fontStyle || "normal"}",
-      fontSize: ${cfg.fontSize || 96},
-      letterSpacing: ${cfg.letterSpacing ?? 2},
-      lineHeight: ${cfg.lineHeight ?? 1.1},
-      skewX: ${cfg.skewX ?? -0.2}
-    };
-
-    this.cfg = {
-      ...defaults,
-      ...config
-    };
-
-    this.precomputeData();
-  }
-
-  private precomputeData() {
-    const {
-      text,
-      fontFamily,
-      fontWeight,
-      fontStyle,
-      fontSize,
-      letterSpacing,
-      lineHeight,
-      width,
-      height,
-      fireIntensity,
-      fireEmberCount,
-      skewX
-    } = this.cfg;
-
-    function seededRandom(seed: number): () => number {
-      let s = seed;
-      return function() {
-        s = (s * 16807) % 2147483647;
-        return (s - 1) / 2147483646;
-      };
-    }
-
-    function textSeed(input: string): number {
-      return input.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) * 9301 % 49297;
-    }
-
-    const rand = seededRandom(textSeed(text) + 88);
-
-    let canvas = createCanvas(width, height);
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const lines = text.split("\\n");
-    const numLines = lines.length;
-    const textBlockHeight = fontSize + (numLines - 1) * fontSize * lineHeight;
-
-    let startX = width / 2;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-
-    const fontStr = fontStyle + " " + fontWeight + " " + fontSize + "px \\\"" + fontFamily + "\\\"";
-    ctx.font = fontStr;
-
-    if (letterSpacing !== 0) {
-      ctx.letterSpacing = letterSpacing + "px";
-    }
-
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
-
-    ctx.save();
-    if (skewX !== 0) {
-      ctx.transform(1, 0, skewX, 1, 0, 0);
-    }
-
-    ctx.fillStyle = "#FFFFFF";
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.fillText(line, startX, py);
-    });
-    ctx.restore();
-
-    const imgData = ctx.getImageData(0, 0, width, height);
-    const pixels = imgData.data;
-
-    let minX = width;
-    let maxX = 0;
-    let minY = height;
-    let maxY = 0;
-
-    const topYForX = new Array(width).fill(-1);
-
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const idx = (y * width + x) * 4;
-        if (pixels[idx + 3] > 128) {
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-
-          if (topYForX[x] === -1 || y < topYForX[x]) {
-            topYForX[x] = y;
-          }
-        }
-      }
-    }
-
-    if (minY >= maxY || minX >= maxX) {
-      this.minX = width / 4;
-      this.maxX = (3 * width) / 4;
-      this.minY = height / 3;
-      this.maxY = (2 * height) / 3;
-      return;
-    }
-
-    this.minX = minX;
-    this.maxX = maxX;
-    this.minY = minY;
-    this.maxY = maxY;
-
-    const topPointsTemp = [];
-    for (let x = minX; x <= maxX; x++) {
-      const y = topYForX[x];
-      if (y !== -1) {
-        topPointsTemp.push({ x, y });
-      }
-    }
-
-    const desiredTopCount = Math.max(12, Math.floor(fireIntensity * 8));
-    const topStep = Math.max(1, Math.floor(topPointsTemp.length / desiredTopCount));
-    for (let i = 0; i < topPointsTemp.length; i += topStep) {
-      this.topEdgePoints.push({
-        x: topPointsTemp[i].x,
-        y: topPointsTemp[i].y,
-        seed: rand()
-      });
-    }
-
-    const contoursTemp = [];
-    for (let y = minY; y <= maxY; y += 2) {
-      for (let x = minX; x <= maxX; x += 2) {
-        const idx = (y * width + x) * 4;
-        if (pixels[idx + 3] > 128) {
-          let isEdge = false;
-          if (x === 0 || x === width - 1 || y === 0 || y === height - 1) {
-            isEdge = true;
-          } else {
-            const left = ((y * width + (x - 1)) * 4) + 3;
-            const right = ((y * width + (x + 1)) * 4) + 3;
-            const top = (((y - 1) * width + x) * 4) + 3;
-            const bottom = (((y + 1) * width + x) * 4) + 3;
-            if (pixels[left] <= 128 || pixels[right] <= 128 || pixels[top] <= 128 || pixels[bottom] <= 128) {
-              isEdge = true;
-            }
-          }
-          if (isEdge) {
-            contoursTemp.push({ x, y });
-          }
-        }
-      }
-    }
-
-    const desiredContourCount = Math.max(18, Math.floor(fireIntensity * 12));
-    const contourStep = Math.max(1, Math.floor(contoursTemp.length / desiredContourCount));
-    for (let i = 0; i < contoursTemp.length; i += contourStep) {
-      this.contourPoints.push({
-        x: contoursTemp[i].x,
-        y: contoursTemp[i].y,
-        seed: rand()
-      });
-    }
-
-    const emberColors = ["#FF3300", "#FF6600", "#FFAA00", "#FFCC44", "#FFEE88"];
-    const emberCount = fireEmberCount;
-    for (let i = 0; i < emberCount; i++) {
-      const x = minX - 40 + rand() * (maxX - minX + 80);
-      const startYRand = rand();
-      const y = minY - 30 + startYRand * (maxY - minY + 60) - rand() * 140;
-
-      this.embers.push({
-        x,
-        y,
-        size: 0.5 + rand() * 2.5,
-        alpha: 0.15 + rand() * 0.75,
-        speedY: 0.7 + rand() * 1.8,
-        windOffset: -1.2 + rand() * 2.4,
-        color: emberColors[Math.floor(rand() * emberColors.length)]
-      });
-    }
-  }
-
-  public drawFrame(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
-    const {
-      text,
-      fontFamily,
-      fontWeight,
-      fontStyle,
-      fontSize,
-      letterSpacing,
-      lineHeight,
-      width,
-      height,
-      skewX,
-      fireFlameHeight
-    } = this.cfg;
-
-    function seededRandom(seed: number): () => number {
-      let s = seed;
-      return function() {
-        s = (s * 16807) % 2147483647;
-        return (s - 1) / 2147483646;
-      };
-    }
-
-    ctx.clearRect(0, 0, width, height);
-    ctx.imageSmoothingEnabled = true;
-
-    // Warm ambient backglow
-    ctx.save();
-    const cx = (this.minX + this.maxX) / 2;
-    const cy = (this.minY + this.maxY) / 2;
-    const bgGlow = ctx.createRadialGradient(
-      cx, cy, 5,
-      cx, cy, Math.max(120, (this.maxX - this.minX) * 0.7)
-    );
-    bgGlow.addColorStop(0, "rgba(220, 45, 0, 0.28)");
-    bgGlow.addColorStop(0.5, "rgba(220, 25, 0, 0.08)");
-    bgGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = bgGlow;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-
-    const lines = text.split("\\n");
-    const numLines = lines.length;
-    const textBlockHeight = fontSize + (numLines - 1) * fontSize * lineHeight;
-
-    let startX = width / 2;
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
-
-    const fontStr = fontStyle + " " + fontWeight + " " + fontSize + "px \\\"" + fontFamily + "\\\"";
-
-    // Draw Underlying Back Flames
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-
-    const drawWispPath = (
-      x: number,
-      y: number,
-      w: number,
-      h: number,
-      skew: number,
-      randVal: number
-    ) => {
-      const cp1x = x - w / 2 + (-15 + randVal * 30);
-      const cp1y = y - h * 0.3;
-      const tipX = x + (-22 + randVal * 44) + skew * -15;
-      const tipY = y - h;
-      const cp2x = x + w / 2 + (-15 + randVal * 30);
-      const cp2y = y - h * 0.3;
-
-      ctx.beginPath();
-      ctx.moveTo(x - w / 2, y);
-      ctx.bezierCurveTo(cp1x, cp1y, tipX - w / 5, tipY + h / 3, tipX, tipY);
-      ctx.bezierCurveTo(tipX + w / 5, tipY + h / 3, cp2x, cp2y, x + w / 2, y);
-      ctx.closePath();
-    };
-
-    // PASS A: BACK FLAMES
-    this.topEdgePoints.forEach((pt) => {
-      const rand = seededRandom(pt.seed * 777);
-      const randVal = rand();
-      const w = 18 + randVal * 15;
-      const h = fireFlameHeight * (0.8 + randVal * 0.6);
-
-      const grad = ctx.createLinearGradient(pt.x, pt.y, pt.x, pt.y - h);
-      grad.addColorStop(0, "rgba(220, 20, 0, 0.30)");
-      grad.addColorStop(0.4, "rgba(180, 10, 0, 0.12)");
-      grad.addColorStop(1, "rgba(80, 0, 0, 0)");
-
-      ctx.fillStyle = grad;
-      drawWispPath(pt.x, pt.y, w, h, skewX, randVal);
-      ctx.fill();
-    });
-
-    this.contourPoints.forEach((pt) => {
-      const rand = seededRandom(pt.seed * 999);
-      const randVal = rand();
-      const w = 12 + randVal * 10;
-      const h = fireFlameHeight * (0.5 + randVal * 0.5);
-
-      const grad = ctx.createLinearGradient(pt.x, pt.y, pt.x, pt.y - h);
-      grad.addColorStop(0, "rgba(200, 15, 0, 0.20)");
-      grad.addColorStop(0.5, "rgba(150, 5, 0, 0.08)");
-      grad.addColorStop(1, "rgba(60, 0, 0, 0)");
-
-      ctx.fillStyle = grad;
-      drawWispPath(pt.x, pt.y, w, h, skewX, randVal);
-      ctx.fill();
-    });
-
-    // PASS B: MIDDLE MODULE FLAMES
-    this.topEdgePoints.forEach((pt) => {
-      const rand = seededRandom(pt.seed * 850);
-      const randVal = rand();
-      const w = 10 + randVal * 11;
-      const h = fireFlameHeight * (0.6 + randVal * 0.4);
-
-      const grad = ctx.createLinearGradient(pt.x, pt.y, pt.x, pt.y - h);
-      grad.addColorStop(0, "rgba(255, 110, 0, 0.55)");
-      grad.addColorStop(0.4, "rgba(255, 60, 0, 0.25)");
-      grad.addColorStop(1, "rgba(180, 10, 0, 0)");
-
-      ctx.fillStyle = grad;
-      drawWispPath(pt.x, pt.y, w, h, skewX, randVal);
-      ctx.fill();
-    });
-
-    this.contourPoints.forEach((pt) => {
-      const rand = seededRandom(pt.seed * 111);
-      const randVal = rand();
-      const w = 8 + randVal * 8;
-      const h = fireFlameHeight * (0.4 + randVal * 0.3);
-
-      const grad = ctx.createLinearGradient(pt.x, pt.y, pt.x, pt.y - h);
-      grad.addColorStop(0, "rgba(255, 90, 0, 0.40)");
-      grad.addColorStop(0.5, "rgba(220, 40, 0, 0.15)");
-      grad.addColorStop(1, "rgba(120, 0, 0, 0)");
-
-      ctx.fillStyle = grad;
-      drawWispPath(pt.x, pt.y, w, h, skewX, randVal);
-      ctx.fill();
-    });
-
-    ctx.restore();
-
-    // Draw Core Text molten gradient
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.font = fontStr;
-    if (letterSpacing !== 0) {
-      ctx.letterSpacing = letterSpacing + "px";
-    }
-
-    if (skewX !== 0) {
-      ctx.transform(1, 0, skewX, 1, 0, 0);
-    }
-
-    const textGrad = ctx.createLinearGradient(0, this.minY, 0, this.maxY);
-    textGrad.addColorStop(0, "#190400");
-    textGrad.addColorStop(0.35, "#AC2200");
-    textGrad.addColorStop(0.65, "#FF6F00");
-    textGrad.addColorStop(0.85, "#FFAA00");
-    textGrad.addColorStop(1.0, "#FFFFD0");
-
-    ctx.fillStyle = textGrad;
-
-    ctx.strokeStyle = "#100200";
-    ctx.lineWidth = 4;
-    ctx.lineJoin = "round";
-
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.strokeText(line, startX, py);
-      ctx.fillText(line, startX, py);
-    });
-
-    ctx.restore();
-
-    // Foreground Flames Pass
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-
-    // PASS C: FOREGROUND HOT CORES
-    this.topEdgePoints.forEach((pt) => {
-      const rand = seededRandom(pt.seed * 350);
-      const randVal = rand();
-      const w = 6 + randVal * 5;
-      const h = fireFlameHeight * (0.35 + randVal * 0.25);
-
-      const grad = ctx.createLinearGradient(pt.x, pt.y, pt.x, pt.y - h);
-      grad.addColorStop(0, "rgba(255, 235, 175, 0.85)");
-      grad.addColorStop(0.4, "rgba(255, 160, 0, 0.40)");
-      grad.addColorStop(1, "rgba(255, 40, 0, 0)");
-
-      ctx.fillStyle = grad;
-      drawWispPath(pt.x, pt.y, w, h, skewX, randVal);
-      ctx.fill();
-    });
-
-    ctx.restore();
-
-    // Volumetric Glow & Heated Embers
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-
-    this.embers.forEach((ember) => {
-      ctx.fillStyle = ember.color;
-      ctx.globalAlpha = ember.alpha;
-
-      if (ember.size > 1.8) {
-        ctx.strokeStyle = ember.color;
-        ctx.lineWidth = ember.size * 0.6;
-        ctx.beginPath();
-        ctx.moveTo(ember.x, ember.y);
-        ctx.quadraticCurveTo(
-          ember.x + ember.windOffset * 2,
-          ember.y - 8,
-          ember.x + ember.windOffset * 4,
-          ember.y - 18
-        );
-        ctx.stroke();
-      } else {
-        ctx.beginPath();
-        ctx.arc(ember.x, ember.y, ember.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    });
-
-    ctx.restore();
-  }
-}
-`;
-}
-
-export function generateIceEngineClass(cfg: TextEffectConfig): string {
-  const className = toPascalCase(getEnrichedEffectName(cfg)) || "IceEffect";
-  const engineName = `${className}Engine`;
-  const configName = `${className}Config`;
-  const escText = (cfg.text || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, '\\n');
-
-  return `// @ts-nocheck
-/**
- * Clypra Text Effect Code Output - Clypra Integration Engine Core
- * Auto-generated by Clypra Text Effect Studio on ${new Date().toISOString().split("T")[0]}
- * File: ${className}.ts
- * Special custom renderer: IceEngine
- */
-
-function createCanvas(w: number, h: number): HTMLCanvasElement | OffscreenCanvas {
-  if (typeof document !== "undefined") {
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    return canvas;
-  } else if (typeof OffscreenCanvas !== "undefined") {
-    return new OffscreenCanvas(w, h);
-  }
-  throw new Error("No canvas implementation found in this environment.");
-}
-
-export interface ${configName} {
-  width: number;
-  height: number;
-  text: string;
-  iceColor: string;
-  iceThickness: number;
-  iceIcicleHeight: number;
-  iceFrostDensity: number;
-  iceSnowHeight: number;
-  fontFamily?: string;
-  fontWeight?: number;
-  fontStyle?: "normal" | "italic";
-  fontSize?: number;
-  letterSpacing?: number;
-  lineHeight?: number;
-  skewX?: number;
-}
-
-export class ${engineName} {
-  private cfg: Required<${configName}>;
-  private minX = 0;
-  private maxX = 0;
-  private minY = 0;
-  private maxY = 0;
-  private topEdgePoints: Array<{ x: number; y: number; seed: number }> = [];
-  private bottomEdgePoints: Array<{ x: number; y: number; seed: number; weight: number }> = [];
-  private frostCracks: Array<Array<{ x: number; y: number }>> = [];
-
-  constructor(config: Partial<${configName}>) {
-    const defaults: Required<${configName}> = {
-      width: ${cfg.canvasWidth || 800},
-      height: ${cfg.canvasHeight || 200},
-      text: "${escText}",
-      iceColor: "${cfg.iceColor || "#AADDFF"}",
-      iceThickness: ${cfg.iceThickness ?? 6},
-      iceIcicleHeight: ${cfg.iceIcicleHeight ?? 25},
-      iceFrostDensity: ${cfg.iceFrostDensity ?? 0.6},
-      iceSnowHeight: ${cfg.iceSnowHeight ?? 10},
-      fontFamily: "${cfg.fontFamily || "Impact"}",
-      fontWeight: ${cfg.fontWeight || 900},
-      fontStyle: "${cfg.fontStyle || "normal"}",
-      fontSize: ${cfg.fontSize || 96},
-      letterSpacing: ${cfg.letterSpacing ?? 2},
-      lineHeight: ${cfg.lineHeight ?? 1.1},
-      skewX: ${cfg.skewX ?? -0.2}
-    };
-
-    this.cfg = {
-      ...defaults,
-      ...config
-    };
-
-    this.precomputeData();
-  }
-
-  private precomputeData() {
-    const {
-      text,
-      fontFamily,
-      fontWeight,
-      fontStyle,
-      fontSize,
-      letterSpacing,
-      lineHeight,
-      width,
-      height,
-      iceFrostDensity,
-      skewX
-    } = this.cfg;
-
-    function seededRandom(seed: number): () => number {
-      let s = seed;
-      return function() {
-        s = (s * 16807) % 2147483647;
-        return (s - 1) / 2147483646;
-      };
-    }
-
-    function textSeed(input: string): number {
-      return input.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) * 9301 % 49297;
-    }
-
-    const rand = seededRandom(textSeed(text) + 999);
-
-    let canvas = createCanvas(width, height);
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const lines = text.split("\\n");
-    const numLines = lines.length;
-    const textBlockHeight = fontSize + (numLines - 1) * fontSize * lineHeight;
-
-    let startX = width / 2;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-
-    const fontStr = fontStyle + " " + fontWeight + " " + fontSize + "px \\\"" + fontFamily + "\\\"";
-    ctx.font = fontStr;
-
-    if (letterSpacing !== 0) {
-      ctx.letterSpacing = letterSpacing + "px";
-    }
-
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
-
-    ctx.save();
-    if (skewX !== 0) {
-      ctx.transform(1, 0, skewX, 1, 0, 0);
-    }
-
-    ctx.fillStyle = "#FFFFFF";
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.fillText(line, startX, py);
-    });
-    ctx.restore();
-
-    const imgData = ctx.getImageData(0, 0, width, height);
-    const pixels = imgData.data;
-
-    let minX = width;
-    let maxX = 0;
-    let minY = height;
-    let maxY = 0;
-
-    const topYForX = new Array(width).fill(-1);
-    const bottomYForX = new Array(width).fill(-1);
-
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const idx = (y * width + x) * 4;
-        if (pixels[idx + 3] > 128) {
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-
-          if (topYForX[x] === -1 || y < topYForX[x]) {
-            topYForX[x] = y;
-          }
-          if (y > bottomYForX[x]) {
-            bottomYForX[x] = y;
-          }
-        }
-      }
-    }
-
-    if (minY >= maxY || minX >= maxX) {
-      this.minX = width / 4;
-      this.maxX = (3 * width) / 4;
-      this.minY = height / 3;
-      this.maxY = (2 * height) / 3;
-      return;
-    }
-
-    this.minX = minX;
-    this.maxX = maxX;
-    this.minY = minY;
-    this.maxY = maxY;
-
-    for (let x = minX; x <= maxX; x += 4) {
-      const y = topYForX[x];
-      if (y !== -1) {
-        this.topEdgePoints.push({ x, y, seed: rand() });
-      }
-    }
-
-    const icicleSpacing = Math.max(8, Math.floor(24 - (fontSize / 10)));
-    for (let x = minX + 2; x <= maxX - 2; x += icicleSpacing) {
-      const y = bottomYForX[x];
-      if (y !== -1) {
-        this.bottomEdgePoints.push({
-          x,
-          y,
-          seed: rand(),
-          weight: 0.3 + rand() * 0.7
-        });
-      }
-    }
-
-    const cracksCount = Math.floor(12 + iceFrostDensity * 18);
-    for (let i = 0; i < cracksCount; i++) {
-      let sx = 0;
-      let sy = 0;
-      let found = false;
-      for (let attempt = 0; attempt < 100; attempt++) {
-        const testX = Math.floor(minX + rand() * (maxX - minX));
-        const testY = Math.floor(minY + rand() * (maxY - minY));
-        const idx = (testY * width + testX) * 4;
-        if (pixels[idx + 3] > 128) {
-          sx = testX;
-          sy = testY;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        sx = minX + rand() * (maxX - minX);
-        sy = minY + rand() * (maxY - minY);
-      }
-
-      const crackPath = [{ x: sx, y: sy }];
-      let cx = sx;
-      let cy = sy;
-      const steps = 3 + Math.floor(rand() * 4);
-      let angle = rand() * Math.PI * 2;
-      for (let s = 0; s < steps; s++) {
-        const len = 6 + rand() * 12;
-        angle += -1 + rand() * 2;
-        cx += Math.cos(angle) * len;
-        cy += Math.sin(angle) * len;
-        crackPath.push({ x: cx, y: cy });
-      }
-      this.frostCracks.push(crackPath);
-    }
-  }
-
-  public drawFrame(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
-    const {
-      text,
-      fontFamily,
-      fontWeight,
-      fontStyle,
-      fontSize,
-      letterSpacing,
-      lineHeight,
-      width,
-      height,
-      skewX,
-      iceColor,
-      iceThickness,
-      iceIcicleHeight,
-      iceSnowHeight
-    } = this.cfg;
-
-    function seededRandom(seed: number): () => number {
-      let s = seed;
-      return function() {
-        s = (s * 16807) % 2147483647;
-        return (s - 1) / 2147483646;
-      };
-    }
-
-    ctx.clearRect(0, 0, width, height);
-
-    // Misty halo
-    ctx.save();
-    const cx = (this.minX + this.maxX) / 2;
-    const cy = (this.minY + this.maxY) / 2;
-    const bgGlow = ctx.createRadialGradient(
-      cx, cy, 10,
-      cx, cy, Math.max(130, (this.maxX - this.minX) * 0.65)
-    );
-    bgGlow.addColorStop(0, "rgba(100, 200, 255, 0.22)");
-    bgGlow.addColorStop(0.5, "rgba(50, 150, 255, 0.06)");
-    bgGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = bgGlow;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-
-    const lines = text.split("\\n");
-    const numLines = lines.length;
-    const textBlockHeight = fontSize + (numLines - 1) * fontSize * lineHeight;
-
-    let startX = width / 2;
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
-
-    const fontStr = fontStyle + " " + fontWeight + " " + fontSize + "px \\\"" + fontFamily + "\\\"";
-
-    // Draw Heavy Inner Shadow
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.font = fontStr;
-    if (letterSpacing !== 0) {
-      ctx.letterSpacing = letterSpacing + "px";
-    }
-    if (skewX !== 0) {
-      ctx.transform(1, 0, skewX, 1, 0, 0);
-    }
-
-    ctx.fillStyle = "rgba(4, 20, 45, 0.7)";
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.fillText(line, startX + 3, py + 4);
-    });
-    ctx.restore();
-
-    // Draw main character with glowing gradient
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.font = fontStr;
-    if (letterSpacing !== 0) {
-      ctx.letterSpacing = letterSpacing + "px";
-    }
-    if (skewX !== 0) {
-      ctx.transform(1, 0, skewX, 1, 0, 0);
-    }
-
-    const iceGrad = ctx.createLinearGradient(0, this.minY, 0, this.maxY);
-    iceGrad.addColorStop(0.0, "#FFFFFF");
-    iceGrad.addColorStop(0.15, "#E2F5FF");
-    iceGrad.addColorStop(0.45, iceColor);
-    iceGrad.addColorStop(0.8, "#3DAAFF");
-    iceGrad.addColorStop(1.0, "#0064B3");
-
-    ctx.fillStyle = iceGrad;
-    ctx.shadowColor = "rgba(130, 215, 255, 0.75)";
-    ctx.shadowBlur = 12;
-
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.fillText(line, startX, py);
-    });
-
-    ctx.shadowBlur = 0;
-    ctx.globalCompositeOperation = "source-atop";
-
-    // Draw Frost Cracks
-    this.frostCracks.forEach((crack) => {
-      if (crack.length < 2) return;
-      ctx.beginPath();
-      ctx.moveTo(crack[0].x, crack[0].y);
-      for (let s = 1; s < crack.length; s++) {
-        ctx.lineTo(crack[s].x, crack[s].y);
-      }
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
-      ctx.lineWidth = 1.0;
-      ctx.shadowColor = "rgba(255, 255, 255, 0.9)";
-      ctx.shadowBlur = 1.5;
-      ctx.stroke();
-
-      ctx.strokeStyle = "rgba(160, 225, 255, 0.4)";
-      ctx.lineWidth = 1.8;
-      ctx.stroke();
-    });
-
-    ctx.shadowBlur = 0;
-
-    // Glassy shine
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-      ctx.lineWidth = 1.5;
-      ctx.strokeText(line, startX - 1, py - 1);
-
-      ctx.strokeStyle = "rgba(0, 31, 64, 0.6)";
-      ctx.lineWidth = 2.0;
-      ctx.strokeText(line, startX + 1, py + 1);
-    });
-
-    ctx.restore();
-
-    // Draw sharp icicles
-    ctx.save();
-    this.bottomEdgePoints.forEach((pt) => {
-      const rand = seededRandom(pt.seed * 200);
-      const h = iceIcicleHeight * (0.45 + rand() * 0.65) * pt.weight;
-      if (h < 3) return;
-
-      const w = Math.max(2, Math.min(6, iceThickness * (0.6 + rand() * 0.5)));
-
-      const grad = ctx.createLinearGradient(pt.x, pt.y, pt.x, pt.y + h);
-      grad.addColorStop(0, "rgba(255, 255, 255, 0.95)");
-      grad.addColorStop(0.2, "rgba(215, 243, 255, 0.85)");
-      grad.addColorStop(0.7, "rgba(100, 190, 245, 0.55)");
-      grad.addColorStop(1.0, "rgba(135, 215, 255, 0.05)");
-
-      ctx.beginPath();
-      ctx.moveTo(pt.x - w / 2, pt.y - 1);
-      const c1x = pt.x - w * 0.2 + (-0.5 + rand() * 1);
-      const c1y = pt.y + h * 0.35;
-      const tipX = pt.x + (-0.8 + rand() * 1.6);
-      const tipY = pt.y + h;
-      const c2x = pt.x + w * 0.2 + (-0.5 + rand() * 1);
-      const c2y = pt.y + h * 0.35;
-
-      ctx.bezierCurveTo(c1x, c1y, tipX - w * 0.05, tipY, tipX, tipY);
-      ctx.bezierCurveTo(tipX + w * 0.05, tipY, c2x, c2y, pt.x + w / 2, pt.y - 1);
-      ctx.closePath();
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      if (rand() > 0.65 && h > 15) {
-        ctx.fillStyle = "#FFFFFF";
-        ctx.shadowColor = "#FFFFFF";
-        ctx.shadowBlur = 4;
-        ctx.beginPath();
-        ctx.arc(tipX, tipY - 1, 0.8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-    });
-    ctx.restore();
-
-    // Draw Snowy Caps
-    ctx.save();
-    if (iceSnowHeight > 0) {
-      this.topEdgePoints.forEach((pt) => {
-        const rand = seededRandom(pt.seed * 432);
-        const randVal = rand();
-        const snowCapHeight = iceSnowHeight * (0.4 + randVal * 0.6);
-        const w = 4 + randVal * 6;
-
-        const snowGrad = ctx.createLinearGradient(pt.x, pt.y - snowCapHeight, pt.x, pt.y + 1);
-        snowGrad.addColorStop(0, "#FFFFFF");
-        snowGrad.addColorStop(0.7, "#EEF8FF");
-        snowGrad.addColorStop(1.0, "#C7E5FF");
-
-        ctx.fillStyle = snowGrad;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, w, Math.PI, 0);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(pt.x - w, pt.y);
-        ctx.quadraticCurveTo(pt.x, pt.y - snowCapHeight, pt.x + w, pt.y);
-        ctx.closePath();
-        ctx.fill();
-      });
-    }
-    ctx.restore();
-  }
-}
-`;
-}
-
-export function generateAuraEngineClass(cfg: TextEffectConfig): string {
-  const className = toPascalCase(getEnrichedEffectName(cfg)) || "AuraEffect";
-  const engineName = `${className}Engine`;
-  const configName = `${className}Config`;
-  const escText = (cfg.text || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, '\\n');
-
-  return `// @ts-nocheck
-/**
- * Clypra Text Effect Code Output - Clypra Integration Engine Core
- * Auto-generated by Clypra Text Effect Studio on ${new Date().toISOString().split("T")[0]}
- * File: ${className}.ts
- * Special custom renderer: AuraEngine
- */
-
-function createCanvas(w: number, h: number): HTMLCanvasElement | OffscreenCanvas {
-  if (typeof document !== "undefined") {
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    return canvas;
-  } else if (typeof OffscreenCanvas !== "undefined") {
-    return new OffscreenCanvas(w, h);
-  }
-  throw new Error("No canvas implementation found in this environment.");
-}
-
-function hexToRgba(hex: string, alpha: number): string {
-  if (!hex) return "rgba(255, 255, 255, " + alpha + ")";
-  let clean = hex.replace("#", "");
-  if (clean.length === 3) {
-    clean = clean.split("").map((c) => c + c).join("");
-  }
-  const r = parseInt(clean.substring(0, 2), 16) || 0;
-  const g = parseInt(clean.substring(2, 4), 16) || 0;
-  const b = parseInt(clean.substring(4, 6), 16) || 0;
-  return "rgba(" + r + ", " + g + ", " + b + ", " + alpha + ")";
-}
-
-export interface ${configName} {
-  width: number;
-  height: number;
-  text: string;
-  auraColor: string;
-  auraGlowColor: string;
-  auraIntensity: number;
-  auraReach: number;
-  auraParticleCount: number;
-  fontFamily?: string;
-  fontWeight?: number;
-  fontStyle?: "normal" | "italic";
-  fontSize?: number;
-  letterSpacing?: number;
-  lineHeight?: number;
-  skewX?: number;
-}
-
-export class ${engineName} {
-  private cfg: Required<${configName}>;
-  private minX = 0;
-  private maxX = 0;
-  private minY = 0;
-  private maxY = 0;
-  private contourPoints: Array<{ x: number; y: number; seed: number; nx: number; ny: number }> = [];
-  private emberPoints: Array<{ x: number; y: number; seed: number; speed: number; size: number }> = [];
-
-  constructor(config: Partial<${configName}>) {
-    const defaults: Required<${configName}> = {
-      width: ${cfg.canvasWidth || 800},
-      height: ${cfg.canvasHeight || 200},
-      text: "${escText}",
-      auraColor: "${cfg.auraColor || "#A855F7"}",
-      auraGlowColor: "${cfg.auraGlowColor || "#6B21A8"}",
-      auraIntensity: ${cfg.auraIntensity ?? 6},
-      auraReach: ${cfg.auraReach ?? 35},
-      auraParticleCount: ${cfg.auraParticleCount ?? 160},
-      fontFamily: "${cfg.fontFamily || "Impact"}",
-      fontWeight: ${cfg.fontWeight || 900},
-      fontStyle: "${cfg.fontStyle || "normal"}",
-      fontSize: ${cfg.fontSize || 96},
-      letterSpacing: ${cfg.letterSpacing ?? 2},
-      lineHeight: ${cfg.lineHeight ?? 1.1},
-      skewX: ${cfg.skewX ?? -0.2}
-    };
-
-    this.cfg = {
-      ...defaults,
-      ...config
-    };
-
-    this.precomputeData();
-  }
-
-  private precomputeData() {
-    const {
-      text,
-      fontFamily,
-      fontWeight,
-      fontStyle,
-      fontSize,
-      letterSpacing,
-      lineHeight,
-      width,
-      height,
-      skewX,
-      auraParticleCount
-    } = this.cfg;
-
-    function seededRandom(seed: number): () => number {
-      let s = seed;
-      return function() {
-        s = (s * 16807) % 2147483647;
-        return (s - 1) / 2147483646;
-      };
-    }
-
-    function textSeed(input: string): number {
-      return input.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) * 9301 % 49297;
-    }
-
-    const rand = seededRandom(textSeed(text) + 1234);
-
-    let canvas = createCanvas(width, height);
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const lines = text.split("\\n");
-    const numLines = lines.length;
-    const textBlockHeight = fontSize + (numLines - 1) * fontSize * lineHeight;
-
-    let startX = width / 2;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-
-    const fontStr = fontStyle + " " + fontWeight + " " + fontSize + "px \\\"" + fontFamily + "\\\"";
-    ctx.font = fontStr;
-
-    if (letterSpacing !== 0) {
-      ctx.letterSpacing = letterSpacing + "px";
-    }
-
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
-
-    ctx.save();
-    if (skewX !== 0) {
-      ctx.transform(1, 0, skewX, 1, 0, 0);
-    }
-
-    ctx.fillStyle = "#FFFFFF";
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.fillText(line, startX, py);
-    });
-    ctx.restore();
-
-    const imgData = ctx.getImageData(0, 0, width, height);
-    const pixels = imgData.data;
-
-    let minX = width;
-    let maxX = 0;
-    let minY = height;
-    let maxY = 0;
-
-    const tempContour = [];
-
-    const step = 2;
-    for (let y = step; y < height - step; y += step) {
-      for (let x = step; x < width - step; x += step) {
-        const idx = (y * width + x) * 4;
-        if (pixels[idx + 3] > 120) {
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-
-          let isEdge = false;
-          let emptyX = 0;
-          let emptyY = 0;
-
-          const nSteps = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-          for (const [dx, dy] of nSteps) {
-            const nIdx = ((y + dy * step) * width + (x + dx * step)) * 4;
-            if (pixels[nIdx + 3] <= 120) {
-              isEdge = true;
-              emptyX = dx;
-              emptyY = dy;
-              break;
-            }
-          }
-
-          if (isEdge) {
-            tempContour.push({
-              x,
-              y,
-              seed: rand(),
-              nx: emptyX,
-              ny: emptyY
-            });
-          }
-        }
-      }
-    }
-
-    if (minY >= maxY || minX >= maxX) {
-      this.minX = width / 4;
-      this.maxX = (3 * width) / 4;
-      this.minY = height / 3;
-      this.maxY = (2 * height) / 3;
-      return;
-    }
-
-    this.minX = minX;
-    this.maxX = maxX;
-    this.minY = minY;
-    this.maxY = maxY;
-
-    const sampleRate = Math.max(1, Math.floor(tempContour.length / 450));
-    for (let i = 0; i < tempContour.length; i += sampleRate) {
-      this.contourPoints.push(tempContour[i]);
-    }
-
-    const sparkCount = Math.floor(auraParticleCount * 0.8);
-    for (let i = 0; i < sparkCount; i++) {
-      const basePoint = tempContour[Math.floor(rand() * tempContour.length)] || { x: width / 2, y: height / 2 };
-      this.emberPoints.push({
-        x: basePoint.x + (-15 + rand() * 30),
-        y: basePoint.y + (-15 + rand() * 30),
-        seed: rand(),
-        speed: 0.15 + rand() * 0.8,
-        size: 0.8 + rand() * 1.8
-      });
-    }
-  }
-
-  public drawFrame(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
-    const {
-      text,
-      fontFamily,
-      fontWeight,
-      fontStyle,
-      fontSize,
-      letterSpacing,
-      lineHeight,
-      width,
-      height,
-      skewX,
-      auraColor,
-      auraGlowColor,
-      auraIntensity,
-      auraReach
-    } = this.cfg;
-
-    function seededRandom(seed: number): () => number {
-      let s = seed;
-      return function() {
-        s = (s * 16807) % 2147483647;
-        return (s - 1) / 2147483646;
-      };
-    }
-
-    ctx.clearRect(0, 0, width, height);
-
-    ctx.save();
-    const cx = (this.minX + this.maxX) / 2;
-    const cy = (this.minY + this.maxY) / 2;
-    const pulseRad = Math.max(140, (this.maxX - this.minX) * 0.7);
-
-    const radialFog = ctx.createRadialGradient(cx, cy, 10, cx, cy, pulseRad);
-    radialFog.addColorStop(0, hexToRgba(auraGlowColor, 0.4));
-    radialFog.addColorStop(0.4, hexToRgba(auraColor, 0.15));
-    radialFog.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = radialFog;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-
-    const lines = text.split("\\n");
-    const numLines = lines.length;
-    const textBlockHeight = fontSize + (numLines - 1) * fontSize * lineHeight;
-
-    let startX = width / 2;
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
-
-    const fontStr = fontStyle + " " + fontWeight + " " + fontSize + "px \\\"" + fontFamily + "\\\"";
-
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.font = fontStr;
-    if (letterSpacing !== 0) {
-      ctx.letterSpacing = letterSpacing + "px";
-    }
-    if (skewX !== 0) {
-      ctx.transform(1, 0, skewX, 1, 0, 0);
-    }
-
-    ctx.strokeStyle = auraColor;
-    ctx.shadowColor = auraColor;
-    ctx.lineWidth = 14;
-    ctx.shadowBlur = 24;
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.strokeText(line, startX, py);
-    });
-
-    ctx.strokeStyle = auraGlowColor;
-    ctx.shadowColor = auraGlowColor;
-    ctx.lineWidth = 6;
-    ctx.shadowBlur = 12;
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.strokeText(line, startX, py);
-    });
-
-    ctx.restore();
-
-    if (this.contourPoints.length > 0) {
-      ctx.save();
-      const intens = Math.min(10, Math.max(1, auraIntensity));
-      
-      this.contourPoints.forEach((pt) => {
-        const rand = seededRandom(pt.seed * 876);
-        const randVal = rand();
-        
-        if (randVal > (0.4 + intens * 0.05)) return;
-
-        const wispReach = auraReach * (0.45 + randVal * 0.7);
-        if (wispReach < 5) return;
-
-        ctx.beginPath();
-        let fx = pt.x;
-        let fy = pt.y;
-        ctx.moveTo(fx, fy);
-
-        const steps = 5 + Math.floor(randVal * 6);
-        let angle = Math.atan2(pt.ny, pt.nx);
-        if (pt.nx === 0 && pt.ny === 0) {
-          angle = rand() * Math.PI * 2;
-        }
-
-        angle += (-0.4 + rand() * 0.8);
-
-        for (let s = 1; s <= steps; s++) {
-          const segmentLen = (wispReach / steps);
-          angle += Math.sin(s + rand() * 12) * 0.5 + (-0.25 + rand() * 0.5);
-          fx += Math.cos(angle) * segmentLen;
-          fy += Math.sin(angle) * segmentLen;
-          ctx.lineTo(fx, fy);
-        }
-
-        ctx.strokeStyle = randVal > 0.6 ? auraColor : auraGlowColor;
-        ctx.lineWidth = 0.5 + rand() * 1.5;
-        ctx.globalAlpha = 0.15 + (intens / 10) * 0.25;
-
-        ctx.shadowColor = auraColor;
-        ctx.shadowBlur = 2;
-        ctx.stroke();
-      });
-
-      ctx.restore();
-    }
-
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.font = fontStr;
-    if (letterSpacing !== 0) {
-      ctx.letterSpacing = letterSpacing + "px";
-    }
-    if (skewX !== 0) {
-      ctx.transform(1, 0, skewX, 1, 0, 0);
-    }
-
-    const textGrad = ctx.createLinearGradient(0, this.minY, 0, this.maxY);
-    textGrad.addColorStop(0, "#FFFFFF");
-    textGrad.addColorStop(0.3, "#FAF5FF");
-    textGrad.addColorStop(0.65, hexToRgba(auraColor, 0.9));
-    textGrad.addColorStop(1.0, hexToRgba(auraGlowColor, 0.95));
-
-    ctx.fillStyle = textGrad;
-    ctx.shadowColor = auraColor;
-    ctx.shadowBlur = 8;
-
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.fillText(line, startX, py);
-    });
-
-    ctx.shadowBlur = 0;
-
-    ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 1.0;
-    ctx.globalAlpha = 0.85;
-    lines.forEach((line, index) => {
-      const py = startY + index * fontSize * lineHeight;
-      ctx.strokeText(line, startX, py);
-    });
-
-    ctx.restore();
-
-    if (this.emberPoints.length > 0) {
-      ctx.save();
-      this.emberPoints.forEach((ember) => {
-        const driftY = -12;
-        const driftX = Math.sin(ember.seed * 10) * 6;
-
-        const ex = ember.x + driftX;
-        const ey = ember.y + driftY;
-
-        if (ex < 0 || ex > width || ey < 0 || ey > height) return;
-
-        const grad = ctx.createRadialGradient(ex, ey, 0.1, ex, ey, ember.size * 2);
-        grad.addColorStop(0, "#FFFFFF");
-        grad.addColorStop(0.4, auraColor);
-        grad.addColorStop(1, "rgba(0,0,0,0)");
-
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(ex, ey, ember.size * 2.2, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      ctx.restore();
-    }
-  }
-}
-`;
-}
 
 export function generateEngineClass(cfg: TextEffectConfig): string {
   if (cfg.customRenderer === "InkBrushEngine") {
     return generateInkBrushEngineClass(cfg);
   }
-  if (cfg.customRenderer === "FireEngine") {
-    return generateFireEngineClass(cfg);
-  }
-  if (cfg.customRenderer === "IceEngine") {
-    return generateIceEngineClass(cfg);
-  }
-  if (cfg.customRenderer === "AuraEngine") {
-    return generateAuraEngineClass(cfg);
-  }
 
   const className = toPascalCase(getEnrichedEffectName(cfg)) || "MyEffect";
   const configName = `${className}Config`;
   const engineName = `${className}Engine`;
-  const escText = (cfg.text || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+  const escText = (cfg.text || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
 
   // Stringify stops and glows properly
-  const fillGradientStopsStr = JSON.stringify(cfg.fillGradientStops, null, 2)
-    .replace(/\n/g, "\n    ");
-  const glowLayersStr = JSON.stringify(cfg.glowLayers, null, 2)
-    .replace(/\n/g, "\n    ");
-  const sceneSnapshot = JSON.stringify(textEffectConfigToScene(cfg))
-    .replace(/\\/g, "\\\\")
-    .replace(/`/g, "\\`");
+  const fillGradientStopsStr = JSON.stringify(cfg.fillGradientStops, null, 2).replace(/\n/g, "\n    ");
+  const glowLayersStr = JSON.stringify(cfg.glowLayers, null, 2).replace(/\n/g, "\n    ");
+  const sceneSnapshot = JSON.stringify(textEffectConfigToScene(cfg)).replace(/\\/g, "\\\\").replace(/\x60/g, String.fromCharCode(92) + String.fromCharCode(96));
 
   return `// @ts-nocheck
 /**
@@ -3170,21 +1783,15 @@ export function stripTypesToJS(tsCode: string): string {
 export function generateHTMLFile(cfg: TextEffectConfig): string {
   const className = toPascalCase(getEnrichedEffectName(cfg)) || "MyEffect";
   const engineName = `${className}Engine`;
-  
+
   // Clean TS class code to direct browser-runnable JS
   let rawJs = stripTypesToJS(generateEngineClass(cfg));
   rawJs = rawJs.replace(/export\s+class\s+(\w+)/g, "class $1");
   rawJs = rawJs.replace(/export\s+const\s+(\w+)/g, "const $1");
 
-  const isSystemFont = [
-    "Arial", "Arial Black", "Arial Rounded MT Bold", "Georgia", 
-    "Times New Roman", "Courier New", "Impact", "Verdana", 
-    "Trebuchet MS", "Palatino"
-  ].includes(cfg.fontFamily);
+  const isSystemFont = ["Arial", "Arial Black", "Arial Rounded MT Bold", "Georgia", "Times New Roman", "Courier New", "Impact", "Verdana", "Trebuchet MS", "Palatino"].includes(cfg.fontFamily);
 
-  const fontImportUrl = isSystemFont 
-    ? "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
-    : `https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=${cfg.fontFamily.replace(/\s+/g, "+")}:wght@300;400;500;600;700;800;900&display=swap`;
+  const fontImportUrl = isSystemFont ? "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" : `https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=${cfg.fontFamily.replace(/\s+/g, "+")}:wght@300;400;500;600;700;800;900&display=swap`;
 
   const definitionCode = generateEffectDefinition(cfg);
   const match = definitionCode.match(/TextEffectDefinition\s*=\s*(\{[\s\S]*?\});/);
@@ -3442,7 +2049,7 @@ export function generateHTMLFile(cfg: TextEffectConfig): string {
     const currentConfig = {
       width: 800,
       height: 250,
-      text: \`${cfg.text.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`,
+      text: \`${cfg.text.replace(/`/g, "\\`").replace(/\$/g, "\\$")}\`,
       fontFamily: "${cfg.fontFamily}",
       fontWeight: ${cfg.fontWeight},
       fontStyle: "${cfg.fontStyle}",
@@ -3638,4 +2245,3 @@ export function generateHTMLFile(cfg: TextEffectConfig): string {
 </body>
 </html>`;
 }
-

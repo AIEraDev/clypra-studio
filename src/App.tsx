@@ -35,7 +35,7 @@ export default function App() {
   // Primary state configuration
   const [config, setConfig] = useState<TextEffectConfig>(defaultConfig);
   const [scene, setScene] = useState<SceneDocument>(() => textEffectConfigToScene(defaultConfig));
-  const { activeRailItem, activeTab, handleWorkspaceModeChange, selectedLayerId, setActiveRailItem, setActiveTab, setSelectedLayerId, setUiMode, uiMode, workspaceMode } = useStudioWorkspaceState();
+  const { activeRailItem, activeTab, selectedLayerId, setActiveRailItem, setActiveTab, setSelectedLayerId, setUiMode, uiMode } = useStudioWorkspaceState();
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
   const skipConfigToScene = useRef(false);
@@ -105,7 +105,7 @@ export default function App() {
   const [promptLogs, setPromptLogs] = useState<string[]>([]);
 
   // Active Mobile View Tab (Controls | Preview | Code)
-  const { mobileActiveTab, setMobileActiveTab, isMobile } = useResponsiveMobileTab();
+  const { mobileActiveTab, setMobileActiveTab, isMobile, isTablet, isNarrow } = useResponsiveMobileTab();
   const [isCreatorSessionLoaded, setIsCreatorSessionLoaded] = useState(false);
   const [creatorSaveStatus, setCreatorSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const creatorSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -169,9 +169,6 @@ export default function App() {
         lastSavedStateString.current = JSON.stringify(restoredScene);
 
         if (session.ui) {
-          if (session.ui.workspaceMode && session.ui.workspaceMode !== "lottie") {
-            handleWorkspaceModeChange(session.ui.workspaceMode);
-          }
           if (session.ui.uiMode) setUiMode(session.ui.uiMode);
           if (session.ui.activeRailItem) setActiveRailItem(session.ui.activeRailItem);
           if (session.ui.activeTab) setActiveTab(session.ui.activeTab);
@@ -237,7 +234,7 @@ export default function App() {
 
   // Sync effect names and kebab IDs
   const activeEffectId = toKebabCase(getEnrichedEffectName(config));
-  const timelinePanelMode = workspaceMode === "animate" ? "advanced" : uiMode;
+  const timelinePanelMode = activeRailItem === "layers" ? "advanced" : uiMode;
 
   // Unified, filtered, and sorted presets
   const getPresetRecency = (preset: Preset) => {
@@ -293,10 +290,10 @@ export default function App() {
       const isInput = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.tagName === "SELECT");
 
       if (!isInput) {
-        // Space -> transport in Animate mode, otherwise keep preview background toggle.
+        // Space -> toggle play when layers panel is active
         if (e.key === " ") {
           e.preventDefault();
-          if (workspaceMode === "animate") {
+          if (activeRailItem === "layers") {
             setIsPlaying((prev) => !prev);
           } else {
             setBgMode((prev) => (prev === "checkerboard" ? "black" : "checkerboard"));
@@ -315,19 +312,19 @@ export default function App() {
         }
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
           e.preventDefault();
-          handleWorkspaceModeChange("export");
+          setActiveRailItem("export");
         }
         if (e.key.toLowerCase() === "t") {
-          setActiveRailItem("text");
+          setActiveRailItem("style");
         }
         if (e.key.toLowerCase() === "e") {
-          setActiveRailItem("effects");
+          setActiveRailItem("style");
         }
         if (e.key.toLowerCase() === "l") {
           setActiveRailItem("layers");
         }
         if (e.key.toLowerCase() === "a") {
-          handleWorkspaceModeChange("ai");
+          setActiveRailItem("export");
         }
       }
 
@@ -343,7 +340,7 @@ export default function App() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [config, activeTab, workspaceMode, scene]);
+  }, [config, activeTab, activeRailItem, scene]);
 
   // Push state to undo-history securely (debounced) — SceneDocument is source of truth
   const pushHistoryState = (newScene: SceneDocument) => {
@@ -443,7 +440,7 @@ export default function App() {
 
   // Keep the full creator workspace matching across refresh reloads
   useEffect(() => {
-    if (!isCreatorSessionLoaded || workspaceMode === "lottie") return;
+    if (!isCreatorSessionLoaded) return;
 
     setCreatorSaveStatus("saving");
     if (creatorSaveTimeoutRef.current) {
@@ -459,7 +456,6 @@ export default function App() {
           scene,
           activePresetId,
           ui: {
-            workspaceMode,
             uiMode,
             activeRailItem,
             activeTab,
@@ -502,7 +498,7 @@ export default function App() {
         clearTimeout(creatorSaveTimeoutRef.current);
       }
     };
-  }, [isCreatorSessionLoaded, config, scene, activePresetId, workspaceMode, uiMode, activeRailItem, activeTab, selectedLayerId, mobileActiveTab, engineFormat, definitionFormat, bgMode, zoom, zoomMode, blendAId, blendBId, blendRatio, selectedCategory, sortBy, effectApiCategory]);
+  }, [isCreatorSessionLoaded, config, scene, activePresetId, uiMode, activeRailItem, activeTab, selectedLayerId, mobileActiveTab, engineFormat, definitionFormat, bgMode, zoom, zoomMode, blendAId, blendBId, blendRatio, selectedCategory, sortBy, effectApiCategory]);
 
   // Animation preview loop
   useEffect(() => {
@@ -1107,74 +1103,61 @@ export default function App() {
   return (
     <div id="studio-workspace-wrapper" className="flex flex-col h-screen bg-[#0E0E12]" style={{ fontFamily: "Inter, sans-serif" }}>
       {/* ──────────────────────────────────────────────────────────────────
-          TOP MENUBAR (Hidden in Lottie mode)
+      {/* TOP MENUBAR
           ────────────────────────────────────────────────────────────────── */}
-      {workspaceMode !== "lottie" && (
-        <header id="studio-header" className="flex h-12 items-center justify-between border-b border-(--studio-border) bg-(--studio-shell) px-3 select-none shrink-0 z-20">
-          <div className="flex items-center gap-3">
-            <a href="/" aria-label="Back to home" title="Back to Clypra home" className="flex items-center gap-2 group">
-              <img src="/clypra.svg" alt="Clypra" className="w-8 h-8 select-none transition-transform group-hover:scale-105" />
-              <span className="text-base font-bold text-white tracking-tight">Clypra Studio</span>
-            </a>
+      <header id="studio-header" className="flex h-14 items-center justify-between border-b border-(--studio-border) bg-(--studio-shell) px-4 select-none shrink-0 z-20">
+        {/* Left: Brand Mark & Autosave Pill */}
+        <div className="flex items-center gap-3">
+          <a href="/" aria-label="Back to home" title="Back to Clypra home" className="flex items-center gap-2 group">
+            <img src="/clypra.svg" alt="Clypra" className="w-8 h-8 select-none transition-transform group-hover:scale-105" />
+            <span className="text-base font-bold text-white tracking-tight">Clypra Studio</span>
+          </a>
+          <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-0.5 text-[9px] text-emerald-400">
+            <span className={`inline-block h-1.5 w-1.5 rounded-full ${creatorSaveStatus === "saving" ? "bg-amber-400 animate-pulse" : "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]"}`} />
+            <span className="font-mono uppercase tracking-wider font-semibold">{creatorSaveStatus === "saving" ? "Saving..." : "Autosaved"}</span>
+          </div>
+        </div>
+
+        {/* Right: Consolidated Visual Utilities */}
+        <div className="flex items-center gap-3">
+          {/* Undo/Redo Queue */}
+          <div className="flex items-center gap-0.5 border-r border-(--studio-border) pr-2">
+            <button id="global-undo-btn" aria-label="Undo" title="Undo parameter edit (Ctrl+Z)" onClick={triggerUndo} disabled={!canUndo} className={`p-1.5 rounded transition-all ${!canUndo ? "text-gray-700 hover:bg-transparent cursor-not-allowed" : "text-white hover:bg-(--studio-hover) hover:text-(--studio-accent) cursor-pointer"}`}>
+              <Undo2 size={14} />
+            </button>
+            <button id="global-redo-btn" aria-label="Redo" title="Redo parameters (Ctrl+Y)" onClick={triggerRedo} disabled={!canRedo} className={`p-1.5 rounded transition-all ${!canRedo ? "text-gray-700 hover:bg-transparent cursor-not-allowed" : "text-white hover:bg-(--studio-hover) hover:text-(--studio-accent) cursor-pointer"}`}>
+              <Redo2 size={14} />
+            </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-1.5 rounded-md border border-(--studio-border) bg-[#13131a] px-2 py-0.5 text-[10px] text-(--studio-muted) md:flex">
-              <span className={`inline-block h-1.5 w-1.5 rounded-full ${creatorSaveStatus === "saving" ? "bg-amber-400 animate-pulse" : creatorSaveStatus === "saved" ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" : "bg-gray-500"}`} />
-              <span className="font-mono text-[9px] uppercase tracking-wider">{creatorSaveStatus === "saving" ? "Saving..." : creatorSaveStatus === "saved" ? "Autosaved" : "Unsaved"}</span>
-            </div>
+          {/* Config & Help Utilities */}
+          <button id="gemini-key-header-btn" onClick={() => setShowGeminiKeyModal(true)} className="p-1.5 hover:bg-(--studio-hover) rounded transition-all text-white cursor-pointer" title="Gemini API Key">
+            <KeyRound size={14} />
+          </button>
 
-            <button id="reset-creator-session-btn" onClick={handleResetCreatorSession} className="h-8 rounded-md border border-red-500/20 bg-red-500/10 px-2.5 text-xs font-semibold text-red-300 hover:border-red-500/35 hover:bg-red-500/15 flex items-center gap-1.5 cursor-pointer font-sans" title="Clear autosaved creator session and start blank">
-              <RefreshCw size={13} /> Reset
-            </button>
+          <button id="open-tutorial-btn" onClick={() => setShowTutorialModal(true)} className="p-1.5 hover:bg-(--studio-hover) rounded transition-all text-white cursor-pointer" title="Help Guide & Shortcuts">
+            <HelpCircle size={14} />
+          </button>
 
-            <div className="flex items-center gap-1 border-r border-(--studio-border) pr-2">
-              <button id="global-undo-btn" aria-label="Undo" title="Undo parameter edit (Ctrl+Z)" onClick={triggerUndo} disabled={!canUndo} className={`p-1.5 rounded transition-all ${!canUndo ? "text-gray-700 hover:bg-transparent cursor-not-allowed" : "text-white hover:bg-(--studio-hover) hover:text-(--studio-accent) cursor-pointer"}`}>
-                <Undo2 size={15} />
-              </button>
-              <button id="global-redo-btn" aria-label="Redo" title="Redo parameters (Ctrl+Y)" onClick={triggerRedo} disabled={!canRedo} className={`p-1.5 rounded transition-all ${!canRedo ? "text-gray-700 hover:bg-transparent cursor-not-allowed" : "text-white hover:bg-(--studio-hover) hover:text-(--studio-accent) cursor-pointer"}`}>
-                <Redo2 size={15} />
-              </button>
-            </div>
+          {/* Lottie Workspace Link */}
+          <a href="/lottie" className="h-8 rounded border border-purple-500/20 bg-purple-500/10 px-2.5 text-xs font-semibold text-purple-300 hover:bg-purple-500/15 flex items-center gap-1.5 cursor-pointer font-sans no-underline" title="Go to Lottie Studio">
+            <Video size={13} />
+            <span className="hidden md:inline">Lottie Studio</span>
+          </a>
+        </div>
+      </header>
 
-            <button id="open-tutorial-btn" onClick={() => setShowTutorialModal(true)} className="h-8 rounded-md border border-(--studio-border) bg-(--studio-control) px-2.5 text-xs text-gray-200 hover:bg-(--studio-hover) flex items-center gap-1.5 cursor-pointer font-sans">
-              <HelpCircle size={13} className="text-(--studio-accent)" /> Guide
-            </button>
-
-            <button id="font-compare-launcher-btn" onClick={() => setShowFontCompare(!showFontCompare)} className="h-8 rounded-md border border-(--studio-border) bg-(--studio-control) px-2.5 text-xs text-white hover:bg-(--studio-hover) flex items-center gap-1.5 cursor-pointer font-sans">
-              <Grid2X2 size={13} /> Fonts
-            </button>
-
-            <button id="gemini-key-header-btn" onClick={() => setShowGeminiKeyModal(true)} className="h-8 rounded-md border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-2.5 text-xs font-semibold text-[#B9B2FF] hover:bg-[#7C6FFF]/15 flex items-center gap-1.5 cursor-pointer font-sans">
-              <KeyRound size={13} /> API Key
-            </button>
-
-            <a href="/lottie" className="h-8 rounded-md border border-(--studio-border) bg-(--studio-control) px-2.5 text-xs font-semibold text-purple-300 hover:bg-(--studio-hover) flex items-center gap-1.5 cursor-pointer font-sans no-underline">
-              <Video size={13} /> Lottie
-            </a>
-
-            <button type="button" onClick={() => handleWorkspaceModeChange("ai")} className="h-8 rounded-md border border-(--studio-border) bg-(--studio-control) px-2.5 text-xs font-semibold text-teal-300 hover:bg-(--studio-hover) flex items-center gap-1.5 cursor-pointer font-sans">
-              <Sparkles size={13} /> AI
-            </button>
-
-            <button type="button" onClick={() => handleWorkspaceModeChange("export")} className="h-8 rounded-md bg-(--studio-active) px-3 text-xs font-semibold text-white hover:bg-(--studio-active-trong)] flex items-center gap-1.5 cursor-pointer font-sans">
-              <Download size={13} /> Export
-            </button>
-          </div>
-        </header>
-      )}
-
-      {/* Mobile viewport navigation tab-selector */}
-      {isMobile && (
+      {/* Mobile / Tablet viewport navigation tab-selector */}
+      {isNarrow && (
         <div id="mobile-views-tabbar" className="flex border-b border-[#2A2A38] bg-[#1E1E26] text-xs font-semibold shrink-0 select-none">
           <button id="mobile-tab-controls" onClick={() => setMobileActiveTab("controls")} className={`flex-1 py-3 text-center transition-all ${mobileActiveTab === "controls" ? "text-[#7C6FFF] bg-[#0E0E12] border-b-2 border-[#7C6FFF]" : "text-clypra-muted"}`}>
-            1. Controls Parameter
+            1. Controls
           </button>
           <button id="mobile-tab-preview" onClick={() => setMobileActiveTab("preview")} className={`flex-1 py-3 text-center transition-all ${mobileActiveTab === "preview" ? "text-[#7C6FFF] bg-[#0E0E12] border-b-2 border-[#7C6FFF]" : "text-clypra-muted"}`}>
-            2. Live Output Preview
+            2. Preview
           </button>
           <button id="mobile-tab-code" onClick={() => setMobileActiveTab("code")} className={`flex-1 py-3 text-center transition-all ${mobileActiveTab === "code" ? "text-[#7C6FFF] bg-[#0E0E12] border-b-2 border-[#7C6FFF]" : "text-clypra-muted"}`}>
-            3. Export Clypra Code
+            3. Export
           </button>
         </div>
       )}
@@ -1182,11 +1165,23 @@ export default function App() {
       {/* ────────────────────────────────────────────────────────────────── WORK WORKSPACE CANVAS ────────────────────────────────────────────────────────────────── */}
       <main id="primary-workspace-layout" className="flex flex-1 overflow-hidden">
         <>
+          {/* Left icon rail — hidden on mobile only, visible on tablet + desktop */}
           {!isMobile && <LeftRail activeItem={activeRailItem} onSelectItem={setActiveRailItem} />}
 
-          {/* LEFT DRAWER — CREATION LIBRARY (304px) */}
-          <aside id="left-controls-panel" data-rail={activeRailItem} className={`${isMobile && mobileActiveTab !== "controls" ? "hidden" : "flex"} w-full md:w-[${isMobile ? "full" : "360px"}] flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 overflow-y-auto select-none`}>
-            <DrawerIntro activeItem={activeRailItem} mode={workspaceMode} onOpenAI={() => handleWorkspaceModeChange("ai")} onOpenExport={() => handleWorkspaceModeChange("export")} />
+          {/* LEFT DRAWER — CREATION LIBRARY
+              Mobile:  full-width, shown only when mobileActiveTab === "controls"
+              Tablet:  fixed 300px, shown only when mobileActiveTab === "controls"
+              Desktop: fixed 360px, always visible */}
+          <aside
+            id="left-controls-panel"
+            data-rail={activeRailItem}
+            className={`
+              ${isNarrow && mobileActiveTab !== "controls" ? "hidden" : "flex"}
+              ${isMobile ? "w-full" : isTablet ? "w-[300px]" : "w-[360px]"}
+              flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 overflow-y-auto select-none
+            `}
+          >
+            <DrawerIntro activeItem={activeRailItem} onOpenExport={() => setActiveRailItem("export")} />
 
             {activeRailItem === "templates" && (
               <div className="border-b border-(--studio-border) p-3 flex flex-col">
@@ -1210,7 +1205,7 @@ export default function App() {
                       activePresetId={activePresetId}
                       handleApplyPreset={(presetToApply) => {
                         handleApplyPreset(presetToApply);
-                        setActiveRailItem("text");
+                        setActiveRailItem("style");
                       }}
                       handleDeletePreset={handleDeletePreset}
                     />
@@ -1219,7 +1214,7 @@ export default function App() {
               </div>
             )}
 
-            {(activeRailItem === "ai" || workspaceMode === "ai") && (
+            {activeRailItem === "export" && (
               <div className="border-b border-(--studio-border) p-3 space-y-2">
                 <button id="gemini-key-settings-btn" onClick={() => setShowGeminiKeyModal(true)} className="flex w-full items-center justify-center gap-2 rounded-md border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-3 py-2 text-[12px] font-semibold text-[#B9B2FF] hover:bg-[#7C6FFF]/15">
                   <KeyRound size={14} /> Gemini API Key
@@ -1258,16 +1253,19 @@ export default function App() {
               </div>
             )}
 
-            {(activeRailItem === "layers" || workspaceMode === "animate") && <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode="advanced" selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} />}
+            {activeRailItem === "layers" && <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode="advanced" selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} />}
 
-            {(["text", "effects", "elements", "brand", "assets", "uploads"] as RailItem[]).includes(activeRailItem) && <div className="border-b border-(--studio-border) px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Full controls</div>}
+            {activeRailItem === "style" && <div className="border-b border-(--studio-border) px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Style Controls</div>}
 
             <Suspense fallback={<div className="p-4 text-xs text-(--studio-muted)">Loading controls...</div>}>
-              <LegacyControlsPanel visible={(["text", "effects", "elements", "brand", "assets", "uploads"] as RailItem[]).includes(activeRailItem)} config={config} activeEffectId={activeEffectId} collapsedSections={collapsedSections} isGeneratingName={isGeneratingName} modifyConfig={modifyConfig} toggleSection={toggleSection} handleGenerateAiEffectName={handleGenerateAiEffectName} applyCompositionPreset={applyCompositionPreset} fitTextToComposition={fitTextToComposition} />
+              <LegacyControlsPanel visible={activeRailItem === "style"} config={config} activeEffectId={activeEffectId} collapsedSections={collapsedSections} isGeneratingName={isGeneratingName} modifyConfig={modifyConfig} toggleSection={toggleSection} handleGenerateAiEffectName={handleGenerateAiEffectName} applyCompositionPreset={applyCompositionPreset} fitTextToComposition={fitTextToComposition} />
             </Suspense>
           </aside>
 
-          <div className={`${isMobile && mobileActiveTab !== "preview" ? "hidden" : "flex"} flex-1 flex-col min-w-0`}>
+          {/* CENTER — CANVAS + TIMELINE
+              Mobile/Tablet: shown only when mobileActiveTab === "preview"
+              Desktop: always visible, fills remaining space */}
+          <div className={`${isNarrow && mobileActiveTab !== "preview" ? "hidden" : "flex"} flex-1 flex-col min-w-0`}>
             <PreviewCanvas
               canvasRef={canvasRef}
               config={config}
@@ -1314,7 +1312,12 @@ export default function App() {
             <TimelinePanel scene={scene} previewTime={previewTime} isPlaying={isPlaying} uiMode={timelinePanelMode} onPlayToggle={() => setIsPlaying((p) => !p)} onReset={() => setPreviewTime(0)} onTimeChange={setPreviewTime} onSceneChange={modifyScene} />
           </div>
 
-          <Suspense fallback={<aside className="hidden w-[344px] shrink-0 border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted) xl:flex">Loading panel...</aside>}>{workspaceMode === "export" || workspaceMode === "ai" ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel mode={workspaceMode} config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</Suspense>
+          {/* RIGHT PANEL — INSPECTOR / EXPORT LAB
+              Mobile/Tablet: shown only when mobileActiveTab === "code", full-width on mobile
+              Desktop: always visible, fixed 344px */}
+          <Suspense fallback={<aside className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0 border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted) flex-col`}>Loading panel...</aside>}>
+            <div className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}>{activeRailItem === "export" ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</div>
+          </Suspense>
         </>
       </main>
 

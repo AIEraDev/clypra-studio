@@ -34,7 +34,7 @@ const FONT_VARIANTS: FontVariant[] = [
   { variantName: "Arial", baseFontFamily: "Arial", weight: 400, style: "normal" },
   { variantName: "Arial-Bold", baseFontFamily: "Arial", weight: 700, style: "normal" },
   { variantName: "Arial-Italic", baseFontFamily: "Arial", weight: 400, style: "italic" },
-  { variantName: "Arial-BoldItalic", baseFontFamily: "Arial", weight: 700, style: "italic" }
+  { variantName: "Arial-BoldItalic", baseFontFamily: "Arial", weight: 700, style: "italic" },
 ];
 
 /**
@@ -84,7 +84,7 @@ export async function initializeFontSystem(): Promise<void> {
       preloader.style.opacity = "0";
       preloader.style.pointerEvents = "none";
       preloader.style.zIndex = "-9999";
-      
+
       const preloadItems = [
         { family: "Poppins", weight: 400, style: "normal" },
         { family: "Poppins", weight: 700, style: "normal" },
@@ -97,10 +97,10 @@ export async function initializeFontSystem(): Promise<void> {
         { family: "Montserrat", weight: 400, style: "italic" },
         { family: "Montserrat", weight: 700, style: "italic" },
         { family: "Montserrat", weight: 800, style: "italic" },
-        { family: "Montserrat", weight: 900, style: "italic" }
+        { family: "Montserrat", weight: 900, style: "italic" },
       ];
-      
-      preloadItems.forEach(item => {
+
+      preloadItems.forEach((item) => {
         const span = document.createElement("span");
         span.style.fontFamily = `'${item.family}'`;
         span.style.fontWeight = String(item.weight);
@@ -108,7 +108,7 @@ export async function initializeFontSystem(): Promise<void> {
         span.innerText = "preload";
         preloader.appendChild(span);
       });
-      
+
       document.body.appendChild(preloader);
     }
 

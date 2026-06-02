@@ -11,3 +11,5 @@ coverage/
 .vscode/
 .cursor/
 .cursorrules
+.kiro
+.agents

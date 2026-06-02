@@ -2,36 +2,20 @@ import type { TextEffectConfig, GlowLayer, GradientStop } from "../types";
 
 export const SCENE_VERSION = 1 as const;
 
-export type EffectLayerType =
-  | "panel"
-  | "glow"
-  | "shadow"
-  | "extrusion"
-  | "duplicateStack"
-  | "stroke"
-  | "fill"
-  | "mask"
-  | "filter"
-  | "customEngine";
+export type EffectLayerType = "panel" | "glow" | "shadow" | "extrusion" | "duplicateStack" | "stroke" | "fill" | "mask" | "filter" | "customEngine";
 
 export type LayerTarget = "text" | "panel" | "scene" | "previous";
 
-export type CustomEngineId = "ink" | "fire" | "ice" | "aura";
+export type CustomEngineId = "ink";
 
-export const CUSTOM_ENGINE_IDS: CustomEngineId[] = ["ink", "fire", "ice", "aura"];
+export const CUSTOM_ENGINE_IDS: CustomEngineId[] = ["ink"];
 
 export const LEGACY_RENDERER_MAP: Record<string, CustomEngineId> = {
   InkBrushEngine: "ink",
-  FireEngine: "fire",
-  IceEngine: "ice",
-  AuraEngine: "aura",
 };
 
 export const ENGINE_ID_TO_LEGACY: Record<CustomEngineId, string> = {
   ink: "InkBrushEngine",
-  fire: "FireEngine",
-  ice: "IceEngine",
-  aura: "AuraEngine",
 };
 
 export interface SceneCanvas {

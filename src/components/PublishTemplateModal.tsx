@@ -172,7 +172,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                     <span>{validationErrors.id}</span>
                   </div>
                 )}
-                <p className="mt-1.5 text-[10px] text-[#666677]">Unique kebab-case identifier (e.g., neon-title-slam)</p>
+                <p className="mt-1.5 text-[10px] text-clypra-muted">Unique kebab-case identifier (e.g., neon-title-slam)</p>
               </div>
 
               {/* Template Name */}
@@ -187,21 +187,21 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                     <span>{validationErrors.name}</span>
                   </div>
                 )}
-                <p className="mt-1.5 text-[10px] text-[#666677]">Human-readable display name for the PR title</p>
+                <p className="mt-1.5 text-[10px] text-clypra-muted">Human-readable display name for the PR title</p>
               </div>
 
               {/* Description */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">Description</label>
                 <textarea value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder="A dynamic lower-third template with neon effects" rows={3} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500 resize-none" />
-                <p className="mt-1.5 text-[10px] text-[#666677]">Brief description of what this template does</p>
+                <p className="mt-1.5 text-[10px] text-clypra-muted">Brief description of what this template does</p>
               </div>
 
               {/* Tags */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">Tags</label>
                 <input type="text" value={tagsInput} onChange={(e) => onTagsInputChange(e.target.value)} placeholder="neon, title, lower-third" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
-                <p className="mt-1.5 text-[10px] text-[#666677]">Comma-separated tags for categorization</p>
+                <p className="mt-1.5 text-[10px] text-clypra-muted">Comma-separated tags for categorization</p>
               </div>
 
               {/* Category & Placement */}
@@ -245,7 +245,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                     Preview
                   </button>
                 </div>
-                <p className="mt-1.5 text-[10px] text-[#666677]">
+                <p className="mt-1.5 text-[10px] text-clypra-muted">
                   Frame {thumbnailFrame} of {durationFrames - 1} will be used for the PR thumbnail
                 </p>
 
@@ -255,12 +255,12 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                     <div className="flex items-center gap-2 mb-2">
                       <ImageIcon size={12} className="text-amber-400" />
                       <span className="text-[10px] font-bold text-[#888899] uppercase">Thumbnail Preview</span>
-                      <span className="text-[9px] text-[#666677] ml-auto">Ultra HD</span>
+                      <span className="text-[9px] text-clypra-muted ml-auto">Ultra HD</span>
                     </div>
                     <div className="relative aspect-video rounded overflow-hidden border border-[#2A2A38] bg-[#09090D]">
                       <img src={thumbnailDataUrl} alt="Thumbnail preview" className="w-full h-full" style={{ objectFit: "contain", imageRendering: "-webkit-optimize-contrast" }} />
                     </div>
-                    <p className="mt-2 text-[9px] text-[#666677] text-center">
+                    <p className="mt-2 text-[9px] text-clypra-muted text-center">
                       High-resolution {width}×{height}px (4× supersampled) will be included in the PR
                     </p>
                   </div>

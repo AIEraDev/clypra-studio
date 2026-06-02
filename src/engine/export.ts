@@ -15,10 +15,7 @@ export interface PngSequenceFrame {
 }
 
 /** Render all frames in-memory (browser) */
-export function renderPngSequence(
-  doc: SceneDocument,
-  options: PngSequenceOptions = {}
-): PngSequenceFrame[] {
+export function renderPngSequence(doc: SceneDocument, options: PngSequenceOptions = {}): PngSequenceFrame[] {
   const fps = options.fps ?? doc.timeline.fps ?? 30;
   const duration = options.duration ?? doc.timeline.duration ?? 2;
   const width = options.width ?? doc.canvas.width ?? 800;
@@ -152,11 +149,7 @@ export function buildPngSequenceZip(frames: PngSequenceFrame[]): Blob {
   return new Blob(parts, { type: "application/zip" });
 }
 
-export function downloadPngSequenceZip(
-  doc: SceneDocument,
-  filename: string,
-  options?: PngSequenceOptions
-): void {
+export function downloadPngSequenceZip(doc: SceneDocument, filename: string, options?: PngSequenceOptions): void {
   const frames = renderPngSequence(doc, options);
   if (frames.length === 0) return;
   const zip = buildPngSequenceZip(frames);
@@ -170,11 +163,7 @@ export function downloadPngSequenceZip(
 
 export const WEBM_EXPORT_MAX_FRAMES = 900;
 
-const WEBM_MIME_CANDIDATES = [
-  "video/webm;codecs=vp9",
-  "video/webm;codecs=vp8",
-  "video/webm",
-] as const;
+const WEBM_MIME_CANDIDATES = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"] as const;
 
 export interface WebMExportOptions extends PngSequenceOptions {
   videoBitsPerSecond?: number;
@@ -188,11 +177,7 @@ export function getSupportedWebMMimeType(): string | null {
 }
 
 export function isWebMExportSupported(): boolean {
-  return (
-    typeof document !== "undefined" &&
-    typeof MediaRecorder !== "undefined" &&
-    getSupportedWebMMimeType() !== null
-  );
+  return typeof document !== "undefined" && typeof MediaRecorder !== "undefined" && getSupportedWebMMimeType() !== null;
 }
 
 export function getWebMFrameCount(doc: SceneDocument, options: WebMExportOptions = {}): number {
@@ -211,10 +196,7 @@ type CanvasCaptureTrack = MediaStreamTrack & { requestFrame?: () => void };
  * Encode timeline frames to WebM via MediaRecorder + canvas.captureStream(0).
  * Browser-only; transparent backgrounds may flatten to black in the recording.
  */
-export async function renderSceneWebM(
-  doc: SceneDocument,
-  options: WebMExportOptions = {}
-): Promise<Blob> {
+export async function renderSceneWebM(doc: SceneDocument, options: WebMExportOptions = {}): Promise<Blob> {
   if (typeof document === "undefined") {
     throw new Error("WebM export requires a browser environment.");
   }
@@ -231,9 +213,7 @@ export async function renderSceneWebM(
   const frameCount = getWebMFrameCount(doc, options);
 
   if (frameCount > WEBM_EXPORT_MAX_FRAMES) {
-    throw new Error(
-      `Too many frames (${frameCount}). Max ${WEBM_EXPORT_MAX_FRAMES}. Lower duration or FPS.`
-    );
+    throw new Error(`Too many frames (${frameCount}). Max ${WEBM_EXPORT_MAX_FRAMES}. Lower duration or FPS.`);
   }
 
   const canvas = document.createElement("canvas");
@@ -297,11 +277,7 @@ export async function renderSceneWebM(
   return blob;
 }
 
-export async function downloadSceneWebM(
-  doc: SceneDocument,
-  filename: string,
-  options?: WebMExportOptions
-): Promise<void> {
+export async function downloadSceneWebM(doc: SceneDocument, filename: string, options?: WebMExportOptions): Promise<void> {
   const blob = await renderSceneWebM(doc, options);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

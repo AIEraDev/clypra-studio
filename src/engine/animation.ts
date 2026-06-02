@@ -33,26 +33,15 @@ function interpolateKeyframes(keyframes: Keyframe[], time: number): number {
 }
 
 /** Resolve animated scalar at time (seconds) */
-export function resolveAnimatedScalar(
-  doc: SceneDocument,
-  layerId: string,
-  paramPath: string,
-  baseValue: number,
-  time: number
-): number {
-  const track = doc.timeline.tracks.find(
-    (t) => t.layerId === layerId && t.paramPath === paramPath
-  );
+export function resolveAnimatedScalar(doc: SceneDocument, layerId: string, paramPath: string, baseValue: number, time: number): number {
+  const track = doc.timeline.tracks.find((t) => t.layerId === layerId && t.paramPath === paramPath);
   if (!track || track.keyframes.length === 0) return baseValue;
   return interpolateKeyframes(track.keyframes, time);
 }
 
 /** Apply timeline to scene (returns shallow clone with updated layer params) */
 export function applyTimelineAtTime(doc: SceneDocument, time: number): SceneDocument {
-  const looped =
-    doc.timeline.loop && doc.timeline.duration > 0
-      ? time % doc.timeline.duration
-      : Math.min(time, doc.timeline.duration);
+  const looped = doc.timeline.loop && doc.timeline.duration > 0 ? time % doc.timeline.duration : Math.min(time, doc.timeline.duration);
 
   const layers = doc.effectLayers.map((layer) => {
     let opacity = layer.opacity;

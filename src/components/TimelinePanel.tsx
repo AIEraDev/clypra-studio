@@ -175,7 +175,7 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
       <div className="shrink-0">
         {transport}
         <p className="px-4 py-2 text-[10px] text-gray-500 border-t border-[#1A1A26] bg-[#12121A]">
-          Switch to <span className="text-[#7C6FFF]">Advanced</span> for keyframe tracks and editing (press <kbd className="px-1 rounded bg-[#1E1E26] border border-[#2A2A38]">K</kbd> to add keyframes).
+          Select <span className="text-[#7C6FFF]">Layers</span> from the left rail to enable the full keyframe timeline (press <kbd className="px-1 rounded bg-[#1E1E26] border border-[#2A2A38]">K</kbd> to add keyframes).
         </p>
       </div>
     );

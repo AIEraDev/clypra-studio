@@ -120,26 +120,6 @@ export interface TextEffectConfig {
   grainDensity?: number;
   skewX?: number;
 
-  // Fire Engine specific controls
-  fireColor?: string;
-  fireIntensity?: number;
-  fireFlameHeight?: number;
-  fireEmberCount?: number;
-
-  // Ice Engine specific controls
-  iceColor?: string;
-  iceThickness?: number;
-  iceIcicleHeight?: number;
-  iceFrostDensity?: number;
-  iceSnowHeight?: number;
-
-  // Aura Engine specific controls
-  auraColor?: string;
-  auraGlowColor?: string;
-  auraIntensity?: number;
-  auraReach?: number;
-  auraParticleCount?: number;
-
   customRenderer?: string;
 }
 

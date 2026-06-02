@@ -1,21 +1,9 @@
 import type { TextEffectConfig, GlowLayer } from "../types";
 import { defaultConfig } from "../presets";
-import {
-  type SceneDocument,
-  type EffectLayer,
-  type CustomEngineId,
-  newLayerId,
-  LEGACY_RENDERER_MAP,
-  ENGINE_ID_TO_LEGACY,
-} from "./schema";
+import { type SceneDocument, type EffectLayer, type CustomEngineId, newLayerId, LEGACY_RENDERER_MAP, ENGINE_ID_TO_LEGACY } from "./schema";
 import { ensureDefaultTimeline } from "./timelineDefaults";
 
-function layer(
-  type: EffectLayer["type"],
-  name: string,
-  params: Record<string, unknown>,
-  extra?: Partial<EffectLayer>
-): EffectLayer {
+function layer(type: EffectLayer["type"], name: string, params: Record<string, unknown>, extra?: Partial<EffectLayer>): EffectLayer {
   return {
     id: newLayerId(),
     type,
@@ -41,16 +29,26 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
 
   if (engineId) {
     layers.push(
-      layer("customEngine", "Custom Engine", { engineId }, {
-        enabled: true,
-        target: "scene",
-      })
+      layer(
+        "customEngine",
+        "Custom Engine",
+        { engineId },
+        {
+          enabled: true,
+          target: "scene",
+        },
+      ),
     );
     layers.push(
-      layer("customEngine", "Engine Params", { ...collectEngineParams(cfg, engineId) }, {
-        enabled: true,
-        target: "text",
-      })
+      layer(
+        "customEngine",
+        "Engine Params",
+        { ...collectEngineParams(cfg, engineId) },
+        {
+          enabled: true,
+          target: "text",
+        },
+      ),
     );
   }
 
@@ -69,14 +67,12 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
         panelStrokeColor: cfg.panelStrokeColor,
         panelStrokeWidth: cfg.panelStrokeWidth,
       },
-      { enabled: cfg.panelEnabled }
-    )
+      { enabled: cfg.panelEnabled },
+    ),
   );
 
   (cfg.glowLayers || []).forEach((g: GlowLayer, i: number) => {
-    layers.push(
-      layer("glow", `Glow ${i + 1}`, { ...g }, { enabled: g.enabled, opacity: (g.opacity ?? 100) / 100 })
-    );
+    layers.push(layer("glow", `Glow ${i + 1}`, { ...g }, { enabled: g.enabled, opacity: (g.opacity ?? 100) / 100 }));
   });
 
   layers.push(
@@ -92,8 +88,8 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
         shadowOpacity: cfg.shadowOpacity,
         shadowType: cfg.shadowType,
       },
-      { enabled: cfg.shadowEnabled }
-    )
+      { enabled: cfg.shadowEnabled },
+    ),
   );
 
   layers.push(
@@ -116,8 +112,8 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
         bevelVanishingPointY: cfg.bevelVanishingPointY,
         bevelFocalLength: cfg.bevelFocalLength,
       },
-      { enabled: cfg.bevelEnabled }
-    )
+      { enabled: cfg.bevelEnabled },
+    ),
   );
 
   layers.push(
@@ -135,8 +131,8 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
         stackColor3: cfg.stackColor3,
         stackColor4: cfg.stackColor4,
       },
-      { enabled: !!cfg.stackEnabled }
-    )
+      { enabled: !!cfg.stackEnabled },
+    ),
   );
 
   layers.push(
@@ -156,8 +152,8 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
         strokeWidthSecondary: cfg.strokeWidthSecondary,
         strokeFadeRange: cfg.strokeFadeRange,
       },
-      { enabled: cfg.strokeEnabled }
-    )
+      { enabled: cfg.strokeEnabled },
+    ),
   );
 
   layers.push(
@@ -173,17 +169,13 @@ export function textEffectConfigToScene(cfg: TextEffectConfig): SceneDocument {
         perCharFillEnabled: cfg.perCharFillEnabled,
         charFillColors: cfg.charFillColors,
       },
-      { enabled: cfg.fillType !== "none" }
-    )
+      { enabled: cfg.fillType !== "none" },
+    ),
   );
 
-  layers.push(
-    layer("mask", "Text Alpha Mask", { maskType: "alphaText", revealProgress: 1 }, { enabled: false })
-  );
+  layers.push(layer("mask", "Text Alpha Mask", { maskType: "alphaText", revealProgress: 1 }, { enabled: false }));
 
-  layers.push(
-    layer("filter", "Compositor FX", { blur: 0, bloom: 0 }, { enabled: false, target: "previous" })
-  );
+  layers.push(layer("filter", "Compositor FX", { blur: 0, bloom: 0 }, { enabled: false, target: "previous" }));
 
   const doc: SceneDocument = {
     version: 1,
@@ -231,39 +223,12 @@ function collectEngineParams(cfg: TextEffectConfig, id: CustomEngineId): Record<
         grainDensity: cfg.grainDensity,
         skewX: cfg.skewX,
       };
-    case "fire":
-      return {
-        fireColor: cfg.fireColor,
-        fireIntensity: cfg.fireIntensity,
-        fireFlameHeight: cfg.fireFlameHeight,
-        fireEmberCount: cfg.fireEmberCount,
-      };
-    case "ice":
-      return {
-        iceColor: cfg.iceColor,
-        iceThickness: cfg.iceThickness,
-        iceIcicleHeight: cfg.iceIcicleHeight,
-        iceFrostDensity: cfg.iceFrostDensity,
-        iceSnowHeight: cfg.iceSnowHeight,
-      };
-    case "aura":
-      return {
-        auraColor: cfg.auraColor,
-        auraGlowColor: cfg.auraGlowColor,
-        auraIntensity: cfg.auraIntensity,
-        auraReach: cfg.auraReach,
-        auraParticleCount: cfg.auraParticleCount,
-      };
     default:
       return {};
   }
 }
 
-function getLayerParams<T extends Record<string, unknown>>(
-  doc: SceneDocument,
-  type: EffectLayer["type"],
-  index = 0
-): T | undefined {
+function getLayerParams<T extends Record<string, unknown>>(doc: SceneDocument, type: EffectLayer["type"], index = 0): T | undefined {
   const found = doc.effectLayers.filter((l) => l.type === type);
   return found[index]?.params as T | undefined;
 }
@@ -390,10 +355,7 @@ function createDefaultFromScene(doc: SceneDocument): TextEffectConfig {
 }
 
 /** Apply engine params from scene onto config without require() */
-export function mergeSceneIntoConfig(
-  doc: SceneDocument,
-  base: TextEffectConfig
-): TextEffectConfig {
+export function mergeSceneIntoConfig(doc: SceneDocument, base: TextEffectConfig): TextEffectConfig {
   const out = sceneToConfig({ ...doc, legacyConfig: base });
   return out;
 }

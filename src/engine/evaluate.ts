@@ -24,12 +24,7 @@ function getCompositor(): WebGLCompositor | null {
 /**
  * Single source of truth for rendering a scene at time t.
  */
-export function evaluateScene(
-  doc: SceneDocument,
-  time: number,
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  options: EvaluateOptions = {}
-): void {
+export function evaluateScene(doc: SceneDocument, time: number, ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, options: EvaluateOptions = {}): void {
   const animated = applyTimelineAtTime(doc, time);
   const cfg = sceneToConfig(animated);
 
@@ -44,8 +39,7 @@ export function evaluateScene(
     bloomThreshold: animated.compositor.bloomThreshold ?? 0.6,
   };
 
-  const usePostFx =
-    !options.skipPostFx && (comp.blur > 0 || comp.bloom > 0);
+  const usePostFx = !options.skipPostFx && (comp.blur > 0 || comp.bloom > 0);
 
   const finishFrame = () => applyMaskReveal(ctx, animated, w, h);
 
@@ -55,10 +49,7 @@ export function evaluateScene(
     return;
   }
 
-  const off =
-    typeof OffscreenCanvas !== "undefined"
-      ? new OffscreenCanvas(w, h)
-      : null;
+  const off = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(w, h) : null;
 
   if (off) {
     const offCtx = off.getContext("2d");
@@ -103,12 +94,7 @@ export function evaluateScene(
   finishFrame();
 }
 
-export function evaluateConfig(
-  cfg: TextEffectConfig,
-  time: number,
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  options?: EvaluateOptions
-): void {
+export function evaluateConfig(cfg: TextEffectConfig, time: number, ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, options?: EvaluateOptions): void {
   evaluateScene(textEffectConfigToScene(cfg), time, ctx, options);
 }
 

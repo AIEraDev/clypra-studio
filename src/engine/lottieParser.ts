@@ -44,7 +44,7 @@ export function scanTextLayers(lottieData: any): ParsedTextLayer[] {
     if (!Array.isArray(layers)) return;
     for (const layer of layers) {
       if (!layer) continue;
-      
+
       // Text layer is ty === 5
       if (layer.ty === 5) {
         const name = layer.nm || "Unnamed Layer";
@@ -88,7 +88,7 @@ export function parseLottieJson(lottieData: any): LottieFileInfo {
   const width = typeof lottieData.w === "number" ? lottieData.w : 1920;
   const height = typeof lottieData.h === "number" ? lottieData.h : 1080;
   const fps = typeof lottieData.fr === "number" ? lottieData.fr : 30;
-  
+
   const ip = typeof lottieData.ip === "number" ? lottieData.ip : 0;
   const op = typeof lottieData.op === "number" ? lottieData.op : 100;
   const durationFrames = Math.max(1, Math.round(op - ip));

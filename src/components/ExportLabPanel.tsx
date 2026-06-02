@@ -157,7 +157,7 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
             { id: "definition" as const, label: "Clypra Spec" },
             { id: "lab" as const, label: "Lab & Extend", icon: Beaker },
           ].map((tab) => (
-            <button key={tab.id} type="button" onClick={() => onActiveTabChange(tab.id)} className={`flex flex-1 items-center justify-center gap-1 rounded py-1.5 text-center font-sans text-[10px] font-semibold uppercase tracking-wide transition-all ${activeTab === tab.id ? (tab.id === "lab" ? "bg-teal-500 text-black" : "bg-[#7C6FFF] text-white") : tab.id === "lab" ? "text-teal-400 hover:text-teal-300" : "text-[#666677] hover:text-white"}`}>
+            <button key={tab.id} type="button" onClick={() => onActiveTabChange(tab.id)} className={`flex flex-1 items-center justify-center gap-1 rounded py-1.5 text-center font-sans text-[10px] font-semibold uppercase tracking-wide transition-all ${activeTab === tab.id ? (tab.id === "lab" ? "bg-teal-500 text-black" : "bg-[#7C6FFF] text-white") : tab.id === "lab" ? "text-teal-400 hover:text-teal-300" : "text-clypra-muted hover:text-white"}`}>
               {tab.icon ? <tab.icon size={10} /> : null}
               {tab.label}
             </button>
@@ -171,7 +171,7 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
             <h4 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-white">
               <Beaker size={13} className="text-teal-400" /> Typographic Research & Extend Lab
             </h4>
-            <p className="mt-1 text-[10px] leading-normal text-[#666677]">Research, blend, and extend styles while keeping generated payloads compatible with the current renderer.</p>
+            <p className="mt-1 text-[10px] leading-normal text-clypra-muted">Research, blend, and extend styles while keeping generated payloads compatible with the current renderer.</p>
           </div>
 
           <div className="flex-1 space-y-4 overflow-auto p-4">
@@ -265,13 +265,13 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
         <>
           <div className="flex shrink-0 items-center justify-between border-b border-[#2A2A38] bg-[#111116] px-4 py-2">
             <ExportBadge />
-            <span className="font-mono text-[10px] text-[#666677]">
+            <span className="font-mono text-[10px] text-clypra-muted">
               {config.canvasWidth}×{config.canvasHeight} · {scene.timeline.duration}s
             </span>
           </div>
           <div className="flex shrink-0 flex-col border-b border-[#2A2A38] bg-[#111116]">
             <div className="flex items-center gap-3 border-b border-[#2A2A38]/40 bg-[#16161F] px-4 py-2">
-              <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider text-[#666677]">Virtual Export Target</span>
+              <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider text-clypra-muted">Virtual Export Target</span>
               <span className="min-w-0 flex-1 truncate font-mono text-[10px] font-bold text-gray-300" title={virtualTarget}>
                 {virtualTarget}
               </span>
@@ -351,7 +351,7 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
             </pre>
           </div>
 
-          <div className="shrink-0 border-t border-[#2A2A38] bg-[#15151C] p-3 text-center font-sans text-[10px] leading-normal text-[#666677]">
+          <div className="shrink-0 border-t border-[#2A2A38] bg-[#15151C] p-3 text-center font-sans text-[10px] leading-normal text-clypra-muted">
             Ready for Clypra integration under <span className="font-mono text-gray-400">/features/text-effects/</span>
           </div>
         </>

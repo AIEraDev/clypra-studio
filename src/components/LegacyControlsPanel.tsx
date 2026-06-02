@@ -1,30 +1,12 @@
 import React from "react";
-import {
-  Brush,
-  ChevronDown,
-  ChevronUp,
-  Compass,
-  Flame,
-  Layers,
-  Layout,
-  Loader2,
-  Monitor,
-  Moon,
-  Plus,
-  Snowflake,
-  Sparkles,
-  Trash2,
-  Type,
-} from "lucide-react";
+import { Brush, ChevronDown, ChevronUp, Compass, Flame, Layers, Layout, Loader2, Monitor, Moon, Plus, Snowflake, Sparkles, Trash2, Type } from "lucide-react";
 import type { TextEffectConfig } from "../types";
 import { SYSTEM_FONTS, GOOGLE_FONTS } from "../constants";
 import { COMPOSITION_PRESETS } from "../engine/textLayout";
 import { resizeCharFillColors } from "../engine/perCharFill";
 import { PerCharColorEditor } from "./PerCharColorEditor";
 
-type ConfigUpdater =
-  | Partial<TextEffectConfig>
-  | ((config: TextEffectConfig) => TextEffectConfig);
+type ConfigUpdater = Partial<TextEffectConfig> | ((config: TextEffectConfig) => TextEffectConfig);
 
 interface LegacyControlsPanelProps {
   visible: boolean;
@@ -39,18 +21,7 @@ interface LegacyControlsPanelProps {
   fitTextToComposition: () => void;
 }
 
-export function LegacyControlsPanel({
-  visible,
-  config,
-  activeEffectId,
-  collapsedSections,
-  isGeneratingName,
-  modifyConfig,
-  toggleSection,
-  handleGenerateAiEffectName,
-  applyCompositionPreset,
-  fitTextToComposition,
-}: LegacyControlsPanelProps) {
+export function LegacyControlsPanel({ visible, config, activeEffectId, collapsedSections, isGeneratingName, modifyConfig, toggleSection, handleGenerateAiEffectName, applyCompositionPreset, fitTextToComposition }: LegacyControlsPanelProps) {
   return (
     <div className={visible ? "p-4 flex flex-col gap-4" : "hidden"}>
       {/* ──────────────────────────────────────────────────────
@@ -62,13 +33,13 @@ export function LegacyControlsPanel({
             <Type size={14} className="text-[#7C6FFF]" />
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">1. Text Configuration</span>
           </div>
-          {collapsedSections.text ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.text ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.text && (
           <div className="p-3.5 flex flex-col gap-3">
             <div>
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Preview Label Text</label>
+              <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Preview Label Text</label>
               <textarea
                 id="input-text-val"
                 rows={2}
@@ -85,7 +56,7 @@ export function LegacyControlsPanel({
               />
             </div>
             <div>
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Clypra Class Name</label>
+              <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Clypra Class Name</label>
               <div className="flex gap-1.5">
                 <input id="input-effect-name" type="text" value={config.effectName} onChange={(e) => modifyConfig({ effectName: e.target.value })} className="flex-1 bg-[#0E0E12] border border-[#2A2A38] rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#7C6FFF] font-sans min-w-0" />
                 <button type="button" onClick={handleGenerateAiEffectName} disabled={isGeneratingName} className="px-2.5 bg-[#7C6FFF]/10 hover:bg-[#7C6FFF]/20 active:bg-[#7C6FFF]/30 border border-[#7C6FFF]/30 rounded-lg text-[#7C6FFF] font-sans text-xs flex items-center justify-center gap-1 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0" title="Generate Class Name with Gemini AI">
@@ -101,7 +72,7 @@ export function LegacyControlsPanel({
               </div>
             </div>
             <div>
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-0.5">Effect Registration ID</label>
+              <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-0.5">Effect Registration ID</label>
               <span className="text-[10px] font-mono text-gray-500 bg-[#0E0E12] px-2 py-1 rounded block border border-dashed border-[#2A2A38] truncate select-all">{activeEffectId}</span>
             </div>
           </div>
@@ -117,14 +88,14 @@ export function LegacyControlsPanel({
             <Type size={14} className="text-[#7C6FFF]" />
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">2. Font Specimen</span>
           </div>
-          {collapsedSections.font ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.font ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.font && (
           <div className="p-3.5 flex flex-col gap-3">
             {/* Font dropdown */}
             <div>
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Typography Family</label>
+              <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Typography Family</label>
               <select id="select-font-family" value={config.fontFamily} onChange={(e) => modifyConfig({ fontFamily: e.target.value })} className="w-full bg-[#0E0E12] border border-[#2A2A38] rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#7C6FFF] cursor-pointer">
                 <optgroup label="System Fonts">
                   {SYSTEM_FONTS.map((font) => (
@@ -145,10 +116,10 @@ export function LegacyControlsPanel({
 
             {/* Weight segmented */}
             <div>
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Font Weight</label>
+              <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Font Weight</label>
               <div className="grid grid-cols-6 gap-0.5 bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg select-none">
                 {[400, 500, 600, 700, 800, 900].map((w) => (
-                  <button key={w} type="button" onClick={() => modifyConfig({ fontWeight: w })} className={`py-1 text-[10px] rounded font-mono cursor-pointer transition-all ${config.fontWeight === w ? "bg-[#7C6FFF] text-white font-semibold" : "text-[#666677] hover:text-white"}`}>
+                  <button key={w} type="button" onClick={() => modifyConfig({ fontWeight: w })} className={`py-1 text-[10px] rounded font-mono cursor-pointer transition-all ${config.fontWeight === w ? "bg-[#7C6FFF] text-white font-semibold" : "text-clypra-muted hover:text-white"}`}>
                     {w}
                   </button>
                 ))}
@@ -157,7 +128,7 @@ export function LegacyControlsPanel({
 
             {/* Font style */}
             <div>
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Font Decoration Style</label>
+              <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Font Decoration Style</label>
               <div className="grid grid-cols-2 gap-1 bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg select-none">
                 {["normal", "italic"].map((style) => (
                   <button
@@ -172,7 +143,7 @@ export function LegacyControlsPanel({
                       }
                       modifyConfig(updates);
                     }}
-                    className={`py-1 text-[10px] rounded font-mono capitalize cursor-pointer transition-all ${config.fontStyle === style ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-white"}`}
+                    className={`py-1 text-[10px] rounded font-mono capitalize cursor-pointer transition-all ${config.fontStyle === style ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-white"}`}
                   >
                     {style}
                   </button>
@@ -184,7 +155,7 @@ export function LegacyControlsPanel({
             <div className="flex items-center justify-between gap-3 mt-1">
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] uppercase font-mono text-[#666677]">Size</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted">Size</label>
                   <span className="text-[10px] font-mono text-white">{config.fontSize}px</span>
                 </div>
                 <input type="range" min="24" max="200" value={config.fontSize} onChange={(e) => modifyConfig({ fontSize: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize py-1" />
@@ -195,7 +166,7 @@ export function LegacyControlsPanel({
             {/* spacing */}
             <div>
               <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Letter Spacing</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted">Letter Spacing</label>
                 <span className="text-[10px] font-mono text-white">{config.letterSpacing}px</span>
               </div>
               <input type="range" min="-10" max="30" value={config.letterSpacing} onChange={(e) => modifyConfig({ letterSpacing: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -204,7 +175,7 @@ export function LegacyControlsPanel({
             {/* line height */}
             <div>
               <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Line Height Ratio</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted">Line Height Ratio</label>
                 <span className="text-[10px] font-mono text-white">{config.lineHeight}x</span>
               </div>
               <input type="range" min="0.8" max="2.5" step="0.1" value={config.lineHeight} onChange={(e) => modifyConfig({ lineHeight: parseFloat(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -223,7 +194,7 @@ export function LegacyControlsPanel({
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">3. Ink Brush Engine</span>
             {config.customRenderer === "InkBrushEngine" && <span className="text-[9px] bg-teal-500/20 text-teal-400 font-mono px-1.5 py-0.5 rounded uppercase font-bold tracking-wider animate-pulse">Active</span>}
           </div>
-          {collapsedSections.inkBrush ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.inkBrush ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.inkBrush && (
@@ -239,7 +210,7 @@ export function LegacyControlsPanel({
 
             {/* Ink Color */}
             <div className="p-2.5 rounded-lg bg-[#0E0E12] border border-[#2A2A38]">
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Ink Color</label>
+              <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Ink Color</label>
               <div className="flex items-center gap-3">
                 <input type="color" value={config.inkColor || "#FFFFFF"} onChange={(e) => modifyConfig({ inkColor: e.target.value, fillColor: e.target.value, customRenderer: "InkBrushEngine" })} className="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer p-0 shrink-0" />
                 <input type="text" value={config.inkColor || "#FFFFFF"} onChange={(e) => modifyConfig({ inkColor: e.target.value, fillColor: e.target.value, customRenderer: "InkBrushEngine" })} className="flex-1 bg-[#15151C] border border-[#2A2A38] focus:border-[#7C6FFF] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none" />
@@ -249,7 +220,7 @@ export function LegacyControlsPanel({
             {/* Bristle Density */}
             <div>
               <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Bristle Density (Coverage)</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted">Bristle Density (Coverage)</label>
                 <span className="text-[10px] font-mono text-white">{config.bristleDensity ?? 0.8}</span>
               </div>
               <input type="range" min="0.1" max="2.0" step="0.05" value={config.bristleDensity ?? 0.8} onChange={(e) => modifyConfig({ bristleDensity: parseFloat(e.target.value), customRenderer: "InkBrushEngine" })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -258,7 +229,7 @@ export function LegacyControlsPanel({
             {/* Bristle Skip Rate */}
             <div>
               <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Skip Rate (Dryness/Holes)</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted">Skip Rate (Dryness/Holes)</label>
                 <span className="text-[10px] font-mono text-white">{Math.round((config.bristleSkipRate ?? 0.2) * 100)}%</span>
               </div>
               <input type="range" min="0.0" max="1.0" step="0.05" value={config.bristleSkipRate ?? 0.2} onChange={(e) => modifyConfig({ bristleSkipRate: parseFloat(e.target.value), customRenderer: "InkBrushEngine" })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -267,7 +238,7 @@ export function LegacyControlsPanel({
             {/* Drip Rate */}
             <div>
               <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Drip Rate (Drip Probability)</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted">Drip Rate (Drip Probability)</label>
                 <span className="text-[10px] font-mono text-white">{Math.round((config.dripRate ?? 0.3) * 100)}%</span>
               </div>
               <input type="range" min="0.0" max="1.0" step="0.05" value={config.dripRate ?? 0.3} onChange={(e) => modifyConfig({ dripRate: parseFloat(e.target.value), customRenderer: "InkBrushEngine" })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -276,7 +247,7 @@ export function LegacyControlsPanel({
             {/* Drip Max Length */}
             <div>
               <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Drip Max Length</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted">Drip Max Length</label>
                 <span className="text-[10px] font-mono text-white">{config.dripMaxLength ?? 40}px</span>
               </div>
               <input type="range" min="5" max="120" step="1" value={config.dripMaxLength ?? 40} onChange={(e) => modifyConfig({ dripMaxLength: parseInt(e.target.value), customRenderer: "InkBrushEngine" })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -285,7 +256,7 @@ export function LegacyControlsPanel({
             {/* Grain Density */}
             <div>
               <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Grain Density (Paper Noise)</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted">Grain Density (Paper Noise)</label>
                 <span className="text-[10px] font-mono text-white">{Math.round((config.grainDensity ?? 0.15) * 100)}%</span>
               </div>
               <input type="range" min="0.0" max="1.0" step="0.05" value={config.grainDensity ?? 0.15} onChange={(e) => modifyConfig({ grainDensity: parseFloat(e.target.value), customRenderer: "InkBrushEngine" })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -294,217 +265,10 @@ export function LegacyControlsPanel({
             {/* Font Slant SkewX */}
             <div>
               <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Font Slant (Skew X)</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted">Font Slant (Skew X)</label>
                 <span className="text-[10px] font-mono text-white">{config.skewX ?? -0.2}</span>
               </div>
               <input type="range" min="-1.0" max="1.0" step="0.05" value={config.skewX ?? -0.2} onChange={(e) => modifyConfig({ skewX: parseFloat(e.target.value), customRenderer: "InkBrushEngine" })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ──────────────────────────────────────────────────────
-          Section — Fire Engine (Custom procedural controls)
-          ────────────────────────────────────────────────────── */}
-      <div id="section-card-fireengine" className="rounded-lg bg-[#1E1E26] border border-[#2A2A38] overflow-hidden mb-3">
-        <div onClick={() => toggleSection("fireEngine")} className="flex items-center justify-between p-3 px-3.5 bg-[#252530]/50 border-b border-[#2A2A38] cursor-pointer">
-          <div className="flex items-center gap-2">
-            <Flame size={14} className="text-[#FF5500]" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">Fire Engine</span>
-            {config.customRenderer === "FireEngine" && <span className="text-[9px] bg-[#FF5500]/20 text-[#FF8833] font-mono px-1.5 py-0.5 rounded uppercase font-bold tracking-wider animate-pulse">Active</span>}
-          </div>
-          {collapsedSections.fireEngine ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
-        </div>
-
-        {!collapsedSections.fireEngine && (
-          <div className="p-3.5 flex flex-col gap-4">
-            {/* Active Engine Toggle */}
-            <div className="flex items-center justify-between p-2 rounded bg-[#0E0E12] border border-[#2A2A38]/50 flex-wrap gap-1">
-              <div>
-                <span className="text-[10px] uppercase font-mono text-[#FF5500] font-bold block">Enable Fire Engine</span>
-                <span className="text-[8px] text-gray-500 font-mono block">When on, overrides standard rendering with dynamic realistic fire</span>
-              </div>
-              <input type="checkbox" checked={config.customRenderer === "FireEngine"} onChange={(e) => modifyConfig({ customRenderer: e.target.checked ? "FireEngine" : undefined })} className="accent-[#FF5500] w-4 h-4 cursor-pointer" />
-            </div>
-
-            {/* Flame Color */}
-            <div className="p-2.5 rounded-lg bg-[#0E0E12] border border-[#2A2A38]">
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Flame Color</label>
-              <div className="flex items-center gap-3">
-                <input type="color" value={config.fireColor || "#FF5500"} onChange={(e) => modifyConfig({ fireColor: e.target.value, customRenderer: "FireEngine" })} className="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer p-0 shrink-0" />
-                <input type="text" value={config.fireColor || "#FF5500"} onChange={(e) => modifyConfig({ fireColor: e.target.value, customRenderer: "FireEngine" })} className="flex-1 bg-[#15151C] border border-[#2A2A38] focus:border-[#FF5500] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none" />
-              </div>
-            </div>
-
-            {/* Fire Intensity */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Fire Intensity (Density)</label>
-                <span className="text-[10px] font-mono text-white">{config.fireIntensity ?? 5}</span>
-              </div>
-              <input type="range" min="1" max="12" step="0.5" value={config.fireIntensity ?? 5} onChange={(e) => modifyConfig({ fireIntensity: parseFloat(e.target.value), customRenderer: "FireEngine" })} className="w-full accent-[#FF5500] cursor-ew-resize" />
-            </div>
-
-            {/* Flame Height */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Flame Height</label>
-                <span className="text-[10px] font-mono text-white">{config.fireFlameHeight ?? 80}px</span>
-              </div>
-              <input type="range" min="15" max="200" step="5" value={config.fireFlameHeight ?? 80} onChange={(e) => modifyConfig({ fireFlameHeight: parseInt(e.target.value), customRenderer: "FireEngine" })} className="w-full accent-[#FF5500] cursor-ew-resize" />
-            </div>
-
-            {/* Ember Count */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Ember count (Sparks)</label>
-                <span className="text-[10px] font-mono text-white">{config.fireEmberCount ?? 150}</span>
-              </div>
-              <input type="range" min="0" max="400" step="10" value={config.fireEmberCount ?? 150} onChange={(e) => modifyConfig({ fireEmberCount: parseInt(e.target.value), customRenderer: "FireEngine" })} className="w-full accent-[#FF5500] cursor-ew-resize" />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ──────────────────────────────────────────────────────
-          Section — Ice Engine (Custom procedural controls)
-          ────────────────────────────────────────────────────── */}
-      <div id="section-card-iceengine" className="rounded-lg bg-[#1E1E26] border border-[#2A2A38] overflow-hidden mb-3">
-        <div onClick={() => toggleSection("iceEngine")} className="flex items-center justify-between p-3 px-3.5 bg-[#252530]/50 border-b border-[#2A2A38] cursor-pointer">
-          <div className="flex items-center gap-2">
-            <Snowflake size={14} className="text-[#88DDFF]" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">Ice Engine</span>
-            {config.customRenderer === "IceEngine" && <span className="text-[9px] bg-[#88DDFF]/20 text-[#AADFFF] font-mono px-1.5 py-0.5 rounded uppercase font-bold tracking-wider animate-pulse">Active</span>}
-          </div>
-          {collapsedSections.iceEngine ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
-        </div>
-
-        {!collapsedSections.iceEngine && (
-          <div className="p-3.5 flex flex-col gap-4">
-            {/* Active Engine Toggle */}
-            <div className="flex items-center justify-between p-2 rounded bg-[#0E0E12] border border-[#2A2A38]/50 flex-wrap gap-1">
-              <div>
-                <span className="text-[10px] uppercase font-mono text-[#88DDFF] font-bold block">Enable Ice Engine</span>
-                <span className="text-[8px] text-gray-500 font-mono block">When on, overrides standard rendering with dynamic realistic ice</span>
-              </div>
-              <input type="checkbox" checked={config.customRenderer === "IceEngine"} onChange={(e) => modifyConfig({ customRenderer: e.target.checked ? "IceEngine" : undefined })} className="accent-[#88DDFF] w-4 h-4 cursor-pointer" />
-            </div>
-
-            {/* Ice Color */}
-            <div className="p-2.5 rounded-lg bg-[#0E0E12] border border-[#2A2A38]">
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Ice Tint Color</label>
-              <div className="flex items-center gap-3">
-                <input type="color" value={config.iceColor || "#AADDFF"} onChange={(e) => modifyConfig({ iceColor: e.target.value, customRenderer: "IceEngine" })} className="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer p-0 shrink-0" />
-                <input type="text" value={config.iceColor || "#AADDFF"} onChange={(e) => modifyConfig({ iceColor: e.target.value, customRenderer: "IceEngine" })} className="flex-1 bg-[#15151C] border border-[#2A2A38] focus:border-[#88DDFF] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none" />
-              </div>
-            </div>
-
-            {/* Ice Thickness */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Ice Outer Thickness</label>
-                <span className="text-[10px] font-mono text-white">{config.iceThickness ?? 6}px</span>
-              </div>
-              <input type="range" min="1" max="15" step="0.5" value={config.iceThickness ?? 6} onChange={(e) => modifyConfig({ iceThickness: parseFloat(e.target.value), customRenderer: "IceEngine" })} className="w-full accent-[#88DDFF] cursor-ew-resize" />
-            </div>
-
-            {/* Icicle Height */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Hanging Icicle Max Height</label>
-                <span className="text-[10px] font-mono text-white">{config.iceIcicleHeight ?? 25}px</span>
-              </div>
-              <input type="range" min="0" max="150" step="1" value={config.iceIcicleHeight ?? 25} onChange={(e) => modifyConfig({ iceIcicleHeight: parseInt(e.target.value), customRenderer: "IceEngine" })} className="w-full accent-[#88DDFF] cursor-ew-resize" />
-            </div>
-
-            {/* Frost Crack Density */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Frost Crack Segment Density</label>
-                <span className="text-[10px] font-mono text-white">{Math.round((config.iceFrostDensity ?? 0.6) * 100)}%</span>
-              </div>
-              <input type="range" min="0" max="1" step="0.05" value={config.iceFrostDensity ?? 0.6} onChange={(e) => modifyConfig({ iceFrostDensity: parseFloat(e.target.value), customRenderer: "IceEngine" })} className="w-full accent-[#88DDFF] cursor-ew-resize" />
-            </div>
-
-            {/* Snow Pile Height */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Top Snow Cap Height</label>
-                <span className="text-[10px] font-mono text-white">{config.iceSnowHeight ?? 10}px</span>
-              </div>
-              <input type="range" min="0" max="30" step="1" value={config.iceSnowHeight ?? 10} onChange={(e) => modifyConfig({ iceSnowHeight: parseInt(e.target.value), customRenderer: "IceEngine" })} className="w-full accent-[#88DDFF] cursor-ew-resize" />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ──────────────────────────────────────────────────────
-          Section — Aura Engine (Custom procedural controls)
-          ────────────────────────────────────────────────────── */}
-      <div id="section-card-auraengine" className="rounded-lg bg-[#1E1E26] border border-[#2A2A38] overflow-hidden mb-3">
-        <div onClick={() => toggleSection("auraEngine")} className="flex items-center justify-between p-3 px-3.5 bg-[#252530]/50 border-b border-[#2A2A38] cursor-pointer">
-          <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-[#C084FC]" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">Aura Engine</span>
-            {config.customRenderer === "AuraEngine" && <span className="text-[9px] bg-[#C084FC]/20 text-[#D8B4FE] font-mono px-1.5 py-0.5 rounded uppercase font-bold tracking-wider animate-pulse">Active</span>}
-          </div>
-          {collapsedSections.auraEngine ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
-        </div>
-
-        {!collapsedSections.auraEngine && (
-          <div className="p-3.5 flex flex-col gap-4">
-            {/* Active Engine Toggle */}
-            <div className="flex items-center justify-between p-2 rounded bg-[#0E0E12] border border-[#2A2A38]/50 flex-wrap gap-1">
-              <div>
-                <span className="text-[10px] uppercase font-mono text-[#C084FC] font-bold block">Enable Aura Engine</span>
-                <span className="text-[8px] text-gray-500 font-mono block">When on, overrides standard rendering with electric plasma auras</span>
-              </div>
-              <input type="checkbox" checked={config.customRenderer === "AuraEngine"} onChange={(e) => modifyConfig({ customRenderer: e.target.checked ? "AuraEngine" : undefined })} className="accent-[#C084FC] w-4 h-4 cursor-pointer" />
-            </div>
-
-            {/* Aura Color */}
-            <div className="p-2.5 rounded-lg bg-[#0E0E12] border border-[#2A2A38]">
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Aura Wisp Color</label>
-              <div className="flex items-center gap-3">
-                <input type="color" value={config.auraColor || "#C084FC"} onChange={(e) => modifyConfig({ auraColor: e.target.value, customRenderer: "AuraEngine" })} className="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer p-0 shrink-0" />
-                <input type="text" value={config.auraColor || "#C084FC"} onChange={(e) => modifyConfig({ auraColor: e.target.value, customRenderer: "AuraEngine" })} className="flex-1 bg-[#15151C] border border-[#2A2A38] focus:border-[#C084FC] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none" />
-              </div>
-            </div>
-
-            {/* Aura Glow Color */}
-            <div className="p-2.5 rounded-lg bg-[#0E0E12] border border-[#2A2A38]">
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Aura Ambient Glow Color</label>
-              <div className="flex items-center gap-3">
-                <input type="color" value={config.auraGlowColor || "#581C87"} onChange={(e) => modifyConfig({ auraGlowColor: e.target.value, customRenderer: "AuraEngine" })} className="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer p-0 shrink-0" />
-                <input type="text" value={config.auraGlowColor || "#581C87"} onChange={(e) => modifyConfig({ auraGlowColor: e.target.value, customRenderer: "AuraEngine" })} className="flex-1 bg-[#15151C] border border-[#2A2A38] focus:border-[#C084FC] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none" />
-              </div>
-            </div>
-
-            {/* Aura Intensity */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Aura Filament Density (Intensity)</label>
-                <span className="text-[10px] font-mono text-white">{config.auraIntensity ?? 6}</span>
-              </div>
-              <input type="range" min="1" max="12" step="0.5" value={config.auraIntensity ?? 6} onChange={(e) => modifyConfig({ auraIntensity: parseFloat(e.target.value), customRenderer: "AuraEngine" })} className="w-full accent-[#C084FC] cursor-ew-resize" />
-            </div>
-
-            {/* Aura Reach */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Outer Reach Spread</label>
-                <span className="text-[10px] font-mono text-white">{config.auraReach ?? 35}px</span>
-              </div>
-              <input type="range" min="10" max="120" step="2" value={config.auraReach ?? 35} onChange={(e) => modifyConfig({ auraReach: parseInt(e.target.value), customRenderer: "AuraEngine" })} className="w-full accent-[#C084FC] cursor-ew-resize" />
-            </div>
-
-            {/* Aura Particle Count */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] uppercase font-mono text-[#666677]">Energetic Spark Count</label>
-                <span className="text-[10px] font-mono text-white">{config.auraParticleCount ?? 160}</span>
-              </div>
-              <input type="range" min="0" max="400" step="10" value={config.auraParticleCount ?? 160} onChange={(e) => modifyConfig({ auraParticleCount: parseInt(e.target.value), customRenderer: "AuraEngine" })} className="w-full accent-[#C084FC] cursor-ew-resize" />
             </div>
           </div>
         )}
@@ -520,17 +284,17 @@ export function LegacyControlsPanel({
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">3. Text Fill Color</span>
             {!config.customRenderer && <span className="text-[9px] bg-[#7C6FFF]/20 text-white font-mono px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Active</span>}
           </div>
-          {collapsedSections.fill ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.fill ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.fill && (
           <div className="p-3.5 flex flex-col gap-3">
             {/* Fill Radio Select */}
             <div>
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1.5 animate-pulse">Fill Rendering Mode</label>
+              <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1.5 animate-pulse">Fill Rendering Mode</label>
               <div className="flex flex-wrap gap-1 select-none">
                 {["solid", "linear", "radial", "pattern", "none"].map((type) => (
-                  <button key={type} type="button" onClick={() => modifyConfig({ fillType: type as any, customRenderer: undefined })} className={`flex-1 min-w-[55px] py-1 rounded text-[10px] font-mono cursor-pointer uppercase border transition-all ${config.fillType === type ? "bg-[#7C6FFF]/15 border-[#7C6FFF] text-white font-semibold" : "bg-[#0E0E12] border-[#2A2A38] text-[#666677] hover:text-white"}`}>
+                  <button key={type} type="button" onClick={() => modifyConfig({ fillType: type as any, customRenderer: undefined })} className={`flex-1 min-w-[55px] py-1 rounded text-[10px] font-mono cursor-pointer uppercase border transition-all ${config.fillType === type ? "bg-[#7C6FFF]/15 border-[#7C6FFF] text-white font-semibold" : "bg-[#0E0E12] border-[#2A2A38] text-clypra-muted hover:text-white"}`}>
                     {type}
                   </button>
                 ))}
@@ -541,7 +305,7 @@ export function LegacyControlsPanel({
             {config.fillType === "solid" && (
               <div className="flex flex-col gap-2">
                 <div className="p-2.5 rounded-lg bg-[#0E0E12] border border-[#2A2A38]">
-                  <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Color Palette</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Color Palette</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -581,7 +345,7 @@ export function LegacyControlsPanel({
                 {config.fillType === "linear" && (
                   <div>
                     <div className="flex items-center justify-between mb-0.5">
-                      <label className="text-[10px] uppercase font-mono text-[#666677]">Radial / Angle</label>
+                      <label className="text-[10px] uppercase font-mono text-clypra-muted">Radial / Angle</label>
                       <span className="text-[10px] font-mono text-white">{config.fillGradientAngle}°</span>
                     </div>
                     <input type="range" min="0" max="360" value={config.fillGradientAngle} onChange={(e) => modifyConfig({ fillGradientAngle: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -591,7 +355,7 @@ export function LegacyControlsPanel({
                 {/* Stops list */}
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between border-b border-[#2A2A38]/60 pb-1">
-                    <span className="text-[10px] uppercase font-mono text-[#666677]">Stops ({config.fillGradientStops.length})</span>
+                    <span className="text-[10px] uppercase font-mono text-clypra-muted">Stops ({config.fillGradientStops.length})</span>
                     {config.fillGradientStops.length < 6 && (
                       <button
                         type="button"
@@ -643,7 +407,7 @@ export function LegacyControlsPanel({
                         className="flex-1 accent-[#7C6FFF] cursor-ew-resize h-1"
                       />
 
-                      <span className="text-[9px] font-mono text-[#666677] w-[22px] text-right shrink-0">{stop.offset}%</span>
+                      <span className="text-[9px] font-mono text-clypra-muted w-[22px] text-right shrink-0">{stop.offset}%</span>
 
                       {config.fillGradientStops.length > 2 && (
                         <button
@@ -654,7 +418,7 @@ export function LegacyControlsPanel({
                               fillGradientStops: prev.fillGradientStops.filter((_, i) => i !== sidx),
                             }));
                           }}
-                          className="p-0.5 text-[#666677] hover:text-red-500 rounded transition-colors cursor-pointer"
+                          className="p-0.5 text-clypra-muted hover:text-red-500 rounded transition-colors cursor-pointer"
                         >
                           <Trash2 size={11} />
                         </button>
@@ -669,7 +433,7 @@ export function LegacyControlsPanel({
             {config.fillType === "pattern" && (
               <div className="p-3 rounded-lg bg-[#0E0E12] border border-[#2A2A38] flex flex-col gap-3">
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Pattern Color Accent</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Pattern Color Accent</label>
                   <div className="flex items-center gap-3">
                     <input type="color" value={config.fillColor.startsWith("#") ? config.fillColor : "#ffffff"} onChange={(e) => modifyConfig({ fillColor: e.target.value, customRenderer: undefined })} className="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer p-0 shrink-0" />
                     <input type="text" value={config.fillColor} onChange={(e) => modifyConfig({ fillColor: e.target.value, customRenderer: undefined })} className="flex-1 bg-[#15151C] border border-[#2A2A38] focus:border-[#7C6FFF] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none" />
@@ -677,7 +441,7 @@ export function LegacyControlsPanel({
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Canvas Texture Selection</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Canvas Texture Selection</label>
                   <div className="grid grid-cols-2 gap-1 select-none">
                     {[
                       { key: "chalk", label: "Chalk Brush" },
@@ -691,7 +455,7 @@ export function LegacyControlsPanel({
                       { key: "halftone", label: "Comics Halftone" },
                       { key: "paper", label: "Craft Paper" },
                     ].map((item) => (
-                      <button key={item.key} type="button" onClick={() => modifyConfig({ patternType: item.key as any })} className={`py-1 rounded text-[9px] font-mono cursor-pointer uppercase border transition-all ${(config.patternType || "chalk") === item.key ? "bg-[#7C6FFF]/15 border-[#7C6FFF] text-white font-semibold" : "bg-[#0E0E12] border-[#2A2A38] text-[#666677] hover:text-white"}`}>
+                      <button key={item.key} type="button" onClick={() => modifyConfig({ patternType: item.key as any })} className={`py-1 rounded text-[9px] font-mono cursor-pointer uppercase border transition-all ${(config.patternType || "chalk") === item.key ? "bg-[#7C6FFF]/15 border-[#7C6FFF] text-white font-semibold" : "bg-[#0E0E12] border-[#2A2A38] text-clypra-muted hover:text-white"}`}>
                         {item.label}
                       </button>
                     ))}
@@ -703,7 +467,7 @@ export function LegacyControlsPanel({
             {/* NONE NOTE */}
             {config.fillType === "none" && (
               <div className="p-2.5 rounded-lg border border-dashed border-[#2A2A38] bg-transparent text-center">
-                <p className="text-xs text-[#666677] font-sans">Hollow Core — No Fill layer active. Render relies entirely on Stroke settings below.</p>
+                <p className="text-xs text-clypra-muted font-sans">Hollow Core — No Fill layer active. Render relies entirely on Stroke settings below.</p>
               </div>
             )}
           </div>
@@ -719,14 +483,14 @@ export function LegacyControlsPanel({
             <Layers size={14} className="text-[#7C6FFF]" />
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">4. Stroke Border</span>
           </div>
-          {collapsedSections.stroke ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.stroke ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.stroke && (
           <div className="p-3.5 flex flex-col gap-3.5">
             {/* Enable */}
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-mono text-[#666677]">Enable stroke outline</span>
+              <span className="text-[10px] uppercase font-mono text-clypra-muted">Enable stroke outline</span>
               <input type="checkbox" checked={config.strokeEnabled} onChange={(e) => modifyConfig({ strokeEnabled: e.target.checked })} className="accent-[#7C6FFF] w-4 h-4 rounded border-[#2A2A38] cursor-pointer" />
             </div>
 
@@ -740,7 +504,7 @@ export function LegacyControlsPanel({
               {/* Width */}
               <div>
                 <div className="flex items-center justify-between mb-0.5">
-                  <label className="text-[10px] uppercase font-mono text-[#666677]">Stroke Width</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted">Stroke Width</label>
                   <span className="text-[10px] font-mono text-white">{config.strokeWidth}px</span>
                 </div>
                 <input type="range" min="0" max="30" value={config.strokeWidth} onChange={(e) => modifyConfig({ strokeWidth: parseInt(e.target.value), strokeEnabled: true })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -748,10 +512,10 @@ export function LegacyControlsPanel({
 
               {/* Position */}
               <div>
-                <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Rendering Alignment</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Rendering Alignment</label>
                 <div className="grid grid-cols-3 gap-0.5 bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg text-center select-none">
                   {["outside", "center", "inside"].map((pos) => (
-                    <button key={pos} type="button" onClick={() => modifyConfig({ strokePosition: pos as any, strokeEnabled: true })} className={`py-1 text-[9px] rounded font-mono uppercase cursor-pointer transition-all ${config.strokePosition === pos ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-white"}`}>
+                    <button key={pos} type="button" onClick={() => modifyConfig({ strokePosition: pos as any, strokeEnabled: true })} className={`py-1 text-[9px] rounded font-mono uppercase cursor-pointer transition-all ${config.strokePosition === pos ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-white"}`}>
                       {pos}
                     </button>
                   ))}
@@ -761,7 +525,7 @@ export function LegacyControlsPanel({
               {/* Opacity */}
               <div>
                 <div className="flex items-center justify-between mb-0.5">
-                  <label className="text-[10px] uppercase font-mono text-[#666677]">Opacity Level</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted">Opacity Level</label>
                   <span className="text-[10px] font-mono text-white">{config.strokeOpacity}%</span>
                 </div>
                 <input type="range" min="0" max="100" value={config.strokeOpacity} onChange={(e) => modifyConfig({ strokeOpacity: parseInt(e.target.value), strokeEnabled: true })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -769,10 +533,10 @@ export function LegacyControlsPanel({
 
               {/* Line join */}
               <div>
-                <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Line Joins Edge</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Line Joins Edge</label>
                 <div className="grid grid-cols-3 gap-0.5 bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg text-center select-none">
                   {["round", "miter", "bevel"].map((join) => (
-                    <button key={join} type="button" onClick={() => modifyConfig({ strokeLineJoin: join as any, strokeEnabled: true })} className={`py-1 text-[9px] rounded font-mono uppercase cursor-pointer transition-all ${config.strokeLineJoin === join ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-white"}`}>
+                    <button key={join} type="button" onClick={() => modifyConfig({ strokeLineJoin: join as any, strokeEnabled: true })} className={`py-1 text-[9px] rounded font-mono uppercase cursor-pointer transition-all ${config.strokeLineJoin === join ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-white"}`}>
                       {join}
                     </button>
                   ))}
@@ -781,14 +545,14 @@ export function LegacyControlsPanel({
 
               {/* Stroke Model Type Selector */}
               <div>
-                <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Stroke Model Type</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Stroke Model Type</label>
                 <div className="grid grid-cols-3 gap-0.5 bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg text-center select-none">
                   {[
                     { key: "single", label: "Single" },
                     { key: "double", label: "Double" },
                     { key: "neon", label: "Neon Glow" },
                   ].map((item) => (
-                    <button key={item.key} type="button" onClick={() => modifyConfig({ strokeType: item.key as any, strokeEnabled: true })} className={`py-1 text-[9px] rounded font-mono uppercase cursor-pointer transition-all ${(config.strokeType || "single") === item.key ? "bg-[#7C6FFF] text-white font-semibold" : "text-[#666677] hover:text-white"}`}>
+                    <button key={item.key} type="button" onClick={() => modifyConfig({ strokeType: item.key as any, strokeEnabled: true })} className={`py-1 text-[9px] rounded font-mono uppercase cursor-pointer transition-all ${(config.strokeType || "single") === item.key ? "bg-[#7C6FFF] text-white font-semibold" : "text-clypra-muted hover:text-white"}`}>
                       {item.label}
                     </button>
                   ))}
@@ -798,7 +562,7 @@ export function LegacyControlsPanel({
               {/* Stroke Blur Radius */}
               <div>
                 <div className="flex items-center justify-between mb-0.5">
-                  <label className="text-[10px] uppercase font-mono text-[#666677]">Stroke Blur Radius</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted">Stroke Blur Radius</label>
                   <span className="text-[10px] font-mono text-white">{config.strokeBlur || 0}px</span>
                 </div>
                 <input type="range" min="0" max="30" value={config.strokeBlur || 0} onChange={(e) => modifyConfig({ strokeBlur: parseInt(e.target.value), strokeEnabled: true })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -807,7 +571,7 @@ export function LegacyControlsPanel({
               {/* Stroke Vertical Fade */}
               <div>
                 <div className="flex items-center justify-between mb-0.5">
-                  <label className="text-[10px] uppercase font-mono text-[#666677]">Vertical Fade Out</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted">Vertical Fade Out</label>
                   <span className="text-[10px] font-mono text-white">{config.strokeFadeRange || 0}%</span>
                 </div>
                 <input type="range" min="0" max="100" value={config.strokeFadeRange || 0} onChange={(e) => modifyConfig({ strokeFadeRange: parseInt(e.target.value), strokeEnabled: true })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -819,7 +583,7 @@ export function LegacyControlsPanel({
                   <div className="text-[9px] uppercase font-mono tracking-wider text-[#7C6FFF] font-bold">Double Stroke Outline Config</div>
                   {/* Secondary Color Selector */}
                   <div>
-                    <label className="text-[9px] uppercase font-mono text-[#666677] block mb-1">Outer Secondary Color</label>
+                    <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-1">Outer Secondary Color</label>
                     <div className="flex items-center gap-2 bg-[#0E0E12] border border-[#2A2A38] rounded-lg p-1.5">
                       <input type="color" value={(config.strokeColorSecondary || "#FFFFFF").startsWith("#") ? config.strokeColorSecondary : "#ffffff"} onChange={(e) => modifyConfig({ strokeColorSecondary: e.target.value, strokeEnabled: true })} className="w-6 h-6 bg-transparent border-none cursor-pointer p-0 shrink-0" />
                       <input type="text" value={config.strokeColorSecondary || "#FFFFFF"} onChange={(e) => modifyConfig({ strokeColorSecondary: e.target.value, strokeEnabled: true })} className="flex-1 bg-transparent text-xs text-white font-mono focus:outline-none" />
@@ -829,7 +593,7 @@ export function LegacyControlsPanel({
                   {/* Secondary Width Slider */}
                   <div>
                     <div className="flex items-center justify-between mb-0.5">
-                      <label className="text-[9px] uppercase font-mono text-[#666677]">Outer Expansion Width</label>
+                      <label className="text-[9px] uppercase font-mono text-clypra-muted">Outer Expansion Width</label>
                       <span className="text-[10px] font-mono text-white">+{config.strokeWidthSecondary !== undefined ? config.strokeWidthSecondary : 4}px</span>
                     </div>
                     <input type="range" min="1" max="30" value={config.strokeWidthSecondary !== undefined ? config.strokeWidthSecondary : 4} onChange={(e) => modifyConfig({ strokeWidthSecondary: parseInt(e.target.value), strokeEnabled: true })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -850,13 +614,13 @@ export function LegacyControlsPanel({
             <Sparkles size={14} className="text-[#7C6FFF]" />
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">5. Outer / Inner Glows</span>
           </div>
-          {collapsedSections.glow ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.glow ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.glow && (
           <div className="p-3.5 flex flex-col gap-3">
             <div className="flex items-center justify-between hover:underline select-none">
-              <span className="text-[10px] uppercase font-mono text-[#666677]">Glow Specifiers ({config.glowLayers.length})</span>
+              <span className="text-[10px] uppercase font-mono text-clypra-muted">Glow Specifiers ({config.glowLayers.length})</span>
               {config.glowLayers.length < 6 && (
                 <button
                   type="button"
@@ -874,7 +638,7 @@ export function LegacyControlsPanel({
             </div>
 
             <div className="flex flex-col gap-3 pt-1 select-none">
-              {config.glowLayers.length === 0 && <div className="p-2 border border-dashed border-[#2A2A38] rounded-md text-center text-xs text-[#666677]">No active glow channels configured.</div>}
+              {config.glowLayers.length === 0 && <div className="p-2 border border-dashed border-[#2A2A38] rounded-md text-center text-xs text-clypra-muted">No active glow channels configured.</div>}
 
               {config.glowLayers.map((layer, lidx) => (
                 <div key={lidx} className="bg-[#0E0E12] border border-[#2A2A38] rounded-lg p-3 flex flex-col gap-2.5 relative">
@@ -903,7 +667,7 @@ export function LegacyControlsPanel({
                           glowLayers: p.glowLayers.filter((_, i) => i !== lidx),
                         }));
                       }}
-                      className="p-0.5 text-[#666677] hover:text-red-500 rounded cursor-pointer"
+                      className="p-0.5 text-clypra-muted hover:text-red-500 rounded cursor-pointer"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -943,7 +707,7 @@ export function LegacyControlsPanel({
                       <div className="grid grid-cols-2 gap-3.5 mt-1">
                         <div>
                           <div className="flex justify-between mb-0.5">
-                            <span className="text-[9px] font-mono text-[#666677]">Blur</span>
+                            <span className="text-[9px] font-mono text-clypra-muted">Blur</span>
                             <span className="text-[9px] font-mono text-white">{layer.blur}px</span>
                           </div>
                           <input
@@ -964,7 +728,7 @@ export function LegacyControlsPanel({
 
                         <div>
                           <div className="flex justify-between mb-0.5">
-                            <span className="text-[9px] font-mono text-[#666677]">Opacity</span>
+                            <span className="text-[9px] font-mono text-clypra-muted">Opacity</span>
                             <span className="text-[9px] font-mono text-white">{layer.opacity}%</span>
                           </div>
                           <input
@@ -997,7 +761,7 @@ export function LegacyControlsPanel({
                                 return { ...p, glowLayers: layers };
                               });
                             }}
-                            className={`py-0.5 text-[9px] uppercase font-mono rounded cursor-pointer transition-all ${layer.type === t ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-white"}`}
+                            className={`py-0.5 text-[9px] uppercase font-mono rounded cursor-pointer transition-all ${layer.type === t ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-white"}`}
                           >
                             {t}
                           </button>
@@ -1008,7 +772,7 @@ export function LegacyControlsPanel({
                       <div className="grid grid-cols-2 gap-3.5 mt-1 border-t border-[#2A2A38]/50 pt-2.5">
                         <div>
                           <div className="flex justify-between mb-0.5">
-                            <span className="text-[9px] font-mono text-[#666677]">Strength</span>
+                            <span className="text-[9px] font-mono text-clypra-muted">Strength</span>
                             <span className="text-[9px] font-mono text-white">{layer.strength ?? 1}x</span>
                           </div>
                           <input
@@ -1030,7 +794,7 @@ export function LegacyControlsPanel({
 
                         <div>
                           <div className="flex justify-between mb-0.5">
-                            <span className="text-[9px] font-mono text-[#666677]">Spread</span>
+                            <span className="text-[9px] font-mono text-clypra-muted">Spread</span>
                             <span className="text-[9px] font-mono text-white">{layer.spread ?? 0}px</span>
                           </div>
                           <input
@@ -1068,13 +832,13 @@ export function LegacyControlsPanel({
             <Moon size={14} className="text-[#7C6FFF]" />
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">6. Back Shadow</span>
           </div>
-          {collapsedSections.shadow ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.shadow ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.shadow && (
           <div className="p-3.5 flex flex-col gap-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-mono text-[#666677]">Enable Shadow</span>
+              <span className="text-[10px] uppercase font-mono text-clypra-muted">Enable Shadow</span>
               <input type="checkbox" checked={config.shadowEnabled} onChange={(e) => modifyConfig({ shadowEnabled: e.target.checked })} className="accent-[#7C6FFF] w-4 h-4 cursor-pointer" />
             </div>
 
@@ -1088,7 +852,7 @@ export function LegacyControlsPanel({
               {/* Blur */}
               <div>
                 <div className="flex justify-between mb-0.5">
-                  <label className="text-[10px] uppercase font-mono text-[#666677]">Shadow Blur</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted">Shadow Blur</label>
                   <span className="text-[10px] font-mono text-white">{config.shadowBlur}px</span>
                 </div>
                 <input type="range" min="0" max="60" value={config.shadowBlur} onChange={(e) => modifyConfig({ shadowBlur: parseInt(e.target.value), shadowEnabled: true })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1098,7 +862,7 @@ export function LegacyControlsPanel({
               <div className="grid grid-cols-2 gap-3.5">
                 <div>
                   <div className="flex justify-between mb-0.5">
-                    <span className="text-[10px] uppercase font-mono text-[#666677]">Offset X</span>
+                    <span className="text-[10px] uppercase font-mono text-clypra-muted">Offset X</span>
                     <span className="text-[10px] font-mono text-white">{config.shadowOffsetX}px</span>
                   </div>
                   <input type="range" min="-50" max="50" value={config.shadowOffsetX} onChange={(e) => modifyConfig({ shadowOffsetX: parseInt(e.target.value), shadowEnabled: true })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1106,7 +870,7 @@ export function LegacyControlsPanel({
 
                 <div>
                   <div className="flex justify-between mb-0.5">
-                    <span className="text-[10px] uppercase font-mono text-[#666677]">Offset Y</span>
+                    <span className="text-[10px] uppercase font-mono text-clypra-muted">Offset Y</span>
                     <span className="text-[10px] font-mono text-white">{config.shadowOffsetY}px</span>
                   </div>
                   <input type="range" min="-50" max="50" value={config.shadowOffsetY} onChange={(e) => modifyConfig({ shadowOffsetY: parseInt(e.target.value), shadowEnabled: true })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1116,7 +880,7 @@ export function LegacyControlsPanel({
               {/* Opacity */}
               <div>
                 <div className="flex justify-between mb-0.5">
-                  <label className="text-[10px] uppercase font-mono text-[#666677]">Shadow Opacity</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted">Shadow Opacity</label>
                   <span className="text-[10px] font-mono text-white">{config.shadowOpacity}%</span>
                 </div>
                 <input type="range" min="0" max="100" value={config.shadowOpacity} onChange={(e) => modifyConfig({ shadowOpacity: parseInt(e.target.value), shadowEnabled: true })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1124,10 +888,10 @@ export function LegacyControlsPanel({
 
               {/* Drop / Inner Type */}
               <div>
-                <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Projection Model</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Projection Model</label>
                 <div className="grid grid-cols-2 gap-0.5 bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg text-center font-semibold select-none">
                   {["drop", "inner"].map((t) => (
-                    <button key={t} type="button" onClick={() => modifyConfig({ shadowType: t as any, shadowEnabled: true })} className={`py-1 text-[9px] uppercase font-mono rounded cursor-pointer transition-all ${config.shadowType === t ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-white"}`}>
+                    <button key={t} type="button" onClick={() => modifyConfig({ shadowType: t as any, shadowEnabled: true })} className={`py-1 text-[9px] uppercase font-mono rounded cursor-pointer transition-all ${config.shadowType === t ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-white"}`}>
                       {t} shadow
                     </button>
                   ))}
@@ -1147,13 +911,13 @@ export function LegacyControlsPanel({
             <Compass size={14} className="text-[#7C6FFF]" />
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">7. 3D Extrusion Bevel</span>
           </div>
-          {collapsedSections.bevel ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.bevel ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.bevel && (
           <div className="p-3.5 flex flex-col gap-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-mono text-[#666677]">Enable 3D Depth</span>
+              <span className="text-[10px] uppercase font-mono text-clypra-muted">Enable 3D Depth</span>
               <input type="checkbox" checked={config.bevelEnabled} onChange={(e) => modifyConfig({ bevelEnabled: e.target.checked })} className="accent-[#7C6FFF] w-4 h-4 cursor-pointer" />
             </div>
 
@@ -1161,7 +925,7 @@ export function LegacyControlsPanel({
               {/* Depth */}
               <div>
                 <div className="flex justify-between mb-0.5">
-                  <label className="text-[10px] uppercase font-mono text-[#666677]">Extrusion Depth</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted">Extrusion Depth</label>
                   <span className="text-[10px] font-mono text-white">{config.bevelDepth}px</span>
                 </div>
                 <input type="range" min="1" max="60" value={config.bevelDepth} onChange={(e) => modifyConfig({ bevelDepth: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1170,14 +934,14 @@ export function LegacyControlsPanel({
               {/* Projection Mode */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] uppercase font-mono text-[#666677]">3D Projection Type</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted">3D Projection Type</label>
                   <span className="text-[10px] uppercase font-bold text-[#7C6FFF]">{config.bevelPerspectiveEnabled ? "Perspective" : "Parallel"}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-1 bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg text-center select-none font-semibold">
-                  <button type="button" onClick={() => modifyConfig({ bevelPerspectiveEnabled: false })} className={`py-1 text-[8px] rounded uppercase font-mono cursor-pointer transition-all ${!config.bevelPerspectiveEnabled ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-[#888899]"}`}>
+                  <button type="button" onClick={() => modifyConfig({ bevelPerspectiveEnabled: false })} className={`py-1 text-[8px] rounded uppercase font-mono cursor-pointer transition-all ${!config.bevelPerspectiveEnabled ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-[#888899]"}`}>
                     Parallel (Isometric)
                   </button>
-                  <button type="button" onClick={() => modifyConfig({ bevelPerspectiveEnabled: true })} className={`py-1 text-[8px] rounded uppercase font-mono cursor-pointer transition-all ${config.bevelPerspectiveEnabled ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-[#888899]"}`}>
+                  <button type="button" onClick={() => modifyConfig({ bevelPerspectiveEnabled: true })} className={`py-1 text-[8px] rounded uppercase font-mono cursor-pointer transition-all ${config.bevelPerspectiveEnabled ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-[#888899]"}`}>
                     Perspective (V.P.)
                   </button>
                 </div>
@@ -1187,10 +951,10 @@ export function LegacyControlsPanel({
               {!config.bevelPerspectiveEnabled ? (
                 /* Direction for Parallel type */
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Depth Angle Direction</label>
+                  <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Depth Angle Direction</label>
                   <div className="grid grid-cols-3 gap-0.5 bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg text-center select-none font-semibold">
                     {["bottom-right", "bottom", "right"].map((dir) => (
-                      <button key={dir} type="button" onClick={() => modifyConfig({ bevelDirection: dir as any })} className={`py-1 text-[8px] rounded uppercase font-mono cursor-pointer transition-all ${config.bevelDirection === dir ? "bg-[#7C6FFF] text-white" : "text-[#666677] pr-0.5"}`}>
+                      <button key={dir} type="button" onClick={() => modifyConfig({ bevelDirection: dir as any })} className={`py-1 text-[8px] rounded uppercase font-mono cursor-pointer transition-all ${config.bevelDirection === dir ? "bg-[#7C6FFF] text-white" : "text-clypra-muted pr-0.5"}`}>
                         {dir.replace("-", " ")}
                       </button>
                     ))}
@@ -1204,7 +968,7 @@ export function LegacyControlsPanel({
                   {/* Vanishing Point X */}
                   <div>
                     <div className="flex justify-between mb-0.5">
-                      <label className="text-[8px] uppercase font-mono text-[#666677]">Vanishing Point X</label>
+                      <label className="text-[8px] uppercase font-mono text-clypra-muted">Vanishing Point X</label>
                       <span className="text-[9px] font-mono text-white">{config.bevelVanishingPointX !== undefined ? config.bevelVanishingPointX : 40}%</span>
                     </div>
                     <input type="range" min="-200" max="200" value={config.bevelVanishingPointX !== undefined ? config.bevelVanishingPointX : 40} onChange={(e) => modifyConfig({ bevelVanishingPointX: parseInt(e.target.value) })} className="w-full accent-teal-400 cursor-ew-resize" />
@@ -1213,7 +977,7 @@ export function LegacyControlsPanel({
                   {/* Vanishing Point Y */}
                   <div>
                     <div className="flex justify-between mb-0.5">
-                      <label className="text-[8px] uppercase font-mono text-[#666677]">Vanishing Point Y</label>
+                      <label className="text-[8px] uppercase font-mono text-clypra-muted">Vanishing Point Y</label>
                       <span className="text-[9px] font-mono text-white">{config.bevelVanishingPointY !== undefined ? config.bevelVanishingPointY : 80}%</span>
                     </div>
                     <input type="range" min="-200" max="200" value={config.bevelVanishingPointY !== undefined ? config.bevelVanishingPointY : 80} onChange={(e) => modifyConfig({ bevelVanishingPointY: parseInt(e.target.value) })} className="w-full accent-teal-400 cursor-ew-resize" />
@@ -1222,7 +986,7 @@ export function LegacyControlsPanel({
                   {/* Focal Length */}
                   <div>
                     <div className="flex justify-between mb-0.5">
-                      <label className="text-[8px] uppercase font-mono text-[#666677] font-semibold">Focal Tension (Scale Recess)</label>
+                      <label className="text-[8px] uppercase font-mono text-clypra-muted font-semibold">Focal Tension (Scale Recess)</label>
                       <span className="text-[9px] font-mono text-white">{config.bevelFocalLength !== undefined ? config.bevelFocalLength : 400}px</span>
                     </div>
                     <input type="range" min="100" max="1500" step="20" value={config.bevelFocalLength !== undefined ? config.bevelFocalLength : 400} onChange={(e) => modifyConfig({ bevelFocalLength: parseInt(e.target.value) })} className="w-full accent-teal-400 cursor-ew-resize" />
@@ -1234,7 +998,7 @@ export function LegacyControlsPanel({
               <div className="flex flex-col gap-3 bg-[#0E0E12] border border-[#2A2A38] p-3 rounded-lg">
                 {/* 1. Highlight / Front Face */}
                 <div>
-                  <label className="text-[9px] uppercase font-mono text-[#666677] block mb-0.5" title="The topmost highlight layer of the 3D block">
+                  <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5" title="The topmost highlight layer of the 3D block">
                     Front Face Highlight
                   </label>
                   <div className="flex items-center gap-2">
@@ -1245,7 +1009,7 @@ export function LegacyControlsPanel({
 
                 {/* 2. Core Body Color */}
                 <div>
-                  <label className="text-[9px] uppercase font-mono text-[#666677] block mb-0.5" title="Main body filler color between front and back">
+                  <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5" title="Main body filler color between front and back">
                     Core Extrusion Color
                   </label>
                   <div className="flex items-center gap-2">
@@ -1256,7 +1020,7 @@ export function LegacyControlsPanel({
 
                 {/* 3. Deep Extrusion Anchor Shadow */}
                 <div>
-                  <label className="text-[9px] uppercase font-mono text-[#666677] block mb-0.5" title="The deepest back shadow of the 3D block">
+                  <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5" title="The deepest back shadow of the 3D block">
                     Deep Anchor Shadow (Base)
                   </label>
                   <div className="flex items-center gap-2">
@@ -1272,14 +1036,14 @@ export function LegacyControlsPanel({
                   <div className="grid grid-cols-1 gap-2">
                     <div>
                       <div className="flex justify-between mb-0.5">
-                        <label className="text-[8px] uppercase font-mono text-[#666677]">Edge Width</label>
+                        <label className="text-[8px] uppercase font-mono text-clypra-muted">Edge Width</label>
                         <span className="text-[9px] font-mono text-white">{config.bevelEdgeWidth || 0}px</span>
                       </div>
                       <input type="range" min="0" max="10" step="0.5" value={config.bevelEdgeWidth || 0} onChange={(e) => modifyConfig({ bevelEdgeWidth: parseFloat(e.target.value) })} className="w-full accent-teal-400 cursor-ew-resize" />
                     </div>
 
                     <div>
-                      <label className="text-[8px] uppercase font-mono text-[#666677] block mb-0.5">Edge Color</label>
+                      <label className="text-[8px] uppercase font-mono text-clypra-muted block mb-0.5">Edge Color</label>
                       <div className="flex items-center gap-2">
                         <input type="color" value={(config.bevelEdgeColor || "#1e1e26").startsWith("#") ? config.bevelEdgeColor || "#1e1e26" : "#000000"} onChange={(e) => modifyConfig({ bevelEdgeColor: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
                         <input type="text" value={config.bevelEdgeColor || ""} placeholder="#2A2A38" onChange={(e) => modifyConfig({ bevelEdgeColor: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[10px] text-white font-mono placeholder-gray-700 w-full" />
@@ -1295,14 +1059,14 @@ export function LegacyControlsPanel({
                   <div className="grid grid-cols-1 gap-2">
                     <div>
                       <div className="flex justify-between mb-0.5">
-                        <label className="text-[8px] uppercase font-mono text-[#666677]">Blur Radius</label>
+                        <label className="text-[8px] uppercase font-mono text-clypra-muted">Blur Radius</label>
                         <span className="text-[9px] font-mono text-white">{config.bevelBlur || 0}px</span>
                       </div>
                       <input type="range" min="0" max="30" value={config.bevelBlur || 0} onChange={(e) => modifyConfig({ bevelBlur: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
                     </div>
 
                     <div>
-                      <label className="text-[8px] uppercase font-mono text-[#666677] block mb-0.5">Glow Color</label>
+                      <label className="text-[8px] uppercase font-mono text-clypra-muted block mb-0.5">Glow Color</label>
                       <div className="flex items-center gap-2">
                         <input type="color" value={(config.bevelBlurColor || "#000000").startsWith("#") ? config.bevelBlurColor || "#000000" : "#000000"} onChange={(e) => modifyConfig({ bevelBlurColor: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
                         <input type="text" value={config.bevelBlurColor || ""} placeholder="#000000" onChange={(e) => modifyConfig({ bevelBlurColor: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[10px] text-white font-mono placeholder-gray-700 w-full" />
@@ -1325,13 +1089,13 @@ export function LegacyControlsPanel({
             <Layers size={14} className="text-[#7C6FFF]" />
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">7.5. Multi-Stack Layers</span>
           </div>
-          {collapsedSections.stack ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.stack ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.stack && (
           <div className="p-3.5 flex flex-col gap-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-mono text-[#666677]">Enable Stacking</span>
+              <span className="text-[10px] uppercase font-mono text-clypra-muted">Enable Stacking</span>
               <input type="checkbox" checked={config.stackEnabled || false} onChange={(e) => modifyConfig({ stackEnabled: e.target.checked })} className="accent-[#7C6FFF] w-4 h-4 cursor-pointer" />
             </div>
 
@@ -1340,7 +1104,7 @@ export function LegacyControlsPanel({
                 {/* Stack Count */}
                 <div>
                   <div className="flex justify-between mb-0.5">
-                    <label className="text-[10px] uppercase font-mono text-[#666677]">Stack Count</label>
+                    <label className="text-[10px] uppercase font-mono text-clypra-muted">Stack Count</label>
                     <span className="text-[10px] font-mono text-white">{config.stackCount || 3} layers</span>
                   </div>
                   <input type="range" min="1" max="6" value={config.stackCount || 1} onChange={(e) => modifyConfig({ stackCount: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1350,7 +1114,7 @@ export function LegacyControlsPanel({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <div className="flex justify-between mb-0.5">
-                      <label className="text-[9px] uppercase font-mono text-[#666677]">Offset X</label>
+                      <label className="text-[9px] uppercase font-mono text-clypra-muted">Offset X</label>
                       <span className="text-[9px] font-mono text-white">{config.stackOffsetX === undefined ? 10 : config.stackOffsetX}px</span>
                     </div>
                     <input type="range" min="-80" max="80" value={config.stackOffsetX === undefined ? 10 : config.stackOffsetX} onChange={(e) => modifyConfig({ stackOffsetX: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1358,7 +1122,7 @@ export function LegacyControlsPanel({
 
                   <div>
                     <div className="flex justify-between mb-0.5">
-                      <label className="text-[9px] uppercase font-mono text-[#666677]">Offset Y</label>
+                      <label className="text-[9px] uppercase font-mono text-clypra-muted">Offset Y</label>
                       <span className="text-[9px] font-mono text-white">{config.stackOffsetY === undefined ? -10 : config.stackOffsetY}px</span>
                     </div>
                     <input type="range" min="-80" max="80" value={config.stackOffsetY === undefined ? -10 : config.stackOffsetY} onChange={(e) => modifyConfig({ stackOffsetY: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1368,7 +1132,7 @@ export function LegacyControlsPanel({
                 {/* Opacity Decay */}
                 <div>
                   <div className="flex justify-between mb-0.5">
-                    <label className="text-[10px] uppercase font-mono text-[#666677]">Opacity Decay / Layer</label>
+                    <label className="text-[10px] uppercase font-mono text-clypra-muted">Opacity Decay / Layer</label>
                     <span className="text-[10px] font-mono text-white">{config.stackOpacityDecay === undefined ? 20 : config.stackOpacityDecay}%</span>
                   </div>
                   <input type="range" min="0" max="90" value={config.stackOpacityDecay === undefined ? 20 : config.stackOpacityDecay} onChange={(e) => modifyConfig({ stackOpacityDecay: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1380,7 +1144,7 @@ export function LegacyControlsPanel({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[9px] uppercase font-mono text-[#666677] block mb-0.5">Layer Color 1</label>
+                      <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">Layer Color 1</label>
                       <div className="flex items-center gap-1.5">
                         <input type="color" value={(config.stackColor1 || "#FF7C00").startsWith("#") ? config.stackColor1 || "#FF7C00" : "#000000"} onChange={(e) => modifyConfig({ stackColor1: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
                         <input type="text" value={config.stackColor1 || ""} placeholder="#FF7C00" onChange={(e) => modifyConfig({ stackColor1: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full" />
@@ -1388,7 +1152,7 @@ export function LegacyControlsPanel({
                     </div>
 
                     <div>
-                      <label className="text-[9px] uppercase font-mono text-[#666677] block mb-0.5">Layer Color 2</label>
+                      <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">Layer Color 2</label>
                       <div className="flex items-center gap-1.5">
                         <input type="color" value={(config.stackColor2 || "#00FFDD").startsWith("#") ? config.stackColor2 || "#00FFDD" : "#000000"} onChange={(e) => modifyConfig({ stackColor2: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
                         <input type="text" value={config.stackColor2 || ""} placeholder="#00FFDD" onChange={(e) => modifyConfig({ stackColor2: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full" />
@@ -1396,7 +1160,7 @@ export function LegacyControlsPanel({
                     </div>
 
                     <div>
-                      <label className="text-[9px] uppercase font-mono text-[#666677] block mb-0.5">Layer Color 3</label>
+                      <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">Layer Color 3</label>
                       <div className="flex items-center gap-1.5">
                         <input type="color" value={(config.stackColor3 || "#FF00AA").startsWith("#") ? config.stackColor3 || "#FF00AA" : "#000000"} onChange={(e) => modifyConfig({ stackColor3: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
                         <input type="text" value={config.stackColor3 || ""} placeholder="#FF00AA" onChange={(e) => modifyConfig({ stackColor3: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full" />
@@ -1404,7 +1168,7 @@ export function LegacyControlsPanel({
                     </div>
 
                     <div>
-                      <label className="text-[9px] uppercase font-mono text-[#666677] block mb-0.5">Layer Color 4</label>
+                      <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">Layer Color 4</label>
                       <div className="flex items-center gap-1.5">
                         <input type="color" value={(config.stackColor4 || "#AA00FF").startsWith("#") ? config.stackColor4 || "#AA00FF" : "#000000"} onChange={(e) => modifyConfig({ stackColor4: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
                         <input type="text" value={config.stackColor4 || ""} placeholder="#AA00FF" onChange={(e) => modifyConfig({ stackColor4: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full" />
@@ -1427,13 +1191,13 @@ export function LegacyControlsPanel({
             <Layout size={14} className="text-[#7C6FFF]" />
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">8. Bounding Plate</span>
           </div>
-          {collapsedSections.panel ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.panel ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.panel && (
           <div className="p-3.5 flex flex-col gap-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-mono text-[#666677]">Enable Bounding Plate</span>
+              <span className="text-[10px] uppercase font-mono text-clypra-muted">Enable Bounding Plate</span>
               <input type="checkbox" checked={config.panelEnabled} onChange={(e) => modifyConfig({ panelEnabled: e.target.checked })} className="accent-[#7C6FFF] w-4 h-4 cursor-pointer" />
             </div>
 
@@ -1448,7 +1212,7 @@ export function LegacyControlsPanel({
                 {/* Opacity */}
                 <div>
                   <div className="flex justify-between mb-0.5">
-                    <label className="text-[10px] uppercase font-mono text-[#666677]">Plate Opacity</label>
+                    <label className="text-[10px] uppercase font-mono text-clypra-muted">Plate Opacity</label>
                     <span className="text-[10px] font-mono text-white">{config.panelOpacity}%</span>
                   </div>
                   <input type="range" min="0" max="100" value={config.panelOpacity} onChange={(e) => modifyConfig({ panelOpacity: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1457,7 +1221,7 @@ export function LegacyControlsPanel({
                 {/* Radius */}
                 <div>
                   <div className="flex justify-between mb-0.5">
-                    <label className="text-[10px] uppercase font-mono text-[#666677]">Corner Radius</label>
+                    <label className="text-[10px] uppercase font-mono text-clypra-muted">Corner Radius</label>
                     <span className="text-[10px] font-mono text-white">{config.panelRadius}px</span>
                   </div>
                   <input type="range" min="0" max="60" value={config.panelRadius} onChange={(e) => modifyConfig({ panelRadius: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1467,7 +1231,7 @@ export function LegacyControlsPanel({
                 <div className="grid grid-cols-2 gap-3.5">
                   <div>
                     <div className="flex justify-between mb-0.5">
-                      <span className="text-[10px] uppercase font-mono text-[#666677]">Padding Horiz</span>
+                      <span className="text-[10px] uppercase font-mono text-clypra-muted">Padding Horiz</span>
                       <span className="text-[10px] font-mono text-white">{config.panelPaddingX}px</span>
                     </div>
                     <input type="range" min="0" max="80" value={config.panelPaddingX} onChange={(e) => modifyConfig({ panelPaddingX: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1475,7 +1239,7 @@ export function LegacyControlsPanel({
 
                   <div>
                     <div className="flex justify-between mb-0.5">
-                      <span className="text-[10px] uppercase font-mono text-[#666677]">Padding Vert</span>
+                      <span className="text-[10px] uppercase font-mono text-clypra-muted">Padding Vert</span>
                       <span className="text-[10px] font-mono text-white">{config.panelPaddingY}px</span>
                     </div>
                     <input type="range" min="0" max="40" value={config.panelPaddingY} onChange={(e) => modifyConfig({ panelPaddingY: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize" />
@@ -1485,7 +1249,7 @@ export function LegacyControlsPanel({
                 {/* Plate Stroke outline */}
                 <div className="border-t border-[#2A2A38]/50 pt-3.5 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] uppercase font-mono text-[#666677]">Border stroke outline</span>
+                    <span className="text-[9px] uppercase font-mono text-clypra-muted">Border stroke outline</span>
                     <input type="checkbox" checked={config.panelStrokeEnabled} onChange={(e) => modifyConfig({ panelStrokeEnabled: e.target.checked })} className="accent-[#7C6FFF] w-4 h-4 cursor-pointer" />
                   </div>
 
@@ -1500,7 +1264,7 @@ export function LegacyControlsPanel({
                       {/* width */}
                       <div>
                         <div className="flex justify-between mb-0.5">
-                          <span className="text-[8px] uppercase font-mono text-[#666677]">Border Width</span>
+                          <span className="text-[8px] uppercase font-mono text-clypra-muted">Border Width</span>
                           <span className="text-[9px] font-mono text-white">{config.panelStrokeWidth}px</span>
                         </div>
                         <input type="range" min="1" max="10" value={config.panelStrokeWidth} onChange={(e) => modifyConfig({ panelStrokeWidth: parseInt(e.target.value) })} className="w-full accent-[#7C6FFF] cursor-ew-resize h-1" />
@@ -1523,16 +1287,16 @@ export function LegacyControlsPanel({
             <Monitor size={14} className="text-[#7C6FFF]" />
             <span className="text-xs font-semibold uppercase tracking-wide text-white font-sans">9. Studio Canvas Layout</span>
           </div>
-          {collapsedSections.canvas ? <ChevronDown size={14} className="text-[#666677]" /> : <ChevronUp size={14} className="text-[#666677]" />}
+          {collapsedSections.canvas ? <ChevronDown size={14} className="text-clypra-muted" /> : <ChevronUp size={14} className="text-clypra-muted" />}
         </div>
 
         {!collapsedSections.canvas && (
           <div className="p-3.5 flex flex-col gap-3.5 select-none animate-fade-in">
             <div>
-              <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1.5">Composition size</label>
+              <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1.5">Composition size</label>
               <div className="grid grid-cols-3 gap-1">
                 {COMPOSITION_PRESETS.map((p) => (
-                  <button key={p.id} type="button" title={p.description} onClick={() => applyCompositionPreset(p.id)} className="py-1.5 px-1 text-[9px] font-mono rounded border border-[#2A2A38] bg-[#0E0E12] text-[#666677] hover:text-white hover:border-[#7C6FFF] cursor-pointer transition-all">
+                  <button key={p.id} type="button" title={p.description} onClick={() => applyCompositionPreset(p.id)} className="py-1.5 px-1 text-[9px] font-mono rounded border border-[#2A2A38] bg-[#0E0E12] text-clypra-muted hover:text-white hover:border-[#7C6FFF] cursor-pointer transition-all">
                     {p.label}
                   </button>
                 ))}
@@ -1555,12 +1319,12 @@ export function LegacyControlsPanel({
 
             <div className="grid grid-cols-2 gap-3.5">
               <div>
-                <label className="text-[10px] uppercase font-mono text-[#666677] block mb-0.5">Width px</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-0.5">Width px</label>
                 <input type="number" min="200" max="2400" value={config.canvasWidth} onChange={(e) => modifyConfig({ canvasWidth: Math.max(200, Math.min(2400, parseInt(e.target.value) || 800)) })} className="w-full bg-[#0E0E12] border border-[#2A2A38] rounded-lg p-1.5 p text-xs text-white font-mono text-center focus:outline-none focus:border-[#7C6FFF]" />
               </div>
 
               <div>
-                <label className="text-[10px] uppercase font-mono text-[#666677] block mb-0.5">Height px</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-0.5">Height px</label>
                 <input type="number" min="100" max="1200" value={config.canvasHeight} onChange={(e) => modifyConfig({ canvasHeight: Math.max(100, Math.min(1200, parseInt(e.target.value) || 200)) })} className="w-full bg-[#0E0E12] border border-[#2A2A38] rounded-lg p-1.5 text-xs text-white font-mono text-center focus:outline-none focus:border-[#7C6FFF]" />
               </div>
             </div>
@@ -1568,10 +1332,10 @@ export function LegacyControlsPanel({
             {/* Horizontal and vertical alignment segmented */}
             <div className="flex flex-col gap-2.5">
               <div>
-                <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Horizontal Anchor</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Horizontal Anchor</label>
                 <div className="grid grid-cols-3 gap-0.5 bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg text-center select-none font-semibold">
                   {["left", "center", "right"].map((align) => (
-                    <button key={align} type="button" onClick={() => modifyConfig({ textPosX: align as any })} className={`py-1 text-[9px] uppercase font-mono rounded cursor-pointer transition-all ${config.textPosX === align ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-white"}`}>
+                    <button key={align} type="button" onClick={() => modifyConfig({ textPosX: align as any })} className={`py-1 text-[9px] uppercase font-mono rounded cursor-pointer transition-all ${config.textPosX === align ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-white"}`}>
                       {align}
                     </button>
                   ))}
@@ -1579,10 +1343,10 @@ export function LegacyControlsPanel({
               </div>
 
               <div>
-                <label className="text-[10px] uppercase font-mono text-[#666677] block mb-1">Vertical Anchor</label>
+                <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Vertical Anchor</label>
                 <div className="grid grid-cols-3 gap-0.5 bg-[#0E0E12] border border-[#2A2A38] p-0.5 rounded-lg text-center select-none font-semibold">
                   {["top", "middle", "bottom"].map((align) => (
-                    <button key={align} type="button" onClick={() => modifyConfig({ textPosY: align as any })} className={`py-1 text-[9px] uppercase font-mono rounded cursor-pointer transition-all ${config.textPosY === align ? "bg-[#7C6FFF] text-white" : "text-[#666677] hover:text-white"}`}>
+                    <button key={align} type="button" onClick={() => modifyConfig({ textPosY: align as any })} className={`py-1 text-[9px] uppercase font-mono rounded cursor-pointer transition-all ${config.textPosY === align ? "bg-[#7C6FFF] text-white" : "text-clypra-muted hover:text-white"}`}>
                       {align}
                     </button>
                   ))}
@@ -1593,6 +1357,5 @@ export function LegacyControlsPanel({
         )}
       </div>
     </div>
-
   );
 }
