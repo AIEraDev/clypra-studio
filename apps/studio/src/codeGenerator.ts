@@ -139,6 +139,8 @@ export function getEffectRepresentation(cfg: TextEffectConfig) {
       style: cfg.fontStyle,
       letterSpacing: cfg.letterSpacing,
       lineHeight: cfg.lineHeight,
+      autoFitText: cfg.autoFitText,
+      wrapText: cfg.wrapText,
     },
     fills:
       cfg.fillType === "none"
@@ -151,6 +153,9 @@ export function getEffectRepresentation(cfg: TextEffectConfig) {
                 angle: cfg.fillGradientAngle,
                 stops: cfg.fillGradientStops,
               },
+              patternType: cfg.patternType,
+              perCharFillEnabled: cfg.perCharFillEnabled,
+              charFillColors: cfg.charFillColors,
             },
           ],
     strokes: cfg.strokeEnabled
@@ -161,6 +166,11 @@ export function getEffectRepresentation(cfg: TextEffectConfig) {
             position: cfg.strokePosition,
             opacity: cfg.strokeOpacity,
             lineJoin: cfg.strokeLineJoin,
+            blur: cfg.strokeBlur,
+            type: cfg.strokeType,
+            colorSecondary: cfg.strokeColorSecondary,
+            widthSecondary: cfg.strokeWidthSecondary,
+            fadeRange: cfg.strokeFadeRange,
           },
         ]
       : [],
@@ -182,7 +192,38 @@ export function getEffectRepresentation(cfg: TextEffectConfig) {
         blur: g.blur,
         opacity: g.opacity,
         type: g.type,
+        strength: g.strength,
+        spread: g.spread,
       })),
+    bevel: cfg.bevelEnabled
+      ? {
+          depth: cfg.bevelDepth,
+          highlight: cfg.bevelHighlight,
+          shadow: cfg.bevelShadow,
+          direction: cfg.bevelDirection,
+          coreColor: cfg.bevelCoreColor,
+          edgeColor: cfg.bevelEdgeColor,
+          edgeWidth: cfg.bevelEdgeWidth,
+          blur: cfg.bevelBlur,
+          blurColor: cfg.bevelBlurColor,
+          perspectiveEnabled: cfg.bevelPerspectiveEnabled,
+          vanishingPointX: cfg.bevelVanishingPointX,
+          vanishingPointY: cfg.bevelVanishingPointY,
+          focalLength: cfg.bevelFocalLength,
+        }
+      : null,
+    stack: cfg.stackEnabled
+      ? {
+          count: cfg.stackCount,
+          offsetX: cfg.stackOffsetX,
+          offsetY: cfg.stackOffsetY,
+          opacityDecay: cfg.stackOpacityDecay,
+          color1: cfg.stackColor1,
+          color2: cfg.stackColor2,
+          color3: cfg.stackColor3,
+          color4: cfg.stackColor4,
+        }
+      : null,
     panel: cfg.panelEnabled
       ? {
           color: cfg.panelColor,
@@ -197,6 +238,21 @@ export function getEffectRepresentation(cfg: TextEffectConfig) {
             : null,
         }
       : null,
+    canvas: {
+      width: cfg.canvasWidth,
+      height: cfg.canvasHeight,
+    },
+    customParams: isInk
+      ? {
+          inkColor: cfg.inkColor,
+          bristleDensity: cfg.bristleDensity,
+          bristleSkipRate: cfg.bristleSkipRate,
+          dripRate: cfg.dripRate,
+          dripMaxLength: cfg.dripMaxLength,
+          grainDensity: cfg.grainDensity,
+          skewX: cfg.skewX,
+        }
+      : undefined,
   };
 }
 
@@ -658,6 +714,13 @@ export interface ${configName} {
   strokePosition?: "outside" | "center" | "inside";
   strokeOpacity?: number;
   strokeLineJoin?: "round" | "miter" | "bevel";
+  strokeBlur?: number;
+  strokeType?: "single" | "double" | "neon";
+  strokeColorSecondary?: string;
+  strokeWidthSecondary?: number;
+  strokeFadeRange?: number;
+  perCharFillEnabled?: boolean;
+  charFillColors?: string[];
   shadowEnabled?: boolean;
   shadowColor?: string;
   shadowBlur?: number;
@@ -675,6 +738,10 @@ export interface ${configName} {
   bevelEdgeWidth?: number;
   bevelBlur?: number;
   bevelBlurColor?: string;
+  bevelPerspectiveEnabled?: boolean;
+  bevelVanishingPointX?: number;
+  bevelVanishingPointY?: number;
+  bevelFocalLength?: number;
   
   stackEnabled?: boolean;
   stackCount?: number;
@@ -733,6 +800,13 @@ export class ${engineName} {
       strokePosition: "${cfg.strokePosition}",
       strokeOpacity: ${cfg.strokeOpacity},
       strokeLineJoin: "${cfg.strokeLineJoin}",
+      strokeBlur: ${cfg.strokeBlur || 0},
+      strokeType: "${cfg.strokeType || "single"}",
+      strokeColorSecondary: "${cfg.strokeColorSecondary || "#FFFFFF"}",
+      strokeWidthSecondary: ${cfg.strokeWidthSecondary !== undefined ? cfg.strokeWidthSecondary : 4},
+      strokeFadeRange: ${cfg.strokeFadeRange || 0},
+      perCharFillEnabled: ${!!cfg.perCharFillEnabled},
+      charFillColors: ${cfg.charFillColors ? JSON.stringify(cfg.charFillColors) : "[]"},
       shadowEnabled: ${cfg.shadowEnabled},
       shadowColor: "${cfg.shadowColor}",
       shadowBlur: ${cfg.shadowBlur},
@@ -750,6 +824,10 @@ export class ${engineName} {
       bevelEdgeWidth: ${cfg.bevelEdgeWidth || 0},
       bevelBlur: ${cfg.bevelBlur || 0},
       bevelBlurColor: "${cfg.bevelBlurColor || "#000000"}",
+      bevelPerspectiveEnabled: ${!!cfg.bevelPerspectiveEnabled},
+      bevelVanishingPointX: ${cfg.bevelVanishingPointX !== undefined ? cfg.bevelVanishingPointX : 40},
+      bevelVanishingPointY: ${cfg.bevelVanishingPointY !== undefined ? cfg.bevelVanishingPointY : 80},
+      bevelFocalLength: ${cfg.bevelFocalLength !== undefined ? cfg.bevelFocalLength : 400},
       stackEnabled: ${cfg.stackEnabled || false},
       stackCount: ${cfg.stackCount || 3},
       stackOffsetX: ${cfg.stackOffsetX || 10},
@@ -814,6 +892,13 @@ export class ${engineName} {
       strokePosition,
       strokeOpacity,
       strokeLineJoin,
+      strokeBlur,
+      strokeType,
+      strokeColorSecondary,
+      strokeWidthSecondary,
+      strokeFadeRange,
+      perCharFillEnabled,
+      charFillColors,
       shadowEnabled,
       shadowColor,
       shadowBlur,
@@ -831,6 +916,10 @@ export class ${engineName} {
       bevelEdgeWidth,
       bevelBlur,
       bevelBlurColor,
+      bevelPerspectiveEnabled,
+      bevelVanishingPointX,
+      bevelVanishingPointY,
+      bevelFocalLength,
       stackEnabled,
       stackCount,
       stackOffsetX,
@@ -909,6 +998,125 @@ export class ${engineName} {
     const yMin = startY - fontSize * 0.8;
     const yMax = yMin + textBlockHeight;
 
+    // Helper to parse hex colors to RGB
+    function hexToRgb(hex: string) {
+      const shorthandRegex = /^#?([a-f\\d])([a-f\\d])([a-f\\d])$/i;
+      const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+      const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(fullHex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 255, g: 255, b: 255 };
+    }
+
+    const usePerCharFill = perCharFillEnabled && fillType === "solid" && (charFillColors?.length ?? 0) > 0;
+
+    const drawPerCharText = (
+      mode: "fill" | "stroke",
+      offsetX = 0,
+      offsetY = 0
+    ) => {
+      ctx.save();
+      const prevSpacing = (ctx as any).letterSpacing;
+      (ctx as any).letterSpacing = "0px";
+      ctx.textBaseline = "alphabetic";
+
+      let glyphIndex = 0;
+
+      lines.forEach((line, lineIndex) => {
+        const py = startY + lineIndex * fontSize * lineHeight;
+        let lineWidth = 0;
+        for (let i = 0; i < line.length; i++) {
+          lineWidth += ctx.measureText(line[i]).width;
+          if (i < line.length - 1) lineWidth += letterSpacing;
+        }
+
+        let x = startX;
+        if (align === "center") x = startX - lineWidth / 2;
+        else if (align === "right") x = startX - lineWidth;
+
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch !== "\\n") {
+            const color = charFillColors[glyphIndex] || fillColor;
+            if (mode === "fill") ctx.fillStyle = color;
+            else ctx.strokeStyle = color;
+
+            const drawX = x + offsetX;
+            const drawY = py + offsetY;
+            if (mode === "fill") ctx.fillText(ch, drawX, drawY);
+            else ctx.strokeText(ch, drawX, drawY);
+
+            x += ctx.measureText(ch).width + letterSpacing;
+            glyphIndex++;
+          }
+        }
+      });
+
+      (ctx as any).letterSpacing = prevSpacing || "0px";
+      ctx.restore();
+    };
+
+    const applyStroke = () => {
+      ctx.save();
+
+      const sType = strokeType || "single";
+      const sBlur = strokeBlur || 0;
+      const sColorSecondary = strokeColorSecondary || "#FFFFFF";
+      const sWidthSecondary = strokeWidthSecondary !== undefined ? strokeWidthSecondary : 4;
+      const sFadeRange = strokeFadeRange || 0;
+
+      ctx.lineJoin = strokeLineJoin || "round";
+
+      let customStrokeStyle: string | CanvasGradient = strokeColor;
+      if (sFadeRange > 0) {
+        const grad = ctx.createLinearGradient(0, yMin, 0, yMax);
+        const rgb = hexToRgb(strokeColor);
+        grad.addColorStop(0, "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + (strokeOpacity / 100) + ")");
+        const fadeLimit = Math.min(1.0, sFadeRange / 100);
+        grad.addColorStop(fadeLimit, "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", 0)");
+        grad.addColorStop(1.0, "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", 0)");
+        customStrokeStyle = grad;
+      }
+
+      const drawStrokeLayer = (color: string | CanvasGradient, width: number, blurAmount: number, opacity: number, position: string) => {
+        ctx.save();
+        ctx.globalAlpha = opacity / 100;
+        ctx.strokeStyle = color;
+
+        if (blurAmount > 0) {
+          ctx.filter = "blur(" + blurAmount + "px)";
+        }
+
+        if (position === "outside") {
+          ctx.lineWidth = width * 2;
+          renderLines("stroke");
+        } else if (position === "center") {
+          ctx.lineWidth = width;
+          renderLines("stroke");
+        } else if (position === "inside") {
+          ctx.globalCompositeOperation = "source-atop";
+          ctx.lineWidth = width * 2;
+          renderLines("stroke");
+        }
+        ctx.restore();
+      };
+
+      if (sType === "double") {
+        const outerWidth = strokeWidth + sWidthSecondary;
+        drawStrokeLayer(sColorSecondary, outerWidth, sBlur, strokeOpacity, strokePosition);
+        drawStrokeLayer(customStrokeStyle, strokeWidth, 0, strokeOpacity, strokePosition);
+      } else if (sType === "neon") {
+        drawStrokeLayer(strokeColor, strokeWidth * 1.8, sBlur || 8, strokeOpacity * 0.7, strokePosition);
+        drawStrokeLayer("#FFFFFF", strokeWidth * 0.5, 0, 95, strokePosition);
+      } else {
+        drawStrokeLayer(customStrokeStyle, strokeWidth, sBlur, strokeOpacity, strokePosition);
+      }
+
+      ctx.restore();
+    };
+
     // Internal line drawer
     const renderLines = (
       mode: "fill" | "stroke",
@@ -916,6 +1124,11 @@ export class ${engineName} {
       offsetX = 0,
       offsetY = 0
     ) => {
+      if (usePerCharFill && mode === "fill" && !overrideStyle) {
+        drawPerCharText("fill", offsetX, offsetY);
+        return;
+      }
+
       const savedLetterSpacing = (ctx as any).letterSpacing || "normal";
       if (letterSpacing !== 0) {
         (ctx as any).letterSpacing = letterSpacing + "px";
@@ -1081,34 +1294,121 @@ export class ${engineName} {
         const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
         if (eased <= 0.5) {
           const u = eased * 2;
-          return \`rgb(\${Math.round(_shadowRgb.r + (_coreRgb.r - _shadowRgb.r) * u)},\${Math.round(_shadowRgb.g + (_coreRgb.g - _shadowRgb.g) * u)},\${Math.round(_shadowRgb.b + (_coreRgb.b - _shadowRgb.b) * u)})\`;
+          return "rgb(" + Math.round(_shadowRgb.r + (_coreRgb.r - _shadowRgb.r) * u) + "," + Math.round(_shadowRgb.g + (_coreRgb.g - _shadowRgb.g) * u) + "," + Math.round(_shadowRgb.b + (_coreRgb.b - _shadowRgb.b) * u) + ")";
         }
         const u = (eased - 0.5) * 2;
-        return \`rgb(\${Math.round(_coreRgb.r + (_highlightRgb.r - _coreRgb.r) * u)},\${Math.round(_coreRgb.g + (_highlightRgb.g - _coreRgb.g) * u)},\${Math.round(_coreRgb.b + (_highlightRgb.b - _coreRgb.b) * u)})\`;
+        return "rgb(" + Math.round(_coreRgb.r + (_highlightRgb.r - _coreRgb.r) * u) + "," + Math.round(_coreRgb.g + (_highlightRgb.g - _coreRgb.g) * u) + "," + Math.round(_coreRgb.b + (_highlightRgb.b - _coreRgb.b) * u) + ")";
       };
-      ctx.save();
-      for (let i = bevelDepth; i > 0; i--) {
-        let dx = 0, dy = 0;
-        if (bevelDirection === "bottom-right") { dx = i; dy = i; }
-        else if (bevelDirection === "bottom") { dy = i; }
-        else if (bevelDirection === "right")  { dx = i; }
-        const t = 1 - (i - 1) / Math.max(1, bevelDepth - 1);
-        const aoFactor = 0.25 + 0.75 * (1 - ((i - 1) / Math.max(1, bevelDepth - 1)) * 0.8);
-        const base = _shadeForDepth(t);
-        const m = base.match(/rgb\((\d+),(\d+),(\d+)\)/);
-        const br = m ? +m[1] : 0, bg = m ? +m[2] : 0, bb = m ? +m[3] : 0;
-        const shaded = \`rgb(\${Math.round(br * aoFactor)},\${Math.round(bg * aoFactor)},\${Math.round(bb * aoFactor)})\`;
-        renderLines("fill", shaded, dx, dy);
+
+      if (bevelPerspectiveEnabled) {
+        const vpx = width / 2 + ((bevelVanishingPointX !== undefined ? bevelVanishingPointX : 40) / 100) * (width / 2);
+        const vpy = height / 2 + ((bevelVanishingPointY !== undefined ? bevelVanishingPointY : 80) / 100) * (height / 2);
+        const fl = Math.max(100, bevelFocalLength !== undefined ? bevelFocalLength : 400);
+
+        if (bevelBlur && bevelBlur > 0) {
+          ctx.save();
+          ctx.filter = "blur(" + bevelBlur + "px)";
+          const blurColor = bevelBlurColor || bevelShadow || "#000000";
+          for (let i = bevelDepth; i > 0; i -= Math.max(1, Math.floor(bevelDepth / 4))) {
+            const scale = fl / (fl + i);
+            ctx.save();
+            ctx.translate(vpx, vpy);
+            ctx.scale(scale, scale);
+            ctx.translate(-vpx, -vpy);
+            renderLines("fill", blurColor);
+            ctx.restore();
+          }
+          ctx.restore();
+        }
+
+        ctx.save();
+        for (let i = bevelDepth; i > 0; i--) {
+          const t = 1 - (i - 1) / Math.max(1, bevelDepth - 1);
+          const aoFactor = 0.35 + 0.65 * (1 - (i - 1) / Math.max(1, bevelDepth));
+          const baseColor = _shadeForDepth(t);
+          const bRgb = hexToRgb(baseColor.startsWith("#") ? baseColor : "#000000");
+          const baseRgbParsed = (() => {
+            const m = baseColor.match(/rgb\((\d+),(\d+),(\d+)\)/);
+            return m ? { r: +m[1], g: +m[2], b: +m[3] } : bRgb;
+          })();
+          const aoColor = "rgb(" + Math.round(baseRgbParsed.r * aoFactor) + "," + Math.round(baseRgbParsed.g * aoFactor) + "," + Math.round(baseRgbParsed.b * aoFactor) + ")";
+
+          const scale = fl / (fl + i);
+          ctx.save();
+          ctx.translate(vpx, vpy);
+          ctx.scale(scale, scale);
+          ctx.translate(-vpx, -vpy);
+          renderLines("fill", aoColor);
+
+          if (bevelEdgeWidth && bevelEdgeWidth > 0) {
+            ctx.save();
+            ctx.strokeStyle = bevelEdgeColor || "#000000";
+            ctx.lineWidth = bevelEdgeWidth;
+            ctx.lineJoin = strokeLineJoin || "round";
+            renderLines("stroke");
+            ctx.restore();
+          }
+          ctx.restore();
+        }
+        ctx.restore();
+
+        if (bevelEdgeWidth && bevelEdgeWidth > 0) {
+          ctx.save();
+          ctx.globalAlpha = 0.6;
+          ctx.strokeStyle = bevelHighlight;
+          ctx.lineWidth = Math.max(0.5, (bevelEdgeWidth || 1) * 0.5);
+          ctx.lineJoin = strokeLineJoin || "round";
+          renderLines("stroke");
+          ctx.restore();
+        }
+      } else {
+        if (bevelBlur && bevelBlur > 0) {
+          ctx.save();
+          ctx.filter = "blur(" + bevelBlur + "px)";
+          const blurColor = bevelBlurColor || bevelShadow || "#000000";
+          for (let i = bevelDepth; i > 0; i -= Math.max(1, Math.floor(bevelDepth / 4))) {
+            let dx = 0, dy = 0;
+            if (bevelDirection === "bottom-right") { dx = i; dy = i; }
+            else if (bevelDirection === "bottom") { dy = i; }
+            else if (bevelDirection === "right")  { dx = i; }
+            renderLines("fill", blurColor, dx, dy);
+          }
+          ctx.restore();
+        }
+
+        ctx.save();
+        for (let i = bevelDepth; i > 0; i--) {
+          let dx = 0, dy = 0;
+          if (bevelDirection === "bottom-right") { dx = i; dy = i; }
+          else if (bevelDirection === "bottom") { dy = i; }
+          else if (bevelDirection === "right")  { dx = i; }
+          const t = 1 - (i - 1) / Math.max(1, bevelDepth - 1);
+          const aoFactor = 0.25 + 0.75 * (1 - ((i - 1) / Math.max(1, bevelDepth - 1)) * 0.8);
+          const base = _shadeForDepth(t);
+          const m = base.match(/rgb\((\d+),(\d+),(\d+)\)/);
+          const br = m ? +m[1] : 0, bg = m ? +m[2] : 0, bb = m ? +m[3] : 0;
+          const shaded = "rgb(" + Math.round(br * aoFactor) + "," + Math.round(bg * aoFactor) + "," + Math.round(bb * aoFactor) + ")";
+          renderLines("fill", shaded, dx, dy);
+
+          if (bevelEdgeWidth && bevelEdgeWidth > 0) {
+            ctx.save();
+            ctx.strokeStyle = bevelEdgeColor || "#000000";
+            ctx.lineWidth = bevelEdgeWidth;
+            ctx.lineJoin = strokeLineJoin || "round";
+            renderLines("stroke", undefined, dx, dy);
+            ctx.restore();
+          }
+        }
+        ctx.restore();
+        // Specular rim highlight
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = bevelHighlight;
+        ctx.lineWidth = Math.max(0.5, (bevelEdgeWidth || 1.5));
+        ctx.lineJoin = "round";
+        renderLines("stroke", bevelHighlight, 0, 0);
+        ctx.restore();
       }
-      ctx.restore();
-      // Specular rim highlight
-      ctx.save();
-      ctx.globalAlpha = 0.5;
-      ctx.strokeStyle = bevelHighlight;
-      ctx.lineWidth = Math.max(0.5, (bevelEdgeWidth || 1.5));
-      ctx.lineJoin = "round";
-      renderLines("stroke", bevelHighlight, 0, 0);
-      ctx.restore();
     }
 
     // 5.5. Text Multi-Stack Layers
@@ -1150,12 +1450,7 @@ export class ${engineName} {
 
     // 6. Stroke Center or Outside
     if (strokeEnabled && strokeWidth > 0 && strokePosition !== "inside") {
-      ctx.save();
-      ctx.globalAlpha = strokeOpacity / 100;
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = strokePosition === "outside" ? strokeWidth * 2 : strokeWidth;
-      renderLines("stroke");
-      ctx.restore();
+      applyStroke();
     }
 
     // 7. Base Fill Setup (Solid, gradients or textures)
@@ -1648,13 +1943,7 @@ export class ${engineName} {
 
     // Inside stroke clipping composition fallback
     if (strokeEnabled && strokeWidth > 0 && strokePosition === "inside") {
-      ctx.save();
-      ctx.globalCompositeOperation = "source-atop";
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = strokeWidth * 2;
-      ctx.globalAlpha = strokeOpacity / 100;
-      renderLines("stroke");
-      ctx.restore();
+      applyStroke();
     }
 
     // 8. Glow and Shadow overlays on top (using source-atop composition)
