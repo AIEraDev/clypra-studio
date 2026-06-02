@@ -116,7 +116,7 @@ export function PreviewCanvas({ canvasRef, config, bgMode, zoom, zoomMode, onZoo
         >
           <div
             id="preview-canvas-card"
-            className={`rounded-lg border border-[#2A2A38] shadow-2xl relative shrink-0 ${bgMode === "checkerboard" ? "checkerboard" : "bg-black"}`}
+            className={`rounded-lg border border-[#2A2A38] shadow-2xl relative shrink-0 overflow-hidden ${bgMode === "checkerboard" ? "checkerboard" : "bg-black"}`}
             style={{
               width: config.canvasWidth,
               height: config.canvasHeight,

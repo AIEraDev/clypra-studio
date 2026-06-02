@@ -30,6 +30,13 @@ export function useStudioWorkspaceState() {
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<StudioPanelTab>("engine");
 
+  // On mount: if ?q= is missing, write the default into the URL without a history entry
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).get("q")) {
+      window.history.replaceState({ q: "templates" }, "", buildQueryUrl("templates"));
+    }
+  }, []);
+
   // Sync state when user navigates back/forward
   useEffect(() => {
     const handlePopState = () => {
