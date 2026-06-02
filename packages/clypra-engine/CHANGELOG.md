@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/AIEraDev/clypra-studio/compare/v1.0.0...v1.0.1) (2026-06-02)
+
+
+### Bug Fixes
+
+* **deploy:** add root vercel.json with correct outputDirectory for monorepo ([c2b5db6](https://github.com/AIEraDev/clypra-studio/commit/c2b5db6ea0186083ed6148fa4763e7f5694c1020))
+* **engine:** expose all missing exports — lottieEditor, lottieParser, InkBrushEngine ([ad8b1d6](https://github.com/AIEraDev/clypra-studio/commit/ad8b1d6071a94b7ff42217f7602e5c492b173ead))
+
 # 1.0.0 (2026-06-02)
 
 
