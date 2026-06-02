@@ -5,11 +5,12 @@ on:
     branches:
       - main
     paths:
-      # Only trigger when engine source or config actually changes
+      # Only trigger when engine source, config, or docs actually change
       - "packages/clypra-engine/src/**"
       - "packages/clypra-engine/package.json"
       - "packages/clypra-engine/tsup.config.ts"
       - "packages/clypra-engine/tsconfig.json"
+      - "packages/clypra-engine/README.md"
   workflow_dispatch: # Allow manual trigger from GitHub UI
 
 jobs:
