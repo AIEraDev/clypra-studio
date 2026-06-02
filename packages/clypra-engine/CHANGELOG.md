@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/AIEraDev/clypra-studio/compare/v1.0.1...v1.0.2) (2026-06-02)
+
+
+### Bug Fixes
+
+* **engine:** trigger publish after npm 2FA set to authorization-only ([bf3a148](https://github.com/AIEraDev/clypra-studio/commit/bf3a1484c87fa8a9a4f56e2e49bef8a261648441))
+
 ## [1.0.1](https://github.com/AIEraDev/clypra-studio/compare/v1.0.0...v1.0.1) (2026-06-02)
 
 
