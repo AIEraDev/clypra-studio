@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/AIEraDev/clypra-studio/compare/v1.1.0...v1.1.1) (2026-06-03)
+
+
+### Bug Fixes
+
+* **engine:** 6 concrete bugs across platform, fontLoader, evaluate, textLayout, renderer ([7c13478](https://github.com/AIEraDev/clypra-studio/commit/7c13478bfe158c8698e90a94715f9cec594285df)), closes [#000000](https://github.com/AIEraDev/clypra-studio/issues/000000)
+
 # [1.1.0](https://github.com/AIEraDev/clypra-studio/compare/v1.0.2...v1.1.0) (2026-06-03)
 
 
