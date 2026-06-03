@@ -1,4 +1,4 @@
-import type { TextEffectConfig, GlowLayer } from "../types";
+import type { TextEffectConfig, GlowLayer, TextEffectDefinition, EvaluatedTextLayer } from "../types";
 import { defaultConfig } from "../presets";
 import { type SceneDocument, type EffectLayer, type CustomEngineId, newLayerId, LEGACY_RENDERER_MAP, ENGINE_ID_TO_LEGACY } from "./schema";
 import { ensureDefaultTimeline } from "./timelineDefaults";
@@ -359,3 +359,253 @@ export function mergeSceneIntoConfig(doc: SceneDocument, base: TextEffectConfig)
   const out = sceneToConfig({ ...doc, legacyConfig: base });
   return out;
 }
+
+export function resolveFontFamilyName(fontFamily: string): string {
+  const f = fontFamily?.toLowerCase() || "";
+
+  // Google Web Fonts (Variable)
+  if (f.includes("inter")) return "Inter Variable";
+  if (f.includes("montserrat")) return "Montserrat Variable";
+  if (f.includes("geist")) return "Geist Variable";
+  if (f.includes("space grotesk") || f.includes("grotesk")) return "Space Grotesk Variable";
+  if (f.includes("outfit")) return "Outfit Variable";
+  if (f.includes("roboto variable")) return "Roboto Variable";
+  if (f.includes("roboto condensed")) return "Roboto Condensed";
+  if (f === "roboto") return "Roboto Variable";
+  if (f.includes("open sans")) return "Open Sans Variable";
+  if (f.includes("raleway")) return "Raleway Variable";
+  if (f.includes("oswald")) return "Oswald Variable";
+  if (f.includes("playfair display")) return "Playfair Display Variable";
+  if (f.includes("nunito")) return "Nunito Variable";
+  if (f.includes("dancing script")) return "Dancing Script Variable";
+
+  // Google Web Fonts (Static)
+  if (f === "lato") return "Lato";
+  if (f === "anton") return "Anton";
+  if (f === "bebas neue") return "Bebas Neue";
+  if (f === "poppins") return "Poppins";
+  if (f === "permanent marker") return "Permanent Marker";
+  if (f === "bangers") return "Bangers";
+  if (f === "press start 2p") return "Press Start 2P";
+  if (f === "pacifico") return "Pacifico";
+
+  // System / unknown fonts
+  return fontFamily;
+}
+
+export function _buildConfig(
+  effect: TextEffectDefinition,
+  text: string,
+  fontSize: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  time?: number,
+  clipStartTime?: number,
+  clipDuration?: number
+): TextEffectConfig & { width: number; height: number } {
+  const fill = effect.fills?.[0];
+  const stroke = effect.strokes?.[0];
+  const shadow = effect.shadows?.[0];
+  const bevel = effect.bevel;
+  const panel = effect.panel;
+
+  // Font size ratio for proportional scaling (based on 100px studio reference)
+  const ratio = fontSize / 100;
+
+  // Build base standard configuration
+  const config: any = {
+    // Canvas / text
+    width: canvasWidth,
+    height: canvasHeight,
+    canvasWidth,
+    canvasHeight,
+    text,
+    time: time ?? 0,
+    clipStartTime: clipStartTime ?? 0,
+    clipDuration: clipDuration ?? 5.0,
+
+    // Font
+    fontFamily: resolveFontFamilyName(effect.font.family),
+    fontWeight: effect.font.weight,
+    fontStyle: effect.font.style,
+    fontSize,
+    letterSpacing: effect.font.letterSpacing,
+    lineHeight: effect.font.lineHeight,
+  };
+
+  if (effect.animation) {
+    config.animation = effect.animation;
+  }
+
+  // Fill
+  if (fill) {
+    if (fill.type !== undefined) config.fillType = fill.type;
+    if (fill.color !== undefined) config.fillColor = fill.color;
+    if (fill.gradient?.angle !== undefined) config.fillGradientAngle = fill.gradient.angle;
+    if (fill.gradient?.stops !== undefined) config.fillGradientStops = fill.gradient.stops;
+    if (fill.patternType !== undefined) config.patternType = fill.patternType;
+    if (fill.perCharFillEnabled !== undefined) config.perCharFillEnabled = fill.perCharFillEnabled;
+    if (fill.charFillColors !== undefined) config.charFillColors = fill.charFillColors;
+  } else {
+    config.fillType = "none";
+  }
+
+  // Stroke
+  config.strokeEnabled = !!stroke;
+  if (stroke) {
+    if (stroke.color !== undefined) config.strokeColor = stroke.color;
+    if (stroke.width !== undefined) config.strokeWidth = stroke.width * ratio;
+    if (stroke.position !== undefined) config.strokePosition = stroke.position;
+    if (stroke.opacity !== undefined) config.strokeOpacity = stroke.opacity;
+    if (stroke.lineJoin !== undefined) config.strokeLineJoin = stroke.lineJoin;
+    if (stroke.blur !== undefined) config.strokeBlur = stroke.blur * ratio;
+    if (stroke.type !== undefined) config.strokeType = stroke.type;
+    if (stroke.colorSecondary !== undefined) config.strokeColorSecondary = stroke.colorSecondary;
+    if (stroke.widthSecondary !== undefined) config.strokeWidthSecondary = stroke.widthSecondary * ratio;
+    if (stroke.fadeRange !== undefined) config.strokeFadeRange = stroke.fadeRange;
+  }
+
+  // Drop / inner shadow
+  config.shadowEnabled = !!shadow;
+  if (shadow) {
+    if (shadow.color !== undefined) config.shadowColor = shadow.color;
+    if (shadow.blur !== undefined) config.shadowBlur = shadow.blur * ratio;
+    if (shadow.offsetX !== undefined) config.shadowOffsetX = shadow.offsetX * ratio;
+    if (shadow.offsetY !== undefined) config.shadowOffsetY = shadow.offsetY * ratio;
+    if (shadow.opacity !== undefined) config.shadowOpacity = shadow.opacity;
+    if (shadow.type !== undefined) config.shadowType = shadow.type;
+  }
+
+  // Bevel
+  config.bevelEnabled = !!bevel;
+  if (bevel) {
+    if (bevel.depth !== undefined) config.bevelDepth = Math.round(bevel.depth * ratio);
+    if (bevel.highlightColor !== undefined) config.bevelHighlight = bevel.highlightColor;
+    if (bevel.shadowColor !== undefined) config.bevelShadow = bevel.shadowColor;
+    if (bevel.direction !== undefined) config.bevelDirection = bevel.direction;
+    if (bevel.coreColor !== undefined) config.bevelCoreColor = bevel.coreColor;
+    if (bevel.edgeColor !== undefined) config.bevelEdgeColor = bevel.edgeColor;
+    if (bevel.edgeWidth !== undefined) config.bevelEdgeWidth = bevel.edgeWidth * ratio;
+    if (bevel.blur !== undefined) config.bevelBlur = bevel.blur * ratio;
+    if (bevel.blurColor !== undefined) config.bevelBlurColor = bevel.blurColor;
+    if (bevel.perspectiveEnabled !== undefined) config.bevelPerspectiveEnabled = bevel.perspectiveEnabled;
+    if (bevel.vanishingPointX !== undefined) config.bevelVanishingPointX = bevel.vanishingPointX;
+    if (bevel.vanishingPointY !== undefined) config.bevelVanishingPointY = bevel.vanishingPointY;
+    if (bevel.focalLength !== undefined) config.bevelFocalLength = bevel.focalLength;
+  }
+
+  // Duplicate Stack
+  if (effect.stack) {
+    config.stackEnabled = !!effect.stack.count;
+    if (effect.stack.count !== undefined) config.stackCount = effect.stack.count;
+    if (effect.stack.offsetX !== undefined) config.stackOffsetX = effect.stack.offsetX * ratio;
+    if (effect.stack.offsetY !== undefined) config.stackOffsetY = effect.stack.offsetY * ratio;
+    if (effect.stack.opacityDecay !== undefined) config.stackOpacityDecay = effect.stack.opacityDecay;
+    if (effect.stack.color1 !== undefined) config.stackColor1 = effect.stack.color1;
+    if (effect.stack.color2 !== undefined) config.stackColor2 = effect.stack.color2;
+    if (effect.stack.color3 !== undefined) config.stackColor3 = effect.stack.color3;
+    if (effect.stack.color4 !== undefined) config.stackColor4 = effect.stack.color4;
+  }
+
+  // Panel / background
+  config.panelEnabled = !!panel;
+  if (panel) {
+    if (panel.color !== undefined) config.panelColor = panel.color;
+    if (panel.opacity !== undefined) config.panelOpacity = panel.opacity;
+    if (panel.radius !== undefined) config.panelRadius = panel.radius;
+    if (panel.paddingX !== undefined) config.panelPaddingX = panel.paddingX * ratio;
+    if (panel.paddingY !== undefined) config.panelPaddingY = panel.paddingY * ratio;
+    if (panel.stroke !== undefined) {
+      config.panelStrokeEnabled = !!panel.stroke;
+      if (panel.stroke.color !== undefined) config.panelStrokeColor = panel.stroke.color;
+      if (panel.stroke.width !== undefined) config.panelStrokeWidth = panel.stroke.width * ratio;
+    }
+  }
+
+  // Glow layers
+  if (effect.glows) {
+    config.glowLayers = effect.glows.map((g: any) => {
+      const mappedGlow: any = {
+        enabled: true,
+        color: g.color,
+        blur: typeof g.blur === "number" ? g.blur * ratio : (g.blur ?? 0),
+        opacity: g.opacity,
+        type: (g.type ?? "outer") as "inner" | "outer",
+      };
+      if (g.strength !== undefined) mappedGlow.strength = g.strength;
+      if (g.spread !== undefined) mappedGlow.spread = (g.spread as number) * ratio;
+      return mappedGlow;
+    });
+  }
+
+  // Auto-forward unrecognised keys
+  const standardKeys = new Set([
+    "id",
+    "name",
+    "category",
+    "description",
+    "tags",
+    "font",
+    "fills",
+    "strokes",
+    "shadows",
+    "glows",
+    "bevel",
+    "panel",
+    "text",
+    "animation",
+    "stack",
+  ]);
+  for (const key of Object.keys(effect)) {
+    if (!standardKeys.has(key)) {
+      config[key] = (effect as any)[key];
+    }
+  }
+
+  return config;
+}
+
+export function layerToTextEffectConfig(layer: EvaluatedTextLayer): TextEffectConfig & { width: number; height: number } {
+  const normWeight = typeof layer.fontWeight === "number" ? layer.fontWeight : layer.fontWeight === "bold" ? 700 : 400;
+  
+  const config = {
+    ...defaultConfig,
+    width: layer.width,
+    height: layer.height,
+    canvasWidth: layer.width,
+    canvasHeight: layer.height,
+    text: layer.text,
+    fontFamily: resolveFontFamilyName(layer.fontFamily),
+    fontWeight: normWeight,
+    fontStyle: layer.fontStyle || "normal",
+    fontSize: layer.fontSize,
+    letterSpacing: layer.letterSpacing ?? 0,
+    lineHeight: layer.lineHeight ?? 1.2,
+    fillType: layer.color ? "solid" : "none",
+    fillColor: layer.color ?? "#FFFFFF",
+    strokeEnabled: !!layer.stroke,
+    strokeColor: layer.stroke?.color ?? "#000000",
+    strokeWidth: layer.stroke?.width ?? 0,
+    strokePosition: "center",
+    strokeOpacity: 100,
+    strokeLineJoin: "round",
+    shadowEnabled: !!layer.shadow,
+    shadowColor: layer.shadow?.color ?? "#000000",
+    shadowBlur: layer.shadow?.blur ?? 0,
+    shadowOffsetX: layer.shadow?.offsetX ?? 0,
+    shadowOffsetY: layer.shadow?.offsetY ?? 0,
+    shadowOpacity: 100,
+    shadowType: "drop",
+    panelEnabled: !!layer.background,
+    panelColor: layer.background?.color ?? "#1E1E26",
+    panelOpacity: 80,
+    panelRadius: layer.background?.borderRadius ?? 6,
+    panelPaddingX: layer.background?.padding ?? 12,
+    panelPaddingY: layer.background?.padding ?? 12,
+    textPosX: layer.textAlign || "center",
+    textPosY: layer.verticalAlign === "middle" ? "middle" : (layer.verticalAlign || "middle"),
+  } as any;
+
+  return config;
+}
+

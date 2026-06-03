@@ -193,3 +193,53 @@ export function _resetPlatformCache(): void {
   _offscreenCanvas = null;
   _webgl2 = null;
 }
+
+/**
+ * Unified resource allocator and manager for OffscreenCanvas and DOM Canvas pools.
+ * Prevents GC thrashing and backing store leaks across WKWebView and standard browsers.
+ */
+export class CanvasDevice {
+  private static canvases: (HTMLCanvasElement | OffscreenCanvas)[] = [];
+  private static maxPoolSize = 10;
+
+  /**
+   * Acquire a Canvas context from the pool or create a new one.
+   * If a canvas is pulled from the pool, it is resized to the target dimensions.
+   */
+  static acquire(width: number, height: number): HTMLCanvasElement | OffscreenCanvas {
+    let canvas: HTMLCanvasElement | OffscreenCanvas;
+    if (this.canvases.length > 0) {
+      canvas = this.canvases.pop()!;
+      // Only resize if necessary
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+    } else {
+      canvas = createCanvas(width, height);
+    }
+    return canvas;
+  }
+
+  /**
+   * Release a canvas back to the pool, or free its resources immediately if pool is full.
+   */
+  static release(canvas: HTMLCanvasElement | OffscreenCanvas): void {
+    if (this.canvases.length < this.maxPoolSize) {
+      this.canvases.push(canvas);
+    } else {
+      releaseCanvas(canvas);
+    }
+  }
+
+  /**
+   * Disposes all pooled canvases to release GPU/memory backing stores.
+   */
+  static clearPool(): void {
+    while (this.canvases.length > 0) {
+      const c = this.canvases.pop()!;
+      releaseCanvas(c);
+    }
+  }
+}
+

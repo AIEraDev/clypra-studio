@@ -133,3 +133,101 @@ export interface Preset {
   category?: "3d" | "Neon" | "Metallic" | "Glitch" | "Retro" | "Gradient" | "Grunge" | "Outline" | "Shadow" | "Elements" | "Luxury" | "Classic" | "Experimental" | string;
   createdAt?: number;
 }
+
+export interface EffectIndexItem {
+  id:           string;
+  name:         string;
+  category:     string;
+  description?: string;
+  tags?:        string[];
+  isPremium?:   boolean;
+
+  // Preview format
+  previewType?: 'static' | 'video' | 'lottie';
+  thumbnailUrl?: string;      // always present from API manifests
+  thumbnail?:    string;      // legacy/static data compatibility
+  previewUrl?:  string;       // WebM (video) or JSON (lottie) — animated only
+  durationMs?:  number;       // loop length hint for progress ring, templates only
+}
+
+export interface EffectFullDefinition extends EffectIndexItem {
+  version?:     string;
+  description:  string;
+  tags:         string[];
+  font: {
+    family: string;
+    weight: number;
+    style: "normal" | "italic";
+    letterSpacing: number;
+    lineHeight: number;
+  };
+  fills: any[];
+  strokes: any[];
+  shadows: any[];
+  bevel?: any;
+  glow?: any;
+  glows?: any[];
+  panel?: any;
+  glitch?: any;
+  animation?: {
+    type: "none" | "typewriter" | "wave" | "fade" | "glitch";
+    speed?: number;
+    amplitude?: number;
+    frequency?: number;
+  };
+  background?: any;
+  stack?: any;
+}
+
+export interface TextEffectDefinition extends EffectFullDefinition {
+  text?: string;
+  description: string;
+  tags: string[];
+}
+
+export interface EvaluatedTextLayer {
+  readonly layerId: string;
+  readonly clipId: string;
+  readonly role: string;
+  readonly zIndex: number;
+  readonly layerType: "text";
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly rotation: number;
+  readonly opacity: number;
+  readonly inTransition: boolean;
+  readonly blendMode: string;
+  readonly time?: number;
+  readonly clipStartTime?: number;
+  readonly clipDuration?: number;
+  readonly text: string;
+  readonly fontFamily: string;
+  readonly fontSize: number;
+  readonly color: string;
+  readonly fontWeight: "normal" | "bold" | number;
+  readonly fontStyle: "normal" | "italic";
+  readonly textAlign: "left" | "center" | "right";
+  readonly verticalAlign: "top" | "middle" | "bottom";
+  readonly lineHeight: number;
+  readonly letterSpacing: number;
+  readonly stroke?: {
+    color: string;
+    width: number;
+  };
+  readonly shadow?: {
+    color: string;
+    blur: number;
+    offsetX: number;
+    offsetY: number;
+  };
+  readonly background?: {
+    color: string;
+    padding: number;
+    borderRadius: number;
+  };
+  readonly styleId?: string;
+}
+
+

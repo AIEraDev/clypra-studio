@@ -6,7 +6,7 @@ import type { SceneDocument } from "./schema";
 import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, DEFAULT_FPS, DEFAULT_DURATION } from "./schema";
 import { WebGLCompositor } from "../compositor";
 import { applyMaskReveal } from "./mask";
-import { supportsOffscreenCanvas } from "../platform";
+import { CanvasDevice } from "../platform";
 
 export interface EvaluateOptions {
   compositor?: WebGLCompositor | null;
@@ -61,58 +61,25 @@ export function evaluateScene(doc: SceneDocument, time: number, ctx: CanvasRende
     return;
   }
 
-  // ── Prefer OffscreenCanvas for intermediate buffer (no DOM allocation) ──────
-  if (supportsOffscreenCanvas()) {
-    const off = new OffscreenCanvas(w, h);
-    const offCtx = off.getContext("2d");
-    if (!offCtx) {
-      renderTextEffectCore(ctx, cfg);
-      finishFrame();
-      return;
-    }
-    renderTextEffectCore(offCtx, cfg);
-    // Apply mask to the offscreen buffer — the compositor blits it to ctx preserving alpha.
-    applyMaskReveal(offCtx, animated, w, h);
+  // ── Intermediate buffer using unified CanvasDevice pool ───────────────────
+  const temp = CanvasDevice.acquire(w, h);
+  const tctx = temp.getContext("2d") as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
+  if (tctx) {
+    tctx.clearRect(0, 0, w, h);
+    renderTextEffectCore(tctx, cfg);
+    applyMaskReveal(tctx, animated, w, h);
     const compositor = options.compositor ?? getCompositor();
     if (compositor?.isSupported) {
-      compositor.renderToContext(ctx, off, comp);
-      // Mask was applied to offCtx before compositing, so ctx has the correct alpha.
-      return;
+      compositor.renderToContext(ctx, temp, comp);
+    } else {
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(temp as unknown as CanvasImageSource, 0, 0);
     }
-    ctx.clearRect(0, 0, w, h);
-    ctx.drawImage(off as unknown as CanvasImageSource, 0, 0);
+    CanvasDevice.release(temp);
     return;
   }
 
-  // ── Fallback: temporary DOM canvas ──────────────────────────────────────────
-  // WKWebView < Safari 16.4 lands here. The temp canvas is never added to the
-  // DOM, so there is no layout/rendering cost, but we must not keep a reference
-  // to it after this call to allow GC to reclaim the backing store.
-  if (typeof document !== "undefined") {
-    const temp = document.createElement("canvas");
-    temp.width = w;
-    temp.height = h;
-    const tctx = temp.getContext("2d");
-    if (tctx) {
-      renderTextEffectCore(tctx, cfg);
-      applyMaskReveal(tctx, animated, w, h);
-      const compositor = options.compositor ?? getCompositor();
-      if (compositor?.isSupported) {
-        compositor.renderToContext(ctx, temp, comp);
-        // Explicitly drop the backing store reference so GC can collect it
-        // at 30 fps instead of waiting for a major collection cycle.
-        temp.width = 0;
-        temp.height = 0;
-        return;
-      }
-      ctx.clearRect(0, 0, w, h);
-      ctx.drawImage(temp, 0, 0);
-      temp.width = 0;
-      temp.height = 0;
-      return;
-    }
-  }
-
+  CanvasDevice.release(temp);
   renderTextEffectCore(ctx, cfg);
   finishFrame();
 }

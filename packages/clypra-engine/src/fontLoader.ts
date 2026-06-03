@@ -149,3 +149,203 @@ export function checkFontVariant(variantName: string): boolean {
   if (typeof document === "undefined" || !document.fonts) return false;
   return document.fonts.check(`16px "${variantName}"`);
 }
+
+/**
+ * Font descriptor for loading.
+ */
+export interface FontDescriptor {
+  family: string;
+  weight?: string | number;
+  style?: "normal" | "italic";
+}
+
+/**
+ * Font loading result.
+ */
+export interface FontLoadResult {
+  font: FontDescriptor;
+  loaded: boolean;
+  error?: string;
+  loadTimeMs: number;
+}
+
+interface FontLoaderState {
+  loading: Set<string>;
+  loaded: Set<string>;
+  failed: Map<string, string>;
+  promises: Map<string, Promise<FontLoadResult>>;
+}
+
+export class FontLoader {
+  private state: FontLoaderState = {
+    loading: new Set(),
+    loaded: new Set(),
+    failed: new Map(),
+    promises: new Map(),
+  };
+
+  async ensureFont(descriptor: FontDescriptor): Promise<FontLoadResult> {
+    const key = this.getFontKey(descriptor);
+
+    if (this.state.loaded.has(key)) {
+      return {
+        font: descriptor,
+        loaded: true,
+        loadTimeMs: 0,
+      };
+    }
+
+    if (this.state.failed.has(key)) {
+      return {
+        font: descriptor,
+        loaded: false,
+        error: this.state.failed.get(key),
+        loadTimeMs: 0,
+      };
+    }
+
+    if (this.state.promises.has(key)) {
+      return this.state.promises.get(key)!;
+    }
+
+    const promise = this.loadFont(descriptor);
+    this.state.promises.set(key, promise);
+
+    return promise;
+  }
+
+  async ensureFonts(descriptors: FontDescriptor[]): Promise<FontLoadResult[]> {
+    return Promise.all(descriptors.map((desc) => this.ensureFont(desc)));
+  }
+
+  async waitForFontsReady(): Promise<void> {
+    if (typeof document === "undefined" || !document.fonts) {
+      return;
+    }
+    await document.fonts.ready;
+  }
+
+  isLoaded(descriptor: FontDescriptor): boolean {
+    const key = this.getFontKey(descriptor);
+    return this.state.loaded.has(key);
+  }
+
+  getStats() {
+    return {
+      loaded: this.state.loaded.size,
+      loading: this.state.loading.size,
+      failed: this.state.failed.size,
+    };
+  }
+
+  clear(): void {
+    this.state.loading.clear();
+    this.state.loaded.clear();
+    this.state.failed.clear();
+    this.state.promises.clear();
+  }
+
+  private async loadFont(descriptor: FontDescriptor): Promise<FontLoadResult> {
+    const key = this.getFontKey(descriptor);
+    const startTime = performance.now();
+
+    this.state.loading.add(key);
+
+    try {
+      if (typeof document === "undefined" || !document.fonts) {
+        throw new Error("Font API not available");
+      }
+
+      const weight = this.normalizeFontWeight(descriptor.weight);
+      const style = descriptor.style || "normal";
+      const fontFace = `${style} ${weight} 16px "${descriptor.family}"`;
+
+      if (document.fonts.check(fontFace)) {
+        this.state.loaded.add(key);
+        this.state.loading.delete(key);
+        this.state.promises.delete(key);
+
+        return {
+          font: descriptor,
+          loaded: true,
+          loadTimeMs: performance.now() - startTime,
+        };
+      }
+
+      await document.fonts.load(fontFace);
+
+      if (!document.fonts.check(fontFace)) {
+        throw new Error(`Font "${descriptor.family}" failed to load`);
+      }
+
+      this.state.loaded.add(key);
+      this.state.loading.delete(key);
+      this.state.promises.delete(key);
+
+      return {
+        font: descriptor,
+        loaded: true,
+        loadTimeMs: performance.now() - startTime,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+      this.state.failed.set(key, errorMessage);
+      this.state.loading.delete(key);
+      this.state.promises.delete(key);
+
+      return {
+        font: descriptor,
+        loaded: false,
+        error: errorMessage,
+        loadTimeMs: performance.now() - startTime,
+      };
+    }
+  }
+
+  private getFontKey(descriptor: FontDescriptor): string {
+    const weight = this.normalizeFontWeight(descriptor.weight);
+    const style = descriptor.style || "normal";
+    return `${descriptor.family}|${weight}|${style}`;
+  }
+
+  private normalizeFontWeight(weight?: string | number): number {
+    if (typeof weight === "number") {
+      return weight;
+    }
+    if (!weight) return 400;
+
+    const asNum = parseInt(weight, 10);
+    if (!isNaN(asNum) && asNum >= 100 && asNum <= 900) {
+      return asNum;
+    }
+
+    const weightMap: Record<string, number> = {
+      normal: 400,
+      bold: 700,
+      lighter: 300,
+      bolder: 700,
+    };
+
+    return weightMap[weight] ?? 400;
+  }
+}
+
+let globalFontLoader: FontLoader | null = null;
+
+export function getFontLoader(): FontLoader {
+  if (!globalFontLoader) {
+    globalFontLoader = new FontLoader();
+  }
+  return globalFontLoader;
+}
+
+export function resetFontLoader(): void {
+  globalFontLoader = null;
+}
+
+export async function ensureFontsLoaded(descriptors: FontDescriptor[]): Promise<FontLoadResult[]> {
+  const loader = getFontLoader();
+  return loader.ensureFonts(descriptors);
+}
+
