@@ -59,7 +59,7 @@ export function PreviewCanvas({ canvasRef, config, bgMode, zoom, zoomMode, onZoo
   return (
     <section id="center-preview-viewport" className="flex flex-1 flex-col bg-[#09090D] overflow-hidden relative border-r border-[#2A2A38] min-w-0">
       {/* ── Single-row toolbar ── */}
-      <div className="flex items-center border-b border-[#2A2A38] bg-[#15151C] px-3 h-10 shrink-0 gap-0.5">
+      <div className="flex items-center border-b border-[#2A2A38] bg-[#15151C] px-3 h-10 shrink-0 gap-0.5 overflow-auto" style={{ scrollbarWidth: "none" }}>
         {/* Left: composition info */}
         <div className="flex items-center gap-2 mr-3 shrink-0">
           <span className="flex items-center gap-1.5 text-[11px] font-semibold text-white">
