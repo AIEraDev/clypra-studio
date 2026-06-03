@@ -10,7 +10,7 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { PresetChip } from "./components/PresetChip";
 import { DrawerIntro, LeftRail, type RailItem } from "./components/StudioChrome";
-import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout } from "@clypra/engine";
+import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra/engine";
 import { getPresetScene } from "@clypra/engine";
 import { COMPOSITION_PRESETS } from "@clypra/engine";
 import { useCollapsibleSections } from "./hooks/useCollapsibleSections";
@@ -53,6 +53,15 @@ export default function App() {
   const [bgMode, setBgMode] = useState<"checkerboard" | "black">("checkerboard");
   const [zoom, setZoom] = useState<number>(100);
   const [zoomMode, setZoomMode] = useState<"fit" | "manual">("fit");
+  const [platformMode, setPlatformMode] = useState<"standard" | "mac-tauri" | "windows-tauri">("standard");
+
+  const compositorRef = useRef<WebGLCompositor | null>(null);
+  const getCompositor = () => {
+    if (!compositorRef.current && typeof window !== "undefined") {
+      compositorRef.current = new WebGLCompositor();
+    }
+    return compositorRef.current;
+  };
   const [showFontCompare, setShowFontCompare] = useState<boolean>(false);
 
   // Deep Design Research & Blending Lab states
@@ -186,6 +195,7 @@ export default function App() {
           if (session.preview.bgMode) setBgMode(session.preview.bgMode);
           if (typeof session.preview.zoom === "number") setZoom(session.preview.zoom);
           if (session.preview.zoomMode) setZoomMode(session.preview.zoomMode);
+          if (session.preview.platformMode) setPlatformMode(session.preview.platformMode);
         }
 
         if (session.blend) {
@@ -471,6 +481,7 @@ export default function App() {
             bgMode,
             zoom,
             zoomMode,
+            platformMode,
           },
           blend: {
             blendAId,
@@ -499,7 +510,7 @@ export default function App() {
         clearTimeout(creatorSaveTimeoutRef.current);
       }
     };
-  }, [isCreatorSessionLoaded, config, scene, activePresetId, uiMode, activeRailItem, activeTab, selectedLayerId, mobileActiveTab, engineFormat, definitionFormat, bgMode, zoom, zoomMode, blendAId, blendBId, blendRatio, selectedCategory, sortBy, effectApiCategory]);
+  }, [isCreatorSessionLoaded, config, scene, activePresetId, uiMode, activeRailItem, activeTab, selectedLayerId, mobileActiveTab, engineFormat, definitionFormat, bgMode, zoom, zoomMode, platformMode, blendAId, blendBId, blendRatio, selectedCategory, sortBy, effectApiCategory]);
 
   // Animation preview loop
   useEffect(() => {
@@ -533,7 +544,49 @@ export default function App() {
     canvas.width = config.canvasWidth || 800;
     canvas.height = config.canvasHeight || 200;
 
-    const draw = () => evaluateScene(scene, previewTime, ctx);
+    const draw = () => {
+      const w = config.canvasWidth || 800;
+      const h = config.canvasHeight || 200;
+
+      if (platformMode === "mac-tauri") {
+        // Mac WKWebView simulation: ctx.filter is unsupported, WebGLCompositor fallback is used.
+        const compositor = getCompositor();
+
+        // Use OffscreenCanvas or regular canvas
+        let off: HTMLCanvasElement | OffscreenCanvas;
+        if (typeof OffscreenCanvas !== "undefined") {
+          off = new OffscreenCanvas(w, h);
+        } else {
+          off = document.createElement("canvas");
+          off.width = w;
+          off.height = h;
+        }
+
+        const offCtx = off.getContext("2d");
+        if (offCtx) {
+          // Force ctx.filter support to be false by overriding the filter property
+          Object.defineProperty(offCtx, "filter", {
+            get: () => "none",
+            set: () => {},
+            configurable: true,
+          });
+
+          offCtx.clearRect(0, 0, w, h);
+          evaluateScene(scene, previewTime, offCtx as unknown as CanvasRenderingContext2D);
+
+          if (compositor && compositor.isSupported) {
+            compositor.renderToContext(ctx, off, { blur: 0, bloom: 0, bloomThreshold: 0.6 });
+          } else {
+            ctx.clearRect(0, 0, w, h);
+            ctx.drawImage(off as unknown as CanvasImageSource, 0, 0);
+          }
+        }
+      } else {
+        // standard or windows-tauri: ctx.filter is supported natively by the browser
+        ctx.clearRect(0, 0, w, h);
+        evaluateScene(scene, previewTime, ctx);
+      }
+    };
 
     if (GOOGLE_FONTS.includes(config.fontFamily)) {
       const family = config.fontFamily;
@@ -558,7 +611,7 @@ export default function App() {
       // System font — draw immediately, no loading needed
       draw();
     }
-  }, [config, scene, previewTime]);
+  }, [config, scene, previewTime, platformMode]);
 
   // Format code strings
   const engineCode = generateEngineClass(config);
@@ -1280,6 +1333,8 @@ export default function App() {
               onZoomChange={setZoom}
               onZoomModeChange={setZoomMode}
               onBgModeChange={setBgMode}
+              platformMode={platformMode}
+              onPlatformModeChange={setPlatformMode}
               toolbarExtras={
                 <>
                   <button id="copy-to-clipboard-image-btn" type="button" onClick={copyImageToClipboard} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium border border-[#2A2A38] hover:border-[#7C6FFF] rounded flex items-center gap-1 transition-all cursor-pointer font-sans">
