@@ -113,7 +113,10 @@ function layoutWithFontSize(ctx: CanvasRenderingContext2D | OffscreenCanvasRende
 
   const lineWidths = lines.map((line) => measureLine(ctx, line, letterSpacing));
   const maxLineWidth = Math.max(...lineWidths, 1);
-  const textBlockHeight = fontSize + (lines.length - 1) * fontSize * lineHeight;
+  // Standard advance-based block height: every line occupies fontSize * lineHeight,
+  // except the last which only needs fontSize (no trailing advance below the baseline).
+  // This matches the per-line `py = startY + index * lineAdvance` drawing loop.
+  const textBlockHeight = lines.length === 1 ? fontSize : (lines.length - 1) * fontSize * lineHeight + fontSize;
 
   let align: CanvasTextAlign = "center";
   let startX = cWidth / 2;

@@ -24,6 +24,15 @@ function getCompositor(): WebGLCompositor | null {
 }
 
 /**
+ * Dispose the shared module-level compositor and release GPU resources.
+ * Call on hot-module-reload or application teardown to prevent WebGL context leaks.
+ */
+export function disposeSharedCompositor(): void {
+  sharedCompositor?.dispose();
+  sharedCompositor = null;
+}
+
+/**
  * Single source of truth for rendering a scene at time t.
  */
 export function evaluateScene(doc: SceneDocument, time: number, ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, options: EvaluateOptions = {}): void {
@@ -62,10 +71,12 @@ export function evaluateScene(doc: SceneDocument, time: number, ctx: CanvasRende
       return;
     }
     renderTextEffectCore(offCtx, cfg);
+    // Apply mask to the offscreen buffer — the compositor blits it to ctx preserving alpha.
     applyMaskReveal(offCtx, animated, w, h);
     const compositor = options.compositor ?? getCompositor();
     if (compositor?.isSupported) {
       compositor.renderToContext(ctx, off, comp);
+      // Mask was applied to offCtx before compositing, so ctx has the correct alpha.
       return;
     }
     ctx.clearRect(0, 0, w, h);

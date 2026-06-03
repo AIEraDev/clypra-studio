@@ -1,10 +1,10 @@
-import { TextEffectConfig, GradientStop, GlowLayer } from "./types";
+import { TextEffectConfig } from "./types";
 import { computeTextLayout } from "./engine/textLayout";
 import { drawPerCharText, shouldUsePerCharFill } from "./engine/perCharFill";
 import { InkBrushEngine } from "./engine/procedural/InkBrushEngine";
 import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "./engine/schema";
-import { createCanvas, supportsCtxFilter } from "./platform";
-import { drawRoundedRect, applyLetterSpacing, restoreLetterSpacing } from "./canvas-utils";
+import { createCanvas } from "./platform";
+import { drawRoundedRect } from "./canvas-utils";
 import { seededRandom, textSeed, hexToRgb, mixHexColor } from "./engine/procedural/utils";
 
 type Canvas2DContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -1445,28 +1445,29 @@ export function renderTextEffectCore(ctx: CanvasRenderingContext2D | OffscreenCa
   }
 
   // ──────────────────────────────────────────────────────────────────
-  // 8. Inner Glow & Inner Shadow
-  // ──────────────────────────────────────────────────────────────────
-  // Render Inner Glow Layers
+  // ── Inner Glow & Inner Shadow ──────────────────────────────────────────────
+  // Uses source-atop compositing so effects only appear inside the text silhouette.
+  // renderWithShadowTrick requires an opaque fill color to cast a visible shadow —
+  // "transparent" produces no shadow because Canvas 2D modulates shadow alpha by
+  // the source pixel alpha. "#000" is used as the opaque source; the actual glow
+  // color is set via ctx.shadowColor inside renderWithShadowTrick.
   glowLayers.forEach((layer) => {
     if (layer.enabled && layer.type === "inner" && layer.opacity > 0) {
       ctx.save();
       ctx.globalCompositeOperation = "source-atop";
       const renderCount = Math.max(1, Math.min(20, layer.strength ?? 1));
       for (let i = 0; i < renderCount; i++) {
-        renderWithShadowTrick("fill", layer.color, layer.blur, 0, 0, layer.opacity, "transparent", layer.spread ?? 0);
+        renderWithShadowTrick("fill", layer.color, layer.blur, 0, 0, layer.opacity, "#000000", layer.spread ?? 0);
       }
       ctx.restore();
     }
   });
 
-  // Render Inner Shadow
+  // Inner Shadow
   if (shadowEnabled && shadowType === "inner" && shadowOpacity > 0) {
     ctx.save();
     ctx.globalCompositeOperation = "source-atop";
-
-    // Inverse mask inner shadow
-    renderWithShadowTrick("fill", shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY, shadowOpacity, "transparent");
+    renderWithShadowTrick("fill", shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY, shadowOpacity, "#000000");
     ctx.restore();
   }
 

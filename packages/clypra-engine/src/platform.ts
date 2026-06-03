@@ -171,14 +171,16 @@ export function createCanvas(width: number, height: number): HTMLCanvasElement |
  * Release a DOM canvas created via createCanvas() when OffscreenCanvas
  * was unavailable. No-op for OffscreenCanvas instances.
  *
- * Call this after extracting ImageBitmap / ImageData from an intermediate
- * canvas to prevent DOM leak at 30fps render loops.
+ * Sets width/height to 0 to release the backing store immediately rather
+ * than waiting for GC. Call this after extracting ImageBitmap/ImageData.
  */
 export function releaseCanvas(canvas: HTMLCanvasElement | OffscreenCanvas): void {
-  if (canvas instanceof OffscreenCanvas) return; // GC handles it
-  if (typeof document !== "undefined" && canvas.parentNode) {
-    canvas.parentNode.removeChild(canvas);
-  }
+  if (canvas instanceof OffscreenCanvas) return; // GC handles OffscreenCanvas backing stores
+  // Setting dimensions to 0 releases the GPU/memory backing store immediately.
+  // The parentNode check was previously here but createCanvas never appends to the
+  // DOM, so it was always a no-op. Direct width=0 is the correct release mechanism.
+  canvas.width = 0;
+  canvas.height = 0;
 }
 
 /**

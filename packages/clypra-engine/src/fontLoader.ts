@@ -140,17 +140,12 @@ export async function initializeFontSystem(): Promise<void> {
 }
 
 /**
- * Checks if a font variant is available for rendering
+ * Checks if a font variant is available for rendering.
+ * Uses document.fonts.check() which is the correct API for font availability —
+ * unlike measureText() which silently falls back to the system font and always
+ * returns a non-zero width regardless of whether the named font loaded.
  */
 export function checkFontVariant(variantName: string): boolean {
-  // Try to measure text with the font
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return false;
-
-  ctx.font = `16px "${variantName}"`;
-  const metrics = ctx.measureText("Test");
-
-  // If width is 0, font probably didn't load
-  return metrics.width > 0;
+  if (typeof document === "undefined" || !document.fonts) return false;
+  return document.fonts.check(`16px "${variantName}"`);
 }
