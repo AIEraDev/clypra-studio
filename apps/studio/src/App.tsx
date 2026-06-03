@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useState, useEffect, useRef, useMemo } from "react";
-import { Download, Copy, Undo2, Redo2, Sparkles, Grid2X2, Plus, Camera, Loader2, HelpCircle, Beaker, FolderPlus, Video, RefreshCw, KeyRound } from "lucide-react";
+import { Download, Copy, Undo2, Redo2, Sparkles, Plus, Camera, Loader2, HelpCircle, Beaker, FolderPlus, Video, KeyRound } from "lucide-react";
 
 import { TextEffectConfig, Preset } from "@clypra/engine";
 import { defaultConfig, builtInPresets } from "@clypra/engine";
@@ -9,7 +9,7 @@ import { LayerPanel } from "./components/LayerPanel";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { PresetChip } from "./components/PresetChip";
-import { DrawerIntro, LeftRail, type RailItem } from "./components/StudioChrome";
+import { DrawerIntro, LeftRail } from "./components/StudioChrome";
 import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra/engine";
 import { getPresetScene } from "@clypra/engine";
 import { COMPOSITION_PRESETS } from "@clypra/engine";
