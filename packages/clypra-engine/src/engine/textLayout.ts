@@ -1,4 +1,5 @@
 import type { TextEffectConfig } from "../types";
+import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, DEFAULT_FONT_SIZE } from "./schema";
 
 export interface TextLayoutBounds {
   xMin: number;
@@ -37,11 +38,7 @@ export const COMPOSITION_PRESETS: CompositionPreset[] = [
   { id: "poster", label: "3:4", width: 900, height: 1200, description: "Poster" },
 ];
 
-function measureLine(
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  line: string,
-  letterSpacing: number
-): number {
+function measureLine(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, line: string, letterSpacing: number): number {
   const prev = (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing;
   if (letterSpacing !== 0) {
     (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = `${letterSpacing}px`;
@@ -52,8 +49,8 @@ function measureLine(
 }
 
 function getSafeRect(cfg: TextEffectConfig): { x: number; y: number; width: number; height: number } {
-  const w = cfg.canvasWidth || 800;
-  const h = cfg.canvasHeight || 200;
+  const w = cfg.canvasWidth || DEFAULT_CANVAS_WIDTH;
+  const h = cfg.canvasHeight || DEFAULT_CANVAS_HEIGHT;
   const marginX = cfg.panelEnabled ? (cfg.panelPaddingX ?? 40) + 16 : Math.min(48, w * 0.06);
   const marginY = cfg.panelEnabled ? (cfg.panelPaddingY ?? 20) + 16 : Math.min(40, h * 0.1);
   return {
@@ -65,12 +62,7 @@ function getSafeRect(cfg: TextEffectConfig): { x: number; y: number; width: numb
 }
 
 /** Soft-wrap paragraphs to fit safe width */
-export function wrapTextToWidth(
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-  letterSpacing: number
-): string[] {
+export function wrapTextToWidth(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, text: string, maxWidth: number, letterSpacing: number): string[] {
   const paragraphs = text.split("\n");
   const lines: string[] = [];
 
@@ -109,14 +101,9 @@ export function wrapTextToWidth(
   return lines.length > 0 ? lines : [""];
 }
 
-function layoutWithFontSize(
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  cfg: TextEffectConfig,
-  fontSize: number,
-  lines: string[]
-): TextLayoutResult {
-  const cWidth = cfg.canvasWidth || 800;
-  const cHeight = cfg.canvasHeight || 200;
+function layoutWithFontSize(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, cfg: TextEffectConfig, fontSize: number, lines: string[]): TextLayoutResult {
+  const cWidth = cfg.canvasWidth || DEFAULT_CANVAS_WIDTH;
+  const cHeight = cfg.canvasHeight || DEFAULT_CANVAS_HEIGHT;
   const safe = getSafeRect(cfg);
   const lineHeight = cfg.lineHeight ?? 1.2;
   const letterSpacing = cfg.letterSpacing ?? 0;
@@ -174,27 +161,15 @@ function layoutWithFontSize(
   };
 }
 
-export function measureTextFits(
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  cfg: TextEffectConfig,
-  fontSize: number,
-  lines: string[]
-): boolean {
+export function measureTextFits(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, cfg: TextEffectConfig, fontSize: number, lines: string[]): boolean {
   const safe = getSafeRect(cfg);
   const lineHeight = cfg.lineHeight ?? 1.2;
   const layout = layoutWithFontSize(ctx, cfg, fontSize, lines);
-  return (
-    layout.bounds.maxLineWidth <= safe.width + 1 &&
-    layout.bounds.textBlockHeight <= safe.height + 1
-  );
+  return layout.bounds.maxLineWidth <= safe.width + 1 && layout.bounds.textBlockHeight <= safe.height + 1;
 }
 
-export function computeAutoFitFontSize(
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  cfg: TextEffectConfig,
-  wrappedLines: string[]
-): number {
-  const max = Math.min(cfg.fontSize || 80, 200);
+export function computeAutoFitFontSize(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, cfg: TextEffectConfig, wrappedLines: string[]): number {
+  const max = Math.min(cfg.fontSize || DEFAULT_FONT_SIZE, 200);
   let lo = 12;
   let hi = max;
   let best = 12;
@@ -214,11 +189,7 @@ export function computeAutoFitFontSize(
 /**
  * Layout text for a composition: safe margins, optional wrap + auto-fit.
  */
-export function computeTextLayout(
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  cfg: TextEffectConfig,
-  options?: { wrap?: boolean; autoFit?: boolean }
-): TextLayoutResult {
+export function computeTextLayout(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, cfg: TextEffectConfig, options?: { wrap?: boolean; autoFit?: boolean }): TextLayoutResult {
   const safe = getSafeRect(cfg);
   const wrap = options?.wrap ?? true;
   const autoFit = options?.autoFit ?? !!(cfg as TextEffectConfig & { autoFitText?: boolean }).autoFitText;
@@ -237,13 +208,7 @@ export function computeTextLayout(
 }
 
 /** Preview zoom: fit composition inside viewport */
-export function computeFitZoom(
-  viewportWidth: number,
-  viewportHeight: number,
-  compositionWidth: number,
-  compositionHeight: number,
-  padding = 48
-): number {
+export function computeFitZoom(viewportWidth: number, viewportHeight: number, compositionWidth: number, compositionHeight: number, padding = 48): number {
   if (viewportWidth <= 0 || viewportHeight <= 0) return 100;
   const availW = viewportWidth - padding;
   const availH = viewportHeight - padding;

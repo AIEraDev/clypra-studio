@@ -1,4 +1,5 @@
 import { TextEffectConfig } from "../../types";
+import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../schema";
 import { createCanvas, getCanvas2DContext, seededRandom, textSeed, hexToRgb } from "./utils";
 
 export class InkBrushEngine {
@@ -86,8 +87,8 @@ export class InkBrushEngine {
       panelStrokeEnabled: false,
       panelStrokeColor: "#2A2A38",
       panelStrokeWidth: 2,
-      canvasWidth: 800,
-      canvasHeight: 200,
+      canvasWidth: DEFAULT_CANVAS_WIDTH,
+      canvasHeight: DEFAULT_CANVAS_HEIGHT,
       textPosX: "center",
       textPosY: "middle",
       inkColor: "#FFFFFF",

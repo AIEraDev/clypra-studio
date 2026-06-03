@@ -1,33 +1,14 @@
+/**
+ * Procedural engine utilities.
+ *
+ * createCanvas is re-exported from platform.ts — the single canonical
+ * implementation. All other helpers are pure math / color utilities with
+ * no platform dependency.
+ */
 import { TextEffectConfig } from "../../types";
+export { createCanvas } from "../../platform";
 
 export type Canvas2DContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
-type NodeCanvasFactory = (width: number, height: number) => HTMLCanvasElement;
-
-export function createCanvas(w: number, h: number): HTMLCanvasElement | OffscreenCanvas {
-  if (typeof document !== "undefined") {
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    return canvas;
-  }
-  if (typeof OffscreenCanvas !== "undefined") {
-    return new OffscreenCanvas(w, h);
-  }
-  const runtimeCanvasFactory = (globalThis as typeof globalThis & { __clypraCreateCanvas?: NodeCanvasFactory }).__clypraCreateCanvas;
-  if (runtimeCanvasFactory) {
-    return runtimeCanvasFactory(w, h);
-  }
-  try {
-    // Keep the native canvas package out of Vite/esbuild browser prebundles.
-    const nodeRequire = (0, eval)("require") as (id: string) => unknown;
-    const nodeCanvas = nodeRequire("@napi-rs/canvas") as {
-      createCanvas: (width: number, height: number) => HTMLCanvasElement;
-    };
-    return nodeCanvas.createCanvas(w, h);
-  } catch {
-    throw new Error("No canvas implementation found in this environment.");
-  }
-}
 
 export function getCanvas2DContext(canvas: HTMLCanvasElement | OffscreenCanvas): Canvas2DContext | null {
   return canvas.getContext("2d") as Canvas2DContext | null;

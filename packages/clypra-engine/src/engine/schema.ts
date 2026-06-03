@@ -2,6 +2,22 @@ import type { TextEffectConfig, GlowLayer, GradientStop } from "../types";
 
 export const SCENE_VERSION = 1 as const;
 
+// ─── Canvas / text dimension defaults ─────────────────────────────────────────
+// Single source of truth. Every `|| 800`, `|| 200`, `|| 80` guard in renderer,
+// textLayout, evaluate, and InkBrushEngine should import these instead of
+// repeating the magic number.
+
+/** Default canvas width in pixels. */
+export const DEFAULT_CANVAS_WIDTH = 800 as const;
+/** Default canvas height in pixels. */
+export const DEFAULT_CANVAS_HEIGHT = 200 as const;
+/** Default font size in pixels. */
+export const DEFAULT_FONT_SIZE = 80 as const;
+/** Default frames per second for new timelines. */
+export const DEFAULT_FPS = 30 as const;
+/** Default timeline duration in seconds for new scenes. */
+export const DEFAULT_DURATION = 2 as const;
+
 export type EffectLayerType = "panel" | "glow" | "shadow" | "extrusion" | "duplicateStack" | "stroke" | "fill" | "mask" | "filter" | "customEngine";
 
 export type LayerTarget = "text" | "panel" | "scene" | "previous";
@@ -107,13 +123,13 @@ export function createEmptyScene(overrides?: Partial<SceneDocument>): SceneDocum
   return {
     version: SCENE_VERSION,
     effectName: "My Effect",
-    canvas: { width: 800, height: 200, background: "transparent" },
+    canvas: { width: DEFAULT_CANVAS_WIDTH, height: DEFAULT_CANVAS_HEIGHT, background: "transparent" },
     text: {
       content: "CLYPRA",
       fontFamily: "Poppins",
       fontWeight: 700,
       fontStyle: "normal",
-      fontSize: 80,
+      fontSize: DEFAULT_FONT_SIZE,
       letterSpacing: 4,
       lineHeight: 1.2,
       textPosX: "center",
@@ -122,7 +138,7 @@ export function createEmptyScene(overrides?: Partial<SceneDocument>): SceneDocum
     effectLayers: [],
     customEngineId: null,
     compositor: { blur: 0, bloom: 0, bloomThreshold: 0.6 },
-    timeline: { duration: 2, fps: 30, loop: true, tracks: [] },
+    timeline: { duration: DEFAULT_DURATION, fps: DEFAULT_FPS, loop: true, tracks: [] },
     ...overrides,
   };
 }

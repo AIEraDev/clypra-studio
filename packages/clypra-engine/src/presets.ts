@@ -1,4 +1,5 @@
 import { TextEffectConfig, Preset } from "./types";
+import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, DEFAULT_FONT_SIZE } from "./engine/schema";
 
 /** Style recipes (layer graphs): see `builtInRecipes` in src/engine/recipes.ts */
 
@@ -8,7 +9,7 @@ export const defaultConfig: TextEffectConfig = {
   fontFamily: "Poppins",
   fontWeight: 700,
   fontStyle: "normal",
-  fontSize: 80,
+  fontSize: DEFAULT_FONT_SIZE,
   letterSpacing: 4,
   lineHeight: 1.2,
   fillType: "solid",
@@ -68,8 +69,8 @@ export const defaultConfig: TextEffectConfig = {
   panelStrokeEnabled: false,
   panelStrokeColor: "#2A2A38",
   panelStrokeWidth: 2,
-  canvasWidth: 800,
-  canvasHeight: 200,
+  canvasWidth: DEFAULT_CANVAS_WIDTH,
+  canvasHeight: DEFAULT_CANVAS_HEIGHT,
   textPosX: "center",
   textPosY: "middle",
   wrapText: true,

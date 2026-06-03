@@ -3,8 +3,10 @@ import { renderTextEffectCore } from "../renderer";
 import { sceneToConfig, textEffectConfigToScene } from "./migrate";
 import { applyTimelineAtTime } from "./animation";
 import type { SceneDocument } from "./schema";
+import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, DEFAULT_FPS, DEFAULT_DURATION } from "./schema";
 import { WebGLCompositor } from "../compositor";
 import { applyMaskReveal } from "./mask";
+import { supportsOffscreenCanvas } from "../platform";
 
 export interface EvaluateOptions {
   compositor?: WebGLCompositor | null;
@@ -28,8 +30,8 @@ export function evaluateScene(doc: SceneDocument, time: number, ctx: CanvasRende
   const animated = applyTimelineAtTime(doc, time);
   const cfg = sceneToConfig(animated);
 
-  const w = cfg.canvasWidth || 800;
-  const h = cfg.canvasHeight || 200;
+  const w = cfg.canvasWidth || DEFAULT_CANVAS_WIDTH;
+  const h = cfg.canvasHeight || DEFAULT_CANVAS_HEIGHT;
 
   const filterLayers = animated.effectLayers.filter((l) => l.type === "filter" && l.enabled);
   const lastFilter = filterLayers[filterLayers.length - 1]?.params as { blur?: number; bloom?: number };
@@ -50,9 +52,9 @@ export function evaluateScene(doc: SceneDocument, time: number, ctx: CanvasRende
     return;
   }
 
-  const off = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(w, h) : null;
-
-  if (off) {
+  // ── Prefer OffscreenCanvas for intermediate buffer (no DOM allocation) ──────
+  if (supportsOffscreenCanvas()) {
+    const off = new OffscreenCanvas(w, h);
     const offCtx = off.getContext("2d");
     if (!offCtx) {
       renderTextEffectCore(ctx, cfg);
@@ -71,7 +73,10 @@ export function evaluateScene(doc: SceneDocument, time: number, ctx: CanvasRende
     return;
   }
 
-  // Fallback: draw to temp canvas in DOM
+  // ── Fallback: temporary DOM canvas ──────────────────────────────────────────
+  // WKWebView < Safari 16.4 lands here. The temp canvas is never added to the
+  // DOM, so there is no layout/rendering cost, but we must not keep a reference
+  // to it after this call to allow GC to reclaim the backing store.
   if (typeof document !== "undefined") {
     const temp = document.createElement("canvas");
     temp.width = w;
@@ -83,10 +88,16 @@ export function evaluateScene(doc: SceneDocument, time: number, ctx: CanvasRende
       const compositor = options.compositor ?? getCompositor();
       if (compositor?.isSupported) {
         compositor.renderToContext(ctx, temp, comp);
+        // Explicitly drop the backing store reference so GC can collect it
+        // at 30 fps instead of waiting for a major collection cycle.
+        temp.width = 0;
+        temp.height = 0;
         return;
       }
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(temp, 0, 0);
+      temp.width = 0;
+      temp.height = 0;
       return;
     }
   }
@@ -100,9 +111,9 @@ export function evaluateConfig(cfg: TextEffectConfig, time: number, ctx: CanvasR
 }
 
 export function advanceSceneTime(doc: SceneDocument, steps: number): number {
-  const dt = 1 / (doc.timeline.fps || 30);
+  const dt = 1 / (doc.timeline.fps || DEFAULT_FPS);
   const next = (doc as SceneDocument & { _time?: number })._time ?? 0;
-  const duration = doc.timeline.duration || 2;
+  const duration = doc.timeline.duration || DEFAULT_DURATION;
   let t = next + steps * dt;
   if (doc.timeline.loop) {
     t = duration > 0 ? t % duration : t;
