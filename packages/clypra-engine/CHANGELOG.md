@@ -1,3 +1,16 @@
+# [1.1.0](https://github.com/AIEraDev/clypra-studio/compare/v1.0.2...v1.1.0) (2026-06-03)
+
+
+### Bug Fixes
+
+* **studio:** toolbar overflow-auto with hidden scrollbar for narrow viewports ([72dad2d](https://github.com/AIEraDev/clypra-studio/commit/72dad2d76f38f279aac97c5be621a64dcd390a9b))
+
+
+### Features
+
+* **engine:** platform capability module, canvas-utils, and canonical constants ([ae15cd6](https://github.com/AIEraDev/clypra-studio/commit/ae15cd6bac584f2f6ce9b3d5cc0a6ccd3cfd1a32))
+* **studio:** redesign preview canvas toolbar — single row, compact platform dropdown ([92725a9](https://github.com/AIEraDev/clypra-studio/commit/92725a9d5cde6356c57d23f0d6f97f3fa45e2d97))
+
 ## [1.0.2](https://github.com/AIEraDev/clypra-studio/compare/v1.0.1...v1.0.2) (2026-06-02)
 
 
