@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/AIEraDev/clypra-studio/compare/v1.1.2...v1.2.0) (2026-06-04)
+
+
+### Bug Fixes
+
+* add ctx.filter support check with shadow fallback for bevel and stroke blur ([7a62053](https://github.com/AIEraDev/clypra-studio/commit/7a620537f987fc10186493f3a4f7069378cdbd5e))
+
+
+### Features
+
+* improve AI effect naming with category enforcement ([21b81e1](https://github.com/AIEraDev/clypra-studio/commit/21b81e13cecb3720ca6e75298345041c8221526c))
+
 ## [1.1.2](https://github.com/AIEraDev/clypra-studio/compare/v1.1.1...v1.1.2) (2026-06-04)
 
 
