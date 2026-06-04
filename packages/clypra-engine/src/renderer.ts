@@ -13,6 +13,18 @@ function getCanvas2DContext(canvas: HTMLCanvasElement | OffscreenCanvas): Canvas
   return canvas.getContext("2d") as Canvas2DContext | null;
 }
 
+function ctxSupportsFilter(ctx: any): boolean {
+  try {
+    const prev = ctx.filter;
+    ctx.filter = "blur(4px)";
+    const ok = typeof ctx.filter === "string" && ctx.filter.includes("blur");
+    ctx.filter = prev;
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export function renderTextEffectCore(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, cfg: TextEffectConfig): void {
   if (cfg.customRenderer === "InkBrushEngine") {
     const engine = new InkBrushEngine(cfg);
@@ -407,19 +419,32 @@ export function renderTextEffectCore(ctx: CanvasRenderingContext2D | OffscreenCa
 
       // 5a. Ambient occlusion / depth glow blur underneath
       if (bevelBlur && bevelBlur > 0) {
-        ctx.save();
-        ctx.filter = `blur(${bevelBlur}px)`;
         const blurColor = bevelBlurColor || bevelShadow || "#000000";
-        for (let i = bevelDepth; i > 0; i -= Math.max(1, Math.floor(bevelDepth / 4))) {
-          const scale = fl / (fl + i);
+        if (ctxSupportsFilter(ctx)) {
           ctx.save();
-          ctx.translate(vpx, vpy);
-          ctx.scale(scale, scale);
-          ctx.translate(-vpx, -vpy);
-          renderLines("fill", blurColor);
+          ctx.filter = `blur(${bevelBlur}px)`;
+          for (let i = bevelDepth; i > 0; i -= Math.max(1, Math.floor(bevelDepth / 4))) {
+            const scale = fl / (fl + i);
+            ctx.save();
+            ctx.translate(vpx, vpy);
+            ctx.scale(scale, scale);
+            ctx.translate(-vpx, -vpy);
+            renderLines("fill", blurColor);
+            ctx.restore();
+          }
           ctx.restore();
+        } else {
+          // Fallback: use shadow trick
+          for (let i = bevelDepth; i > 0; i -= Math.max(1, Math.floor(bevelDepth / 4))) {
+            const scale = fl / (fl + i);
+            ctx.save();
+            ctx.translate(vpx, vpy);
+            ctx.scale(scale, scale);
+            ctx.translate(-vpx, -vpy);
+            renderWithShadowTrick("fill", blurColor, bevelBlur, 0, 0, 100);
+            ctx.restore();
+          }
         }
-        ctx.restore();
       }
 
       // 5b. Gradient-shaded extrusion slabs (back to front)
@@ -480,14 +505,22 @@ export function renderTextEffectCore(ctx: CanvasRenderingContext2D | OffscreenCa
 
       // 5a. Ambient occlusion blur
       if (bevelBlur && bevelBlur > 0) {
-        ctx.save();
-        ctx.filter = `blur(${bevelBlur}px)`;
         const blurColor = bevelBlurColor || bevelShadow || "#000000";
-        for (let i = bevelDepth; i > 0; i -= Math.max(1, Math.floor(bevelDepth / 4))) {
-          const { dx, dy } = getDirOffset(i);
-          renderLines("fill", blurColor, dx, dy);
+        if (ctxSupportsFilter(ctx)) {
+          ctx.save();
+          ctx.filter = `blur(${bevelBlur}px)`;
+          for (let i = bevelDepth; i > 0; i -= Math.max(1, Math.floor(bevelDepth / 4))) {
+            const { dx, dy } = getDirOffset(i);
+            renderLines("fill", blurColor, dx, dy);
+          }
+          ctx.restore();
+        } else {
+          // Fallback: use shadow trick
+          for (let i = bevelDepth; i > 0; i -= Math.max(1, Math.floor(bevelDepth / 4))) {
+            const { dx, dy } = getDirOffset(i);
+            renderWithShadowTrick("fill", blurColor, bevelBlur, dx, dy, 100);
+          }
         }
-        ctx.restore();
       }
 
       // 5b. Gradient-shaded extrusion slabs
@@ -567,28 +600,56 @@ export function renderTextEffectCore(ctx: CanvasRenderingContext2D | OffscreenCa
     }
 
     const drawStrokeLayer = (color: string | CanvasGradient, width: number, blurAmount: number, opacity: number, position: string) => {
-      ctx.save();
-      ctx.globalAlpha = opacity / 100;
-      ctx.strokeStyle = color;
-
-      // Handle filter blur natively if supported
-      if (blurAmount > 0) {
+      if (blurAmount > 0 && ctxSupportsFilter(ctx)) {
+        ctx.save();
+        ctx.globalAlpha = opacity / 100;
+        ctx.strokeStyle = color;
         ctx.filter = `blur(${blurAmount}px)`;
-      }
 
-      if (position === "outside") {
-        ctx.lineWidth = width * 2;
-        renderLines("stroke");
-      } else if (position === "center") {
-        ctx.lineWidth = width;
-        renderLines("stroke");
-      } else if (position === "inside") {
-        // Inside clipping using source-atop
-        ctx.globalCompositeOperation = "source-atop";
-        ctx.lineWidth = width * 2;
-        renderLines("stroke");
+        if (position === "outside") {
+          ctx.lineWidth = width * 2;
+          renderLines("stroke");
+        } else if (position === "center") {
+          ctx.lineWidth = width;
+          renderLines("stroke");
+        } else if (position === "inside") {
+          // Inside clipping using source-atop
+          ctx.globalCompositeOperation = "source-atop";
+          ctx.lineWidth = width * 2;
+          renderLines("stroke");
+        }
+        ctx.restore();
+      } else if (blurAmount > 0) {
+        // Fallback: use shadow trick since ctx.filter is unsupported
+        const colorStr = typeof color === "string" ? color : strokeColor;
+        const spread = position === "center" ? width / 2 : width;
+        if (position === "inside") {
+          ctx.save();
+          ctx.globalCompositeOperation = "source-atop";
+          renderWithShadowTrick("stroke", colorStr, blurAmount, 0, 0, opacity, undefined, spread);
+          ctx.restore();
+        } else {
+          renderWithShadowTrick("stroke", colorStr, blurAmount, 0, 0, opacity, undefined, spread);
+        }
+      } else {
+        ctx.save();
+        ctx.globalAlpha = opacity / 100;
+        ctx.strokeStyle = color;
+
+        if (position === "outside") {
+          ctx.lineWidth = width * 2;
+          renderLines("stroke");
+        } else if (position === "center") {
+          ctx.lineWidth = width;
+          renderLines("stroke");
+        } else if (position === "inside") {
+          // Inside clipping using source-atop
+          ctx.globalCompositeOperation = "source-atop";
+          ctx.lineWidth = width * 2;
+          renderLines("stroke");
+        }
+        ctx.restore();
       }
-      ctx.restore();
     };
 
     // 2. Multi-layer stroke rendering according to type
