@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/AIEraDev/clypra-studio/compare/v1.1.1...v1.1.2) (2026-06-04)
+
+
+### Bug Fixes
+
+* **engine:** unify platform canvas pooling and evaluator compositor fallback ([c940a80](https://github.com/AIEraDev/clypra-studio/commit/c940a80e4a0b84b0a9404930f1d332eac5d1cf80))
+
 ## [1.1.1](https://github.com/AIEraDev/clypra-studio/compare/v1.1.0...v1.1.1) (2026-06-03)
 
 
