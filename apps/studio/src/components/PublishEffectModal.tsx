@@ -51,8 +51,13 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
     setAiError(null);
 
     try {
-      const generatedName = await generateEffectName(config);
+      const { name: generatedName, category: generatedCategory } = await generateEffectName(config);
       onEffectNameChange(generatedName);
+
+      // Auto-apply suggested category
+      if (EFFECT_CATEGORIES.includes(generatedCategory as EffectApiCategory)) {
+        onCategoryChange(generatedCategory as EffectApiCategory);
+      }
 
       // Auto-generate ID from name
       const autoId = generatedName

@@ -185,7 +185,104 @@ Translate this style metaphor into standard configuration parameters. Configure 
   }
 }
 
-export async function generateEffectName(config: TextEffectConfig): Promise<string> {
+// Distill a TextEffectConfig into a compact visual summary for naming
+function buildEffectVisualSummary(config: TextEffectConfig): string {
+  const lines: string[] = [];
+
+  // Fill
+  if (config.fillType === "pattern" && config.patternType) {
+    lines.push(`Fill: ${config.patternType} pattern`);
+  } else if (config.fillType === "linear" && config.fillGradientStops?.length) {
+    const colors = config.fillGradientStops.map((s) => s.color).join(" → ");
+    lines.push(`Fill: linear gradient (${colors})`);
+  } else if (config.fillType === "radial" && config.fillGradientStops?.length) {
+    const colors = config.fillGradientStops.map((s) => s.color).join(" → ");
+    lines.push(`Fill: radial gradient (${colors})`);
+  } else if (config.fillType === "solid") {
+    lines.push(`Fill: solid ${config.fillColor}`);
+  } else if (config.fillType === "none") {
+    lines.push(`Fill: none (outline-only)`);
+  }
+
+  // Stroke
+  if (config.strokeEnabled && config.strokeWidth > 0) {
+    lines.push(`Stroke: ${config.strokeWidth}px ${config.strokeColor}`);
+  }
+
+  // Glow
+  const activeGlows = config.glowLayers?.filter((g) => g.enabled) ?? [];
+  if (activeGlows.length > 0) {
+    const glowColors = activeGlows.map((g) => g.color).join(", ");
+    lines.push(`Glow: ${activeGlows.length} layer(s) — ${glowColors}`);
+  }
+
+  // Bevel / 3D
+  if (config.bevelEnabled) {
+    lines.push(`Bevel: depth ${config.bevelDepth}, highlight ${config.bevelHighlight}`);
+  }
+
+  // Shadow
+  if (config.shadowEnabled) {
+    lines.push(`Shadow: ${config.shadowType ?? "drop"}, blur ${config.shadowBlur}, offset (${config.shadowOffsetX}, ${config.shadowOffsetY})`);
+  }
+
+  // Duplicate stack
+  if (config.stackEnabled) {
+    lines.push(`Stack: ${config.stackCount} layers`);
+  }
+
+  // Custom engine
+  if (config.customRenderer) {
+    lines.push(`Custom renderer: ${config.customRenderer}`);
+  }
+
+  // Font weight hint
+  if (config.fontWeight >= 800) lines.push(`Font weight: heavy (${config.fontWeight})`);
+  else if (config.fontWeight <= 300) lines.push(`Font weight: thin (${config.fontWeight})`);
+
+  return lines.join("\n");
+}
+
+const EFFECT_CATEGORIES = [
+  { id: "3d", tone: "dimensional, extruded, sculptural — think chrome blocks, stadium signage, embossed metal" },
+  { id: "neon", tone: "electrifying, glowing, urban nightlife — think Vegas strip, arcade signs, laser grids" },
+  { id: "metallic", tone: "premium, reflective, industrial — think brushed steel, gold foil, titanium" },
+  { id: "glitch", tone: "corrupted, digital artifacts, cyber distortion — think VHS damage, RGB channel split, data corruption" },
+  { id: "retro", tone: "nostalgic, era-specific warmth — think diner signs, VHS, 80s arcade, letterpress" },
+  { id: "gradient", tone: "smooth chromatic flow, vibrant spectrum — think aurora, sunset blends, holographic foil" },
+  { id: "grunge", tone: "raw, textured, worn — think spray paint, torn poster, ink stain, concrete" },
+  { id: "outline", tone: "crisp, structural, minimal — think wireframe logos, contour lines, blueprint drafts" },
+  { id: "shadow", tone: "depth, elevation, dimensional light — think long shadows, cinematic drop shadows, soft lit type" },
+  { id: "elements", tone: "natural phenomena and materials — think fire, ice, water, smoke, stone, wood" },
+  { id: "luxury", tone: "refined, editorial, high-fashion — think velvet emboss, serif elegance, champagne foil" },
+] as const;
+
+const VALID_EFFECT_CATEGORY_IDS = EFFECT_CATEGORIES.map((c) => c.id);
+type EffectCategoryId = (typeof EFFECT_CATEGORIES)[number]["id"];
+
+function resolveEffectCategory(raw: string): EffectCategoryId {
+  const normalized = (raw ?? "").toLowerCase().trim();
+  if (VALID_EFFECT_CATEGORY_IDS.includes(normalized as EffectCategoryId)) {
+    return normalized as EffectCategoryId;
+  }
+  // Best-effort fuzzy fallback — map legacy / hallucinated values to the nearest official one
+  if (normalized.includes("3d") || normalized.includes("bevel") || normalized.includes("extrude")) return "3d";
+  if (normalized.includes("neon") || normalized.includes("glow") || normalized.includes("light")) return "neon";
+  if (normalized.includes("metal") || normalized.includes("chrome") || normalized.includes("gold")) return "metallic";
+  if (normalized.includes("glitch") || normalized.includes("cyber") || normalized.includes("corrupt")) return "glitch";
+  if (normalized.includes("retro") || normalized.includes("vintage") || normalized.includes("classic")) return "retro";
+  if (normalized.includes("gradient") || normalized.includes("holo") || normalized.includes("rainbow")) return "gradient";
+  if (normalized.includes("grunge") || normalized.includes("texture") || normalized.includes("ink")) return "grunge";
+  if (normalized.includes("outline") || normalized.includes("stroke") || normalized.includes("minimal")) return "outline";
+  if (normalized.includes("shadow") || normalized.includes("depth") || normalized.includes("drop")) return "shadow";
+  if (normalized.includes("element") || normalized.includes("fire") || normalized.includes("ice") || normalized.includes("smoke")) return "elements";
+  if (normalized.includes("luxury") || normalized.includes("elegant") || normalized.includes("premium")) return "luxury";
+  return "outline"; // safe default
+}
+
+export async function generateEffectName(config: TextEffectConfig): Promise<{ name: string; category: EffectCategoryId }> {
+  const visualSummary = buildEffectVisualSummary(config);
+
   try {
     const ai = createGeminiClient();
 
@@ -193,24 +290,45 @@ export async function generateEffectName(config: TextEffectConfig): Promise<stri
       model: "gemini-3.5-flash",
       contents: [
         {
-          text: `Generate a creative premium name (1 to 3 words) for this typography style:\n${JSON.stringify(config, null, 2)}`,
+          text: `You are naming a text effect for Clypra Studio — a professional typography tool used by video editors and motion designers.
+
+## Visual Summary of the Effect
+${visualSummary}
+
+## Available Categories — you MUST return one of these exact IDs, no variations, no new values:
+${EFFECT_CATEGORIES.map((c) => `- "${c.id}": ${c.tone}`).join("\n")}
+
+## Your Task
+1. Choose the ONE category ID from the list above that best matches the visual characteristics.
+   ⚠️ The "category" field MUST be one of: ${VALID_EFFECT_CATEGORY_IDS.map((id) => `"${id}"`).join(", ")}
+2. Generate a name (2–3 words max, under 24 characters) that:
+   - Communicates the *visual style*, not the technique (e.g. "Volcanic Lava" not "FireEngine")
+   - Sounds premium and production-ready
+   - Fits naturally within the chosen category's tone
+   - Is unique and evocative — avoid generic words like "effect", "style", "custom", "text"
+
+Return your answer as JSON.`,
         },
       ],
       config: {
-        systemInstruction: "You are an elite brand naming specialist for typography presets.",
+        systemInstruction: "You are a senior brand naming specialist for a professional motion graphics tool. You name typography presets so that video creators instantly understand the visual style and emotional tone at a glance. You MUST always use one of the provided category IDs exactly as given.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            suggestedName: { type: Type.STRING },
+            name: { type: Type.STRING },
+            category: { type: Type.STRING, enum: VALID_EFFECT_CATEGORY_IDS as unknown as string[] },
           },
-          required: ["suggestedName"],
+          required: ["name", "category"],
         },
       },
     });
 
     const resultData = JSON.parse((response.text || "{}").trim());
-    return resultData.suggestedName;
+    return {
+      name: resultData.name ?? "Unnamed Effect",
+      category: resolveEffectCategory(resultData.category),
+    };
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }

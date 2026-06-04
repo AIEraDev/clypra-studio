@@ -809,7 +809,7 @@ export default function App() {
   const handleGenerateAiPresetName = async () => {
     setIsGeneratingName(true);
     try {
-      const suggestedName = await generateEffectName(config);
+      const { name: suggestedName } = await generateEffectName(config);
       setCustomPresetName(suggestedName);
     } catch (err: any) {
       console.error("AI Naming error:", err);
@@ -828,7 +828,7 @@ export default function App() {
   const handleGenerateAiEffectName = async () => {
     setIsGeneratingName(true);
     try {
-      const suggestedName = await generateEffectName(config);
+      const { name: suggestedName } = await generateEffectName(config);
       modifyConfig({ effectName: suggestedName });
     } catch (err: any) {
       console.error("AI Naming error:", err);
@@ -885,6 +885,16 @@ export default function App() {
         ...resultConfig,
         text: config.text || "STUDIO EFFECT",
       };
+
+      // Auto-name the effect based on its visual characteristics
+      appendLog("Generating effect name and category...");
+      try {
+        const { name: aiName } = await generateEffectName(mergedConfig);
+        mergedConfig.effectName = aiName;
+      } catch {
+        // Non-fatal — keep going without a name
+      }
+
       appendLog("AI deconstruction succeeded! Custom configuration mappings resolved.");
       setScanResultConfig(mergedConfig);
       setScanStatus("completed");
@@ -939,6 +949,16 @@ export default function App() {
         ...resultConfig,
         text: config.text || "STUDIO EFFECT",
       };
+
+      // Auto-name the effect based on its visual characteristics
+      appendLog("Generating effect name and category...");
+      try {
+        const { name: aiName } = await generateEffectName(mergedConfig);
+        mergedConfig.effectName = aiName;
+      } catch {
+        // Non-fatal — keep going without a name
+      }
+
       appendLog("AI generation succeeded! Visual configuration loaded successfully.");
       setPromptResultConfig(mergedConfig);
       setPromptStatus("completed");
