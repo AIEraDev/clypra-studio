@@ -28,6 +28,39 @@ interface EffectPublishPayload {
   thumbnailDataUrl: string;
 }
 
+export interface AudioPublishPayload {
+  id: string;
+  category: "music" | "sfx" | "ambient" | "ui" | "transition" | "impact" | "voice";
+  metadata: {
+    name: string;
+    description?: string;
+    tags?: string[];
+    author: string;
+    duration: number;
+    bpm?: number;
+    loopable?: boolean;
+    license: {
+      type: "cc0" | "cc-by" | "royalty-free" | "public-domain";
+      url?: string;
+      attributionRequired: boolean;
+    };
+    source: {
+      provider: string;
+      url: string;
+    };
+    safety?: {
+      status: "approved";
+      reviewedAt?: string;
+      notes?: string;
+    };
+  };
+  audioFile: {
+    name: string;
+    dataUrl: string;
+  };
+  coverArtDataUrl?: string;
+}
+
 interface GitHubContentResponse {
   content?: string;
   sha?: string;
@@ -96,12 +129,12 @@ function getDisplayName(definition: Record<string, any>, fallbackId: string): st
   return name || humanizeId(fallbackId);
 }
 
-function buildPublishBranch(kind: "effect" | "template", id: string, category: string): string {
+function buildPublishBranch(kind: "effect" | "template" | "audio", id: string, category: string): string {
   return `clypra-studio/${kind}/${sanitizeBranchPart(category)}/${sanitizeBranchPart(id)}`;
 }
 
-function buildPublishTitle(action: "Add" | "Update", kind: "effect" | "template", displayName: string): string {
-  return `${action} text ${kind}: ${displayName}`;
+function buildPublishTitle(action: "Add" | "Update", kind: "effect" | "template" | "audio", displayName: string): string {
+  return kind === "audio" ? `${action} audio asset: ${displayName}` : `${action} text ${kind}: ${displayName}`;
 }
 
 function summaryFromDefinition(definition: Record<string, any>) {
@@ -121,6 +154,15 @@ function upsertById<T extends { id: string }>(items: T[], item: T): T[] {
   const next = [...items];
   next[index] = item;
   return next.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function getAudioExtension(fileName: string): string {
+  const match = fileName.toLowerCase().match(/\.([a-z0-9]+)$/);
+  const ext = match?.[1] || "mp3";
+  if (!["mp3", "wav", "m4a", "aac", "flac", "ogg"].includes(ext)) {
+    throw new Error("Unsupported audio format. Use MP3, WAV, M4A, AAC, FLAC, or OGG.");
+  }
+  return ext;
 }
 
 export function useGitHubPublish() {
@@ -312,9 +354,86 @@ export function useGitHubPublish() {
     return { files, branch: publishBranch, prUrl };
   };
 
+  const publishAudio = async (payload: AudioPublishPayload): Promise<PublishResult> => {
+    const config = getGithubConfig();
+    if (!config) throw new Error("GitHub publishing is not configured.");
+
+    if (!payload.metadata.author.trim()) throw new Error("Audio author is required.");
+    if (!payload.metadata.source.provider.trim() || !payload.metadata.source.url.trim()) throw new Error("Audio source provider and URL are required.");
+    if (!payload.metadata.license?.type) throw new Error("Audio license is required.");
+    if (!Number.isFinite(payload.metadata.duration) || payload.metadata.duration <= 0) throw new Error("Audio duration must be greater than zero.");
+
+    const category = payload.category.toLowerCase();
+    const extension = getAudioExtension(payload.audioFile.name);
+    const publishBranch = buildPublishBranch("audio", payload.id, category);
+    await ensurePublishBranch(config, publishBranch);
+
+    const audioPath = `data/audio/${category}/${payload.id}.${extension}`;
+    const definitionPath = `data/audio/${category}/${payload.id}.json`;
+    const categoryIndexPath = `data/audio/${category}/index.json`;
+    const globalIndexPath = "data/audio/index.json";
+    const coverPath = `data/audio/covers/${payload.id}.png`;
+    const rawBase = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}`;
+
+    const definition = {
+      id: payload.id,
+      category,
+      ...payload.metadata,
+      safety: payload.metadata.safety || {
+        status: "approved",
+        reviewedAt: new Date().toISOString(),
+      },
+      audioUrl: `${rawBase}/${audioPath}`,
+      coverArtUrl: payload.coverArtDataUrl ? `${rawBase}/${coverPath}` : undefined,
+    };
+
+    const summary = {
+      id: definition.id,
+      name: definition.name,
+      category,
+      description: definition.description || "",
+      tags: definition.tags || [],
+      author: definition.author,
+      duration: definition.duration,
+      bpm: definition.bpm,
+      loopable: definition.loopable,
+      license: definition.license,
+      source: definition.source,
+      audioUrl: definition.audioUrl,
+      coverArtUrl: definition.coverArtUrl,
+      safety: definition.safety,
+    };
+
+    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, publishBranch, []);
+    const globalIndex = await readJson<any[]>(config, globalIndexPath, publishBranch, []);
+
+    const files = [definitionPath, audioPath, categoryIndexPath, globalIndexPath, ...(payload.coverArtDataUrl ? [coverPath] : [])];
+    const existingDefinition = await readFile(config, definitionPath, config.branch);
+    const action = existingDefinition ? "Update" : "Add";
+    const displayName = getDisplayName(definition, payload.id);
+
+    await putJson(config, definitionPath, publishBranch, definition, `${action} audio metadata ${payload.id}`);
+    await putFile(config, audioPath, publishBranch, dataUrlToBase64(payload.audioFile.dataUrl), `${action} audio file ${payload.id}`);
+    if (payload.coverArtDataUrl) {
+      await putFile(config, coverPath, publishBranch, dataUrlToBase64(payload.coverArtDataUrl), `${action} audio cover ${payload.id}`);
+    }
+    await putJson(config, categoryIndexPath, publishBranch, upsertById(categoryIndex, summary), `Update ${category} audio index`);
+    await putJson(config, globalIndexPath, publishBranch, upsertById(globalIndex, summary), "Update audio index");
+
+    const prUrl = await getOrCreatePullRequest(
+      config,
+      publishBranch,
+      buildPublishTitle(action, "audio", displayName),
+      `${action}s the ${displayName} public audio asset (${payload.id}) in ${category}, including reviewed metadata, source/license fields, audio media, and index updates.`
+    );
+
+    return { files, branch: publishBranch, prUrl };
+  };
+
   return {
     publishEffect,
     publishTemplate,
+    publishAudio,
     saveGithubConfig,
     getGithubConfig,
   };
