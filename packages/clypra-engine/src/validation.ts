@@ -161,6 +161,13 @@ export const EffectIndexItemSchema = z.object({
   durationMs: z.number().positive().optional(),
 });
 
+// ── Bounding Box Schema ─────────────────────────────────────────────────────
+export const BoundingBoxSchema = z.object({
+  paddingX: z.number().min(0),
+  paddingY: z.number().min(0),
+  mode: z.enum(["ink", "panel"]).optional(),
+});
+
 // ── Effect Full Definition Schema ───────────────────────────────────────────
 export const EffectFullDefinitionSchema = EffectIndexItemSchema.extend({
   version: z.string().optional(),
@@ -178,6 +185,7 @@ export const EffectFullDefinitionSchema = EffectIndexItemSchema.extend({
   animation: AnimationSchema.optional(),
   background: z.any().optional(), // DEPRECATED: kept for backward compatibility
   stack: EffectStackSchema.optional(),
+  boundingBox: BoundingBoxSchema.optional(),
 });
 
 // ── Text Effect Definition Schema ───────────────────────────────────────────

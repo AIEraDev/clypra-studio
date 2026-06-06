@@ -267,12 +267,6 @@ export interface EffectFullDefinition extends EffectIndexItem {
   };
   background?: any; // DEPRECATED: Use 'panel' instead. Kept for backward compatibility only.
   stack?: EffectStack;
-}
-
-export interface TextEffectDefinition extends EffectFullDefinition {
-  text?: string;
-  description: string;
-  tags: string[];
   /**
    * Bounding box specification — declares exactly how much space the effect needs
    * beyond the ink bounds. createTextClip uses this instead of guessing.
@@ -287,6 +281,12 @@ export interface TextEffectDefinition extends EffectFullDefinition {
      */
     mode?: "ink" | "panel";
   };
+}
+
+export interface TextEffectDefinition extends EffectFullDefinition {
+  text?: string;
+  description: string;
+  tags: string[];
 }
 
 export interface EvaluatedTextLayer {
