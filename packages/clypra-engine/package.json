@@ -32,7 +32,8 @@
   },
   "dependencies": {
     "jszip": "^3.10.1",
-    "lottie-web": "^5.13.0"
+    "lottie-web": "^5.13.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@napi-rs/canvas": "^0.1.70",
