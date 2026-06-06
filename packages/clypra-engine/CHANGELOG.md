@@ -1,3 +1,15 @@
+# [1.4.0](https://github.com/AIEraDev/clypra-studio/compare/v1.3.0...v1.4.0) (2026-06-06)
+
+
+### Bug Fixes
+
+* **engine:** Fix text effect property mapping and add runtime validation ([943871c](https://github.com/AIEraDev/clypra-studio/commit/943871cf6275cf276563c5b4e385134fc4b17909))
+
+
+### Features
+
+* updated bounding box for type definition ([a3b6528](https://github.com/AIEraDev/clypra-studio/commit/a3b65282dbe36a1c3389dd3d069e81a279159f2a))
+
 ## [1.3.1](https://github.com/AIEraDev/clypra-studio/compare/v1.3.0...v1.3.1) (2026-06-06)
 
 
