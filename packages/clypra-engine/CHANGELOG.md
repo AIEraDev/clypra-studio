@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/AIEraDev/clypra-studio/compare/v1.2.0...v1.2.1) (2026-06-06)
+
+
+### Bug Fixes
+
+* vertical centering layout logic in engine, inkBrush, and code generator; add text layout unit tests ([6ecde27](https://github.com/AIEraDev/clypra-studio/commit/6ecde279c1e1cab07b586d2abc6e1f1d5977a6b5))
+
 # [1.2.0](https://github.com/AIEraDev/clypra-studio/compare/v1.1.2...v1.2.0) (2026-06-04)
 
 
