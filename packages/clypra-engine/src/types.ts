@@ -273,6 +273,20 @@ export interface TextEffectDefinition extends EffectFullDefinition {
   text?: string;
   description: string;
   tags: string[];
+  /**
+   * Bounding box specification — declares exactly how much space the effect needs
+   * beyond the ink bounds. createTextClip uses this instead of guessing.
+   */
+  boundingBox?: {
+    paddingX: number; // pixels added to each horizontal side
+    paddingY: number; // pixels added to each vertical side
+    /**
+     * "ink"   → box wraps text ink + padding (default, most effects)
+     * "panel" → effect renders a filled background; paddingX/Y ARE the
+     *            visual padding of that panel around the text
+     */
+    mode?: "ink" | "panel";
+  };
 }
 
 export interface EvaluatedTextLayer {
