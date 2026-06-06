@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/AIEraDev/clypra-studio/compare/v1.3.0...v1.3.1) (2026-06-06)
+
+
+### Bug Fixes
+
+* **engine:** Fix text effect property mapping and add runtime validation ([943871c](https://github.com/AIEraDev/clypra-studio/commit/943871cf6275cf276563c5b4e385134fc4b17909))
+
 # [1.3.0](https://github.com/AIEraDev/clypra-studio/compare/v1.2.1...v1.3.0) (2026-06-06)
 
 
