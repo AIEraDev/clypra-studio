@@ -147,11 +147,11 @@ export class InkBrushEngine {
       (ctx as any).letterSpacing = `${letterSpacing}px`;
     }
 
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
+    let startY = (height - textBlockHeight) / 2 + fontSize * 0.85;
     if (textPosY === "top") {
-      startY = 40 + fontSize * 0.8;
+      startY = 40 + fontSize * 0.85;
     } else if (textPosY === "bottom") {
-      startY = height - 40 - textBlockHeight + fontSize * 0.8;
+      startY = height - 40 - textBlockHeight + fontSize * 0.85;
     }
 
     ctx.save();
@@ -332,11 +332,11 @@ export class InkBrushEngine {
       (ctx as any).letterSpacing = `${letterSpacing}px`;
     }
 
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
+    let startY = (height - textBlockHeight) / 2 + fontSize * 0.85;
     if (textPosY === "top") {
-      startY = 40 + fontSize * 0.8;
+      startY = 40 + fontSize * 0.85;
     } else if (textPosY === "bottom") {
-      startY = height - 40 - textBlockHeight + fontSize * 0.8;
+      startY = height - 40 - textBlockHeight + fontSize * 0.85;
     }
 
     ctx.save();

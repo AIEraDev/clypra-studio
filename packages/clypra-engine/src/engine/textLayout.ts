@@ -61,41 +61,33 @@ function getSafeRect(cfg: TextEffectConfig): { x: number; y: number; width: numb
   };
 }
 
-/** Soft-wrap paragraphs to fit safe width */
+/** Soft-wrap paragraphs to fit safe width character-by-character */
 export function wrapTextToWidth(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, text: string, maxWidth: number, letterSpacing: number): string[] {
   const paragraphs = text.split("\n");
   const lines: string[] = [];
 
   for (const para of paragraphs) {
-    if (!para.trim()) {
+    if (para === "") {
       lines.push("");
       continue;
     }
-    const words = para.split(/\s+/).filter(Boolean);
+    
     let current = "";
-    for (const word of words) {
-      const candidate = current ? `${current} ${word}` : word;
-      if (measureLine(ctx, candidate, letterSpacing) <= maxWidth) {
-        current = candidate;
+    for (let i = 0; i < para.length; i++) {
+      const char = para[i];
+      const tryLine = current + char;
+      if (measureLine(ctx, tryLine, letterSpacing) <= maxWidth) {
+        current = tryLine;
       } else {
-        if (current) lines.push(current);
-        if (measureLine(ctx, word, letterSpacing) > maxWidth) {
-          let chunk = "";
-          for (const ch of word) {
-            const tryChunk = chunk + ch;
-            if (measureLine(ctx, tryChunk, letterSpacing) <= maxWidth) chunk = tryChunk;
-            else {
-              if (chunk) lines.push(chunk);
-              chunk = ch;
-            }
-          }
-          current = chunk;
-        } else {
-          current = word;
+        if (current) {
+          lines.push(current);
         }
+        current = char;
       }
     }
-    if (current) lines.push(current);
+    if (current) {
+      lines.push(current);
+    }
   }
 
   return lines.length > 0 ? lines : [""];
@@ -131,11 +123,11 @@ function layoutWithFontSize(ctx: CanvasRenderingContext2D | OffscreenCanvasRende
     startX = safe.x + safe.width / 2;
   }
 
-  let startY = safe.y + (safe.height - textBlockHeight) / 2 + fontSize * 0.82;
+  let startY = safe.y + (safe.height - textBlockHeight) / 2 + fontSize * 0.85;
   if (cfg.textPosY === "top") {
-    startY = safe.y + fontSize * 0.82;
+    startY = safe.y + fontSize * 0.85;
   } else if (cfg.textPosY === "bottom") {
-    startY = safe.y + safe.height - textBlockHeight + fontSize * 0.82;
+    startY = safe.y + safe.height - textBlockHeight + fontSize * 0.85;
   }
 
   let xMin = startX;
@@ -143,7 +135,7 @@ function layoutWithFontSize(ctx: CanvasRenderingContext2D | OffscreenCanvasRende
   else if (align === "right") xMin = startX - maxLineWidth;
 
   const yMin = startY - fontSize * 0.85;
-  const yMax = startY + (lines.length - 1) * fontSize * lineHeight + fontSize * 0.25;
+  const yMax = startY + (lines.length - 1) * fontSize * lineHeight + fontSize * 0.15;
 
   return {
     lines,

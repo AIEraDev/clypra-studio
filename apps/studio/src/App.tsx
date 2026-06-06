@@ -1083,12 +1083,66 @@ export default function App() {
     URL.revokeObjectURL(tsUrl);
   };
 
+  const getCroppedCanvas = (canvas: HTMLCanvasElement): HTMLCanvasElement => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return canvas;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+
+    let minX = w;
+    let maxX = 0;
+    let minY = h;
+    let maxY = 0;
+    let hasPixels = false;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const alpha = data[(y * w + x) * 4 + 3];
+        if (alpha > 0) {
+          hasPixels = true;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (!hasPixels) {
+      return canvas;
+    }
+
+    // Add padding of 15px around the text effect
+    const padding = 15;
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = Math.min(w, maxX + padding);
+    maxY = Math.min(h, maxY + padding);
+
+    const cropWidth = maxX - minX;
+    const cropHeight = maxY - minY;
+
+    const cropCanvas = document.createElement("canvas");
+    cropCanvas.width = cropWidth;
+    cropCanvas.height = cropHeight;
+    const cropCtx = cropCanvas.getContext("2d");
+    if (cropCtx) {
+      cropCtx.drawImage(canvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+      return cropCanvas;
+    }
+    return canvas;
+  };
+
   // Copy Canvas Image to clipboard
   const copyImageToClipboard = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     try {
-      canvas.toBlob(async (blob) => {
+      const targetCanvas = getCroppedCanvas(canvas);
+      targetCanvas.toBlob(async (blob) => {
         if (!blob) return;
         const item = new ClipboardItem({ "image/png": blob });
         await navigator.clipboard.write([item]);
@@ -1104,7 +1158,13 @@ export default function App() {
   const getPreviewPngDataUrl = () => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
-    return canvas.toDataURL("image/png");
+    try {
+      const cropped = getCroppedCanvas(canvas);
+      return cropped.toDataURL("image/png");
+    } catch (e) {
+      console.warn("Failed to crop canvas, using original", e);
+      return canvas.toDataURL("image/png");
+    }
   };
 
   const downloadPng = () => {

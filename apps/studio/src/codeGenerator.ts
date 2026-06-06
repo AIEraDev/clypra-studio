@@ -398,7 +398,7 @@ export class ${engineName} {
       ctx.letterSpacing = letterSpacing + "px";
     }
 
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
+    let startY = (height - textBlockHeight) / 2 + fontSize * 0.85;
 
     ctx.save();
     if (skewX !== 0) {
@@ -584,7 +584,7 @@ export class ${engineName} {
       ctx.letterSpacing = letterSpacing + "px";
     }
 
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
+    let startY = (height - textBlockHeight) / 2 + fontSize * 0.85;
 
     ctx.save();
     if (skewX !== 0) {
@@ -968,11 +968,11 @@ export class ${engineName} {
     ctx.textAlign = align;
 
     // Vertical alignment origins
-    let startY = (height - textBlockHeight) / 2 + fontSize * 0.8;
+    let startY = (height - textBlockHeight) / 2 + fontSize * 0.85;
     if (textPosY === "top") {
-      startY = (panelEnabled ? panelPaddingY + 20 : 40) + fontSize * 0.8;
+      startY = (panelEnabled ? panelPaddingY + 20 : 40) + fontSize * 0.85;
     } else if (textPosY === "bottom") {
-      startY = height - (panelEnabled ? panelPaddingY + 20 : 40) - textBlockHeight + fontSize * 0.8;
+      startY = height - (panelEnabled ? panelPaddingY + 20 : 40) - textBlockHeight + fontSize * 0.85;
     }
 
     // Dynamic measurements
@@ -995,7 +995,7 @@ export class ${engineName} {
       xMin = startX - maxLineWidth;
     }
     const xMax = xMin + maxLineWidth;
-    const yMin = startY - fontSize * 0.8;
+    const yMin = startY - fontSize * 0.85;
     const yMax = yMin + textBlockHeight;
 
     // Helper to parse hex colors to RGB
