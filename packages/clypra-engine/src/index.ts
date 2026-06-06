@@ -3,6 +3,7 @@
  * @version 1.0.0
  */
 export * from "./types.js";
+export * from "./validation.js";
 export * from "./renderer.js";
 export * from "./presets.js";
 export * from "./fontLoader.js";
@@ -35,4 +36,3 @@ export * from "./platform.js";
 export * from "./canvas-utils.js";
 // Procedural engines
 export { InkBrushEngine } from "./engine/procedural/InkBrushEngine.js";
-

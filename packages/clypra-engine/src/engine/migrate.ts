@@ -393,16 +393,7 @@ export function resolveFontFamilyName(fontFamily: string): string {
   return fontFamily;
 }
 
-export function _buildConfig(
-  effect: TextEffectDefinition,
-  text: string,
-  fontSize: number,
-  canvasWidth: number,
-  canvasHeight: number,
-  time?: number,
-  clipStartTime?: number,
-  clipDuration?: number
-): TextEffectConfig & { width: number; height: number } {
+export function _buildConfig(effect: TextEffectDefinition, text: string, fontSize: number, canvasWidth: number, canvasHeight: number, time?: number, clipStartTime?: number, clipDuration?: number): TextEffectConfig & { width: number; height: number } {
   const fill = effect.fills?.[0];
   const stroke = effect.strokes?.[0];
   const shadow = effect.shadows?.[0];
@@ -470,8 +461,11 @@ export function _buildConfig(
   if (shadow) {
     if (shadow.color !== undefined) config.shadowColor = shadow.color;
     if (shadow.blur !== undefined) config.shadowBlur = shadow.blur * ratio;
-    if (shadow.offsetX !== undefined) config.shadowOffsetX = shadow.offsetX * ratio;
-    if (shadow.offsetY !== undefined) config.shadowOffsetY = shadow.offsetY * ratio;
+    // Support both flat (legacy) and nested (current Studio output) offset structures
+    if (shadow.offset?.x !== undefined) config.shadowOffsetX = shadow.offset.x * ratio;
+    else if (shadow.offsetX !== undefined) config.shadowOffsetX = shadow.offsetX * ratio;
+    if (shadow.offset?.y !== undefined) config.shadowOffsetY = shadow.offset.y * ratio;
+    else if (shadow.offsetY !== undefined) config.shadowOffsetY = shadow.offsetY * ratio;
     if (shadow.opacity !== undefined) config.shadowOpacity = shadow.opacity;
     if (shadow.type !== undefined) config.shadowType = shadow.type;
   }
@@ -480,8 +474,11 @@ export function _buildConfig(
   config.bevelEnabled = !!bevel;
   if (bevel) {
     if (bevel.depth !== undefined) config.bevelDepth = Math.round(bevel.depth * ratio);
-    if (bevel.highlightColor !== undefined) config.bevelHighlight = bevel.highlightColor;
-    if (bevel.shadowColor !== undefined) config.bevelShadow = bevel.shadowColor;
+    // Support both property names (Studio exports 'highlight'/'shadow', legacy may use 'highlightColor'/'shadowColor')
+    if (bevel.highlight !== undefined) config.bevelHighlight = bevel.highlight;
+    else if (bevel.highlightColor !== undefined) config.bevelHighlight = bevel.highlightColor;
+    if (bevel.shadow !== undefined) config.bevelShadow = bevel.shadow;
+    else if (bevel.shadowColor !== undefined) config.bevelShadow = bevel.shadowColor;
     if (bevel.direction !== undefined) config.bevelDirection = bevel.direction;
     if (bevel.coreColor !== undefined) config.bevelCoreColor = bevel.coreColor;
     if (bevel.edgeColor !== undefined) config.bevelEdgeColor = bevel.edgeColor;
@@ -513,8 +510,11 @@ export function _buildConfig(
     if (panel.color !== undefined) config.panelColor = panel.color;
     if (panel.opacity !== undefined) config.panelOpacity = panel.opacity;
     if (panel.radius !== undefined) config.panelRadius = panel.radius;
-    if (panel.paddingX !== undefined) config.panelPaddingX = panel.paddingX * ratio;
-    if (panel.paddingY !== undefined) config.panelPaddingY = panel.paddingY * ratio;
+    // Support both flat (legacy) and nested (current Studio output) padding structures
+    if (panel.padding?.x !== undefined) config.panelPaddingX = panel.padding.x * ratio;
+    else if (panel.paddingX !== undefined) config.panelPaddingX = panel.paddingX * ratio;
+    if (panel.padding?.y !== undefined) config.panelPaddingY = panel.padding.y * ratio;
+    else if (panel.paddingY !== undefined) config.panelPaddingY = panel.paddingY * ratio;
     if (panel.stroke !== undefined) {
       config.panelStrokeEnabled = !!panel.stroke;
       if (panel.stroke.color !== undefined) config.panelStrokeColor = panel.stroke.color;
@@ -539,23 +539,7 @@ export function _buildConfig(
   }
 
   // Auto-forward unrecognised keys
-  const standardKeys = new Set([
-    "id",
-    "name",
-    "category",
-    "description",
-    "tags",
-    "font",
-    "fills",
-    "strokes",
-    "shadows",
-    "glows",
-    "bevel",
-    "panel",
-    "text",
-    "animation",
-    "stack",
-  ]);
+  const standardKeys = new Set(["id", "name", "category", "description", "tags", "font", "fills", "strokes", "shadows", "glows", "bevel", "panel", "text", "animation", "stack"]);
   for (const key of Object.keys(effect)) {
     if (!standardKeys.has(key)) {
       config[key] = (effect as any)[key];
@@ -567,7 +551,7 @@ export function _buildConfig(
 
 export function layerToTextEffectConfig(layer: EvaluatedTextLayer): TextEffectConfig & { width: number; height: number } {
   const normWeight = typeof layer.fontWeight === "number" ? layer.fontWeight : layer.fontWeight === "bold" ? 700 : 400;
-  
+
   const config = {
     ...defaultConfig,
     width: layer.width,
@@ -603,9 +587,8 @@ export function layerToTextEffectConfig(layer: EvaluatedTextLayer): TextEffectCo
     panelPaddingX: layer.background?.padding ?? 12,
     panelPaddingY: layer.background?.padding ?? 12,
     textPosX: layer.textAlign || "center",
-    textPosY: layer.verticalAlign === "middle" ? "middle" : (layer.verticalAlign || "middle"),
+    textPosY: layer.verticalAlign === "middle" ? "middle" : layer.verticalAlign || "middle",
   } as any;
 
   return config;
 }
-

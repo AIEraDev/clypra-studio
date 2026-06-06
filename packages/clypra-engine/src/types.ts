@@ -135,25 +135,115 @@ export interface Preset {
 }
 
 export interface EffectIndexItem {
-  id:           string;
-  name:         string;
-  category:     string;
+  id: string;
+  name: string;
+  category: string;
   description?: string;
-  tags?:        string[];
-  isPremium?:   boolean;
+  tags?: string[];
+  isPremium?: boolean;
 
   // Preview format
-  previewType?: 'static' | 'video' | 'lottie';
-  thumbnailUrl?: string;      // always present from API manifests
-  thumbnail?:    string;      // legacy/static data compatibility
-  previewUrl?:  string;       // WebM (video) or JSON (lottie) — animated only
-  durationMs?:  number;       // loop length hint for progress ring, templates only
+  previewType?: "static" | "video" | "lottie";
+  thumbnailUrl?: string; // always present from API manifests
+  thumbnail?: string; // legacy/static data compatibility
+  previewUrl?: string; // WebM (video) or JSON (lottie) — animated only
+  durationMs?: number; // loop length hint for progress ring, templates only
 }
 
+// ── Effect Property Type Definitions ───────────────────────────────────────
+
+export interface EffectFill {
+  type: "solid" | "linear" | "radial" | "pattern" | "none";
+  color?: string;
+  gradient?: {
+    angle: number;
+    stops: Array<{ color: string; offset: number }>;
+  };
+  patternType?: string;
+  perCharFillEnabled?: boolean;
+  charFillColors?: string[];
+}
+
+export interface EffectStroke {
+  color: string;
+  width: number;
+  position?: "outside" | "center" | "inside";
+  opacity?: number;
+  lineJoin?: "round" | "miter" | "bevel";
+  blur?: number;
+  type?: "solid" | "gradient";
+  colorSecondary?: string;
+  widthSecondary?: number;
+  fadeRange?: [number, number];
+}
+
+export interface EffectShadow {
+  type?: "drop" | "inner";
+  color: string;
+  blur: number;
+  offset?: { x: number; y: number }; // Current Studio output (nested)
+  offsetX?: number; // Legacy format (flat) - for backward compatibility
+  offsetY?: number; // Legacy format (flat) - for backward compatibility
+  opacity?: number;
+}
+
+export interface EffectBevel {
+  depth: number;
+  highlight?: string; // Current Studio output
+  highlightColor?: string; // Legacy format - for backward compatibility
+  shadow?: string; // Current Studio output
+  shadowColor?: string; // Legacy format - for backward compatibility
+  direction?: "bottom-right" | "bottom" | "right";
+  coreColor?: string;
+  edgeColor?: string;
+  edgeWidth?: number;
+  blur?: number;
+  blurColor?: string;
+  perspectiveEnabled?: boolean;
+  vanishingPointX?: number;
+  vanishingPointY?: number;
+  focalLength?: number;
+}
+
+export interface EffectGlow {
+  color: string;
+  blur: number;
+  opacity: number;
+  type?: "outer" | "inner";
+  strength?: number;
+  spread?: number;
+}
+
+export interface EffectPanel {
+  color: string;
+  opacity: number;
+  radius: number;
+  padding?: { x: number; y: number }; // Current Studio output (nested)
+  paddingX?: number; // Legacy format (flat) - for backward compatibility
+  paddingY?: number; // Legacy format (flat) - for backward compatibility
+  stroke?: {
+    color: string;
+    width: number;
+  } | null;
+}
+
+export interface EffectStack {
+  count: number;
+  offsetX: number;
+  offsetY: number;
+  opacityDecay: number;
+  color1?: string;
+  color2?: string;
+  color3?: string;
+  color4?: string;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
 export interface EffectFullDefinition extends EffectIndexItem {
-  version?:     string;
-  description:  string;
-  tags:         string[];
+  version?: string;
+  description: string;
+  tags: string[];
   font: {
     family: string;
     weight: number;
@@ -161,22 +251,22 @@ export interface EffectFullDefinition extends EffectIndexItem {
     letterSpacing: number;
     lineHeight: number;
   };
-  fills: any[];
-  strokes: any[];
-  shadows: any[];
-  bevel?: any;
-  glow?: any;
-  glows?: any[];
-  panel?: any;
-  glitch?: any;
+  fills: EffectFill[];
+  strokes: EffectStroke[];
+  shadows: EffectShadow[];
+  bevel?: EffectBevel;
+  glow?: EffectGlow; // Legacy single glow
+  glows?: EffectGlow[]; // Current multi-layer glows
+  panel?: EffectPanel; // Effect definition property
+  glitch?: any; // TODO: Define proper type when glitch effects are implemented
   animation?: {
     type: "none" | "typewriter" | "wave" | "fade" | "glitch";
     speed?: number;
     amplitude?: number;
     frequency?: number;
   };
-  background?: any;
-  stack?: any;
+  background?: any; // DEPRECATED: Use 'panel' instead. Kept for backward compatibility only.
+  stack?: EffectStack;
 }
 
 export interface TextEffectDefinition extends EffectFullDefinition {
@@ -229,5 +319,3 @@ export interface EvaluatedTextLayer {
   };
   readonly styleId?: string;
 }
-
-
