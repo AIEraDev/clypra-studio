@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/AIEraDev/clypra-studio/compare/v1.2.1...v1.3.0) (2026-06-06)
+
+
+### Features
+
+* add programmatic update APIs and TextEffectBuilder to clypra-engine ([68595cb](https://github.com/AIEraDev/clypra-studio/commit/68595cbfadcea6707d38f9dce2fd1dbe42b20546))
+
 ## [1.2.1](https://github.com/AIEraDev/clypra-studio/compare/v1.2.0...v1.2.1) (2026-06-06)
 
 
