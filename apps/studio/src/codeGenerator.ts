@@ -1,5 +1,4 @@
-import { TextEffectConfig } from "@clypra/engine";
-import { textEffectConfigToScene } from "@clypra/engine";
+import { TextEffectConfig, textEffectConfigToScene } from "@clypra/engine";
 
 // Helper to convert PascalCase to kebab-case
 export function toKebabCase(str: string): string {
@@ -82,6 +81,95 @@ export function getEnrichedEffectName(cfg: TextEffectConfig): string {
 
   // Join them as PascalCase for unique identifiers
   return finalWords.join("");
+}
+
+// Helper to calculate bounding box based on effect properties
+// This function intelligently computes the padding required for text effects based on their properties.
+// Returns undefined for effects that don't need special bounding box handling (backward compatible).
+function calculateBoundingBox(cfg: TextEffectConfig): { paddingX: number; paddingY: number; mode: "ink" | "panel" } | undefined {
+  // Panel effects: use the panel padding directly
+  if (cfg.panelEnabled && cfg.panelPaddingX !== undefined && cfg.panelPaddingY !== undefined) {
+    return {
+      mode: "panel",
+      paddingX: cfg.panelPaddingX,
+      paddingY: cfg.panelPaddingY,
+    };
+  }
+
+  // For non-panel effects, calculate based on stroke, shadow, and glow
+  let paddingX = 0;
+  let paddingY = 0;
+
+  // Account for stroke
+  if (cfg.strokeEnabled && cfg.strokeWidth) {
+    paddingX = Math.max(paddingX, cfg.strokeWidth);
+    paddingY = Math.max(paddingY, cfg.strokeWidth);
+
+    // If stroke has blur, add that too
+    if (cfg.strokeBlur) {
+      paddingX += cfg.strokeBlur;
+      paddingY += cfg.strokeBlur;
+    }
+  }
+
+  // Account for shadow
+  if (cfg.shadowEnabled) {
+    const shadowPaddingX = Math.abs(cfg.shadowOffsetX || 0) + (cfg.shadowBlur || 0);
+    const shadowPaddingY = Math.abs(cfg.shadowOffsetY || 0) + (cfg.shadowBlur || 0);
+    paddingX = Math.max(paddingX, shadowPaddingX);
+    paddingY = Math.max(paddingY, shadowPaddingY);
+  }
+
+  // Account for glows
+  if (cfg.glowLayers && cfg.glowLayers.length > 0) {
+    cfg.glowLayers.forEach((glow) => {
+      if (glow.enabled) {
+        const glowPadding = (glow.blur || 0) + (glow.spread || 0);
+        paddingX = Math.max(paddingX, glowPadding);
+        paddingY = Math.max(paddingY, glowPadding);
+      }
+    });
+  }
+
+  // Account for bevel (3D extrusion)
+  if (cfg.bevelEnabled && cfg.bevelDepth) {
+    paddingX = Math.max(paddingX, cfg.bevelDepth);
+    paddingY = Math.max(paddingY, cfg.bevelDepth);
+
+    // Add bevel blur if present
+    if (cfg.bevelBlur) {
+      paddingX += cfg.bevelBlur;
+      paddingY += cfg.bevelBlur;
+    }
+  }
+
+  // Account for stack extrusion
+  if (cfg.stackEnabled && cfg.stackCount) {
+    const stackPaddingX = Math.abs((cfg.stackOffsetX || 0) * (cfg.stackCount || 1));
+    const stackPaddingY = Math.abs((cfg.stackOffsetY || 0) * (cfg.stackCount || 1));
+    paddingX = Math.max(paddingX, stackPaddingX);
+    paddingY = Math.max(paddingY, stackPaddingY);
+  }
+
+  // If we calculated any padding, return it
+  if (paddingX > 0 || paddingY > 0) {
+    // Add a safety margin (10-15% extra)
+    paddingX = Math.ceil(paddingX * 1.15);
+    paddingY = Math.ceil(paddingY * 1.15);
+
+    return {
+      mode: "ink",
+      paddingX,
+      paddingY,
+    };
+  }
+
+  // No significant effects, return minimal padding
+  return {
+    mode: "ink",
+    paddingX: 10,
+    paddingY: 10,
+  };
 }
 
 // Helper to get structured Clypra representation object
@@ -253,6 +341,7 @@ export function getEffectRepresentation(cfg: TextEffectConfig) {
           skewX: cfg.skewX,
         }
       : undefined,
+    boundingBox: calculateBoundingBox(cfg),
   };
 }
 
