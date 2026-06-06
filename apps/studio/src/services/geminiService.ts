@@ -456,3 +456,121 @@ Make the metadata unique, professional, and SEO-friendly. Focus on the animation
     throw new Error(extractErrorMessage(error));
   }
 }
+
+const AUDIO_CATEGORIES = ["music", "lo-fi", "chill", "cinematic", "epic", "upbeat", "corporate", "hip-hop", "trap", "electronic", "synth", "acoustic", "indie", "jazz", "soul", "ambient", "background", "sfx", "transition", "impact", "ui", "notifications", "voice"] as const;
+type AudioCategoryId = (typeof AUDIO_CATEGORIES)[number];
+
+function resolveAudioCategory(raw: string): AudioCategoryId {
+  const normalized = (raw || "").toLowerCase().trim();
+  if (AUDIO_CATEGORIES.includes(normalized as AudioCategoryId)) return normalized as AudioCategoryId;
+  if (normalized.includes("lofi") || normalized.includes("lo-fi") || normalized.includes("chill")) return "lo-fi";
+  if (normalized.includes("cinematic") || normalized.includes("film")) return "cinematic";
+  if (normalized.includes("epic") || normalized.includes("trailer")) return "epic";
+  if (normalized.includes("corporate")) return "corporate";
+  if (normalized.includes("upbeat") || normalized.includes("happy")) return "upbeat";
+  if (normalized.includes("hip")) return "hip-hop";
+  if (normalized.includes("trap")) return "trap";
+  if (normalized.includes("electronic") || normalized.includes("edm")) return "electronic";
+  if (normalized.includes("synth")) return "synth";
+  if (normalized.includes("acoustic")) return "acoustic";
+  if (normalized.includes("indie")) return "indie";
+  if (normalized.includes("jazz")) return "jazz";
+  if (normalized.includes("soul")) return "soul";
+  if (normalized.includes("ambient") || normalized.includes("room") || normalized.includes("noise")) return "ambient";
+  if (normalized.includes("background")) return "background";
+  if (normalized.includes("transition") || normalized.includes("whoosh") || normalized.includes("swoosh")) return "transition";
+  if (normalized.includes("impact") || normalized.includes("boom") || normalized.includes("hit")) return "impact";
+  if (normalized.includes("notification") || normalized.includes("alert")) return "notifications";
+  if (normalized.includes("ui") || normalized.includes("click") || normalized.includes("button")) return "ui";
+  if (normalized.includes("voice") || normalized.includes("vocal")) return "voice";
+  if (normalized.includes("sfx") || normalized.includes("effect")) return "sfx";
+  return "music";
+}
+
+export async function generateAudioMetadata(params: {
+  fileName: string;
+  currentName?: string;
+  currentCategory?: string;
+  currentDescription?: string;
+  currentTags?: string;
+  author?: string;
+  duration?: number;
+}): Promise<{
+  category: AudioCategoryId;
+  id: string;
+  name: string;
+  description: string;
+  tags: string[];
+  bpm?: number;
+  loopable: boolean;
+}> {
+  try {
+    const ai = createGeminiClient();
+    const context = [
+      `File name: ${params.fileName}`,
+      params.currentName ? `Current name: ${params.currentName}` : "",
+      params.currentCategory ? `Current category: ${params.currentCategory}` : "",
+      params.currentDescription ? `Current description: ${params.currentDescription}` : "",
+      params.currentTags ? `Current tags: ${params.currentTags}` : "",
+      params.author ? `Author/rightsholder: ${params.author}` : "",
+      params.duration ? `Duration seconds: ${params.duration}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          text: `Generate safe, professional catalog metadata for a public audio asset in Clypra Studio.
+
+${context}
+
+Available categories, choose exactly one:
+${AUDIO_CATEGORIES.map((category) => `- ${category}`).join("\n")}
+
+Rules:
+- Infer from the filename and existing hints only. Do not invent a source, author, or license.
+- If it is a sound effect/noise, use categories like ambient, sfx, transition, impact, ui, or notifications.
+- If it is music, use the closest genre/mood category.
+- Name should be human-readable and production-ready.
+- ID must be kebab-case.
+- Description should be one concise sentence for video editors.
+- Tags should be 5-8 lowercase discovery terms.
+- BPM should be omitted unless strongly implied by the name/category.
+- loopable should be true only for beds, ambience, loops, or repeating music.`,
+        },
+      ],
+      config: {
+        systemInstruction: "You are an audio asset librarian for a professional video editor. You generate accurate, conservative metadata and never invent legal/source fields.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            category: { type: Type.STRING, enum: AUDIO_CATEGORIES as unknown as string[] },
+            id: { type: Type.STRING },
+            name: { type: Type.STRING },
+            description: { type: Type.STRING },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            bpm: { type: Type.NUMBER },
+            loopable: { type: Type.BOOLEAN },
+          },
+          required: ["category", "id", "name", "description", "tags", "loopable"],
+        },
+      },
+    });
+
+    const result = JSON.parse((response.text || "{}").trim());
+    return {
+      category: resolveAudioCategory(result.category),
+      id: String(result.id || params.fileName.replace(/\.[^.]+$/, "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+      name: result.name || params.fileName.replace(/\.[^.]+$/, ""),
+      description: result.description || "",
+      tags: Array.isArray(result.tags) ? result.tags : [],
+      bpm: typeof result.bpm === "number" ? result.bpm : undefined,
+      loopable: !!result.loopable,
+    };
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+}

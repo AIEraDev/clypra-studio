@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle, Loader2, Music, UploadCloud } from "lucide-react";
+import { AlertTriangle, CheckCircle, Loader2, Music, Sparkles, UploadCloud } from "lucide-react";
 import { useGitHubPublish, type AudioPublishPayload } from "../hooks/useGitHubPublish";
+import { generateAudioMetadata } from "../services/geminiService";
 
 const AUDIO_CATEGORIES: AudioPublishPayload["category"][] = ["music", "lo-fi", "chill", "cinematic", "epic", "upbeat", "corporate", "hip-hop", "trap", "electronic", "synth", "acoustic", "indie", "jazz", "soul", "ambient", "background", "sfx", "transition", "impact", "ui", "notifications", "voice"];
 const LICENSE_TYPES: AudioPublishPayload["metadata"]["license"]["type"][] = ["cc0", "cc-by", "royalty-free", "public-domain"];
@@ -20,6 +21,23 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.onload = () => resolve(String(reader.result || ""));
     reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
     reader.readAsDataURL(file);
+  });
+}
+
+function readAudioDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const audio = document.createElement("audio");
+    const objectUrl = URL.createObjectURL(file);
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(Number.isFinite(audio.duration) ? audio.duration : 0);
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Could not read audio duration"));
+    };
+    audio.src = objectUrl;
   });
 }
 
@@ -45,6 +63,8 @@ export function AudioPublishPanel() {
   const [status, setStatus] = useState<"idle" | "publishing" | "published" | "failed">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [prUrl, setPrUrl] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<"idle" | "generating" | "failed">("idle");
+  const [aiMessage, setAiMessage] = useState<string | null>(null);
 
   const tags = useMemo(
     () =>
@@ -69,6 +89,59 @@ export function AudioPublishPanel() {
   const handleNameChange = (value: string) => {
     setName(value);
     if (!id) setId(toKebabId(value));
+  };
+
+  const handleAudioFileChange = async (file: File | null) => {
+    setAudioFile(file);
+    if (!file) return;
+
+    const baseName = file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+    if (!name) setName(baseName);
+    if (!id) setId(toKebabId(baseName));
+
+    try {
+      const seconds = await readAudioDuration(file);
+      if (seconds > 0 && !duration) {
+        setDuration(String(Math.round(seconds * 100) / 100));
+      }
+    } catch {
+      // Duration can still be entered manually; keep this non-blocking.
+    }
+  };
+
+  const handleGenerateInfo = async () => {
+    if (!audioFile) {
+      setAiStatus("failed");
+      setAiMessage("Choose an audio file first.");
+      return;
+    }
+
+    setAiStatus("generating");
+    setAiMessage(null);
+
+    try {
+      const metadata = await generateAudioMetadata({
+        fileName: audioFile.name,
+        currentName: name,
+        currentCategory: category,
+        currentDescription: description,
+        currentTags: tagsInput,
+        author,
+        duration: Number(duration) || undefined,
+      });
+
+      setName(metadata.name);
+      setId(toKebabId(metadata.id || metadata.name));
+      setCategory(metadata.category);
+      setDescription(metadata.description);
+      setTagsInput(metadata.tags.join(", "));
+      setLoopable(metadata.loopable);
+      if (metadata.bpm) setBpm(String(Math.round(metadata.bpm)));
+      setAiStatus("idle");
+    } catch (error) {
+      setAiStatus("failed");
+      setAiMessage(error instanceof Error ? error.message : "Failed to generate audio metadata");
+    }
   };
 
   const handlePublish = async () => {
@@ -132,7 +205,19 @@ export function AudioPublishPanel() {
       </div>
 
       <label className="block text-[10px] font-bold uppercase tracking-wider text-(--studio-muted)">Audio File</label>
-      <input type="file" accept="audio/mpeg,audio/wav,audio/mp4,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg" onChange={(event) => setAudioFile(event.target.files?.[0] || null)} className="w-full rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white" />
+      <input type="file" accept="audio/mpeg,audio/wav,audio/mp4,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg" onChange={(event) => void handleAudioFileChange(event.target.files?.[0] || null)} className="w-full rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white" />
+
+      <button type="button" onClick={handleGenerateInfo} disabled={!audioFile || aiStatus === "generating"} className="flex w-full items-center justify-center gap-2 rounded-md border border-purple-500/30 bg-purple-500/15 px-3 py-2 text-[12px] font-semibold text-purple-200 hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-50">
+        {aiStatus === "generating" ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+        Generate Info with AI
+      </button>
+
+      {aiMessage && (
+        <div className="flex items-start gap-2 rounded border border-red-500/20 bg-red-500/10 p-2 text-[10px] text-red-200">
+          <AlertTriangle size={12} className="mt-0.5 shrink-0" />
+          <span>{aiMessage}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         <input value={name} onChange={(event) => handleNameChange(event.target.value)} placeholder="Name" className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-teal-500" />
