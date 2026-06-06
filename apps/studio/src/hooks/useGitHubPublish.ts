@@ -30,7 +30,30 @@ interface EffectPublishPayload {
 
 export interface AudioPublishPayload {
   id: string;
-  category: "music" | "sfx" | "ambient" | "ui" | "transition" | "impact" | "voice";
+  category:
+    | "music"
+    | "lo-fi"
+    | "chill"
+    | "cinematic"
+    | "epic"
+    | "upbeat"
+    | "corporate"
+    | "hip-hop"
+    | "trap"
+    | "electronic"
+    | "synth"
+    | "acoustic"
+    | "indie"
+    | "jazz"
+    | "soul"
+    | "ambient"
+    | "background"
+    | "sfx"
+    | "transition"
+    | "impact"
+    | "ui"
+    | "notifications"
+    | "voice";
   metadata: {
     name: string;
     description?: string;

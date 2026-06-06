@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle, Loader2, Music, UploadCloud } from "lucide-react";
 import { useGitHubPublish, type AudioPublishPayload } from "../hooks/useGitHubPublish";
 
-const AUDIO_CATEGORIES: AudioPublishPayload["category"][] = ["music", "sfx", "ambient", "ui", "transition", "impact", "voice"];
+const AUDIO_CATEGORIES: AudioPublishPayload["category"][] = ["music", "lo-fi", "chill", "cinematic", "epic", "upbeat", "corporate", "hip-hop", "trap", "electronic", "synth", "acoustic", "indie", "jazz", "soul", "ambient", "background", "sfx", "transition", "impact", "ui", "notifications", "voice"];
 const LICENSE_TYPES: AudioPublishPayload["metadata"]["license"]["type"][] = ["cc0", "cc-by", "royalty-free", "public-domain"];
 
 function toKebabId(value: string): string {
