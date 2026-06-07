@@ -487,15 +487,7 @@ function resolveAudioCategory(raw: string): AudioCategoryId {
   return "music";
 }
 
-export async function generateAudioMetadata(params: {
-  fileName: string;
-  currentName?: string;
-  currentCategory?: string;
-  currentDescription?: string;
-  currentTags?: string;
-  author?: string;
-  duration?: number;
-}): Promise<{
+export async function generateAudioMetadata(params: { fileName: string; currentName?: string; currentCategory?: string; currentDescription?: string; currentTags?: string; author?: string; duration?: number }): Promise<{
   category: AudioCategoryId;
   id: string;
   name: string;
@@ -506,17 +498,7 @@ export async function generateAudioMetadata(params: {
 }> {
   try {
     const ai = createGeminiClient();
-    const context = [
-      `File name: ${params.fileName}`,
-      params.currentName ? `Current name: ${params.currentName}` : "",
-      params.currentCategory ? `Current category: ${params.currentCategory}` : "",
-      params.currentDescription ? `Current description: ${params.currentDescription}` : "",
-      params.currentTags ? `Current tags: ${params.currentTags}` : "",
-      params.author ? `Author/rightsholder: ${params.author}` : "",
-      params.duration ? `Duration seconds: ${params.duration}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const context = [`File name: ${params.fileName}`, params.currentName ? `Current name: ${params.currentName}` : "", params.currentCategory ? `Current category: ${params.currentCategory}` : "", params.currentDescription ? `Current description: ${params.currentDescription}` : "", params.currentTags ? `Current tags: ${params.currentTags}` : "", params.author ? `Author/rightsholder: ${params.author}` : "", params.duration ? `Duration seconds: ${params.duration}` : ""].filter(Boolean).join("\n");
 
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
@@ -563,12 +545,141 @@ Rules:
     const result = JSON.parse((response.text || "{}").trim());
     return {
       category: resolveAudioCategory(result.category),
-      id: String(result.id || params.fileName.replace(/\.[^.]+$/, "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+      id: String(result.id || params.fileName.replace(/\.[^.]+$/, ""))
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, ""),
       name: result.name || params.fileName.replace(/\.[^.]+$/, ""),
       description: result.description || "",
       tags: Array.isArray(result.tags) ? result.tags : [],
       bpm: typeof result.bpm === "number" ? result.bpm : undefined,
       loopable: !!result.loopable,
+    };
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+}
+
+const STICKER_CATEGORIES = ["trending", "emoji", "fun", "love", "gaming", "food", "animal", "shapes", "icons", "travel", "birthday", "weather", "sale", "vlog", "y2k", "glitter", "neon-text", "classic", "new", "football", "animal-meme", "hits", "free-fire", "emphasis", "cover-ups", "wrong", "letters", "mood", "text-sticker", "collage", "countdown", "music-festival", "journal", "campus", "cartoon", "fashion", "eco-friendly", "basketball", "barbie", "vibes", "shimmer", "frame", "winter", "fall", "details", "techniques", "lip-illustration", "handwriting", "retro-character", "illustration", "alphabet", "pixelated-style", "bubble", "label", "plog", "cyber", "stylish"] as const;
+type StickerCategoryId = (typeof STICKER_CATEGORIES)[number];
+
+function resolveStickerCategory(raw: string): StickerCategoryId {
+  const normalized = (raw || "").toLowerCase().trim();
+  if (STICKER_CATEGORIES.includes(normalized as StickerCategoryId)) return normalized as StickerCategoryId;
+
+  // Fuzzy matching for common category variations
+  if (normalized.includes("emoji") || normalized.includes("emoticon") || normalized.includes("smiley")) return "emoji";
+  if (normalized.includes("trend") || normalized.includes("popular") || normalized.includes("hot")) return "trending";
+  if (normalized.includes("love") || normalized.includes("heart") || normalized.includes("romance")) return "love";
+  if (normalized.includes("game") || normalized.includes("gaming")) return "gaming";
+  if (normalized.includes("food") || normalized.includes("eat") || normalized.includes("drink")) return "food";
+  if (normalized.includes("animal") && normalized.includes("meme")) return "animal-meme";
+  if (normalized.includes("animal") || normalized.includes("pet")) return "animal";
+  if (normalized.includes("shape") || normalized.includes("geometric")) return "shapes";
+  if (normalized.includes("icon")) return "icons";
+  if (normalized.includes("travel") || normalized.includes("vacation") || normalized.includes("trip")) return "travel";
+  if (normalized.includes("birthday") || normalized.includes("party") || normalized.includes("celebration")) return "birthday";
+  if (normalized.includes("weather") || normalized.includes("sun") || normalized.includes("rain")) return "weather";
+  if (normalized.includes("sale") || normalized.includes("discount") || normalized.includes("offer")) return "sale";
+  if (normalized.includes("vlog") || normalized.includes("youtube")) return "vlog";
+  if (normalized.includes("y2k") || normalized.includes("2000")) return "y2k";
+  if (normalized.includes("glitter") || normalized.includes("sparkle") || normalized.includes("shine")) return "glitter";
+  if (normalized.includes("neon")) return "neon-text";
+  if (normalized.includes("text")) return "text-sticker";
+  if (normalized.includes("music") || normalized.includes("festival")) return "music-festival";
+  if (normalized.includes("fashion") || normalized.includes("style") || normalized.includes("clothing")) return "fashion";
+  if (normalized.includes("sport") || normalized.includes("football") || normalized.includes("soccer")) return "football";
+  if (normalized.includes("basket")) return "basketball";
+  if (normalized.includes("cartoon") || normalized.includes("comic")) return "cartoon";
+  if (normalized.includes("retro") && normalized.includes("character")) return "retro-character";
+  if (normalized.includes("winter") || normalized.includes("snow") || normalized.includes("cold")) return "winter";
+  if (normalized.includes("fall") || normalized.includes("autumn")) return "fall";
+  if (normalized.includes("frame") || normalized.includes("border")) return "frame";
+  if (normalized.includes("cyber") || normalized.includes("tech") || normalized.includes("digital")) return "cyber";
+
+  return "fun"; // safe default
+}
+
+export async function generateStickerMetadata(imageDataUrl: string): Promise<{
+  name: string;
+  tags: string;
+  category: StickerCategoryId;
+}> {
+  try {
+    const ai = createGeminiClient();
+    const cleanBase64 = imageDataUrl.includes("base64,") ? imageDataUrl.split("base64,")[1] : imageDataUrl;
+    const mimeType = imageDataUrl.match(/data:([^;]+);/)?.[1] || "image/png";
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          inlineData: {
+            mimeType,
+            data: cleanBase64,
+          },
+        },
+        {
+          text: `Analyze this sticker image and generate professional metadata for Clypra Studio's sticker library.
+
+Available categories (choose exactly ONE):
+${STICKER_CATEGORIES.map((cat) => `- ${cat}`).join("\n")}
+
+Category Guidelines:
+- emoji: Faces, emotions, emoticons, reactions
+- fun: Playful, humorous, casual graphics
+- love: Hearts, romance, relationships, affection
+- gaming: Video game related, controllers, achievements
+- food: Food, drinks, meals, desserts
+- animal: Pets, wildlife, creatures
+- animal-meme: Funny animal memes (doge, cat memes, etc.)
+- shapes: Geometric shapes, basic forms, patterns
+- icons: UI icons, symbols, minimalist graphics
+- travel: Landmarks, transportation, vacation, maps
+- birthday: Birthday celebrations, cakes, balloons
+- weather: Weather icons, sun, rain, clouds, snow
+- sale: Sale tags, discount badges, pricing
+- vlog: YouTube, content creator, camera, video
+- y2k: Early 2000s aesthetic, retro tech
+- glitter: Sparkly, shiny, glamorous
+- neon-text: Neon sign style text
+- text-sticker: Text-based stickers, quotes, phrases
+- music-festival: Music, concerts, festivals
+- fashion: Clothing, accessories, style
+- cartoon: Cartoon characters, comic style
+- retro-character: Retro/vintage character designs
+- cyber: Cyberpunk, tech, futuristic
+- frame: Decorative frames, borders
+- winter/fall: Seasonal stickers
+
+Rules:
+- Analyze the visual content of the sticker carefully
+- Name should be 2-4 words, descriptive and human-readable
+- Tags should be 3-6 comma-separated keywords (no spaces after commas)
+- Choose the most appropriate category based on the image content
+- Keep metadata professional and suitable for video editors`,
+        },
+      ],
+      config: {
+        systemInstruction: "You are a visual asset metadata specialist for a professional video editing tool. You analyze sticker images and generate accurate, descriptive metadata that helps video creators discover and use assets effectively.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            name: { type: Type.STRING },
+            tags: { type: Type.STRING },
+            category: { type: Type.STRING },
+          },
+          required: ["name", "tags", "category"],
+        },
+      },
+    });
+
+    const result = JSON.parse((response.text || "{}").trim());
+    return {
+      name: result.name || "Untitled Sticker",
+      tags: result.tags || "",
+      category: resolveStickerCategory(result.category),
     };
   } catch (error) {
     throw new Error(extractErrorMessage(error));
