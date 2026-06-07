@@ -30,30 +30,7 @@ interface EffectPublishPayload {
 
 export interface AudioPublishPayload {
   id: string;
-  category:
-    | "music"
-    | "lo-fi"
-    | "chill"
-    | "cinematic"
-    | "epic"
-    | "upbeat"
-    | "corporate"
-    | "hip-hop"
-    | "trap"
-    | "electronic"
-    | "synth"
-    | "acoustic"
-    | "indie"
-    | "jazz"
-    | "soul"
-    | "ambient"
-    | "background"
-    | "sfx"
-    | "transition"
-    | "impact"
-    | "ui"
-    | "notifications"
-    | "voice";
+  category: "music" | "lo-fi" | "chill" | "cinematic" | "epic" | "upbeat" | "corporate" | "hip-hop" | "trap" | "electronic" | "synth" | "acoustic" | "indie" | "jazz" | "soul" | "ambient" | "background" | "sfx" | "transition" | "impact" | "ui" | "notifications" | "voice";
   metadata: {
     name: string;
     description?: string;
@@ -82,6 +59,33 @@ export interface AudioPublishPayload {
     dataUrl: string;
   };
   coverArtDataUrl?: string;
+}
+
+export type StickerCategory = "trending" | "football" | "classic" | "new" | "animal-meme" | "hits" | "free-fire" | "icons" | "emoji" | "fun" | "emphasis" | "cover-ups" | "wrong" | "love" | "letters" | "mood" | "sale" | "gaming" | "text-sticker" | "vlog" | "collage" | "y2k" | "countdown" | "music-festival" | "journal" | "campus" | "cartoon" | "animal" | "fashion" | "eco-friendly" | "basketball" | "birthday" | "barbie" | "vibes" | "shimmer" | "glitter" | "frame" | "travel" | "winter" | "fall" | "neon-text" | "details" | "techniques" | "lip-illustration" | "handwriting" | "retro-character" | "illustration" | "alphabet" | "pixelated-style" | "bubble" | "weather" | "label" | "plog" | "cyber" | "stylish" | "food" | "shapes";
+
+export interface StickerPublishPayload {
+  id: string;
+  category: StickerCategory;
+  metadata: {
+    name: string;
+    tags?: string[];
+    isPremium?: boolean;
+    format: "static" | "gif" | "lottie";
+    isAnimated: boolean;
+    safety?: {
+      status: "approved";
+      reviewedAt?: string;
+      notes?: string;
+    };
+  };
+  imageFile: {
+    name: string;
+    dataUrl: string; // Static image or thumbnail
+  };
+  animatedFile?: {
+    name: string;
+    dataUrl: string; // GIF or Lottie JSON
+  };
 }
 
 interface GitHubContentResponse {
@@ -136,7 +140,12 @@ function decodeBase64Utf8(value: string): string {
 }
 
 function sanitizeBranchPart(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "item";
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "item"
+  );
 }
 
 function humanizeId(id: string): string {
@@ -152,12 +161,14 @@ function getDisplayName(definition: Record<string, any>, fallbackId: string): st
   return name || humanizeId(fallbackId);
 }
 
-function buildPublishBranch(kind: "effect" | "template" | "audio", id: string, category: string): string {
+function buildPublishBranch(kind: "effect" | "template" | "audio" | "sticker", id: string, category: string): string {
   return `clypra-studio/${kind}/${sanitizeBranchPart(category)}/${sanitizeBranchPart(id)}`;
 }
 
-function buildPublishTitle(action: "Add" | "Update", kind: "effect" | "template" | "audio", displayName: string): string {
-  return kind === "audio" ? `${action} audio asset: ${displayName}` : `${action} text ${kind}: ${displayName}`;
+function buildPublishTitle(action: "Add" | "Update", kind: "effect" | "template" | "audio" | "sticker", displayName: string): string {
+  if (kind === "audio") return `${action} audio asset: ${displayName}`;
+  if (kind === "sticker") return `${action} sticker: ${displayName}`;
+  return `${action} text ${kind}: ${displayName}`;
 }
 
 function summaryFromDefinition(definition: Record<string, any>) {
@@ -188,8 +199,29 @@ function getAudioExtension(fileName: string): string {
   return ext;
 }
 
+function getStickerExtension(fileName: string, format: "static" | "gif" | "lottie"): string {
+  const match = fileName.toLowerCase().match(/\.([a-z0-9]+)$/);
+  const ext = match?.[1] || "png";
+
+  if (format === "lottie") {
+    if (ext !== "json") throw new Error("Lottie files must be in JSON format.");
+    return "json";
+  }
+
+  if (format === "gif") {
+    if (ext !== "gif") throw new Error("Animated stickers must be in GIF format.");
+    return "gif";
+  }
+
+  // static
+  if (!["png", "webp"].includes(ext)) {
+    throw new Error("Static stickers must be in PNG or WebP format.");
+  }
+  return ext;
+}
+
 export function useGitHubPublish() {
-  const repoRequest = async <T,>(config: GitHubPublishConfig, path: string, init?: RequestInit, allowNotFound = false): Promise<T | null> => {
+  const repoRequest = async <T>(config: GitHubPublishConfig, path: string, init?: RequestInit, allowNotFound = false): Promise<T | null> => {
     const res = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/${path}`, {
       ...init,
       headers: {
@@ -205,9 +237,7 @@ export function useGitHubPublish() {
       const text = await res.text();
 
       if (res.status === 403 && path === "git/refs") {
-        throw new Error(
-          "GitHub blocked branch creation. Use a fine-grained token for this exact repository with Contents: Read and write. The token owner must also have write access to the repository; public read access is not enough."
-        );
+        throw new Error("GitHub blocked branch creation. Use a fine-grained token for this exact repository with Contents: Read and write. The token owner must also have write access to the repository; public read access is not enough.");
       }
 
       if (res.status === 403 && path === "pulls") {
@@ -220,7 +250,7 @@ export function useGitHubPublish() {
     return res.json() as Promise<T>;
   };
 
-  const contentRequest = async <T,>(config: GitHubPublishConfig, path: string, init?: RequestInit, allowNotFound = false): Promise<T | null> => {
+  const contentRequest = async <T>(config: GitHubPublishConfig, path: string, init?: RequestInit, allowNotFound = false): Promise<T | null> => {
     return repoRequest<T>(config, `contents/${path}`, init, allowNotFound);
   };
 
@@ -228,7 +258,7 @@ export function useGitHubPublish() {
     return contentRequest<GitHubContentResponse>(config, `${path}?ref=${encodeURIComponent(branch)}`, undefined, true);
   };
 
-  const readJson = async <T,>(config: GitHubPublishConfig, path: string, branch: string, fallback: T): Promise<T> => {
+  const readJson = async <T>(config: GitHubPublishConfig, path: string, branch: string, fallback: T): Promise<T> => {
     const file = await readFile(config, path, branch);
     if (!file?.content) return fallback;
     return JSON.parse(decodeBase64Utf8(file.content)) as T;
@@ -274,10 +304,7 @@ export function useGitHubPublish() {
 
   const getOrCreatePullRequest = async (config: GitHubPublishConfig, publishBranch: string, title: string, body: string): Promise<string> => {
     const head = `${config.owner}:${publishBranch}`;
-    const existing = await repoRequest<GitHubPullResponse[]>(
-      config,
-      `pulls?state=open&head=${encodeURIComponent(head)}&base=${encodeURIComponent(config.branch)}`,
-    );
+    const existing = await repoRequest<GitHubPullResponse[]>(config, `pulls?state=open&head=${encodeURIComponent(head)}&base=${encodeURIComponent(config.branch)}`);
 
     const existingUrl = existing?.[0]?.html_url;
     if (existingUrl) return existingUrl;
@@ -312,12 +339,7 @@ export function useGitHubPublish() {
     const categoryIndex = await readJson<any[]>(config, categoryIndexPath, publishBranch, []);
     const globalIndex = await readJson<any[]>(config, globalIndexPath, publishBranch, []);
 
-    const files = [
-      `data/effects/${category}/${payload.id}.json`,
-      `data/thumbnails/${payload.id}.png`,
-      categoryIndexPath,
-      globalIndexPath,
-    ];
+    const files = [`data/effects/${category}/${payload.id}.json`, `data/thumbnails/${payload.id}.png`, categoryIndexPath, globalIndexPath];
     const existingDefinition = await readFile(config, files[0], config.branch);
     const action = existingDefinition ? "Update" : "Add";
     const displayName = getDisplayName(definition, payload.id);
@@ -327,12 +349,7 @@ export function useGitHubPublish() {
     await putJson(config, categoryIndexPath, publishBranch, upsertById(categoryIndex, summary), `Update ${category} effect index`);
     await putJson(config, globalIndexPath, publishBranch, upsertById(globalIndex, summary), "Update effects index");
 
-    const prUrl = await getOrCreatePullRequest(
-      config,
-      publishBranch,
-      buildPublishTitle(action, "effect", displayName),
-      `${action}s the ${displayName} text effect (${payload.id}) in ${category}, including JSON definition, PNG thumbnail, category index, and global index.`
-    );
+    const prUrl = await getOrCreatePullRequest(config, publishBranch, buildPublishTitle(action, "effect", displayName), `${action}s the ${displayName} text effect (${payload.id}) in ${category}, including JSON definition, PNG thumbnail, category index, and global index.`);
 
     return { files, branch: publishBranch, prUrl };
   };
@@ -352,12 +369,7 @@ export function useGitHubPublish() {
     const categoryIndex = await readJson<any[]>(config, categoryIndexPath, publishBranch, []);
     const globalIndex = await readJson<any[]>(config, globalIndexPath, publishBranch, []);
 
-    const files = [
-      `data/templates/${category}/${payload.id}.json`,
-      `data/thumbnails/${payload.id}.png`,
-      categoryIndexPath,
-      globalIndexPath,
-    ];
+    const files = [`data/templates/${category}/${payload.id}.json`, `data/thumbnails/${payload.id}.png`, categoryIndexPath, globalIndexPath];
     const existingTemplate = await readFile(config, files[0], config.branch);
     const action = existingTemplate ? "Update" : "Add";
     const displayName = getDisplayName(definition, payload.id);
@@ -367,12 +379,7 @@ export function useGitHubPublish() {
     await putJson(config, categoryIndexPath, publishBranch, upsertById(categoryIndex, definition as any), `Update ${category} template index`);
     await putJson(config, globalIndexPath, publishBranch, upsertById(globalIndex, definition as any), "Update templates index");
 
-    const prUrl = await getOrCreatePullRequest(
-      config,
-      publishBranch,
-      buildPublishTitle(action, "template", displayName),
-      `${action}s the ${displayName} text template (${payload.id}) in ${category}, including Lottie JSON, PNG thumbnail, category index, and global index.`
-    );
+    const prUrl = await getOrCreatePullRequest(config, publishBranch, buildPublishTitle(action, "template", displayName), `${action}s the ${displayName} text template (${payload.id}) in ${category}, including Lottie JSON, PNG thumbnail, category index, and global index.`);
 
     return { files, branch: publishBranch, prUrl };
   };
@@ -443,12 +450,86 @@ export function useGitHubPublish() {
     await putJson(config, categoryIndexPath, publishBranch, upsertById(categoryIndex, summary), `Update ${category} audio index`);
     await putJson(config, globalIndexPath, publishBranch, upsertById(globalIndex, summary), "Update audio index");
 
-    const prUrl = await getOrCreatePullRequest(
-      config,
-      publishBranch,
-      buildPublishTitle(action, "audio", displayName),
-      `${action}s the ${displayName} public audio asset (${payload.id}) in ${category}, including reviewed metadata, source/license fields, audio media, and index updates.`
-    );
+    const prUrl = await getOrCreatePullRequest(config, publishBranch, buildPublishTitle(action, "audio", displayName), `${action}s the ${displayName} public audio asset (${payload.id}) in ${category}, including reviewed metadata, source/license fields, audio media, and index updates.`);
+
+    return { files, branch: publishBranch, prUrl };
+  };
+
+  const publishSticker = async (payload: StickerPublishPayload): Promise<PublishResult> => {
+    const config = getGithubConfig();
+    if (!config) throw new Error("GitHub publishing is not configured.");
+
+    if (!payload.metadata.name.trim()) throw new Error("Sticker name is required.");
+
+    const category = payload.category.toLowerCase();
+    const imageExtension = getStickerExtension(payload.imageFile.name, "static");
+    const publishBranch = buildPublishBranch("sticker", payload.id, category);
+    await ensurePublishBranch(config, publishBranch);
+
+    const thumbnailPath = `data/stickers/${category}/${payload.id}-thumb.${imageExtension}`;
+    const imagePath = `data/stickers/${category}/${payload.id}.${imageExtension}`;
+    const definitionPath = `data/stickers/${category}/${payload.id}.json`;
+    const categoryIndexPath = `data/stickers/${category}/index.json`;
+    const globalIndexPath = "data/stickers/index.json";
+    const rawBase = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}`;
+
+    // Handle animated file if provided
+    let animatedPath: string | undefined;
+    let lottieUrl: string | undefined;
+    let animatedUrl: string | undefined;
+
+    if (payload.animatedFile && payload.metadata.isAnimated) {
+      const animatedExtension = getStickerExtension(payload.animatedFile.name, payload.metadata.format);
+      animatedPath = `data/stickers/${category}/${payload.id}-animated.${animatedExtension}`;
+
+      if (payload.metadata.format === "lottie") {
+        lottieUrl = `${rawBase}/${animatedPath}`;
+      } else if (payload.metadata.format === "gif") {
+        animatedUrl = `${rawBase}/${animatedPath}`;
+      }
+    }
+
+    const definition = {
+      id: payload.id,
+      name: payload.metadata.name,
+      category,
+      thumbnailUrl: `${rawBase}/${thumbnailPath}`,
+      imageUrl: `${rawBase}/${imagePath}`,
+      animatedUrl,
+      lottieUrl,
+      format: payload.metadata.format,
+      isAnimated: payload.metadata.isAnimated,
+      isPremium: payload.metadata.isPremium || false,
+      tags: payload.metadata.tags || [],
+      safety: payload.metadata.safety || {
+        status: "approved",
+        reviewedAt: new Date().toISOString(),
+      },
+    };
+
+    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, publishBranch, []);
+    const globalIndex = await readJson<any[]>(config, globalIndexPath, publishBranch, []);
+
+    const files = [definitionPath, thumbnailPath, imagePath, categoryIndexPath, globalIndexPath, ...(animatedPath ? [animatedPath] : [])];
+
+    const existingDefinition = await readFile(config, definitionPath, config.branch);
+    const action = existingDefinition ? "Update" : "Add";
+    const displayName = payload.metadata.name;
+
+    // Upload files
+    await putJson(config, definitionPath, publishBranch, definition, `${action} sticker metadata ${payload.id}`);
+    await putFile(config, thumbnailPath, publishBranch, dataUrlToBase64(payload.imageFile.dataUrl), `${action} sticker thumbnail ${payload.id}`);
+    await putFile(config, imagePath, publishBranch, dataUrlToBase64(payload.imageFile.dataUrl), `${action} sticker image ${payload.id}`);
+
+    if (payload.animatedFile && animatedPath) {
+      await putFile(config, animatedPath, publishBranch, dataUrlToBase64(payload.animatedFile.dataUrl), `${action} sticker animation ${payload.id}`);
+    }
+
+    await putJson(config, categoryIndexPath, publishBranch, upsertById(categoryIndex, definition), `Update ${category} stickers index`);
+    await putJson(config, globalIndexPath, publishBranch, upsertById(globalIndex, definition), "Update stickers index");
+
+    const animatedNote = payload.metadata.isAnimated ? ` with ${payload.metadata.format.toUpperCase()} animation` : "";
+    const prUrl = await getOrCreatePullRequest(config, publishBranch, buildPublishTitle(action, "sticker", displayName), `${action}s the ${displayName} sticker (${payload.id}) in ${category}${animatedNote}, including JSON definition, image assets, category index, and global index.`);
 
     return { files, branch: publishBranch, prUrl };
   };
@@ -457,6 +538,7 @@ export function useGitHubPublish() {
     publishEffect,
     publishTemplate,
     publishAudio,
+    publishSticker,
     saveGithubConfig,
     getGithubConfig,
   };
