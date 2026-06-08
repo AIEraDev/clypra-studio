@@ -404,6 +404,14 @@ export function useGitHubPublish() {
     if (!payload.metadata.license?.type) throw new Error("Audio license is required.");
     if (!Number.isFinite(payload.metadata.duration) || payload.metadata.duration <= 0) throw new Error("Audio duration must be greater than zero.");
 
+    // Check file size - GitHub Contents API has ~1MB limit
+    const audioBase64 = dataUrlToBase64(payload.audioFile.dataUrl);
+    const audioSizeBytes = (audioBase64.length * 3) / 4; // Approximate decoded size
+    const maxSizeBytes = 1024 * 1024; // 1MB
+    if (audioSizeBytes > maxSizeBytes) {
+      throw new Error(`Audio file is too large (${(audioSizeBytes / 1024 / 1024).toFixed(2)}MB). GitHub API limit is 1MB. Please compress the audio file or use a shorter clip.`);
+    }
+
     const category = payload.category.toLowerCase();
     const extension = getAudioExtension(payload.audioFile.name);
     const publishBranch = buildPublishBranch("audio", payload.id, category);
