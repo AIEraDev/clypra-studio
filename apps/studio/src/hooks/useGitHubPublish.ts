@@ -270,19 +270,30 @@ export function useGitHubPublish() {
   };
 
   const ensurePublishBranch = async (config: GitHubPublishConfig, publishBranch: string): Promise<void> => {
-    const existingSha = await getBranchSha(config, publishBranch);
-    if (existingSha) return;
-
     const baseSha = await getBranchSha(config, config.branch);
     if (!baseSha) throw new Error(`Base branch not found: ${config.branch}`);
 
-    await repoRequest(config, "git/refs", {
-      method: "POST",
-      body: JSON.stringify({
-        ref: `refs/heads/${publishBranch}`,
-        sha: baseSha,
-      }),
-    });
+    const existingSha = await getBranchSha(config, publishBranch);
+
+    if (existingSha) {
+      // Branch exists - update it to point to the latest base branch SHA
+      await repoRequest(config, `git/refs/heads/${publishBranch}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          sha: baseSha,
+          force: true,
+        }),
+      });
+    } else {
+      // Branch doesn't exist - create it
+      await repoRequest(config, "git/refs", {
+        method: "POST",
+        body: JSON.stringify({
+          ref: `refs/heads/${publishBranch}`,
+          sha: baseSha,
+        }),
+      });
+    }
   };
 
   const putFile = async (config: GitHubPublishConfig, path: string, branch: string, contentBase64: string, message: string): Promise<void> => {
