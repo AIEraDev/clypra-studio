@@ -336,8 +336,8 @@ export function useGitHubPublish() {
     const categoryIndexPath = `data/effects/${category}/index.json`;
     const globalIndexPath = "data/effects/index.json";
 
-    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, publishBranch, []);
-    const globalIndex = await readJson<any[]>(config, globalIndexPath, publishBranch, []);
+    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, config.branch, []);
+    const globalIndex = await readJson<any[]>(config, globalIndexPath, config.branch, []);
 
     const files = [`data/effects/${category}/${payload.id}.json`, `data/thumbnails/${payload.id}.png`, categoryIndexPath, globalIndexPath];
     const existingDefinition = await readFile(config, files[0], config.branch);
@@ -366,8 +366,8 @@ export function useGitHubPublish() {
     const categoryIndexPath = `data/templates/${category}/index.json`;
     const globalIndexPath = "data/templates/index.json";
 
-    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, publishBranch, []);
-    const globalIndex = await readJson<any[]>(config, globalIndexPath, publishBranch, []);
+    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, config.branch, []);
+    const globalIndex = await readJson<any[]>(config, globalIndexPath, config.branch, []);
 
     const files = [`data/templates/${category}/${payload.id}.json`, `data/thumbnails/${payload.id}.png`, categoryIndexPath, globalIndexPath];
     const existingTemplate = await readFile(config, files[0], config.branch);
@@ -434,8 +434,8 @@ export function useGitHubPublish() {
       safety: definition.safety,
     };
 
-    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, publishBranch, []);
-    const globalIndex = await readJson<any[]>(config, globalIndexPath, publishBranch, []);
+    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, config.branch, []);
+    const globalIndex = await readJson<any[]>(config, globalIndexPath, config.branch, []);
 
     const files = [definitionPath, audioPath, categoryIndexPath, globalIndexPath, ...(payload.coverArtDataUrl ? [coverPath] : [])];
     const existingDefinition = await readFile(config, definitionPath, config.branch);
@@ -507,8 +507,8 @@ export function useGitHubPublish() {
       },
     };
 
-    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, publishBranch, []);
-    const globalIndex = await readJson<any[]>(config, globalIndexPath, publishBranch, []);
+    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, config.branch, []);
+    const globalIndex = await readJson<any[]>(config, globalIndexPath, config.branch, []);
 
     const files = [definitionPath, thumbnailPath, imagePath, categoryIndexPath, globalIndexPath, ...(animatedPath ? [animatedPath] : [])];
 
