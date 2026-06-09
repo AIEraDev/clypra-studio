@@ -372,11 +372,12 @@ export function useGitHubPublish() {
       }),
     });
 
-    // 6. Move the branch ref to the new commit
+    // 6. Move the branch ref to the new commit (force update to handle non-fast-forward)
     await repoRequest(config, `git/refs/heads/${branch}`, {
       method: "PATCH",
       body: JSON.stringify({
         sha: newCommit.sha,
+        force: true, // Allow non-fast-forward updates
       }),
     });
   };
