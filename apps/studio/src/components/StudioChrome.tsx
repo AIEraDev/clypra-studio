@@ -25,7 +25,7 @@ export function LeftRail({ activeItem, onSelectItem }: LeftRailProps) {
   return (
     <nav className="studio-left-rail flex w-14 shrink-0 flex-col items-center gap-1 border-r border-(--studio-border) bg-(--studio-shell) py-2" aria-label="Creation library">
       {RAIL_ITEMS.map(({ id, label, icon: Icon }) => (
-        <button key={id} type="button" aria-label={label} title={label} onClick={() => onSelectItem(id)} className={`flex h-10 w-10 items-center justify-center rounded-md transition-colors ${activeItem === id ? "bg-(--studio-active-oft)] text-white" : "text-(--studio-muted) hover:bg-(--studio-hover) hover:text-white"}`}>
+        <button key={id} type="button" aria-label={label} title={label} onClick={() => onSelectItem(id)} className={`flex h-10 w-10 items-center justify-center rounded-md transition-colors cursor-pointer ${activeItem === id ? "bg-(--studio-active-oft)] text-white" : "text-(--studio-muted) hover:bg-(--studio-hover) hover:text-white"}`}>
           <Icon size={18} className={activeItem === id ? "text-(--studio-accent)" : ""} />
         </button>
       ))}
