@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./public/clypra.svg" alt="Clypra Logo" width="120" height="120" />
+  <img src="./apps/studio/public/clypra.svg" alt="Clypra Logo" width="120" height="120" />
   <h1>Clypra Studio</h1>
   <p><strong>AI-Powered Text Effects & Creative Editor</strong></p>
   <p>Design, animate, and export high-performance Canvas 2D text effects with gradients, bevels, glow stacks, shadows, and procedural engines.</p>
