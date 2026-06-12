@@ -199,6 +199,19 @@ function getAudioExtension(fileName: string): string {
   return ext;
 }
 
+function getThumbnailExtension(fileName: string): string {
+  const match = fileName.toLowerCase().match(/\.([a-z0-9]+)$/);
+  const ext = match?.[1] || "png";
+
+  // Thumbnails can be any common image format
+  if (!["png", "webp", "jpg", "jpeg", "gif"].includes(ext)) {
+    throw new Error("Thumbnail must be a valid image format (PNG, WebP, JPG, or GIF).");
+  }
+
+  // Normalize jpg to jpeg
+  return ext === "jpg" ? "jpeg" : ext;
+}
+
 function getStickerExtension(fileName: string, format: "static" | "gif" | "lottie"): string {
   const match = fileName.toLowerCase().match(/\.([a-z0-9]+)$/);
   const ext = match?.[1] || "png";
@@ -556,7 +569,7 @@ export function useGitHubPublish() {
     if (!payload.metadata.name.trim()) throw new Error("Sticker name is required.");
 
     const category = payload.category.toLowerCase();
-    const imageExtension = getStickerExtension(payload.imageFile.name, "static");
+    const imageExtension = getThumbnailExtension(payload.imageFile.name);
     const publishBranch = buildPublishBranch("sticker", payload.id, category);
     await ensurePublishBranch(config, publishBranch);
 
