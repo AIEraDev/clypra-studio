@@ -89,17 +89,17 @@ export function StickerPublishPanel() {
       return;
     }
 
+    setImageFile(file);
+    const dataUrl = await fileToDataUrl(file);
+    setImagePreview(dataUrl);
+
     // If GIF is uploaded, automatically switch to GIF format and use it for both thumbnail and animation
     if (file.type === "image/gif") {
       setFormData((prev) => ({ ...prev, format: "gif" }));
       setAnimatedFile(file); // Use the same GIF for animation
-      const dataUrl = await fileToDataUrl(file);
       setAnimatedPreview(dataUrl);
     }
 
-    setImageFile(file);
-    const dataUrl = await fileToDataUrl(file);
-    setImagePreview(dataUrl);
     setError("");
   };
 
@@ -170,6 +170,16 @@ export function StickerPublishPanel() {
     if (!formData.name.trim()) return "Sticker name is required";
     if (!formData.id.trim()) return "Sticker ID is required";
     if (!imageFile) return "Please select an image file";
+
+    // Validate that GIF files must use GIF format
+    if (imageFile.type === "image/gif" && formData.format === "static") {
+      return "GIF files must use GIF format, not STATIC. Please select GIF format or use PNG/WebP for static stickers.";
+    }
+
+    // Validate that static format only accepts PNG/WebP
+    if (formData.format === "static" && !imageFile.type.match(/^image\/(png|webp)$/)) {
+      return "Static stickers must be in PNG or WebP format. For GIF stickers, select GIF format.";
+    }
 
     const isAnimated = formData.format !== "static";
     if (isAnimated && !animatedFile) {
