@@ -11,7 +11,11 @@ import type { EffectApiCategory as ModalEffectApiCategory } from "./PublishEffec
 
 type CodeTab = "engine" | "definition" | "lab";
 
-const EFFECT_API_CATEGORIES = ["3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury"] as const;
+const EFFECT_API_CATEGORIES = [
+  "3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury",
+  "essentials", "color", "light", "stylize", "distort",
+  "vintage", "modern", "cinematic", "bw"
+] as const;
 
 export type EffectApiCategory = (typeof EFFECT_API_CATEGORIES)[number];
 

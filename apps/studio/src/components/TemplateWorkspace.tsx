@@ -1096,10 +1096,14 @@ export default ${camelId};
           // Load animation in the temporary container
           const tempAnim = lottie.loadAnimation({
             container: tempContainer,
-            renderer: "svg",
+            renderer: "canvas",
             loop: false,
             autoplay: false,
             animationData: lottieData,
+            rendererSettings: {
+              canvas: tempCanvas,
+              clearCanvas: true,
+            },
           });
 
           // Wait for animation to load

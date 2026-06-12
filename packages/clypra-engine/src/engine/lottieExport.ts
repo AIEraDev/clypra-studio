@@ -101,38 +101,52 @@ export async function captureLottieFrames(lottieInstance: any, canvas: HTMLCanva
 
   console.log(`Capturing ${totalFrames} frames at ${fps} FPS (delay: ${delay}cs per frame)`);
 
+  const isCanvasRenderer = lottieInstance.animType === "canvas";
+
   for (let i = 0; i < totalFrames; i++) {
     const progress = i / totalFrames;
     const lottieFrame = progress * lottieInstance.totalFrames;
     lottieInstance.goToAndStop(lottieFrame, true);
 
-    // Wait longer for render to complete
-    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+    if (isCanvasRenderer) {
+      // For Canvas renderer, wait one frame to ensure drawing completed
+      await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    } else {
+      // Wait longer for SVG render to complete
+      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
-    // Draw SVG to canvas via serialization
-    const container = lottieInstance.renderer?.svgElement?.parentElement;
-    if (container) {
-      const svg = container.querySelector("svg");
-      if (svg) {
-        const svgStr = new XMLSerializer().serializeToString(svg);
-        const img = new Image();
-        const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
+      // Draw SVG to canvas via serialization
+      const container = lottieInstance.renderer?.svgElement?.parentElement;
+      if (container) {
+        const svg = container.querySelector("svg");
+        if (svg) {
+          // Clone the SVG so we can safely set explicit width and height attributes in pixels.
+          // Standalone SVGs loaded in Image objects fail to render or draw blank in some browsers (e.g. Safari)
+          // if they only use percentage sizes (width="100%", height="100%").
+          const svgClone = svg.cloneNode(true) as SVGSVGElement;
+          svgClone.setAttribute("width", canvas.width.toString());
+          svgClone.setAttribute("height", canvas.height.toString());
 
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            URL.revokeObjectURL(url);
-            resolve();
-          };
-          img.onerror = (err) => {
-            URL.revokeObjectURL(url);
-            console.error(`Frame ${i} failed to load:`, err);
-            reject(err);
-          };
-          img.src = url;
-        });
+          const svgStr = new XMLSerializer().serializeToString(svgClone);
+          const img = new Image();
+          const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              URL.revokeObjectURL(url);
+              resolve();
+            };
+            img.onerror = (err) => {
+              URL.revokeObjectURL(url);
+              console.error(`Frame ${i} failed to load:`, err);
+              reject(err);
+            };
+            img.src = url;
+          });
+        }
       }
     }
 
@@ -141,6 +155,14 @@ export async function captureLottieFrames(lottieInstance: any, canvas: HTMLCanva
       imageData,
       delay,
     });
+
+    if (i === 0) {
+      let nonTransparent = 0;
+      for (let p = 3; p < imageData.data.length; p += 4) {
+        if (imageData.data[p] > 0) nonTransparent++;
+      }
+      console.log(`Frame 0 diagnostic: canvas has ${nonTransparent} non-transparent pixels out of ${canvas.width * canvas.height}`);
+    }
 
     if (i % 10 === 0 || i === totalFrames - 1) {
       console.log(`Captured frame ${i + 1}/${totalFrames} (${Math.round(progress * 100)}%)`);
@@ -175,7 +197,7 @@ export function encodeGif(frames: GifFrame[], width: number, height: number, opt
   writeStr("GIF89a");
   writeU16(width);
   writeU16(height);
-  writeByte(0x70); // GCT flag + color resolution + sort flag + GCT size (256 colors)
+  writeByte(0xf7); // GCT flag (1) + color resolution (7) + sort flag (0) + GCT size (7 = 256 colors)
   writeByte(0); // background color index
   writeByte(0); // pixel aspect ratio
 
@@ -196,15 +218,22 @@ export function encodeGif(frames: GifFrame[], width: number, height: number, opt
     const { imageData, delay } = frame;
     const pixels = imageData.data;
 
-    // Quantize to 256 colors (median cut approximation — simplified octree)
-    const palette = quantizeTopalette(pixels, 256);
-    const indices = mapPixelsToPalette(pixels, palette);
+    // Quantize to 255 colors (median cut approximation — simplified octree)
+    const palette = quantizeTopalette(pixels, 255);
+    // Add transparent color at index 255
+    const transparentIndex = 255;
+    palette.push([0, 0, 0]); // transparent color placeholder in palette
+
+    const indices = mapPixelsToPalette(pixels, palette, transparentIndex);
 
     // Graphic control extension
     buf.push(0x21, 0xf9, 0x04);
-    writeByte(0x00); // disposal method
+    // Disposal method 2 (restore to background) -> bits 2-4 = 010 (0x08)
+    // Transparent color flag -> bit 0 = 1 (0x01)
+    // Packed fields = 0x09
+    writeByte(0x09);
     writeU16(delay);
-    writeByte(0); // transparent color index
+    writeByte(transparentIndex); // transparent color index
     writeByte(0);
 
     // Image descriptor
@@ -213,7 +242,7 @@ export function encodeGif(frames: GifFrame[], width: number, height: number, opt
     writeU16(0); // left, top
     writeU16(width);
     writeU16(height);
-    writeByte(0x80); // local color table flag, 256 colors
+    writeByte(0x87); // local color table flag (1) + local color table size (7 = 256 colors)
 
     // Local color table
     for (const [r, g, b] of palette) {
@@ -361,16 +390,21 @@ function quantizeTopalette(pixels: Uint8ClampedArray, maxColors: number): Array<
   return palette;
 }
 
-/** Map each pixel to the nearest palette index */
-function mapPixelsToPalette(pixels: Uint8ClampedArray, palette: Array<[number, number, number]>): Uint8Array {
+/** Map each pixel to the nearest palette index, reserving the last index for transparency */
+function mapPixelsToPalette(pixels: Uint8ClampedArray, palette: Array<[number, number, number]>, transparentIndex: number): Uint8Array {
   const indices = new Uint8Array(pixels.length / 4);
   for (let i = 0; i < pixels.length; i += 4) {
+    const alpha = pixels[i + 3];
+    if (alpha < 128) {
+      indices[i / 4] = transparentIndex;
+      continue;
+    }
     const r = pixels[i],
       g = pixels[i + 1],
       b = pixels[i + 2];
     let best = 0,
       bestDist = Infinity;
-    for (let j = 0; j < palette.length; j++) {
+    for (let j = 0; j < transparentIndex; j++) {
       const dr = r - palette[j][0],
         dg = g - palette[j][1],
         db = b - palette[j][2];
