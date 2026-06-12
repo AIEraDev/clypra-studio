@@ -14,7 +14,7 @@ import { createBlankLottie, addSolidLayer, addTextLayer, addShapeLayer, addVecto
 import { LOTTIE_ANIM_PRESETS, ENTRANCE_PRESETS, EXIT_PRESETS, LOOP_PRESETS, EMPHASIS_PRESETS, bakeAnimationIntoLayer, clearAnimationFromLayer, type LottieAnimPreset, type AnimationCategory } from "@clypra/engine";
 import { readStyleFromLottieLayer, applyStyleToLottie, hexToLottieColor, lottieColorToHex, buildLottieFontName, SUPPORTED_FONT_FAMILIES, FONT_WEIGHT_OPTIONS, buildFontEntries, ensureFontInLottie, type TextLayerStyle, DEFAULT_TEXT_STYLE } from "@clypra/engine";
 import { LOTTIE_TEMPLATE_PRESETS, TEMPLATE_CATEGORIES, type LottieTemplatePreset, type TemplatePresetCategory } from "@clypra/engine";
-import { downloadDotLottie, downloadLottieJson, captureLottieFrames, encodeGif, downloadLottieMp4, isMp4ExportSupported } from "@clypra/engine";
+import { downloadDotLottie, downloadLottieJson, captureLottieFrames, encodeGif, downloadLottieMp4 } from "@clypra/engine";
 import { loadLottieFonts, waitForFontsReady, preloadGoogleFont } from "@clypra/engine";
 
 export interface TemplateWorkspaceProps {
