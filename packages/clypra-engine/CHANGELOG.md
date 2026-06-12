@@ -1,3 +1,23 @@
+# [1.5.0](https://github.com/AIEraDev/clypra-studio/compare/v1.4.0...v1.5.0) (2026-06-12)
+
+
+### Bug Fixes
+
+* add validation and improve GIF auto-switch logic ([643563f](https://github.com/AIEraDev/clypra-studio/commit/643563f12326825557b323f01e56aa7998a3f4aa))
+* allow GIF thumbnails for all sticker formats ([f5dc469](https://github.com/AIEraDev/clypra-studio/commit/f5dc469b40bb02d024a270e952bf62ad9b7650e3))
+* auto-switch to GIF format when GIF image is uploaded ([aaf98bc](https://github.com/AIEraDev/clypra-studio/commit/aaf98bc0d045975942bb8677b24fb9aaeafd00b7))
+* improve GIF export with better frame capture and debugging ([d7eb50c](https://github.com/AIEraDev/clypra-studio/commit/d7eb50c57d0fc3c567ac30ec4f58093f4575cf88))
+* remove unused isMp4ExportSupported import ([ade6d31](https://github.com/AIEraDev/clypra-studio/commit/ade6d31c518eb597e2a50ec33c3255cb53940b52))
+* respect user's format selection, don't auto-switch ([e836c27](https://github.com/AIEraDev/clypra-studio/commit/e836c27041be1857396a07d32c46fbaa7d871533))
+
+
+### Features
+
+* add GIF export for Lottie animations ([ee29b94](https://github.com/AIEraDev/clypra-studio/commit/ee29b9447dcffbcaaa1d33fd15fda0eae3c5ea78))
+* add GIF support to sticker image file upload ([66ccfd2](https://github.com/AIEraDev/clypra-studio/commit/66ccfd264a0028866a1824491c4b934e2195fde1))
+* add MP4 export for Lottie animations ([0e7233e](https://github.com/AIEraDev/clypra-studio/commit/0e7233e9a51b8043384b79d5a8862da5c40cbba2))
+* add video effects and filters categories to studio publishing modal ([b4b5b40](https://github.com/AIEraDev/clypra-studio/commit/b4b5b40831fb0c41df731b2c2ffd23f4e5b3f235))
+
 # [1.4.0](https://github.com/AIEraDev/clypra-studio/compare/v1.3.0...v1.4.0) (2026-06-06)
 
 
