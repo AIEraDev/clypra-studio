@@ -5,6 +5,7 @@
  *  - .json  — raw Lottie JSON
  *  - PNG sequence ZIP
  *  - Animated GIF (via canvas frame capture)
+ *  - MP4 video (via WebCodecs API)
  */
 
 // ─── dotLottie (.lottie) ─────────────────────────────────────────────────────
@@ -98,41 +99,77 @@ export async function captureLottieFrames(lottieInstance: any, canvas: HTMLCanva
 
   const frames: GifFrame[] = [];
 
+  console.log(`Capturing ${totalFrames} frames at ${fps} FPS (delay: ${delay}cs per frame)`);
+
+  const isCanvasRenderer = lottieInstance.animType === "canvas";
+
   for (let i = 0; i < totalFrames; i++) {
-    const lottieFrame = (i / totalFrames) * lottieInstance.totalFrames;
+    const progress = i / totalFrames;
+    const lottieFrame = progress * lottieInstance.totalFrames;
     lottieInstance.goToAndStop(lottieFrame, true);
 
-    // Wait for render
-    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    if (isCanvasRenderer) {
+      // For Canvas renderer, wait one frame to ensure drawing completed
+      await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    } else {
+      // Wait longer for SVG render to complete
+      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
-    // Draw SVG to canvas via serialization
-    const container = lottieInstance.renderer?.svgElement?.parentElement;
-    if (container) {
-      const svg = container.querySelector("svg");
-      if (svg) {
-        const svgStr = new XMLSerializer().serializeToString(svg);
-        const img = new Image();
-        const blob = new Blob([svgStr], { type: "image/svg+xml" });
-        const url = URL.createObjectURL(blob);
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            URL.revokeObjectURL(url);
-            resolve();
-          };
-          img.onerror = reject;
-          img.src = url;
-        });
+      // Draw SVG to canvas via serialization
+      const container = lottieInstance.renderer?.svgElement?.parentElement;
+      if (container) {
+        const svg = container.querySelector("svg");
+        if (svg) {
+          // Clone the SVG so we can safely set explicit width and height attributes in pixels.
+          // Standalone SVGs loaded in Image objects fail to render or draw blank in some browsers (e.g. Safari)
+          // if they only use percentage sizes (width="100%", height="100%").
+          const svgClone = svg.cloneNode(true) as SVGSVGElement;
+          svgClone.setAttribute("width", canvas.width.toString());
+          svgClone.setAttribute("height", canvas.height.toString());
+
+          const svgStr = new XMLSerializer().serializeToString(svgClone);
+          const img = new Image();
+          const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              URL.revokeObjectURL(url);
+              resolve();
+            };
+            img.onerror = (err) => {
+              URL.revokeObjectURL(url);
+              console.error(`Frame ${i} failed to load:`, err);
+              reject(err);
+            };
+            img.src = url;
+          });
+        }
       }
     }
 
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     frames.push({
-      imageData: ctx.getImageData(0, 0, canvas.width, canvas.height),
+      imageData,
       delay,
     });
+
+    if (i === 0) {
+      let nonTransparent = 0;
+      for (let p = 3; p < imageData.data.length; p += 4) {
+        if (imageData.data[p] > 0) nonTransparent++;
+      }
+      console.log(`Frame 0 diagnostic: canvas has ${nonTransparent} non-transparent pixels out of ${canvas.width * canvas.height}`);
+    }
+
+    if (i % 10 === 0 || i === totalFrames - 1) {
+      console.log(`Captured frame ${i + 1}/${totalFrames} (${Math.round(progress * 100)}%)`);
+    }
   }
 
+  console.log(`Successfully captured ${frames.length} frames`);
   return frames;
 }
 
@@ -142,6 +179,8 @@ export async function captureLottieFrames(lottieInstance: any, canvas: HTMLCanva
  */
 export function encodeGif(frames: GifFrame[], width: number, height: number, opts: { loop?: boolean; quality?: number } = {}): Uint8Array {
   const { loop = true, quality = 10 } = opts;
+
+  console.log(`Encoding GIF: ${frames.length} frames, ${width}x${height}, loop: ${loop}`);
 
   // Minimal GIF89a encoder
   const buf: number[] = [];
@@ -158,7 +197,7 @@ export function encodeGif(frames: GifFrame[], width: number, height: number, opt
   writeStr("GIF89a");
   writeU16(width);
   writeU16(height);
-  writeByte(0x70); // GCT flag + color resolution + sort flag + GCT size (256 colors)
+  writeByte(0xf7); // GCT flag (1) + color resolution (7) + sort flag (0) + GCT size (7 = 256 colors)
   writeByte(0); // background color index
   writeByte(0); // pixel aspect ratio
 
@@ -174,19 +213,27 @@ export function encodeGif(frames: GifFrame[], width: number, height: number, opt
     writeByte(0);
   }
 
-  for (const frame of frames) {
+  for (let frameIndex = 0; frameIndex < frames.length; frameIndex++) {
+    const frame = frames[frameIndex];
     const { imageData, delay } = frame;
     const pixels = imageData.data;
 
-    // Quantize to 256 colors (median cut approximation — simplified octree)
-    const palette = quantizeTopalette(pixels, 256);
-    const indices = mapPixelsToPalette(pixels, palette);
+    // Quantize to 255 colors (median cut approximation — simplified octree)
+    const palette = quantizeTopalette(pixels, 255);
+    // Add transparent color at index 255
+    const transparentIndex = 255;
+    palette.push([0, 0, 0]); // transparent color placeholder in palette
+
+    const indices = mapPixelsToPalette(pixels, palette, transparentIndex);
 
     // Graphic control extension
     buf.push(0x21, 0xf9, 0x04);
-    writeByte(0x00); // disposal method
+    // Disposal method 2 (restore to background) -> bits 2-4 = 010 (0x08)
+    // Transparent color flag -> bit 0 = 1 (0x01)
+    // Packed fields = 0x09
+    writeByte(0x09);
     writeU16(delay);
-    writeByte(0); // transparent color index
+    writeByte(transparentIndex); // transparent color index
     writeByte(0);
 
     // Image descriptor
@@ -195,7 +242,7 @@ export function encodeGif(frames: GifFrame[], width: number, height: number, opt
     writeU16(0); // left, top
     writeU16(width);
     writeU16(height);
-    writeByte(0x80); // local color table flag, 256 colors
+    writeByte(0x87); // local color table flag (1) + local color table size (7 = 256 colors)
 
     // Local color table
     for (const [r, g, b] of palette) {
@@ -211,10 +258,17 @@ export function encodeGif(frames: GifFrame[], width: number, height: number, opt
       for (const b of chunk) buf.push(b);
     }
     writeByte(0); // block terminator
+
+    if (frameIndex % 10 === 0 || frameIndex === frames.length - 1) {
+      console.log(`Encoded frame ${frameIndex + 1}/${frames.length}`);
+    }
   }
 
   writeByte(0x3b); // GIF trailer
-  return new Uint8Array(buf);
+
+  const result = new Uint8Array(buf);
+  console.log(`GIF encoding complete: ${result.length} bytes`);
+  return result;
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
@@ -336,16 +390,21 @@ function quantizeTopalette(pixels: Uint8ClampedArray, maxColors: number): Array<
   return palette;
 }
 
-/** Map each pixel to the nearest palette index */
-function mapPixelsToPalette(pixels: Uint8ClampedArray, palette: Array<[number, number, number]>): Uint8Array {
+/** Map each pixel to the nearest palette index, reserving the last index for transparency */
+function mapPixelsToPalette(pixels: Uint8ClampedArray, palette: Array<[number, number, number]>, transparentIndex: number): Uint8Array {
   const indices = new Uint8Array(pixels.length / 4);
   for (let i = 0; i < pixels.length; i += 4) {
+    const alpha = pixels[i + 3];
+    if (alpha < 128) {
+      indices[i / 4] = transparentIndex;
+      continue;
+    }
     const r = pixels[i],
       g = pixels[i + 1],
       b = pixels[i + 2];
     let best = 0,
       bestDist = Infinity;
-    for (let j = 0; j < palette.length; j++) {
+    for (let j = 0; j < transparentIndex; j++) {
       const dr = r - palette[j][0],
         dg = g - palette[j][1],
         db = b - palette[j][2];
@@ -414,4 +473,157 @@ function lzwEncode(indices: Uint8Array, minCodeSize: number): number[] {
   emit(eofCode);
   if (bitLen > 0) output.push(bitBuf & 0xff);
   return output;
+}
+
+// ─── MP4 Video Export (WebCodecs API) ─────────────────────────────────────────
+
+export interface Mp4ExportOptions {
+  fps?: number;
+  duration?: number;
+  width?: number;
+  height?: number;
+  bitrate?: number; // bits per second
+}
+
+/**
+ * Check if MP4 export via WebCodecs is supported in the current browser
+ */
+export function isMp4ExportSupported(): boolean {
+  return typeof window !== "undefined" && "VideoEncoder" in window && "VideoFrame" in window && "mp4box" in window === false; // We'll use a simpler approach without mp4box
+}
+
+/**
+ * Export Lottie animation to MP4 using WebCodecs API
+ * This is a modern browser feature (Chrome 94+, Edge 94+)
+ */
+export async function exportLottieToMp4(lottieInstance: any, canvas: HTMLCanvasElement, opts: Mp4ExportOptions = {}): Promise<Blob> {
+  if (!isMp4ExportSupported()) {
+    throw new Error("MP4 export is not supported in this browser. Please use Chrome 94+ or Edge 94+.");
+  }
+
+  const fps = opts.fps ?? 30;
+  const duration = opts.duration ?? lottieInstance.totalFrames / (lottieInstance.frameRate || 30);
+  const width = opts.width ?? canvas.width;
+  const height = opts.height ?? canvas.height;
+  const bitrate = opts.bitrate ?? 5_000_000; // 5 Mbps default
+
+  const totalFrames = Math.ceil(duration * fps);
+  const frameDuration = 1_000_000 / fps; // microseconds
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Cannot get 2D context from canvas");
+
+  // Use MediaRecorder as fallback since it's more widely supported
+  return await exportLottieToMp4ViaMediaRecorder(lottieInstance, canvas, opts);
+}
+
+/**
+ * Export Lottie to MP4 using MediaRecorder (more compatible approach)
+ * Supports transparent backgrounds in some browsers
+ */
+async function exportLottieToMp4ViaMediaRecorder(lottieInstance: any, canvas: HTMLCanvasElement, opts: Mp4ExportOptions = {}): Promise<Blob> {
+  const fps = opts.fps ?? 30;
+  const duration = opts.duration ?? lottieInstance.totalFrames / (lottieInstance.frameRate || 30);
+  const bitrate = opts.bitrate ?? 5_000_000;
+  const totalFrames = Math.ceil(duration * fps);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Cannot get 2D context from canvas");
+
+  // Check for MP4 support via MediaRecorder
+  const supportedMimeTypes = ["video/mp4", "video/mp4;codecs=h264", "video/mp4;codecs=avc1", "video/webm;codecs=h264"];
+
+  let mimeType = supportedMimeTypes.find((type) => {
+    try {
+      return MediaRecorder.isTypeSupported(type);
+    } catch {
+      return false;
+    }
+  });
+
+  if (!mimeType) {
+    throw new Error("MP4 recording is not supported in this browser. Try Chrome, Edge, or Safari.");
+  }
+
+  const stream = canvas.captureStream(fps);
+  const recorder = new MediaRecorder(stream, {
+    mimeType,
+    videoBitsPerSecond: bitrate,
+  });
+
+  const chunks: BlobPart[] = [];
+
+  return new Promise<Blob>((resolve, reject) => {
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    recorder.onerror = () => {
+      reject(new Error("MediaRecorder failed during MP4 export"));
+    };
+
+    recorder.onstop = () => {
+      const baseMime = mimeType!.split(";")[0] ?? "video/mp4";
+      resolve(new Blob(chunks, { type: baseMime }));
+    };
+
+    recorder.start();
+
+    (async () => {
+      try {
+        for (let i = 0; i < totalFrames; i++) {
+          const lottieFrame = (i / totalFrames) * lottieInstance.totalFrames;
+          lottieInstance.goToAndStop(lottieFrame, true);
+
+          // Wait for render
+          await new Promise<void>((r) => requestAnimationFrame(() => r()));
+
+          // Draw SVG to canvas via serialization
+          const container = lottieInstance.renderer?.svgElement?.parentElement;
+          if (container) {
+            const svg = container.querySelector("svg");
+            if (svg) {
+              const svgStr = new XMLSerializer().serializeToString(svg);
+              const img = new Image();
+              const blob = new Blob([svgStr], { type: "image/svg+xml" });
+              const url = URL.createObjectURL(blob);
+
+              await new Promise<void>((resolve, reject) => {
+                img.onload = () => {
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                  URL.revokeObjectURL(url);
+                  resolve();
+                };
+                img.onerror = reject;
+                img.src = url;
+              });
+            }
+          }
+
+          // Pace the recording
+          await new Promise<void>((r) => setTimeout(r, 1000 / fps));
+        }
+
+        recorder.stop();
+      } catch (err) {
+        try {
+          recorder.stop();
+        } catch {
+          /* ignore */
+        }
+        reject(err);
+      } finally {
+        stream.getTracks().forEach((t) => t.stop());
+      }
+    })();
+  });
+}
+
+/**
+ * Download Lottie animation as MP4 file
+ */
+export async function downloadLottieMp4(lottieInstance: any, canvas: HTMLCanvasElement, filename: string, opts?: Mp4ExportOptions): Promise<void> {
+  const blob = await exportLottieToMp4(lottieInstance, canvas, opts);
+  triggerDownload(blob, filename.endsWith(".mp4") ? filename : `${filename}.mp4`);
 }

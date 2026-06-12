@@ -3,9 +3,16 @@ import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, Fol
 import { generateEffectName } from "../services/geminiService";
 import type { TextEffectConfig } from "@clypra/engine";
 
-export type EffectApiCategory = "3d" | "neon" | "metallic" | "glitch" | "retro" | "gradient" | "grunge" | "outline" | "shadow" | "elements" | "luxury";
+export type EffectApiCategory =
+  | "3d" | "neon" | "metallic" | "glitch" | "retro" | "gradient" | "grunge" | "outline" | "shadow" | "elements" | "luxury"
+  | "essentials" | "color" | "light" | "stylize" | "distort"
+  | "vintage" | "modern" | "cinematic" | "bw";
 
-const EFFECT_CATEGORIES: EffectApiCategory[] = ["3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury"];
+const EFFECT_CATEGORIES: EffectApiCategory[] = [
+  "3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury",
+  "essentials", "color", "light", "stylize", "distort",
+  "vintage", "modern", "cinematic", "bw"
+];
 
 interface ValidationErrors {
   id?: string;

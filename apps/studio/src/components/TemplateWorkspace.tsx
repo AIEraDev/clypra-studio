@@ -14,7 +14,7 @@ import { createBlankLottie, addSolidLayer, addTextLayer, addShapeLayer, addVecto
 import { LOTTIE_ANIM_PRESETS, ENTRANCE_PRESETS, EXIT_PRESETS, LOOP_PRESETS, EMPHASIS_PRESETS, bakeAnimationIntoLayer, clearAnimationFromLayer, type LottieAnimPreset, type AnimationCategory } from "@clypra/engine";
 import { readStyleFromLottieLayer, applyStyleToLottie, hexToLottieColor, lottieColorToHex, buildLottieFontName, SUPPORTED_FONT_FAMILIES, FONT_WEIGHT_OPTIONS, buildFontEntries, ensureFontInLottie, type TextLayerStyle, DEFAULT_TEXT_STYLE } from "@clypra/engine";
 import { LOTTIE_TEMPLATE_PRESETS, TEMPLATE_CATEGORIES, type LottieTemplatePreset, type TemplatePresetCategory } from "@clypra/engine";
-import { downloadDotLottie, downloadLottieJson } from "@clypra/engine";
+import { downloadDotLottie, downloadLottieJson, captureLottieFrames, encodeGif } from "@clypra/engine";
 import { loadLottieFonts, waitForFontsReady, preloadGoogleFont } from "@clypra/engine";
 
 export interface TemplateWorkspaceProps {
@@ -130,7 +130,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [rightPanelTab, setRightPanelTab] = useState<"inspector" | "style" | "meta" | "json">("inspector");
   const [animSearchQuery, setAnimSearchQuery] = useState("");
   // Export state
-  const [exportFormat, setExportFormat] = useState<"json" | "lottie">("lottie");
+  const [exportFormat, setExportFormat] = useState<"json" | "lottie" | "gif">("lottie");
   const [isExportingDotLottie, setIsExportingDotLottie] = useState(false);
 
   // Player Refs
@@ -1061,7 +1061,7 @@ export default ${camelId};
     }
   };
 
-  // ── NEW: dotLottie / JSON export ─────────────────────────────────────────
+  // ── NEW: dotLottie / JSON / GIF export ─────────────────────────────────────────
   const handleExportDotLottie = async () => {
     if (!rawJson) return;
     setIsExportingDotLottie(true);
@@ -1072,11 +1072,89 @@ export default ${camelId};
           autoplay: true,
           speed: 1,
         });
-      } else {
+      } else if (exportFormat === "json") {
         downloadLottieJson(rawJson, templateId || "animation");
+      } else if (exportFormat === "gif") {
+        // Export as animated GIF
+        const lottieData: any = rawJson;
+        if (!lottieData) throw new Error("No Lottie data available");
+
+        // Create a temporary container and canvas for rendering
+        const tempContainer = document.createElement("div");
+        tempContainer.style.position = "fixed";
+        tempContainer.style.left = "-9999px";
+        tempContainer.style.top = "0";
+        tempContainer.style.width = `${width}px`;
+        tempContainer.style.height = `${height}px`;
+        document.body.appendChild(tempContainer);
+
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+
+        try {
+          // Load animation in the temporary container
+          const tempAnim = lottie.loadAnimation({
+            container: tempContainer,
+            renderer: "canvas",
+            loop: false,
+            autoplay: false,
+            animationData: lottieData,
+            rendererSettings: {
+              canvas: tempCanvas,
+              clearCanvas: true,
+            },
+          });
+
+          // Wait for animation to load
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          // Capture frames from the Lottie animation
+          console.log("Starting GIF export...");
+          console.log("Animation info:", {
+            totalFrames: tempAnim.totalFrames,
+            frameRate: tempAnim.frameRate,
+            duration: tempAnim.totalFrames / (tempAnim.frameRate || fps),
+          });
+
+          const frames = await captureLottieFrames(tempAnim, tempCanvas, {
+            fps: 15, // 15 FPS for reasonable file size
+            duration: tempAnim.totalFrames / (tempAnim.frameRate || fps),
+            width: tempCanvas.width,
+            height: tempCanvas.height,
+            quality: 10,
+            loop: true,
+          });
+
+          console.log(`Captured ${frames.length} frames`);
+
+          // Encode frames to GIF
+          const gifData = encodeGif(frames, tempCanvas.width, tempCanvas.height, {
+            loop: true,
+            quality: 10,
+          });
+
+          console.log(`Encoded GIF size: ${gifData.length} bytes`);
+
+          // Clean up temporary animation
+          tempAnim.destroy();
+
+          // Download the GIF
+          const blob = new Blob([gifData], { type: "image/gif" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${templateId || "animation"}.gif`;
+          a.click();
+          URL.revokeObjectURL(url);
+        } finally {
+          // Clean up temporary container
+          document.body.removeChild(tempContainer);
+        }
       }
     } catch (e: any) {
       alert("Export failed: " + e.message);
+      console.error("Export error:", e);
     } finally {
       setIsExportingDotLottie(false);
     }
@@ -1206,6 +1284,9 @@ export default ${camelId};
                 </button>
                 <button onClick={() => setExportFormat("json")} className={`px-2 py-1 text-[10px] font-bold transition-colors cursor-pointer border-l border-(--studio-border) ${exportFormat === "json" ? "bg-(--studio-accent) text-white" : "bg-(--studio-control) text-(--studio-muted) hover:text-white"}`}>
                   .json
+                </button>
+                <button onClick={() => setExportFormat("gif")} className={`px-2 py-1 text-[10px] font-bold transition-colors cursor-pointer border-l border-(--studio-border) ${exportFormat === "gif" ? "bg-(--studio-accent) text-white" : "bg-(--studio-control) text-(--studio-muted) hover:text-white"}`}>
+                  .gif
                 </button>
               </div>
               <button onClick={handleExportDotLottie} disabled={isExportingDotLottie} className="px-2.5 py-1 bg-(--studio-accent) hover:bg-[#6859FF] text-white text-xs font-bold rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50">
