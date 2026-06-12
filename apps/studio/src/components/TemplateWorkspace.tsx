@@ -1107,6 +1107,13 @@ export default ${camelId};
 
           if (exportFormat === "gif") {
             // Capture frames from the Lottie animation
+            console.log("Starting GIF export...");
+            console.log("Animation info:", {
+              totalFrames: tempAnim.totalFrames,
+              frameRate: tempAnim.frameRate,
+              duration: tempAnim.totalFrames / (tempAnim.frameRate || fps),
+            });
+
             const frames = await captureLottieFrames(tempAnim, tempCanvas, {
               fps: 15, // 15 FPS for reasonable file size
               duration: tempAnim.totalFrames / (tempAnim.frameRate || fps),
@@ -1116,14 +1123,18 @@ export default ${camelId};
               loop: true,
             });
 
-            // Clean up temporary animation
-            tempAnim.destroy();
+            console.log(`Captured ${frames.length} frames`);
 
             // Encode frames to GIF
             const gifData = encodeGif(frames, tempCanvas.width, tempCanvas.height, {
               loop: true,
               quality: 10,
             });
+
+            console.log(`Encoded GIF size: ${gifData.length} bytes`);
+
+            // Clean up temporary animation
+            tempAnim.destroy();
 
             // Download the GIF
             const blob = new Blob([gifData], { type: "image/gif" });

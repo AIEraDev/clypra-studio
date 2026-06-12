@@ -99,12 +99,15 @@ export async function captureLottieFrames(lottieInstance: any, canvas: HTMLCanva
 
   const frames: GifFrame[] = [];
 
+  console.log(`Capturing ${totalFrames} frames at ${fps} FPS (delay: ${delay}cs per frame)`);
+
   for (let i = 0; i < totalFrames; i++) {
-    const lottieFrame = (i / totalFrames) * lottieInstance.totalFrames;
+    const progress = i / totalFrames;
+    const lottieFrame = progress * lottieInstance.totalFrames;
     lottieInstance.goToAndStop(lottieFrame, true);
 
-    // Wait for render
-    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    // Wait longer for render to complete
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
     // Draw SVG to canvas via serialization
     const container = lottieInstance.renderer?.svgElement?.parentElement;
@@ -113,8 +116,9 @@ export async function captureLottieFrames(lottieInstance: any, canvas: HTMLCanva
       if (svg) {
         const svgStr = new XMLSerializer().serializeToString(svg);
         const img = new Image();
-        const blob = new Blob([svgStr], { type: "image/svg+xml" });
+        const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(blob);
+
         await new Promise<void>((resolve, reject) => {
           img.onload = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -122,18 +126,28 @@ export async function captureLottieFrames(lottieInstance: any, canvas: HTMLCanva
             URL.revokeObjectURL(url);
             resolve();
           };
-          img.onerror = reject;
+          img.onerror = (err) => {
+            URL.revokeObjectURL(url);
+            console.error(`Frame ${i} failed to load:`, err);
+            reject(err);
+          };
           img.src = url;
         });
       }
     }
 
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     frames.push({
-      imageData: ctx.getImageData(0, 0, canvas.width, canvas.height),
+      imageData,
       delay,
     });
+
+    if (i % 10 === 0 || i === totalFrames - 1) {
+      console.log(`Captured frame ${i + 1}/${totalFrames} (${Math.round(progress * 100)}%)`);
+    }
   }
 
+  console.log(`Successfully captured ${frames.length} frames`);
   return frames;
 }
 
@@ -143,6 +157,8 @@ export async function captureLottieFrames(lottieInstance: any, canvas: HTMLCanva
  */
 export function encodeGif(frames: GifFrame[], width: number, height: number, opts: { loop?: boolean; quality?: number } = {}): Uint8Array {
   const { loop = true, quality = 10 } = opts;
+
+  console.log(`Encoding GIF: ${frames.length} frames, ${width}x${height}, loop: ${loop}`);
 
   // Minimal GIF89a encoder
   const buf: number[] = [];
@@ -175,7 +191,8 @@ export function encodeGif(frames: GifFrame[], width: number, height: number, opt
     writeByte(0);
   }
 
-  for (const frame of frames) {
+  for (let frameIndex = 0; frameIndex < frames.length; frameIndex++) {
+    const frame = frames[frameIndex];
     const { imageData, delay } = frame;
     const pixels = imageData.data;
 
@@ -212,10 +229,17 @@ export function encodeGif(frames: GifFrame[], width: number, height: number, opt
       for (const b of chunk) buf.push(b);
     }
     writeByte(0); // block terminator
+
+    if (frameIndex % 10 === 0 || frameIndex === frames.length - 1) {
+      console.log(`Encoded frame ${frameIndex + 1}/${frames.length}`);
+    }
   }
 
   writeByte(0x3b); // GIF trailer
-  return new Uint8Array(buf);
+
+  const result = new Uint8Array(buf);
+  console.log(`GIF encoding complete: ${result.length} bytes`);
+  return result;
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
