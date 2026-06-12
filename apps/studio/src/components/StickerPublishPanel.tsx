@@ -89,6 +89,14 @@ export function StickerPublishPanel() {
       return;
     }
 
+    // If GIF is uploaded, automatically switch to GIF format and use it for both thumbnail and animation
+    if (file.type === "image/gif") {
+      setFormData((prev) => ({ ...prev, format: "gif" }));
+      setAnimatedFile(file); // Use the same GIF for animation
+      const dataUrl = await fileToDataUrl(file);
+      setAnimatedPreview(dataUrl);
+    }
+
     setImageFile(file);
     const dataUrl = await fileToDataUrl(file);
     setImagePreview(dataUrl);
@@ -349,6 +357,7 @@ export function StickerPublishPanel() {
               <div className="flex flex-col items-center justify-center text-center">
                 <ImageIcon className="w-8 h-8 text-gray-500 mb-2" />
                 <p className="text-sm text-gray-400">{imageFile ? imageFile.name : "Click to select PNG/WebP/GIF image"}</p>
+                {!imageFile && <p className="text-xs text-gray-500 mt-1">GIF uploads auto-switch to GIF format</p>}
               </div>
             </div>
             <input type="file" accept="image/png,image/webp,image/jpeg,image/gif" onChange={handleImageSelect} className="hidden" />
