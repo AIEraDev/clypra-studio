@@ -84,8 +84,8 @@ export function StickerPublishPanel() {
     if (!file) return;
 
     // Validate file type
-    if (!file.type.match(/^image\/(png|webp|jpeg|jpg)$/)) {
-      setError("Please select a PNG, WebP, or JPG image");
+    if (!file.type.match(/^image\/(png|webp|jpeg|jpg|gif)$/)) {
+      setError("Please select a PNG, WebP, JPG, or GIF image");
       return;
     }
 
@@ -348,10 +348,10 @@ export function StickerPublishPanel() {
             <div className="border-2 border-dashed border-[#2a2a2a] rounded-lg p-4 hover:border-[#7C6FFF] transition-colors">
               <div className="flex flex-col items-center justify-center text-center">
                 <ImageIcon className="w-8 h-8 text-gray-500 mb-2" />
-                <p className="text-sm text-gray-400">{imageFile ? imageFile.name : "Click to select PNG/WebP image"}</p>
+                <p className="text-sm text-gray-400">{imageFile ? imageFile.name : "Click to select PNG/WebP/GIF image"}</p>
               </div>
             </div>
-            <input type="file" accept="image/png,image/webp,image/jpeg" onChange={handleImageSelect} className="hidden" />
+            <input type="file" accept="image/png,image/webp,image/jpeg,image/gif" onChange={handleImageSelect} className="hidden" />
           </label>
           {imagePreview && (
             <div className="w-24 h-24 rounded-lg overflow-hidden border border-[#2a2a2a]">
