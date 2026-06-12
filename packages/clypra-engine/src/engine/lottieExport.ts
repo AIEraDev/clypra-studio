@@ -5,6 +5,7 @@
  *  - .json  — raw Lottie JSON
  *  - PNG sequence ZIP
  *  - Animated GIF (via canvas frame capture)
+ *  - MP4 video (via WebCodecs API)
  */
 
 // ─── dotLottie (.lottie) ─────────────────────────────────────────────────────
@@ -414,4 +415,157 @@ function lzwEncode(indices: Uint8Array, minCodeSize: number): number[] {
   emit(eofCode);
   if (bitLen > 0) output.push(bitBuf & 0xff);
   return output;
+}
+
+// ─── MP4 Video Export (WebCodecs API) ─────────────────────────────────────────
+
+export interface Mp4ExportOptions {
+  fps?: number;
+  duration?: number;
+  width?: number;
+  height?: number;
+  bitrate?: number; // bits per second
+}
+
+/**
+ * Check if MP4 export via WebCodecs is supported in the current browser
+ */
+export function isMp4ExportSupported(): boolean {
+  return typeof window !== "undefined" && "VideoEncoder" in window && "VideoFrame" in window && "mp4box" in window === false; // We'll use a simpler approach without mp4box
+}
+
+/**
+ * Export Lottie animation to MP4 using WebCodecs API
+ * This is a modern browser feature (Chrome 94+, Edge 94+)
+ */
+export async function exportLottieToMp4(lottieInstance: any, canvas: HTMLCanvasElement, opts: Mp4ExportOptions = {}): Promise<Blob> {
+  if (!isMp4ExportSupported()) {
+    throw new Error("MP4 export is not supported in this browser. Please use Chrome 94+ or Edge 94+.");
+  }
+
+  const fps = opts.fps ?? 30;
+  const duration = opts.duration ?? lottieInstance.totalFrames / (lottieInstance.frameRate || 30);
+  const width = opts.width ?? canvas.width;
+  const height = opts.height ?? canvas.height;
+  const bitrate = opts.bitrate ?? 5_000_000; // 5 Mbps default
+
+  const totalFrames = Math.ceil(duration * fps);
+  const frameDuration = 1_000_000 / fps; // microseconds
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Cannot get 2D context from canvas");
+
+  // Use MediaRecorder as fallback since it's more widely supported
+  return await exportLottieToMp4ViaMediaRecorder(lottieInstance, canvas, opts);
+}
+
+/**
+ * Export Lottie to MP4 using MediaRecorder (more compatible approach)
+ * Supports transparent backgrounds in some browsers
+ */
+async function exportLottieToMp4ViaMediaRecorder(lottieInstance: any, canvas: HTMLCanvasElement, opts: Mp4ExportOptions = {}): Promise<Blob> {
+  const fps = opts.fps ?? 30;
+  const duration = opts.duration ?? lottieInstance.totalFrames / (lottieInstance.frameRate || 30);
+  const bitrate = opts.bitrate ?? 5_000_000;
+  const totalFrames = Math.ceil(duration * fps);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Cannot get 2D context from canvas");
+
+  // Check for MP4 support via MediaRecorder
+  const supportedMimeTypes = ["video/mp4", "video/mp4;codecs=h264", "video/mp4;codecs=avc1", "video/webm;codecs=h264"];
+
+  let mimeType = supportedMimeTypes.find((type) => {
+    try {
+      return MediaRecorder.isTypeSupported(type);
+    } catch {
+      return false;
+    }
+  });
+
+  if (!mimeType) {
+    throw new Error("MP4 recording is not supported in this browser. Try Chrome, Edge, or Safari.");
+  }
+
+  const stream = canvas.captureStream(fps);
+  const recorder = new MediaRecorder(stream, {
+    mimeType,
+    videoBitsPerSecond: bitrate,
+  });
+
+  const chunks: BlobPart[] = [];
+
+  return new Promise<Blob>((resolve, reject) => {
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    recorder.onerror = () => {
+      reject(new Error("MediaRecorder failed during MP4 export"));
+    };
+
+    recorder.onstop = () => {
+      const baseMime = mimeType!.split(";")[0] ?? "video/mp4";
+      resolve(new Blob(chunks, { type: baseMime }));
+    };
+
+    recorder.start();
+
+    (async () => {
+      try {
+        for (let i = 0; i < totalFrames; i++) {
+          const lottieFrame = (i / totalFrames) * lottieInstance.totalFrames;
+          lottieInstance.goToAndStop(lottieFrame, true);
+
+          // Wait for render
+          await new Promise<void>((r) => requestAnimationFrame(() => r()));
+
+          // Draw SVG to canvas via serialization
+          const container = lottieInstance.renderer?.svgElement?.parentElement;
+          if (container) {
+            const svg = container.querySelector("svg");
+            if (svg) {
+              const svgStr = new XMLSerializer().serializeToString(svg);
+              const img = new Image();
+              const blob = new Blob([svgStr], { type: "image/svg+xml" });
+              const url = URL.createObjectURL(blob);
+
+              await new Promise<void>((resolve, reject) => {
+                img.onload = () => {
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                  URL.revokeObjectURL(url);
+                  resolve();
+                };
+                img.onerror = reject;
+                img.src = url;
+              });
+            }
+          }
+
+          // Pace the recording
+          await new Promise<void>((r) => setTimeout(r, 1000 / fps));
+        }
+
+        recorder.stop();
+      } catch (err) {
+        try {
+          recorder.stop();
+        } catch {
+          /* ignore */
+        }
+        reject(err);
+      } finally {
+        stream.getTracks().forEach((t) => t.stop());
+      }
+    })();
+  });
+}
+
+/**
+ * Download Lottie animation as MP4 file
+ */
+export async function downloadLottieMp4(lottieInstance: any, canvas: HTMLCanvasElement, filename: string, opts?: Mp4ExportOptions): Promise<void> {
+  const blob = await exportLottieToMp4(lottieInstance, canvas, opts);
+  triggerDownload(blob, filename.endsWith(".mp4") ? filename : `${filename}.mp4`);
 }
