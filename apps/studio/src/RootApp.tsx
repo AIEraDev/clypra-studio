@@ -51,11 +51,22 @@ export default function RootApp() {
 
   useEffect(() => {
     const isApp = studioRoute || lottieRoute;
-    document.body.style.overflow = isApp ? "hidden" : "auto";
-    document.documentElement.style.overflow = isApp ? "hidden" : "auto";
+    if (isApp) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      document.body.style.overflowY = "auto";
+      document.body.style.overflowX = "hidden";
+      document.documentElement.style.overflowY = "auto";
+      document.documentElement.style.overflowX = "hidden";
+    }
     return () => {
       document.body.style.overflow = "";
+      document.body.style.overflowX = "";
+      document.body.style.overflowY = "";
       document.documentElement.style.overflow = "";
+      document.documentElement.style.overflowX = "";
+      document.documentElement.style.overflowY = "";
     };
   }, [studioRoute, lottieRoute]);
 
