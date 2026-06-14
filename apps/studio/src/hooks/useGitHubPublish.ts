@@ -360,10 +360,13 @@ export function useGitHubPublish() {
    * Use this for binary files like audio where the Contents API would fail.
    */
   const uploadLargeFile = async (config: GitHubPublishConfig, branch: string, filePath: string, fileBase64: string, commitMessage: string): Promise<void> => {
+    console.log(`[uploadLargeFile] Starting upload: ${filePath}, size: ${(fileBase64.length / 1024 / 1024).toFixed(2)}MB base64`);
+    
     // 1. Get current branch HEAD SHA
     const ref = await repoRequest<GitHubRefResponse>(config, `git/ref/heads/${branch}`);
     if (!ref?.object?.sha) throw new Error(`Branch ref not found: ${branch}`);
     const latestCommitSha = ref.object.sha;
+    console.log(`[uploadLargeFile] Branch SHA: ${latestCommitSha}`);
 
     // 2. Get the tree SHA from that commit
     interface GitCommitResponse {
@@ -372,58 +375,69 @@ export function useGitHubPublish() {
     }
     const commitData = await repoRequest<GitCommitResponse>(config, `git/commits/${latestCommitSha}`);
     const baseTreeSha = commitData.tree.sha;
+    console.log(`[uploadLargeFile] Base tree SHA: ${baseTreeSha}`);
 
     // 3. Create a blob directly (bypasses the Contents API size limits)
     interface GitBlobResponse {
       sha: string;
     }
-    const blobData = await repoRequest<GitBlobResponse>(config, "git/blobs", {
-      method: "POST",
-      body: JSON.stringify({
-        content: fileBase64,
-        encoding: "base64", // key: tells GitHub this is already base64
-      }),
-    });
+    console.log(`[uploadLargeFile] Creating blob...`);
+    try {
+      const blobData = await repoRequest<GitBlobResponse>(config, "git/blobs", {
+        method: "POST",
+        body: JSON.stringify({
+          content: fileBase64,
+          encoding: "base64",
+        }),
+      });
+      console.log(`[uploadLargeFile] Blob created: ${blobData.sha}`);
 
-    // 4. Create a new tree that includes the new blob
-    interface GitTreeResponse {
-      sha: string;
+      // 4. Create a new tree that includes the new blob
+      interface GitTreeResponse {
+        sha: string;
+      }
+      const treeData = await repoRequest<GitTreeResponse>(config, "git/trees", {
+        method: "POST",
+        body: JSON.stringify({
+          base_tree: baseTreeSha,
+          tree: [
+            {
+              path: filePath,
+              mode: "100644",
+              type: "blob",
+              sha: blobData.sha,
+            },
+          ],
+        }),
+      });
+      console.log(`[uploadLargeFile] Tree created: ${treeData.sha}`);
+
+      // 5. Create a commit pointing to the new tree
+      interface GitCommitCreateResponse {
+        sha: string;
+      }
+      const newCommit = await repoRequest<GitCommitCreateResponse>(config, "git/commits", {
+        method: "POST",
+        body: JSON.stringify({
+          message: commitMessage,
+          tree: treeData.sha,
+          parents: [latestCommitSha],
+        }),
+      });
+      console.log(`[uploadLargeFile] Commit created: ${newCommit.sha}`);
+
+      // 6. Move the branch ref to the new commit
+      await repoRequest(config, `git/refs/heads/${branch}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          sha: newCommit.sha,
+        }),
+      });
+      console.log(`[uploadLargeFile] Upload complete: ${filePath}`);
+    } catch (error: any) {
+      console.error(`[uploadLargeFile] Failed:`, error);
+      throw new Error(`Failed to upload ${filePath}: ${error.message || 'Unknown error'}. Size: ${(fileBase64.length / 1024 / 1024).toFixed(2)}MB`);
     }
-    const treeData = await repoRequest<GitTreeResponse>(config, "git/trees", {
-      method: "POST",
-      body: JSON.stringify({
-        base_tree: baseTreeSha,
-        tree: [
-          {
-            path: filePath,
-            mode: "100644", // regular file
-            type: "blob",
-            sha: blobData.sha, // the blob SHA from step 3
-          },
-        ],
-      }),
-    });
-
-    // 5. Create a commit pointing to the new tree
-    interface GitCommitCreateResponse {
-      sha: string;
-    }
-    const newCommit = await repoRequest<GitCommitCreateResponse>(config, "git/commits", {
-      method: "POST",
-      body: JSON.stringify({
-        message: commitMessage,
-        tree: treeData.sha,
-        parents: [latestCommitSha],
-      }),
-    });
-
-    // 6. Move the branch ref to the new commit
-    await repoRequest(config, `git/refs/heads/${branch}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        sha: newCommit.sha,
-      }),
-    });
   };
 
   const putJson = async (config: GitHubPublishConfig, path: string, branch: string, value: unknown, message: string): Promise<void> => {
@@ -663,9 +677,16 @@ export function useGitHubPublish() {
     if (payload.animatedFile && animatedPath) {
       const animatedBase64 = dataUrlToBase64(payload.animatedFile.dataUrl);
       const animatedSizeBytes = (animatedBase64.length * 3) / 4; // Approximate decoded size
+      const maxSizeBytes = 100 * 1024 * 1024; // 100MB hard limit
+      
+      if (animatedSizeBytes > maxSizeBytes) {
+        throw new Error(`Animated file is too large (${(animatedSizeBytes / 1024 / 1024).toFixed(2)}MB). Maximum size is 100MB.`);
+      }
+      
+      // Use Git Data API (blobs) for large animated files (>1MB)
+      // Note: Git Data API also has 100MB limit, but works better for binary files
       const contentsApiLimit = 1 * 1024 * 1024; // 1MB limit for Contents API
       
-      // Use Git Data API (blobs) for large animated files
       if (animatedSizeBytes > contentsApiLimit) {
         await uploadLargeFile(config, publishBranch, animatedPath, animatedBase64, `${action} sticker animation ${payload.id}`);
       } else {
