@@ -661,11 +661,20 @@ export function useGitHubPublish() {
     await putFile(config, imagePath, publishBranch, dataUrlToBase64(payload.imageFile.dataUrl), `${action} sticker image ${payload.id}`);
 
     if (payload.animatedFile && animatedPath) {
-      await putFile(config, animatedPath, publishBranch, dataUrlToBase64(payload.animatedFile.dataUrl), `${action} sticker animation ${payload.id}`);
+      const animatedBase64 = dataUrlToBase64(payload.animatedFile.dataUrl);
+      const animatedSizeBytes = (animatedBase64.length * 3) / 4; // Approximate decoded size
+      const contentsApiLimit = 1 * 1024 * 1024; // 1MB limit for Contents API
+      
+      // Use Git Data API (blobs) for large animated files
+      if (animatedSizeBytes > contentsApiLimit) {
+        await uploadLargeFile(config, publishBranch, animatedPath, animatedBase64, `${action} sticker animation ${payload.id}`);
+      } else {
+        await putFile(config, animatedPath, publishBranch, animatedBase64, `${action} sticker animation ${payload.id}`);
+      }
     }
 
     await putJson(config, categoryIndexPath, publishBranch, upsertById(categoryIndex, definition), `Update ${category} stickers index`);
-    await putJson(config, globalIndexPath, publishBranch, upsertById(globalIndex, definition), "Update stickers index");
+    await putJson(config, globalIndexPath, publishBranch, upsertById(globalIndex, definition), "Update stickers index`);
 
     const animatedNote = payload.metadata.isAnimated ? ` with ${payload.metadata.format.toUpperCase()} animation` : "";
     const prUrl = await getOrCreatePullRequest(config, publishBranch, buildPublishTitle(action, "sticker", displayName), `${action}s the ${displayName} sticker (${payload.id}) in ${category}${animatedNote}, including JSON definition, image assets, category index, and global index.`);
