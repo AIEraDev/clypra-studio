@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Download, ArrowRight, Sparkles, Shield, Terminal, Monitor, Layers, Play, CheckCircle2, Copy, Check, Smartphone } from "lucide-react";
+import { Download, ArrowRight, Sparkles, Shield, Terminal, Monitor, Layers, Play, CheckCircle2, Copy, Check, Smartphone, Github, Twitter, Globe, Linkedin, Youtube, Mail } from "lucide-react";
 
 export const WebShowcase: React.FC = () => {
   const [copiedMac, setCopiedMac] = useState(false);
@@ -163,6 +163,48 @@ export const WebShowcase: React.FC = () => {
             0 0 35px rgba(16, 185, 129, 0.18),
             inset 0 1px 0 rgba(255, 255, 255, 0.05),
             inset 0 0 15px rgba(16, 185, 129, 0.05);
+        }
+        
+        /* Creator & Social Card Custom Styles */
+        .creator-card:hover {
+          border-color: rgba(108, 99, 255, 0.4);
+          box-shadow: 
+            0 0 40px rgba(108, 99, 255, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+        .social-card:hover {
+          transform: translateY(-2px);
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .social-card-github:hover {
+          border-color: rgba(255, 255, 255, 0.3) !important;
+          box-shadow: 0 0 25px rgba(255, 255, 255, 0.08) !important;
+          background: rgba(255, 255, 255, 0.04) !important;
+        }
+        .social-card-twitter:hover {
+          border-color: rgba(29, 155, 240, 0.4) !important;
+          box-shadow: 0 0 25px rgba(29, 155, 240, 0.12) !important;
+          background: rgba(29, 155, 240, 0.04) !important;
+        }
+        .social-card-website:hover {
+          border-color: rgba(236, 72, 153, 0.4) !important;
+          box-shadow: 0 0 25px rgba(236, 72, 153, 0.12) !important;
+          background: rgba(236, 72, 153, 0.04) !important;
+        }
+        .social-card-linkedin:hover {
+          border-color: rgba(10, 102, 194, 0.4) !important;
+          box-shadow: 0 0 25px rgba(10, 102, 194, 0.12) !important;
+          background: rgba(10, 102, 194, 0.04) !important;
+        }
+        .social-card-youtube:hover {
+          border-color: rgba(239, 68, 68, 0.4) !important;
+          box-shadow: 0 0 25px rgba(239, 68, 68, 0.12) !important;
+          background: rgba(239, 68, 68, 0.04) !important;
+        }
+        .social-card-mail:hover {
+          border-color: rgba(168, 85, 247, 0.4) !important;
+          box-shadow: 0 0 25px rgba(168, 85, 247, 0.12) !important;
+          background: rgba(168, 85, 247, 0.04) !important;
         }
       `}</style>
 
@@ -641,6 +683,169 @@ export const WebShowcase: React.FC = () => {
               <div>
                 <h4 className="font-bold text-white text-base">Preset-Driven FFmpeg Exporters</h4>
                 <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Redesigned premium video export flow featuring custom aspect presets (YouTube, TikTok, Instagram, Custom), project renaming, and animated SVG export progress circles.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Meet the Creator & Socials Section ───────────────────── */}
+        <section className="flex flex-col gap-12 animate-fade-up" style={{ animationDelay: "500ms" }}>
+          <div className="text-center flex flex-col gap-3">
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">Meet the Creator</h3>
+            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-lg mx-auto">Behind Clypra's high-performance architecture and user experience.</p>
+          </div>
+
+          <div className="glass-panel creator-card rounded-3xl p-8 md:p-12 transition-all duration-500 relative overflow-hidden group">
+            {/* Ambient background glows */}
+            <div className="absolute -left-20 -bottom-20 w-96 h-96 bg-[#6c63ff]/5 rounded-full filter blur-3xl transition-all duration-500 group-hover:bg-[#6c63ff]/10 pointer-events-none" />
+            <div className="absolute -right-20 -top-20 w-96 h-96 bg-pink-500/3 rounded-full filter blur-3xl transition-all duration-500 group-hover:bg-pink-500/6 pointer-events-none" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
+              {/* Creator image container */}
+              <div className="lg:col-span-4 flex justify-center">
+                <div className="relative w-64 h-64 sm:w-72 sm:h-72 lg:w-full lg:h-auto lg:aspect-square rounded-2xl overflow-hidden border border-white/10 shadow-2xl group/img">
+                  {/* Subtle inner shadow overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#030305]/60 via-transparent to-transparent z-10" />
+                  
+                  {/* Creator photo */}
+                  <img 
+                    src="/founder.jpg" 
+                    alt="Abdul Kabir Musa - Clypra Creator" 
+                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/img:scale-105"
+                  />
+                  
+                  {/* Animated border outline */}
+                  <div className="absolute inset-0 border border-white/0 group-hover/img:border-[#6c63ff]/30 rounded-2xl transition-all duration-500 z-20 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Creator info and social links */}
+              <div className="lg:col-span-8 flex flex-col gap-6 text-left">
+                <div className="flex flex-col gap-2">
+                  <div className="inline-flex self-start items-center gap-2 px-3 py-1 rounded-full border border-[#6c63ff]/20 bg-[#6c63ff]/10 backdrop-blur-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#6c63ff] animate-pulse" />
+                    <span className="text-[9px] font-bold tracking-wider text-[#8b84ff] uppercase font-mono">Creator & Lead Architect</span>
+                  </div>
+                  
+                  <h4 className="text-3xl sm:text-4xl font-extrabold text-white font-outfit">
+                    Abdul Kabir Musa
+                  </h4>
+                </div>
+
+                <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed max-w-2xl">
+                  Clypra began as an ambitious endeavor to build a premium, desktop-class NLE video editor that combines the performance of Rust with the agility of React and Tauri. As a developer passionate about building high-performance creative tools, I engineered Clypra from the ground up to reduce export bottlenecks, offer robust Procedural Canvas 2D Text effects, and deliver a smooth layout system for creators.
+                </p>
+
+                <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed max-w-2xl">
+                  Follow my developer updates, explore my repositories, or get in touch to see what features are coming next to Clypra.
+                </p>
+
+                {/* Follow Socials Grid */}
+                <div className="flex flex-col gap-3 mt-2">
+                  <span className="text-xs font-semibold text-neutral-400 font-mono tracking-wider uppercase">Follow & Connect</span>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {/* GitHub */}
+                    <a 
+                      href="https://github.com/AIEraDev" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="social-card social-card-github flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Github className="w-5 h-5 text-white" />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-white">GitHub</span>
+                          <span className="text-[10px] text-[#666]">@AIEraDev</span>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
+                    </a>
+
+                    {/* Twitter/X */}
+                    <a 
+                      href="https://x.com/AIEraDev" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="social-card social-card-twitter flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Twitter className="w-5 h-5 text-[#1d9bf0]" />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-white">Twitter / X</span>
+                          <span className="text-[10px] text-[#666]">@AIEraDev</span>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
+                    </a>
+
+                    {/* Website */}
+                    <a 
+                      href="https://abdulkabirmusa.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="social-card social-card-website flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Globe className="w-5 h-5 text-pink-400" />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-white">Website</span>
+                          <span className="text-[10px] text-[#666]">abdulkabirmusa.com</span>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
+                    </a>
+
+                    {/* YouTube */}
+                    <a 
+                      href="https://www.youtube.com/@AIEraDev" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="social-card social-card-youtube flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Youtube className="w-5 h-5 text-[#ff0000]" />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-white">YouTube</span>
+                          <span className="text-[10px] text-[#666]">@AIEraDev</span>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
+                    </a>
+
+                    {/* LinkedIn */}
+                    <a 
+                      href="https://www.linkedin.com/in/abdulkabirmusa" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="social-card social-card-linkedin flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Linkedin className="w-5 h-5 text-[#0a66c2]" />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-white">LinkedIn</span>
+                          <span className="text-[10px] text-[#666]">AbdulKabir Musa</span>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
+                    </a>
+
+                    {/* Email */}
+                    <a 
+                      href="mailto:musaabdulkabeer19@gmail.com" 
+                      className="social-card social-card-mail flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-5 h-5 text-[#a855f7]" />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-white">Email</span>
+                          <span className="text-[10px] text-[#666]">musaabdulkabeer19...</span>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
