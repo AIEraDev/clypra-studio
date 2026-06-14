@@ -283,7 +283,7 @@ export const WebShowcase: React.FC = () => {
               <Sparkles className="w-3.5 h-3.5 text-[#a9a4ff]" />
               Open Studio
             </a>
-            <a href="https://github.com/AIEraDev/clypra" target="_blank" rel="noopener noreferrer" className="text-xs text-[#a1a1aa] hover:text-white transition-all duration-300 flex items-center gap-1.5 font-medium relative group py-2">
+            <a href="https://github.com/AIEraDev/clypra" target="_blank" rel="noopener noreferrer" className="text-xs text-[#a1a1aa] hover:text-white transition-all duration-300 hidden sm:flex items-center gap-1.5 font-medium relative group py-2">
               <span>GitHub Repository</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               <span className="absolute bottom-0 left-0 w-0 h-px bg-[#6c63ff] group-hover:w-full transition-all duration-300"></span>
@@ -313,7 +313,7 @@ export const WebShowcase: React.FC = () => {
           <p className="text-sm sm:text-base md:text-lg text-[#a1a1aa] leading-relaxed max-w-2xl mx-auto font-sans">Clypra is a modern, high-performance video editor engineered using Tauri, React, and Rust. Experience a professional desktop-class NLE timeline, hardware-accelerated rendering, and visual asset pools directly on your machine—with mobile versions coming soon.</p>
 
           {/* Quick Platform Badges */}
-          <div className="flex justify-center gap-3 mt-4 text-[10px] text-[#666] font-mono">
+          <div className="flex flex-wrap justify-center gap-3 mt-4 text-[10px] text-[#666] font-mono">
             <span className="px-2.5 py-1 rounded bg-white/2 border border-white/4">macOS Universal</span>
             <span className="px-2.5 py-1 rounded bg-white/2 border border-white/4">Windows x64</span>
             <span className="px-2.5 py-1 rounded bg-white/2 border border-white/4">Linux AppImage</span>
