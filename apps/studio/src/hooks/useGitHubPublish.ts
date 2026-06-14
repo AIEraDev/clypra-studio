@@ -88,6 +88,37 @@ export interface StickerPublishPayload {
   };
 }
 
+export interface OverlayPublishPayload {
+  id: string;
+  category: "fire" | "light-leak" | "particle" | "weather" | "glitch" | "texture";
+  videoFile: {
+    name: string;
+    dataUrl: string;
+  };
+  thumbnailDataUrl?: string;
+  metadata: {
+    name: string;
+    description?: string;
+    tags?: string[];
+    duration: number;
+    width: number;
+    height: number;
+    format: "webm" | "mp4" | "mov";
+    blendMode: "normal" | "screen" | "multiply" | "overlay" | "soft-light" | "hard-light" | "color-dodge" | "color-burn" | "lighten" | "darken" | "difference";
+    defaultOpacity: number;
+    loopable?: boolean;
+    source: {
+      provider: string;
+      url: string;
+    };
+    safety?: {
+      status: "approved";
+      reviewedAt?: string;
+      notes?: string;
+    };
+  };
+}
+
 interface GitHubContentResponse {
   content?: string;
   sha?: string;
@@ -161,13 +192,14 @@ function getDisplayName(definition: Record<string, any>, fallbackId: string): st
   return name || humanizeId(fallbackId);
 }
 
-function buildPublishBranch(kind: "effect" | "template" | "audio" | "sticker", id: string, category: string): string {
+function buildPublishBranch(kind: "effect" | "template" | "audio" | "sticker" | "overlay", id: string, category: string): string {
   return `clypra-studio/${kind}/${sanitizeBranchPart(category)}/${sanitizeBranchPart(id)}`;
 }
 
-function buildPublishTitle(action: "Add" | "Update", kind: "effect" | "template" | "audio" | "sticker", displayName: string): string {
+function buildPublishTitle(action: "Add" | "Update", kind: "effect" | "template" | "audio" | "sticker" | "overlay", displayName: string): string {
   if (kind === "audio") return `${action} audio asset: ${displayName}`;
   if (kind === "sticker") return `${action} sticker: ${displayName}`;
+  if (kind === "overlay") return `${action} animated overlay: ${displayName}`;
   return `${action} text ${kind}: ${displayName}`;
 }
 
@@ -641,11 +673,97 @@ export function useGitHubPublish() {
     return { files, branch: publishBranch, prUrl };
   };
 
+  const publishOverlay = async (payload: OverlayPublishPayload): Promise<PublishResult> => {
+    const config = getGithubConfig();
+    if (!config) throw new Error("GitHub publishing is not configured.");
+
+    if (!payload.metadata.name.trim()) throw new Error("Overlay name is required.");
+    if (!payload.metadata.source.provider.trim() || !payload.metadata.source.url.trim()) throw new Error("Overlay source provider and URL are required.");
+    if (!Number.isFinite(payload.metadata.duration) || payload.metadata.duration <= 0) throw new Error("Overlay duration must be greater than zero.");
+    if (!Number.isFinite(payload.metadata.width) || payload.metadata.width <= 0) throw new Error("Overlay width must be greater than zero.");
+    if (!Number.isFinite(payload.metadata.height) || payload.metadata.height <= 0) throw new Error("Overlay height must be greater than zero.");
+
+    // Check file size - Git blob API supports up to 100MB
+    const videoBase64 = dataUrlToBase64(payload.videoFile.dataUrl);
+    const videoSizeBytes = (videoBase64.length * 3) / 4; // Approximate decoded size
+    const maxSizeBytes = 100 * 1024 * 1024; // 100MB hard limit
+    if (videoSizeBytes > maxSizeBytes) {
+      throw new Error(`Overlay video file is too large (${(videoSizeBytes / 1024 / 1024).toFixed(2)}MB). Maximum allowed size is 100MB.`);
+    }
+
+    const category = payload.category.toLowerCase();
+    const extension = payload.metadata.format;
+    const publishBranch = buildPublishBranch("overlay", payload.id, category);
+    await ensurePublishBranch(config, publishBranch);
+
+    const videoPath = `data/overlays/${category}/${payload.id}.${extension}`;
+    const thumbnailPath = `data/overlays/${category}/${payload.id}-thumb.jpg`;
+    const definitionPath = `data/overlays/${category}/${payload.id}.json`;
+    const categoryIndexPath = `data/overlays/${category}/index.json`;
+    const globalIndexPath = "data/overlays/index.json";
+    const rawBase = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}`;
+
+    const definition = {
+      id: payload.id,
+      name: payload.metadata.name,
+      category,
+      url: `${rawBase}/${videoPath}`,
+      thumbnailUrl: payload.thumbnailDataUrl ? `${rawBase}/${thumbnailPath}` : undefined,
+      duration: payload.metadata.duration,
+      width: payload.metadata.width,
+      height: payload.metadata.height,
+      format: payload.metadata.format,
+      blendMode: payload.metadata.blendMode,
+      tags: payload.metadata.tags || [],
+      description: payload.metadata.description,
+      recommended: {
+        opacity: payload.metadata.defaultOpacity,
+        blendMode: payload.metadata.blendMode,
+      },
+      loopable: payload.metadata.loopable !== false,
+      source: payload.metadata.source,
+      safety: payload.metadata.safety || {
+        status: "approved",
+        reviewedAt: new Date().toISOString(),
+      },
+    };
+
+    const categoryIndex = await readJson<any[]>(config, categoryIndexPath, config.branch, []);
+    const globalIndex = await readJson<any[]>(config, globalIndexPath, config.branch, []);
+
+    const files = [definitionPath, videoPath, categoryIndexPath, globalIndexPath, ...(payload.thumbnailDataUrl ? [thumbnailPath] : [])];
+    const existingDefinition = await readFile(config, definitionPath, config.branch);
+    const action = existingDefinition ? "Update" : "Add";
+    const displayName = payload.metadata.name;
+
+    // Upload definition JSON
+    await putJson(config, definitionPath, publishBranch, definition, `${action} overlay metadata ${payload.id}`);
+
+    // Use Git Data API (blobs) for video files to support up to 100MB
+    await uploadLargeFile(config, publishBranch, videoPath, videoBase64, `${action} overlay video ${payload.id}`);
+
+    // Upload thumbnail if provided
+    if (payload.thumbnailDataUrl) {
+      await putFile(config, thumbnailPath, publishBranch, dataUrlToBase64(payload.thumbnailDataUrl), `${action} overlay thumbnail ${payload.id}`);
+    }
+
+    // Update category index
+    await putJson(config, categoryIndexPath, publishBranch, upsertById(categoryIndex, definition), `Update ${category} overlays index`);
+
+    // Update global index
+    await putJson(config, globalIndexPath, publishBranch, upsertById(globalIndex, definition), "Update overlays index");
+
+    const prUrl = await getOrCreatePullRequest(config, publishBranch, buildPublishTitle(action, "overlay", displayName), `${action}s the ${displayName} animated overlay (${payload.id}) in ${category}, including video file, thumbnail, metadata JSON, category index, and global index.`);
+
+    return { files, branch: publishBranch, prUrl };
+  };
+
   return {
     publishEffect,
     publishTemplate,
     publishAudio,
     publishSticker,
+    publishOverlay,
     saveGithubConfig,
     getGithubConfig,
   };
