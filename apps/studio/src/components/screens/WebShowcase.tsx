@@ -695,25 +695,21 @@ export const WebShowcase: React.FC = () => {
             <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-lg mx-auto">Behind Clypra's high-performance architecture and user experience.</p>
           </div>
 
-          <div className="glass-panel creator-card rounded-3xl p-8 md:p-12 transition-all duration-500 relative overflow-hidden group">
+          <div className="glass-panel creator-card rounded-3xl p-4 pt-8 md:p-12 transition-all duration-500 relative overflow-hidden group">
             {/* Ambient background glows */}
             <div className="absolute -left-20 -bottom-20 w-96 h-96 bg-[#6c63ff]/5 rounded-full filter blur-3xl transition-all duration-500 group-hover:bg-[#6c63ff]/10 pointer-events-none" />
             <div className="absolute -right-20 -top-20 w-96 h-96 bg-pink-500/3 rounded-full filter blur-3xl transition-all duration-500 group-hover:bg-pink-500/6 pointer-events-none" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
               {/* Creator image container */}
-              <div className="lg:col-span-4 flex justify-center">
+              <div className="lg:col-span-4 flex justify-center w-full">
                 <div className="relative w-64 h-64 sm:w-72 sm:h-72 lg:w-full lg:h-auto lg:aspect-square rounded-2xl overflow-hidden border border-white/10 shadow-2xl group/img">
                   {/* Subtle inner shadow overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#030305]/60 via-transparent to-transparent z-10" />
-                  
+                  <div className="absolute inset-0 bg-linear-to-t from-[#030305]/60 via-transparent to-transparent z-10" />
+
                   {/* Creator photo */}
-                  <img 
-                    src="/founder.jpg" 
-                    alt="Abdul Kabir Musa - Clypra Creator" 
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/img:scale-105"
-                  />
-                  
+                  <img src="/founder.jpg" alt="Abdul Kabir Musa - Clypra Creator" className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/img:scale-105" />
+
                   {/* Animated border outline */}
                   <div className="absolute inset-0 border border-white/0 group-hover/img:border-[#6c63ff]/30 rounded-2xl transition-all duration-500 z-20 pointer-events-none" />
                 </div>
@@ -726,32 +722,21 @@ export const WebShowcase: React.FC = () => {
                     <span className="w-1.5 h-1.5 rounded-full bg-[#6c63ff] animate-pulse" />
                     <span className="text-[9px] font-bold tracking-wider text-[#8b84ff] uppercase font-mono">Creator & Lead Architect</span>
                   </div>
-                  
-                  <h4 className="text-3xl sm:text-4xl font-extrabold text-white font-outfit">
-                    Abdul Kabir Musa
-                  </h4>
+
+                  <h4 className="text-3xl sm:text-4xl font-extrabold text-white font-outfit">Abdul Kabir Musa</h4>
                 </div>
 
-                <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed max-w-2xl">
-                  Clypra began as an ambitious endeavor to build a premium, desktop-class NLE video editor that combines the performance of Rust with the agility of React and Tauri. As a developer passionate about building high-performance creative tools, I engineered Clypra from the ground up to reduce export bottlenecks, offer robust Procedural Canvas 2D Text effects, and deliver a smooth layout system for creators.
-                </p>
+                <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed max-w-2xl">Clypra began as an ambitious endeavor to build a premium, desktop-class NLE video editor that combines the performance of Rust with the agility of React and Tauri. As a developer passionate about building high-performance creative tools, I engineered Clypra from the ground up to reduce export bottlenecks, offer robust Procedural Canvas 2D Text effects, and deliver a smooth layout system for creators.</p>
 
-                <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed max-w-2xl">
-                  Follow my developer updates, explore my repositories, or get in touch to see what features are coming next to Clypra.
-                </p>
+                <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed max-w-2xl">Follow my developer updates, explore my repositories, or get in touch to see what features are coming next to Clypra.</p>
 
                 {/* Follow Socials Grid */}
                 <div className="flex flex-col gap-3 mt-2">
                   <span className="text-xs font-semibold text-neutral-400 font-mono tracking-wider uppercase">Follow & Connect</span>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {/* GitHub */}
-                    <a 
-                      href="https://github.com/AIEraDev" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="social-card social-card-github flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
-                    >
+                    <a href="https://github.com/AIEraDev" target="_blank" rel="noopener noreferrer" className="social-card social-card-github flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <Github className="w-5 h-5 text-white" />
                         <div className="flex flex-col">
@@ -763,12 +748,7 @@ export const WebShowcase: React.FC = () => {
                     </a>
 
                     {/* Twitter/X */}
-                    <a 
-                      href="https://x.com/AIEraDev" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="social-card social-card-twitter flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
-                    >
+                    <a href="https://x.com/AIEraDev" target="_blank" rel="noopener noreferrer" className="social-card social-card-twitter flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <Twitter className="w-5 h-5 text-[#1d9bf0]" />
                         <div className="flex flex-col">
@@ -780,12 +760,7 @@ export const WebShowcase: React.FC = () => {
                     </a>
 
                     {/* Website */}
-                    <a 
-                      href="https://abdulkabirmusa.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="social-card social-card-website flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
-                    >
+                    <a href="https://abdulkabirmusa.com" target="_blank" rel="noopener noreferrer" className="social-card social-card-website flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <Globe className="w-5 h-5 text-pink-400" />
                         <div className="flex flex-col">
@@ -797,12 +772,7 @@ export const WebShowcase: React.FC = () => {
                     </a>
 
                     {/* YouTube */}
-                    <a 
-                      href="https://www.youtube.com/@AIEraDev" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="social-card social-card-youtube flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
-                    >
+                    <a href="https://www.youtube.com/@AIEraDev" target="_blank" rel="noopener noreferrer" className="social-card social-card-youtube flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <Youtube className="w-5 h-5 text-[#ff0000]" />
                         <div className="flex flex-col">
@@ -814,12 +784,7 @@ export const WebShowcase: React.FC = () => {
                     </a>
 
                     {/* LinkedIn */}
-                    <a 
-                      href="https://www.linkedin.com/in/abdulkabirmusa" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="social-card social-card-linkedin flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
-                    >
+                    <a href="https://www.linkedin.com/in/abdulkabirmusa" target="_blank" rel="noopener noreferrer" className="social-card social-card-linkedin flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <Linkedin className="w-5 h-5 text-[#0a66c2]" />
                         <div className="flex flex-col">
@@ -831,10 +796,7 @@ export const WebShowcase: React.FC = () => {
                     </a>
 
                     {/* Email */}
-                    <a 
-                      href="mailto:musaabdulkabeer19@gmail.com" 
-                      className="social-card social-card-mail flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
-                    >
+                    <a href="mailto:musaabdulkabeer19@gmail.com" className="social-card social-card-mail flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <Mail className="w-5 h-5 text-[#a855f7]" />
                         <div className="flex flex-col">
