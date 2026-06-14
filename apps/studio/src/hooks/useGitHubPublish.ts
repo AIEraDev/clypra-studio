@@ -361,7 +361,7 @@ export function useGitHubPublish() {
    */
   const uploadLargeFile = async (config: GitHubPublishConfig, branch: string, filePath: string, fileBase64: string, commitMessage: string): Promise<void> => {
     console.log(`[uploadLargeFile] Starting upload: ${filePath}, size: ${(fileBase64.length / 1024 / 1024).toFixed(2)}MB base64`);
-    
+
     // 1. Get current branch HEAD SHA
     const ref = await repoRequest<GitHubRefResponse>(config, `git/ref/heads/${branch}`);
     if (!ref?.object?.sha) throw new Error(`Branch ref not found: ${branch}`);
@@ -436,7 +436,7 @@ export function useGitHubPublish() {
       console.log(`[uploadLargeFile] Upload complete: ${filePath}`);
     } catch (error: any) {
       console.error(`[uploadLargeFile] Failed:`, error);
-      throw new Error(`Failed to upload ${filePath}: ${error.message || 'Unknown error'}. Size: ${(fileBase64.length / 1024 / 1024).toFixed(2)}MB`);
+      throw new Error(`Failed to upload ${filePath}: ${error.message || "Unknown error"}. Size: ${(fileBase64.length / 1024 / 1024).toFixed(2)}MB`);
     }
   };
 
@@ -678,15 +678,15 @@ export function useGitHubPublish() {
       const animatedBase64 = dataUrlToBase64(payload.animatedFile.dataUrl);
       const animatedSizeBytes = (animatedBase64.length * 3) / 4; // Approximate decoded size
       const maxSizeBytes = 100 * 1024 * 1024; // 100MB hard limit
-      
+
       if (animatedSizeBytes > maxSizeBytes) {
         throw new Error(`Animated file is too large (${(animatedSizeBytes / 1024 / 1024).toFixed(2)}MB). Maximum size is 100MB.`);
       }
-      
+
       // Use Git Data API (blobs) for large animated files (>1MB)
       // Note: Git Data API also has 100MB limit, but works better for binary files
       const contentsApiLimit = 1 * 1024 * 1024; // 1MB limit for Contents API
-      
+
       if (animatedSizeBytes > contentsApiLimit) {
         await uploadLargeFile(config, publishBranch, animatedPath, animatedBase64, `${action} sticker animation ${payload.id}`);
       } else {
@@ -695,7 +695,7 @@ export function useGitHubPublish() {
     }
 
     await putJson(config, categoryIndexPath, publishBranch, upsertById(categoryIndex, definition), `Update ${category} stickers index`);
-    await putJson(config, globalIndexPath, publishBranch, upsertById(globalIndex, definition), "Update stickers index`);
+    await putJson(config, globalIndexPath, publishBranch, upsertById(globalIndex, definition), "Update stickers index");
 
     const animatedNote = payload.metadata.isAnimated ? ` with ${payload.metadata.format.toUpperCase()} animation` : "";
     const prUrl = await getOrCreatePullRequest(config, publishBranch, buildPublishTitle(action, "sticker", displayName), `${action}s the ${displayName} sticker (${payload.id}) in ${category}${animatedNote}, including JSON definition, image assets, category index, and global index.`);
