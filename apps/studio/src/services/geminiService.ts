@@ -153,6 +153,24 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
   return Math.min(max, Math.max(min, numberValue));
 }
 
+function getDefaultParamsForRenderer(renderer: string): Record<string, unknown> {
+  const defaults: Record<string, Record<string, unknown>> = {
+    glitch: { glitchIntensity: 30, rgbSplit: 12, sliceCount: 8, scanlineCount: 120, noiseAmount: 0.4 },
+    rgb_split: { rgbSplit: 16, splitDistance: 16 },
+    chromatic_aberration: { rgbSplit: 16, splitDistance: 16 },
+    pixelate: { pixelSize: 18 },
+    scanlines: { scanlineCount: 180 },
+    film_grain: { noiseAmount: 0.4 },
+    vignette: { radius: 0.75 },
+    glow: { glowColor: "#00ffff", glowIntensity: 1.0, glowRadius: 24 },
+    "body-segmentation-glow": { glowColor: "#00ffff", glowIntensity: 1.0, glowRadius: 24, feather: 12 },
+    body_glow: { glowColor: "#00ffff", glowIntensity: 1.0, glowRadius: 24, feather: 12 },
+    body_outline: { outlineColor: "#ffffff", outlineWidth: 6, feather: 8 },
+    body_particles: { particleColor: "#ffffff", particleCount: 80, particleSize: 4, drift: 12 },
+  };
+  return defaults[renderer] || {};
+}
+
 const deepResearchResponseSchema = {
   type: Type.OBJECT,
   properties: {
@@ -446,7 +464,12 @@ Rules:
         description: String(preset.description || "Generated video effect preset."),
         renderer: sanitizeVideoRenderer(String(preset.renderer || params.renderer || "glitch")),
         params: preset.params && typeof preset.params === "object" ? preset.params : {},
-        tags: Array.isArray(preset.tags) ? preset.tags.map((tag: unknown) => String(tag).toLowerCase()).filter(Boolean).slice(0, 8) : ["video", "effect"],
+        tags: Array.isArray(preset.tags)
+          ? preset.tags
+              .map((tag: unknown) => String(tag).toLowerCase())
+              .filter(Boolean)
+              .slice(0, 8)
+          : ["video", "effect"],
         defaultIntensity: Math.round(clampNumber(preset.defaultIntensity, 0, 100, 70)),
         isPremium: !!preset.isPremium,
       };
@@ -491,14 +514,16 @@ ${rendererGuide}
 Rules:
 - Return exactly one marketplace-ready preset.
 - ID must be kebab-case.
-- Params must match the chosen renderer only.
+- Params object MUST contain ALL required parameters for the chosen renderer with realistic values.
 - defaultIntensity must be 0-100.
 - Tags should be lowercase discovery keywords.
-- Do not include preview URLs, thumbnails, shader code, or proprietary brand names.`,
+- Do not include preview URLs, thumbnails, shader code, or proprietary brand names.
+
+CRITICAL: The params object must never be empty. It must include all parameters listed for the chosen renderer above.`,
         },
       ],
       config: {
-        systemInstruction: "You are a senior video effects marketplace curator. You generate compatible procedural preset JSON for Clypra only, never unsupported renderers or unknown parameter names.",
+        systemInstruction: "You are a senior video effects marketplace curator. You generate compatible procedural preset JSON for Clypra only, never unsupported renderers or unknown parameter names. ALWAYS populate the params object with all required parameters for the selected renderer.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -519,13 +544,23 @@ Rules:
 
     const result = JSON.parse((response.text || "{}").trim());
     const name = String(result.name || "Generated Effect");
+    const renderer = sanitizeEffectRenderer(params.kind, String(result.renderer || params.renderer || ""));
+
+    // Ensure params are populated - if AI returns empty object, provide sensible defaults
+    let effectParams = result.params && typeof result.params === "object" && Object.keys(result.params).length > 0 ? result.params : getDefaultParamsForRenderer(renderer);
+
     return {
       id: sanitizeEffectId(result.id || name),
       name,
       description: String(result.description || `Generated ${params.kind} effect preset.`),
-      renderer: sanitizeEffectRenderer(params.kind, String(result.renderer || params.renderer || "")),
-      params: result.params && typeof result.params === "object" ? result.params : {},
-      tags: Array.isArray(result.tags) ? result.tags.map((tag: unknown) => String(tag).toLowerCase()).filter(Boolean).slice(0, 8) : [params.kind, "effect"],
+      renderer,
+      params: effectParams,
+      tags: Array.isArray(result.tags)
+        ? result.tags
+            .map((tag: unknown) => String(tag).toLowerCase())
+            .filter(Boolean)
+            .slice(0, 8)
+        : [params.kind, "effect"],
       defaultIntensity: Math.round(clampNumber(result.defaultIntensity, 0, 100, 70)),
       isPremium: !!result.isPremium,
     };
