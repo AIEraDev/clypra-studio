@@ -2,6 +2,17 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { getGeminiApiKey } from "../hooks/useGeminiApiKey";
 import type { TextEffectConfig } from "@clypra/engine";
 
+export interface VideoEffectPresetSuggestion {
+  id: string;
+  name: string;
+  description: string;
+  renderer: string;
+  params: Record<string, unknown>;
+  tags: string[];
+  defaultIntensity: number;
+  isPremium?: boolean;
+}
+
 function createGeminiClient() {
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
@@ -113,6 +124,27 @@ const textEffectConfigResponseSchema = {
     panelOpacity: { type: Type.NUMBER },
   },
 };
+
+const VIDEO_EFFECT_RENDERERS = ["glitch", "rgb_split", "chromatic_aberration", "pixelate", "scanlines", "film_grain", "vignette", "glow"] as const;
+
+function sanitizeEffectId(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "generated-effect"
+  );
+}
+
+function sanitizeVideoRenderer(value: string): string {
+  return VIDEO_EFFECT_RENDERERS.includes(value as (typeof VIDEO_EFFECT_RENDERERS)[number]) ? value : "glitch";
+}
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return fallback;
+  return Math.min(max, Math.max(min, numberValue));
+}
 
 const deepResearchResponseSchema = {
   type: Type.OBJECT,
@@ -329,6 +361,89 @@ Return your answer as JSON.`,
       name: resultData.name ?? "Unnamed Effect",
       category: resolveEffectCategory(resultData.category),
     };
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+}
+
+export async function generateVideoEffectPresetSuggestions(params: { prompt: string; renderer?: string; count?: number }): Promise<VideoEffectPresetSuggestion[]> {
+  try {
+    const ai = createGeminiClient();
+    const count = Math.round(clampNumber(params.count, 1, 30, 20));
+    const rendererHint = params.renderer && params.renderer !== "mixed" ? `Use only renderer "${params.renderer}".` : "Use a varied mix of allowed renderers.";
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          text: `Generate ${count} production-ready Clypra video effect preset suggestions for this creative direction:
+"${params.prompt}"
+
+${rendererHint}
+
+Allowed renderers and parameters:
+- glitch: glitchIntensity 1-60, rgbSplit 0-24, sliceCount 1-24, scanlineCount 20-320, noiseAmount 0-0.8
+- rgb_split: rgbSplit 0-32, splitDistance 0-32
+- chromatic_aberration: rgbSplit 0-32, splitDistance 0-32
+- pixelate: pixelSize 2-64
+- scanlines: scanlineCount 20-420
+- film_grain: noiseAmount 0-0.8
+- vignette: radius 0.2-1.2
+- glow: glowColor hex, glowIntensity 0-1.5, glowRadius 2-48
+
+Rules:
+- Return unique, marketplace-ready names.
+- Return kebab-case IDs.
+- Params must match the chosen renderer only.
+- defaultIntensity must be 0-100.
+- Tags should be lowercase discovery keywords.
+- Do not include preview URLs, thumbnails, shader code, or proprietary brand names.`,
+        },
+      ],
+      config: {
+        systemInstruction: "You are a senior video effects marketplace curator. You generate compatible procedural preset JSON for Clypra only, never unsupported renderers or unknown parameter names.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            presets: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING },
+                  name: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  renderer: { type: Type.STRING, enum: VIDEO_EFFECT_RENDERERS as unknown as string[] },
+                  params: { type: Type.OBJECT },
+                  tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  defaultIntensity: { type: Type.NUMBER },
+                  isPremium: { type: Type.BOOLEAN },
+                },
+                required: ["id", "name", "description", "renderer", "params", "tags", "defaultIntensity"],
+              },
+            },
+          },
+          required: ["presets"],
+        },
+      },
+    });
+
+    const result = JSON.parse((response.text || "{}").trim());
+    const presets = Array.isArray(result.presets) ? result.presets : [];
+    return presets.slice(0, count).map((preset: any, index: number) => {
+      const name = String(preset.name || `Generated Effect ${index + 1}`);
+      return {
+        id: sanitizeEffectId(preset.id || name),
+        name,
+        description: String(preset.description || "Generated video effect preset."),
+        renderer: sanitizeVideoRenderer(String(preset.renderer || params.renderer || "glitch")),
+        params: preset.params && typeof preset.params === "object" ? preset.params : {},
+        tags: Array.isArray(preset.tags) ? preset.tags.map((tag: unknown) => String(tag).toLowerCase()).filter(Boolean).slice(0, 8) : ["video", "effect"],
+        defaultIntensity: Math.round(clampNumber(preset.defaultIntensity, 0, 100, 70)),
+        isPremium: !!preset.isPremium,
+      };
+    });
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }

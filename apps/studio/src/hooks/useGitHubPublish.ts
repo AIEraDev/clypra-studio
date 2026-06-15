@@ -119,6 +119,49 @@ export interface OverlayPublishPayload {
   };
 }
 
+export interface VideoEffectPresetPublishPayload {
+  id: string;
+  kind: "video" | "body";
+  thumbnailDataUrl?: string;
+  previewFile?: {
+    name: string;
+    dataUrl: string;
+  };
+  metadata: {
+    name: string;
+    description?: string;
+    category?: string;
+    renderer: string;
+    params?: Record<string, unknown>;
+    tags?: string[];
+    isPremium?: boolean;
+    intensity: {
+      min: number;
+      max: number;
+      default: number;
+      step: number;
+    };
+    requirements?: {
+      bodySegmentation?: boolean;
+      minConfidence?: number;
+    };
+    previewUrl?: string;
+  };
+}
+
+export interface VideoEffectPresetBatchPublishPayload {
+  kind: "video" | "body";
+  presets: Array<{
+    id: string;
+    metadata: VideoEffectPresetPublishPayload["metadata"];
+    thumbnailDataUrl?: string;
+    previewFile?: {
+      name: string;
+      dataUrl: string;
+    };
+  }>;
+}
+
 interface GitHubContentResponse {
   content?: string;
   sha?: string;
@@ -162,6 +205,11 @@ function dataUrlToBase64(dataUrl: string): string {
   return dataUrl.includes(",") ? dataUrl.split(",")[1] || "" : dataUrl;
 }
 
+function extensionFromFileName(name: string, fallback: string): string {
+  const match = name.toLowerCase().match(/\.([a-z0-9]+)$/);
+  return match?.[1] || fallback;
+}
+
 function encodeBase64Utf8(value: string): string {
   return btoa(unescape(encodeURIComponent(value)));
 }
@@ -192,14 +240,15 @@ function getDisplayName(definition: Record<string, any>, fallbackId: string): st
   return name || humanizeId(fallbackId);
 }
 
-function buildPublishBranch(kind: "effect" | "template" | "audio" | "sticker" | "overlay", id: string, category: string): string {
+function buildPublishBranch(kind: "effect" | "template" | "audio" | "sticker" | "overlay" | "video-effect-preset", id: string, category: string): string {
   return `clypra-studio/${kind}/${sanitizeBranchPart(category)}/${sanitizeBranchPart(id)}`;
 }
 
-function buildPublishTitle(action: "Add" | "Update", kind: "effect" | "template" | "audio" | "sticker" | "overlay", displayName: string): string {
+function buildPublishTitle(action: "Add" | "Update", kind: "effect" | "template" | "audio" | "sticker" | "overlay" | "video-effect-preset", displayName: string): string {
   if (kind === "audio") return `${action} audio asset: ${displayName}`;
   if (kind === "sticker") return `${action} sticker: ${displayName}`;
   if (kind === "overlay") return `${action} animated overlay: ${displayName}`;
+  if (kind === "video-effect-preset") return `${action} video/body effect preset: ${displayName}`;
   return `${action} text ${kind}: ${displayName}`;
 }
 
@@ -788,12 +837,148 @@ export function useGitHubPublish() {
     return { files, branch: publishBranch, prUrl };
   };
 
+  const publishVideoEffectPreset = async (payload: VideoEffectPresetPublishPayload): Promise<PublishResult> => {
+    const config = getGithubConfig();
+    if (!config) throw new Error("GitHub publishing is not configured.");
+
+    if (!payload.metadata.name.trim()) throw new Error("Effect name is required.");
+    if (!payload.metadata.renderer.trim()) throw new Error("Renderer is required.");
+    if (!Number.isFinite(payload.metadata.intensity.default)) throw new Error("Default intensity must be a number.");
+
+    const kind = payload.kind;
+    const category = payload.metadata.category?.trim() || kind;
+    const publishBranch = buildPublishBranch("video-effect-preset", payload.id, kind);
+    await ensurePublishBranch(config, publishBranch);
+
+    const indexPath = `src/data/effects/${kind}/index.json`;
+    const definitionPath = `src/data/effects/${kind}/${payload.id}.json`;
+    const thumbnailPath = `data/thumbnails/${payload.id}.jpg`;
+    const previewExtension = payload.previewFile ? extensionFromFileName(payload.previewFile.name, "webm") : "";
+    const previewPath = payload.previewFile ? `data/previews/${payload.id}.${previewExtension}` : "";
+    const rawBase = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}`;
+
+    const definition = {
+      id: payload.id,
+      name: payload.metadata.name,
+      type: kind === "body" ? "body-effect" : "video-effect",
+      category,
+      description: payload.metadata.description || "",
+      thumbnail: payload.thumbnailDataUrl ? `${rawBase}/${thumbnailPath}` : "",
+      preview: previewPath ? `${rawBase}/${previewPath}` : payload.metadata.previewUrl || undefined,
+      isPremium: payload.metadata.isPremium || false,
+      renderer: payload.metadata.renderer,
+      params: payload.metadata.params || {},
+      intensity: payload.metadata.intensity,
+      ...(kind === "body"
+        ? {
+            requirements: payload.metadata.requirements || {
+              bodySegmentation: true,
+              minConfidence: 0.7,
+            },
+          }
+        : {}),
+      tags: payload.metadata.tags || [],
+    };
+
+    const index = await readJson<any[]>(config, indexPath, config.branch, []);
+    const files = [indexPath, definitionPath, ...(payload.thumbnailDataUrl ? [thumbnailPath] : []), ...(previewPath ? [previewPath] : [])];
+    const existingDefinition = await readFile(config, definitionPath, config.branch);
+    const action = existingDefinition ? "Update" : "Add";
+
+    await putJson(config, definitionPath, publishBranch, definition, `${action} ${kind} effect definition ${payload.id}`);
+    await putJson(config, indexPath, publishBranch, upsertById(index, definition), `Update ${kind} effects index`);
+
+    if (payload.thumbnailDataUrl) {
+      await putFile(config, thumbnailPath, publishBranch, dataUrlToBase64(payload.thumbnailDataUrl), `${action} ${kind} effect thumbnail ${payload.id}`);
+    }
+
+    if (payload.previewFile && previewPath) {
+      await putFile(config, previewPath, publishBranch, dataUrlToBase64(payload.previewFile.dataUrl), `${action} ${kind} effect preview ${payload.id}`);
+    }
+
+    const prUrl = await getOrCreatePullRequest(config, publishBranch, buildPublishTitle(action, "video-effect-preset", definition.name), `${action}s the ${definition.name} ${kind} effect preset (${payload.id}), including the renderer parameters consumed by /effects/${kind}.`);
+
+    return { files, branch: publishBranch, prUrl };
+  };
+
+  const publishVideoEffectPresetBatch = async (payload: VideoEffectPresetBatchPublishPayload): Promise<PublishResult> => {
+    const config = getGithubConfig();
+    if (!config) throw new Error("GitHub publishing is not configured.");
+    if (!payload.presets.length) throw new Error("Select at least one preset to publish.");
+
+    const kind = payload.kind;
+    const publishBranch = buildPublishBranch("video-effect-preset", `batch-${Date.now()}`, kind);
+    await ensurePublishBranch(config, publishBranch);
+
+    const indexPath = `src/data/effects/${kind}/index.json`;
+    const rawBase = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}`;
+    let index = await readJson<any[]>(config, indexPath, config.branch, []);
+    const files = new Set<string>([indexPath]);
+    const names: string[] = [];
+
+    for (const preset of payload.presets) {
+      if (!preset.id.trim()) throw new Error("Every preset needs an ID.");
+      if (!preset.metadata.name.trim()) throw new Error(`Preset ${preset.id} needs a name.`);
+      if (!preset.metadata.renderer.trim()) throw new Error(`Preset ${preset.id} needs a renderer.`);
+
+      const category = preset.metadata.category?.trim() || kind;
+      const definitionPath = `src/data/effects/${kind}/${preset.id}.json`;
+      const thumbnailPath = preset.thumbnailDataUrl ? `data/thumbnails/${preset.id}.jpg` : "";
+      const previewExtension = preset.previewFile ? extensionFromFileName(preset.previewFile.name, "webm") : "";
+      const previewPath = preset.previewFile ? `data/previews/${preset.id}.${previewExtension}` : "";
+      const definition = {
+        id: preset.id,
+        name: preset.metadata.name,
+        type: kind === "body" ? "body-effect" : "video-effect",
+        category,
+        description: preset.metadata.description || "",
+        thumbnail: thumbnailPath ? `${rawBase}/${thumbnailPath}` : "",
+        preview: previewPath ? `${rawBase}/${previewPath}` : preset.metadata.previewUrl || undefined,
+        isPremium: preset.metadata.isPremium || false,
+        renderer: preset.metadata.renderer,
+        params: preset.metadata.params || {},
+        intensity: preset.metadata.intensity,
+        ...(kind === "body"
+          ? {
+              requirements: preset.metadata.requirements || {
+                bodySegmentation: true,
+                minConfidence: 0.7,
+              },
+            }
+          : {}),
+        tags: preset.metadata.tags || [],
+      };
+
+      await putJson(config, definitionPath, publishBranch, definition, `Add ${kind} effect definition ${preset.id}`);
+      if (thumbnailPath && preset.thumbnailDataUrl) {
+        await putFile(config, thumbnailPath, publishBranch, dataUrlToBase64(preset.thumbnailDataUrl), `Add ${kind} effect thumbnail ${preset.id}`);
+      }
+      if (previewPath && preset.previewFile) {
+        await putFile(config, previewPath, publishBranch, dataUrlToBase64(preset.previewFile.dataUrl), `Add ${kind} effect preview ${preset.id}`);
+      }
+
+      index = upsertById(index, definition);
+      files.add(definitionPath);
+      if (thumbnailPath) files.add(thumbnailPath);
+      if (previewPath) files.add(previewPath);
+      names.push(definition.name);
+    }
+
+    await putJson(config, indexPath, publishBranch, index, `Update ${kind} effects index`);
+
+    const prUrl = await getOrCreatePullRequest(config, publishBranch, buildPublishTitle("Add", "video-effect-preset", `${payload.presets.length} ${kind} presets`), `Adds ${payload.presets.length} ${kind} effect presets generated in Clypra Studio.\n\nPresets:\n${names.map((name) => `- ${name}`).join("\n")}`);
+
+    return { files: Array.from(files), branch: publishBranch, prUrl };
+  };
+
   return {
     publishEffect,
     publishTemplate,
     publishAudio,
     publishSticker,
     publishOverlay,
+    publishVideoEffectPreset,
+    publishVideoEffectPresetBatch,
     saveGithubConfig,
     getGithubConfig,
   };
