@@ -1306,9 +1306,15 @@ export default function App() {
 
       {/* ────────────────────────────────────────────────────────────────── WORK WORKSPACE CANVAS ────────────────────────────────────────────────────────────────── */}
       <main id="primary-workspace-layout" className="flex flex-1 overflow-hidden">
+        {/* Left icon rail — hidden on mobile only, visible on tablet + desktop */}
+        {!isMobile && <LeftRail activeItem={activeRailItem} onSelectItem={setActiveRailItem} />}
+
+        {activeRailItem === "effects" ? (
+          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
+            <VideoEffectPublishPanel variant="workspace" />
+          </div>
+        ) : (
         <>
-          {/* Left icon rail — hidden on mobile only, visible on tablet + desktop */}
-          {!isMobile && <LeftRail activeItem={activeRailItem} onSelectItem={setActiveRailItem} />}
 
           {/* LEFT DRAWER — CREATION LIBRARY
               Mobile:  full-width, shown only when mobileActiveTab === "controls"
@@ -1403,8 +1409,6 @@ export default function App() {
 
             {activeRailItem === "overlays" && <OverlayPublishPanel />}
 
-            {activeRailItem === "effects" && <VideoEffectPublishPanel />}
-
             {activeRailItem === "style" && <div className="border-b border-(--studio-border) px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Style Controls</div>}
 
             <Suspense fallback={<div className="p-4 text-xs text-(--studio-muted)">Loading controls...</div>}>
@@ -1470,6 +1474,7 @@ export default function App() {
             <div className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}>{activeRailItem === "export" ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</div>
           </Suspense>
         </>
+        )}
       </main>
 
       <Suspense fallback={null}>

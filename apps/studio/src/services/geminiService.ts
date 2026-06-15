@@ -126,6 +126,8 @@ const textEffectConfigResponseSchema = {
 };
 
 const VIDEO_EFFECT_RENDERERS = ["glitch", "rgb_split", "chromatic_aberration", "pixelate", "scanlines", "film_grain", "vignette", "glow"] as const;
+const BODY_EFFECT_RENDERERS = ["body-segmentation-glow", "body_glow", "body_outline", "body_particles"] as const;
+const ALL_EFFECT_RENDERERS = [...VIDEO_EFFECT_RENDERERS, ...BODY_EFFECT_RENDERERS] as const;
 
 function sanitizeEffectId(value: string): string {
   return (
@@ -138,6 +140,11 @@ function sanitizeEffectId(value: string): string {
 
 function sanitizeVideoRenderer(value: string): string {
   return VIDEO_EFFECT_RENDERERS.includes(value as (typeof VIDEO_EFFECT_RENDERERS)[number]) ? value : "glitch";
+}
+
+function sanitizeEffectRenderer(kind: "video" | "body", value: string): string {
+  const renderers = kind === "body" ? BODY_EFFECT_RENDERERS : VIDEO_EFFECT_RENDERERS;
+  return (renderers as readonly string[]).includes(value) ? value : renderers[0];
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
@@ -444,6 +451,84 @@ Rules:
         isPremium: !!preset.isPremium,
       };
     });
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+}
+
+export async function generateVideoOrBodyEffectPresetSuggestion(params: { kind: "video" | "body"; prompt: string; renderer?: string }): Promise<VideoEffectPresetSuggestion> {
+  try {
+    const ai = createGeminiClient();
+    const rendererHint = params.renderer && params.renderer !== "auto" ? `Use only renderer "${params.renderer}".` : "Choose the best renderer for the requested effect.";
+    const rendererGuide =
+      params.kind === "body"
+        ? `Allowed body renderers and parameters:
+- body-segmentation-glow: glowColor hex, glowIntensity 0-1.5, glowRadius 2-48, feather 0-32
+- body_glow: glowColor hex, glowIntensity 0-1.5, glowRadius 2-48, feather 0-32
+- body_outline: outlineColor hex, outlineWidth 1-20, feather 0-20
+- body_particles: particleColor hex, particleCount 12-220, particleSize 1-10, drift 0-24`
+        : `Allowed video renderers and parameters:
+- glitch: glitchIntensity 1-60, rgbSplit 0-24, sliceCount 1-24, scanlineCount 20-320, noiseAmount 0-0.8
+- rgb_split: rgbSplit 0-32, splitDistance 0-32
+- chromatic_aberration: rgbSplit 0-32, splitDistance 0-32
+- pixelate: pixelSize 2-64
+- scanlines: scanlineCount 20-420
+- film_grain: noiseAmount 0-0.8
+- vignette: radius 0.2-1.2
+- glow: glowColor hex, glowIntensity 0-1.5, glowRadius 2-48`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          text: `Generate one production-ready Clypra ${params.kind} effect preset for this creative direction:
+"${params.prompt}"
+
+${rendererHint}
+
+${rendererGuide}
+
+Rules:
+- Return exactly one marketplace-ready preset.
+- ID must be kebab-case.
+- Params must match the chosen renderer only.
+- defaultIntensity must be 0-100.
+- Tags should be lowercase discovery keywords.
+- Do not include preview URLs, thumbnails, shader code, or proprietary brand names.`,
+        },
+      ],
+      config: {
+        systemInstruction: "You are a senior video effects marketplace curator. You generate compatible procedural preset JSON for Clypra only, never unsupported renderers or unknown parameter names.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING },
+            name: { type: Type.STRING },
+            description: { type: Type.STRING },
+            renderer: { type: Type.STRING, enum: ALL_EFFECT_RENDERERS as unknown as string[] },
+            params: { type: Type.OBJECT },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            defaultIntensity: { type: Type.NUMBER },
+            isPremium: { type: Type.BOOLEAN },
+          },
+          required: ["id", "name", "description", "renderer", "params", "tags", "defaultIntensity"],
+        },
+      },
+    });
+
+    const result = JSON.parse((response.text || "{}").trim());
+    const name = String(result.name || "Generated Effect");
+    return {
+      id: sanitizeEffectId(result.id || name),
+      name,
+      description: String(result.description || `Generated ${params.kind} effect preset.`),
+      renderer: sanitizeEffectRenderer(params.kind, String(result.renderer || params.renderer || "")),
+      params: result.params && typeof result.params === "object" ? result.params : {},
+      tags: Array.isArray(result.tags) ? result.tags.map((tag: unknown) => String(tag).toLowerCase()).filter(Boolean).slice(0, 8) : [params.kind, "effect"],
+      defaultIntensity: Math.round(clampNumber(result.defaultIntensity, 0, 100, 70)),
+      isPremium: !!result.isPremium,
+    };
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
