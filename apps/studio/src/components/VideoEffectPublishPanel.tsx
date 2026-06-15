@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, CheckCircle, Eye, Loader2, Sparkles, UploadCloud, Wand2 } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle, Download, Eye, Loader2, Sparkles, UploadCloud, Wand2 } from "lucide-react";
 import { useGitHubPublish, type VideoEffectPresetPublishPayload } from "../hooks/useGitHubPublish";
 import { generateVideoEffectPresetSuggestions, type VideoEffectPresetSuggestion } from "../services/geminiService";
 
@@ -224,6 +224,8 @@ function GeneratedPresetLivePreview({ preset, sampleFile }: { preset?: VideoEffe
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  const [exportStatus, setExportStatus] = useState<"idle" | "recording" | "failed">("idle");
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
   const isVideo = !!sampleFile?.type.startsWith("video/");
 
   useEffect(() => {
@@ -278,6 +280,51 @@ function GeneratedPresetLivePreview({ preset, sampleFile }: { preset?: VideoEffe
     video.play().catch(() => undefined);
   }, [isVideo, sourceUrl]);
 
+  const handleExportWebM = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !preset) return;
+    if (typeof MediaRecorder === "undefined" || typeof canvas.captureStream !== "function") {
+      setExportStatus("failed");
+      setExportMessage("This browser cannot export canvas previews as WebM.");
+      return;
+    }
+
+    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm";
+    const stream = canvas.captureStream(30);
+    const chunks: BlobPart[] = [];
+    const recorder = new MediaRecorder(stream, { mimeType });
+    setExportStatus("recording");
+    setExportMessage(null);
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) chunks.push(event.data);
+    };
+    recorder.onerror = () => {
+      setExportStatus("failed");
+      setExportMessage("Failed to export preview WebM.");
+      stream.getTracks().forEach((track) => track.stop());
+    };
+    recorder.onstop = () => {
+      stream.getTracks().forEach((track) => track.stop());
+      const blob = new Blob(chunks, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${preset.id || "effect-preview"}.webm`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setExportStatus("idle");
+      setExportMessage(`Exported ${link.download}`);
+    };
+
+    recorder.start();
+    window.setTimeout(() => {
+      if (recorder.state !== "inactive") recorder.stop();
+    }, 3500);
+  };
+
   return (
     <div className="rounded-xl border border-[#2A2A38] bg-[#09090D] p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -285,12 +332,16 @@ function GeneratedPresetLivePreview({ preset, sampleFile }: { preset?: VideoEffe
           <p className="text-[10px] font-bold uppercase tracking-wider text-[#888899]">Live Preview</p>
           <p className="truncate text-xs text-white">{preset ? `${preset.name} · ${preset.renderer}` : "Select a generated preset"}</p>
         </div>
-        <span className="rounded border border-[#2A2A38] px-2 py-1 text-[10px] text-[#9A9AAA]">Local only</span>
+        <button type="button" onClick={handleExportWebM} disabled={!preset || exportStatus === "recording"} className="flex shrink-0 items-center gap-1 rounded border border-[#2A2A38] bg-[#11111A] px-2 py-1 text-[10px] font-bold text-[#DADAE4] hover:text-white disabled:opacity-50">
+          {exportStatus === "recording" ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
+          {exportStatus === "recording" ? "Exporting" : "Export WebM"}
+        </button>
       </div>
       <canvas ref={canvasRef} width={640} height={360} className="aspect-video w-full rounded-lg bg-black" />
       {sourceUrl && isVideo && <video ref={videoRef} src={sourceUrl} muted loop playsInline className="hidden" />}
       {sourceUrl && !isVideo && <img ref={imageRef} src={sourceUrl} alt="" className="hidden" />}
       {!sampleFile && <p className="mt-2 text-[10px] text-[#888899]">Upload a sample video or image to preview on your own footage.</p>}
+      {exportMessage && <p className={`mt-2 text-[10px] ${exportStatus === "failed" ? "text-red-300" : "text-emerald-300"}`}>{exportMessage}</p>}
     </div>
   );
 }
