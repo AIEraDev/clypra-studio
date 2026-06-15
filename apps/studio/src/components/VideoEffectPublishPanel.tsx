@@ -60,7 +60,9 @@ function applyPreviewEffect(ctx: CanvasRenderingContext2D, preset: VideoEffectPr
   const params = preset.params;
 
   if (preset.renderer === "pixelate") {
-    const pixelSize = Math.max(2, Math.floor(Number(params.pixelSize ?? 18) * intensity));
+    const basePixelSize = Number(params.pixelSize ?? 18);
+    // Animate pixelation with slight size variation
+    const pixelSize = Math.max(2, Math.floor(basePixelSize * intensity * (1 + Math.sin(time * 2) * 0.15)));
     const w = Math.max(8, Math.floor(width / pixelSize));
     const h = Math.max(8, Math.floor(height / pixelSize));
     const temp = document.createElement("canvas");
@@ -77,7 +79,9 @@ function applyPreviewEffect(ctx: CanvasRenderingContext2D, preset: VideoEffectPr
   }
 
   if (preset.renderer === "rgb_split" || preset.renderer === "chromatic_aberration") {
-    const shift = Number(params.rgbSplit ?? params.splitDistance ?? 8) * intensity;
+    const baseShift = Number(params.rgbSplit ?? params.splitDistance ?? 8) * intensity;
+    // Animate the shift with a sine wave for pulsing effect
+    const animatedShift = baseShift * (1 + Math.sin(time * 2) * 0.3);
     const temp = document.createElement("canvas");
     temp.width = width;
     temp.height = height;
@@ -87,8 +91,8 @@ function applyPreviewEffect(ctx: CanvasRenderingContext2D, preset: VideoEffectPr
     ctx.save();
     ctx.globalCompositeOperation = "screen";
     ctx.globalAlpha = 0.45;
-    ctx.drawImage(temp, -shift, 0);
-    ctx.drawImage(temp, shift, 0);
+    ctx.drawImage(temp, -animatedShift, 0);
+    ctx.drawImage(temp, animatedShift, 0);
     ctx.restore();
   }
 
@@ -109,9 +113,11 @@ function applyPreviewEffect(ctx: CanvasRenderingContext2D, preset: VideoEffectPr
   if (preset.renderer === "scanlines" || preset.renderer === "glitch") {
     const count = Math.max(20, Number(params.scanlineCount ?? 120));
     const spacing = height / count;
+    // Animate scanlines scrolling
+    const offset = (time * 20) % spacing;
     ctx.save();
     ctx.fillStyle = `rgba(0,0,0,${0.12 + intensity * 0.22})`;
-    for (let y = 0; y < height; y += spacing) {
+    for (let y = -spacing + offset; y < height; y += spacing) {
       ctx.fillRect(0, y, width, Math.max(1, spacing * 0.36));
     }
     ctx.restore();
@@ -132,22 +138,27 @@ function applyPreviewEffect(ctx: CanvasRenderingContext2D, preset: VideoEffectPr
 
   if (preset.renderer === "vignette") {
     const radius = clamp(Number(params.radius ?? 0.75), 0.2, 1.2);
+    // Animate vignette pulsing
+    const pulseIntensity = intensity * (0.8 + Math.sin(time * 1.5) * 0.2);
     const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width * 0.7);
     gradient.addColorStop(0, "rgba(0,0,0,0)");
-    gradient.addColorStop(radius, `rgba(0,0,0,${0.1 * intensity})`);
-    gradient.addColorStop(1, `rgba(0,0,0,${0.75 * intensity})`);
+    gradient.addColorStop(radius, `rgba(0,0,0,${0.1 * pulseIntensity})`);
+    gradient.addColorStop(1, `rgba(0,0,0,${0.75 * pulseIntensity})`);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
   }
 
   if (preset.renderer === "glow") {
     const color = String(params.glowColor ?? "#00ffff");
-    const radius = Number(params.glowRadius ?? 18) * intensity;
+    const baseRadius = Number(params.glowRadius ?? 18);
+    // Animate glow pulsing
+    const radius = baseRadius * intensity * (1 + Math.sin(time * 3) * 0.25);
+    const glowIntensity = clamp(Number(params.glowIntensity ?? 0.8) * intensity * (1 + Math.sin(time * 2.5) * 0.15), 0, 1);
     ctx.save();
     ctx.globalCompositeOperation = "screen";
     ctx.shadowColor = color;
     ctx.shadowBlur = radius;
-    ctx.globalAlpha = clamp(Number(params.glowIntensity ?? 0.8) * intensity, 0, 1);
+    ctx.globalAlpha = glowIntensity;
     ctx.drawImage(ctx.canvas, 0, 0);
     ctx.restore();
   }
@@ -162,10 +173,11 @@ function applyPreviewEffect(ctx: CanvasRenderingContext2D, preset: VideoEffectPr
     ctx.beginPath();
     ctx.ellipse(centerX, centerY, bodyWidth, bodyHeight, 0, 0, Math.PI * 2);
     if (preset.renderer === "body_outline") {
+      const pulseWidth = Number(params.outlineWidth ?? 8) * intensity * (1 + Math.sin(time * 2.5) * 0.2);
       ctx.strokeStyle = glowColor;
-      ctx.lineWidth = Math.max(2, Number(params.outlineWidth ?? 8) * intensity);
+      ctx.lineWidth = Math.max(2, pulseWidth);
       ctx.shadowColor = glowColor;
-      ctx.shadowBlur = Number(params.feather ?? 10);
+      ctx.shadowBlur = Number(params.feather ?? 10) * (1 + Math.sin(time * 2) * 0.15);
       ctx.stroke();
     } else if (preset.renderer === "body_particles") {
       const seed = hashSeed(preset.id);
@@ -173,20 +185,23 @@ function applyPreviewEffect(ctx: CanvasRenderingContext2D, preset: VideoEffectPr
       for (let i = 0; i < Math.min(120, Number(params.particleCount ?? 80)); i++) {
         const angle = randomFrom(seed, i) * Math.PI * 2;
         const radius = 0.75 + randomFrom(seed, i + 100) * 0.45;
-        const drift = Math.sin(time + i) * Number(params.drift ?? 8);
-        const x = centerX + Math.cos(angle) * bodyWidth * radius + drift;
-        const y = centerY + Math.sin(angle) * bodyHeight * radius;
-        ctx.globalAlpha = 0.25 + intensity * 0.55;
+        const drift = Math.sin(time * 1.5 + i * 0.5) * Number(params.drift ?? 8);
+        const x = centerX + Math.cos(angle + time * 0.3) * bodyWidth * radius + drift;
+        const y = centerY + Math.sin(angle + time * 0.3) * bodyHeight * radius;
+        const pulse = 0.25 + intensity * 0.55 * (0.8 + Math.sin(time * 3 + i * 0.2) * 0.2);
+        ctx.globalAlpha = pulse;
         ctx.beginPath();
         ctx.arc(x, y, Number(params.particleSize ?? 3), 0, Math.PI * 2);
         ctx.fill();
       }
     } else {
+      const pulseIntensity = intensity * (0.9 + Math.sin(time * 2) * 0.1);
+      const pulseRadius = Number(params.glowRadius ?? 24) * pulseIntensity * (1 + Math.sin(time * 2.5) * 0.15);
       ctx.strokeStyle = glowColor;
-      ctx.lineWidth = 12 * intensity;
+      ctx.lineWidth = 12 * pulseIntensity;
       ctx.shadowColor = glowColor;
-      ctx.shadowBlur = Number(params.glowRadius ?? 24) * intensity;
-      ctx.globalAlpha = clamp(Number(params.glowIntensity ?? 0.9) * intensity, 0, 1);
+      ctx.shadowBlur = pulseRadius;
+      ctx.globalAlpha = clamp(Number(params.glowIntensity ?? 0.9) * pulseIntensity, 0, 1);
       ctx.stroke();
     }
     ctx.restore();
@@ -524,10 +539,15 @@ export function VideoEffectPublishPanel({ variant = "drawer" }: { variant?: "dra
               <input value={generatedTags} readOnly placeholder="Generated tags" className={FIELD_INPUT_CLASS} />
             </Field>
             <Field label="Preview Video">
-              <input type="file" accept="video/webm,video/mp4,video/quicktime,.webm,.mp4,.mov" onChange={(event) => {
-                setManualPreviewFile(event.target.files?.[0] || null);
-                setExportedPreviewFile(null);
-              }} className="block w-full text-xs text-[#9A9AAA] file:mr-3 file:rounded-md file:border-0 file:bg-violet-500/20 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-violet-100" />
+              <input
+                type="file"
+                accept="video/webm,video/mp4,video/quicktime,.webm,.mp4,.mov"
+                onChange={(event) => {
+                  setManualPreviewFile(event.target.files?.[0] || null);
+                  setExportedPreviewFile(null);
+                }}
+                className="block w-full text-xs text-[#9A9AAA] file:mr-3 file:rounded-md file:border-0 file:bg-violet-500/20 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-violet-100"
+              />
               {exportedPreviewFile && <p className="mt-1 text-[10px] text-emerald-300">Attached exported preview: {exportedPreviewFile.name}</p>}
               {manualPreviewFile && <p className="mt-1 text-[10px] text-[#888899]">{manualPreviewFile.name}</p>}
             </Field>
