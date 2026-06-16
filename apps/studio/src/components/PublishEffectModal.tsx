@@ -46,18 +46,20 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
   React.useEffect(() => {
     if (open) {
       setEffectId(
-        config.effectName
+        config?.effectName
           ?.toLowerCase()
           .replace(/[^a-z0-9\s-]/g, "")
           .replace(/\s+/g, "-") || "",
       );
-      setEffectName(config.effectName || "");
+      setEffectName(config?.effectName || "");
       setDescription("");
       setTagsInput("");
       setValidationErrors({});
-      reset();
+      if (reset) {
+        reset();
+      }
     }
-  }, [open, config.effectName, reset]);
+  }, [open, config?.effectName, reset]);
 
   const hasErrors = Object.keys(validationErrors).length > 0;
 
