@@ -6,7 +6,6 @@
 import type { EffectRenderer as EffectRendererType, EffectParameters } from "./types";
 
 // Import renderer functions
-import * as CameraEffects from "./renderers/camera";
 import * as LightEffects from "./renderers/light";
 
 /**
@@ -36,134 +35,6 @@ export interface EffectMetadata {
  * Registry of all available effects with their metadata
  */
 export const EFFECTS_REGISTRY: Record<string, EffectMetadata> = {
-  // ==================== CAMERA EFFECTS ====================
-  shake: {
-    id: "shake",
-    name: "Shake",
-    category: "camera",
-    description: "Random camera shake effect",
-    defaultParams: { intensity: 50, frequency: 10 },
-    parameterSchema: {
-      intensity: {
-        type: "number",
-        label: "Intensity",
-        min: 0,
-        max: 100,
-        default: 50,
-        step: 1,
-      },
-      frequency: {
-        type: "number",
-        label: "Frequency",
-        min: 1,
-        max: 30,
-        default: 10,
-        step: 1,
-      },
-    },
-    tags: ["camera", "motion", "dynamic"],
-  },
-
-  zoom: {
-    id: "zoom",
-    name: "Zoom",
-    category: "camera",
-    description: "Scale transformation effect",
-    defaultParams: { scale: 0.2, centerX: 0.5, centerY: 0.5 },
-    parameterSchema: {
-      scale: {
-        type: "number",
-        label: "Scale",
-        min: -1,
-        max: 1,
-        default: 0.2,
-        step: 0.05,
-      },
-      centerX: {
-        type: "number",
-        label: "Center X",
-        min: 0,
-        max: 1,
-        default: 0.5,
-        step: 0.05,
-      },
-      centerY: {
-        type: "number",
-        label: "Center Y",
-        min: 0,
-        max: 1,
-        default: 0.5,
-        step: 0.05,
-      },
-    },
-    tags: ["camera", "zoom", "scale"],
-  },
-
-  pan: {
-    id: "pan",
-    name: "Pan",
-    category: "camera",
-    description: "Horizontal and vertical camera movement",
-    defaultParams: { panX: 0, panY: 0 },
-    parameterSchema: {
-      panX: {
-        type: "number",
-        label: "Pan X",
-        min: -500,
-        max: 500,
-        default: 0,
-        step: 10,
-      },
-      panY: {
-        type: "number",
-        label: "Pan Y",
-        min: -500,
-        max: 500,
-        default: 0,
-        step: 10,
-      },
-    },
-    tags: ["camera", "pan", "movement"],
-  },
-
-  rotate: {
-    id: "rotate",
-    name: "Rotate",
-    category: "camera",
-    description: "Rotate the camera view",
-    defaultParams: { angle: 0 },
-    parameterSchema: {
-      angle: {
-        type: "number",
-        label: "Angle",
-        min: -180,
-        max: 180,
-        default: 0,
-        step: 1,
-      },
-    },
-    tags: ["camera", "rotate", "spin"],
-  },
-
-  dolly: {
-    id: "dolly",
-    name: "Dolly",
-    category: "camera",
-    description: "Dolly camera movement (zoom with slight rotation)",
-    defaultParams: { scale: 0.2 },
-    parameterSchema: {
-      scale: {
-        type: "number",
-        label: "Scale",
-        min: -1,
-        max: 1,
-        default: 0.2,
-        step: 0.05,
-      },
-    },
-    tags: ["camera", "dolly", "cinematic"],
-  },
-
   // ==================== LIGHT EFFECTS ====================
   light_leak: {
     id: "light_leak",
@@ -321,13 +192,6 @@ export function getEffectsByCategory(category: EffectMetadata["category"]): Effe
 export function getEffectRenderer(id: EffectRendererType): ((ctx: CanvasRenderingContext2D, params: EffectParameters, intensity: number, time: number) => void) | null {
   // Map effect IDs to renderer functions
   const renderers: Record<string, any> = {
-    // Camera
-    shake: CameraEffects.renderShake,
-    zoom: CameraEffects.renderZoom,
-    pan: CameraEffects.renderPan,
-    rotate: CameraEffects.renderRotate,
-    dolly: CameraEffects.renderDolly,
-
     // Light
     flash: LightEffects.renderFlash,
     flicker: LightEffects.renderFlicker,

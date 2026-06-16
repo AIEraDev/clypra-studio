@@ -25,10 +25,33 @@ export function VideoEffectWorkspace() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Effect categories (empty - add effects as needed)
-  const effectCategories: Record<string, EffectRendererType[]> = {
-    Light: ["light_leak_2" as EffectRendererType],
-  };
+  // Load effects from registry
+  const [effectCategories, setEffectCategories] = useState<Record<string, EffectRendererType[]>>({});
+
+  useEffect(() => {
+    // Dynamically load effects from @clypra/engine
+    const loadEffects = async () => {
+      const { getEffectsByCategory } = await import("@clypra/engine");
+
+      const categories: Record<string, EffectRendererType[]> = {};
+
+      // Load Camera effects
+      const cameraEffects = getEffectsByCategory("camera");
+      if (cameraEffects.length > 0) {
+        categories.Camera = cameraEffects.map((e) => e.id as EffectRendererType);
+      }
+
+      // Load Light effects
+      const lightEffects = getEffectsByCategory("light");
+      if (lightEffects.length > 0) {
+        categories.Light = lightEffects.map((e) => e.id as EffectRendererType);
+      }
+
+      setEffectCategories(categories);
+    };
+
+    loadEffects();
+  }, []);
 
   // Handle video upload
   const handleVideoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

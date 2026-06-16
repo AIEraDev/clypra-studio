@@ -40,12 +40,22 @@ export interface VideoEffectApiDefinition {
   // Preview video (for effects with .webm exports)
   previewUrl?: string;
   previewDuration?: number;
+  thumbnailUrl?: string;
 }
 
 /**
- * Convert effect metadata to API format
+ * Get effect preview URL
  */
-export function effectMetadataToApi(metadata: EffectMetadata, previewUrl?: string): VideoEffectApiDefinition {
+export function getEffectPreviewUrl(effectId: string, category: string): string {
+  return `https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/${category}/${effectId}.webm`;
+}
+
+/**
+ * Convert effect metadata to API format with preview URL
+ */
+export function effectMetadataToApi(metadata: EffectMetadata): VideoEffectApiDefinition {
+  const previewUrl = getEffectPreviewUrl(metadata.id, metadata.category);
+
   return {
     id: metadata.id,
     name: metadata.name,
@@ -66,6 +76,7 @@ export function effectMetadataToApi(metadata: EffectMetadata, previewUrl?: strin
     },
     previewUrl,
     previewDuration: 3,
+    thumbnailUrl: generateThumbnailUrl(metadata.id),
   };
 }
 
