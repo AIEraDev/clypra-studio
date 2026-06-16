@@ -40,9 +40,7 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
   const isPublished = status === "success";
   const isFailed = status === "error";
 
-  if (!open) return null;
-
-  // Initialize form when modal opens
+  // Initialize form when modal opens - MUST be before early return
   React.useEffect(() => {
     if (open) {
       setEffectId(
@@ -127,6 +125,8 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
       // Error handled by hook
     }
   };
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
