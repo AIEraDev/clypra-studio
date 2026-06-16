@@ -36,9 +36,11 @@ export function VideoEffectWorkspace() {
   // Handle video file upload
   const handleVideoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    console.log("📁 Video file selected:", file);
     if (!file) return;
 
     const url = URL.createObjectURL(file);
+    console.log("🔗 Video URL created:", url);
     setVideoUrl(url);
   }, []);
 
@@ -46,22 +48,35 @@ export function VideoEffectWorkspace() {
   const renderEffect = useCallback(
     (video: HTMLVideoElement) => {
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      console.log("🎨 renderEffect called", { canvas, videoReady: video.readyState, videoTime: video.currentTime });
+      if (!canvas) {
+        console.error("❌ Canvas not found!");
+        return;
+      }
 
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+      if (!ctx) {
+        console.error("❌ Canvas context not found!");
+        return;
+      }
+
+      console.log("✅ Canvas ready:", canvas.width, "x", canvas.height);
 
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Draw video frame
+      console.log("🎬 Drawing video frame...");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      console.log("✅ Video frame drawn");
 
       // Apply effect
       try {
+        console.log("✨ Applying effect:", selectedEffect, { parameters, intensity });
         EffectRenderer.apply(ctx, selectedEffect, parameters, intensity, currentTime);
+        console.log("✅ Effect applied successfully");
       } catch (error) {
-        console.error("Effect render error:", error);
+        console.error("❌ Effect render error:", error);
       }
     },
     [selectedEffect, parameters, intensity, currentTime],

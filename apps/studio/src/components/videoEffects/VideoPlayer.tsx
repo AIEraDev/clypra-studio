@@ -27,6 +27,7 @@ export function VideoPlayer({ videoUrl, onTimeUpdate, onFrameReady, onMetadataLo
   // Handle video loaded metadata
   const handleLoadedMetadata = useCallback(() => {
     const video = videoRef.current;
+    console.log("📹 Video metadata loaded", { video, readyState: video?.readyState });
     if (!video) return;
 
     const metadata = {
@@ -35,10 +36,12 @@ export function VideoPlayer({ videoUrl, onTimeUpdate, onFrameReady, onMetadataLo
       height: video.videoHeight,
     };
 
+    console.log("📊 Video metadata:", metadata);
     setDuration(video.duration);
     onMetadataLoad?.(metadata);
 
     // Render the first frame immediately
+    console.log("🎬 Rendering first frame...");
     onFrameReady?.(video);
   }, [onMetadataLoad, onFrameReady]);
 
@@ -47,6 +50,7 @@ export function VideoPlayer({ videoUrl, onTimeUpdate, onFrameReady, onMetadataLo
     const video = videoRef.current;
     if (!video) return;
 
+    console.log("⏱️ Time update:", video.currentTime);
     setCurrentTime(video.currentTime);
     onTimeUpdate?.(video.currentTime);
     onFrameReady?.(video);
