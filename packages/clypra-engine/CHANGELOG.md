@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/AIEraDev/clypra-studio/compare/v1.7.0...v1.8.0) (2026-06-16)
+
+
+### Features
+
+* add category support for renderer-based effects API ([1c90b67](https://github.com/AIEraDev/clypra-studio/commit/1c90b67054f46027df9680de36acc47c64ba73aa))
+
 # [1.7.0](https://github.com/AIEraDev/clypra-studio/compare/v1.6.0...v1.7.0) (2026-06-16)
 
 
