@@ -4,9 +4,9 @@ import { generateEffectName } from "../services/geminiService";
 import { useTextEffectR2Upload } from "../hooks/useTextEffectR2Upload";
 import type { TextEffectConfig } from "@clypra/engine";
 
-export type EffectApiCategory = "3d" | "neon" | "metallic" | "glitch" | "retro" | "gradient" | "grunge" | "outline" | "shadow" | "elements" | "luxury" | "essentials" | "color" | "light" | "stylize" | "distort" | "vintage" | "modern" | "cinematic" | "bw";
+export type EffectApiCategory = "3d" | "neon" | "metallic" | "glitch" | "retro" | "gradient" | "grunge" | "outline" | "shadow" | "elements" | "luxury" | "essentials" | "color" | "light" | "stylize" | "distort" | "vintage" | "modern" | "cinematic" | "bw" | "classic" | "clean" | "organic";
 
-const EFFECT_CATEGORIES: EffectApiCategory[] = ["3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury", "essentials", "color", "light", "stylize", "distort", "vintage", "modern", "cinematic", "bw"];
+const EFFECT_CATEGORIES: EffectApiCategory[] = ["3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury", "essentials", "color", "light", "stylize", "distort", "vintage", "modern", "cinematic", "bw", "classic", "clean", "organic"];
 
 interface ValidationErrors {
   id?: string;
