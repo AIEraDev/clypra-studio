@@ -37,7 +37,10 @@ export function VideoPlayer({ videoUrl, onTimeUpdate, onFrameReady, onMetadataLo
 
     setDuration(video.duration);
     onMetadataLoad?.(metadata);
-  }, [onMetadataLoad]);
+
+    // Render the first frame immediately
+    onFrameReady?.(video);
+  }, [onMetadataLoad, onFrameReady]);
 
   // Handle time update
   const handleTimeUpdate = useCallback(() => {
@@ -63,13 +66,21 @@ export function VideoPlayer({ videoUrl, onTimeUpdate, onFrameReady, onMetadataLo
   }, [isPlaying]);
 
   // Seek to time
-  const seekTo = useCallback((time: number) => {
-    const video = videoRef.current;
-    if (!video) return;
+  const seekTo = useCallback(
+    (time: number) => {
+      const video = videoRef.current;
+      if (!video) return;
 
-    video.currentTime = time;
-    setCurrentTime(time);
-  }, []);
+      video.currentTime = time;
+      setCurrentTime(time);
+
+      // Render frame after seeking (when paused)
+      if (!isPlaying) {
+        onFrameReady?.(video);
+      }
+    },
+    [isPlaying, onFrameReady],
+  );
 
   // Skip forward/backward
   const skip = useCallback(
