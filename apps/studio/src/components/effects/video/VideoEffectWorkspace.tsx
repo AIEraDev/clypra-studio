@@ -248,7 +248,7 @@ export function VideoEffectWorkspace() {
   return (
     <div className="flex h-screen bg-[#0E0E12]">
       {/* Left Sidebar */}
-      <div className="w-64 bg-[#1E1E26] border-r border-[#2A2A38] overflow-y-auto flex-shrink-0">
+      <div className="w-64 bg-[#1E1E26] border-r border-[#2A2A38] overflow-y-auto shrink-0">
         <div className="p-4 border-b border-[#2A2A38]">
           <h1 className="text-lg font-bold text-white">Video Effects</h1>
           <p className="text-xs text-gray-400 mt-1">Test effects in real-time</p>
@@ -366,7 +366,7 @@ export function VideoEffectWorkspace() {
 
         {/* Video Player Controls */}
         {videoUrl && (
-          <div className="border-t border-[#2A2A38] flex-shrink-0">
+          <div className="border-t border-[#2A2A38] shrink-0">
             <VideoPlayer
               videoUrl={videoUrl}
               onTimeUpdate={(time) => {
@@ -392,7 +392,7 @@ export function VideoEffectWorkspace() {
       </div>
 
       {/* Right Panel */}
-      <div className="w-72 bg-[#1E1E26] border-l border-[#2A2A38] overflow-y-auto flex-shrink-0">
+      <div className="w-72 bg-[#1E1E26] border-l border-[#2A2A38] overflow-y-auto shrink-0">
         <div className="p-4 border-b border-[#2A2A38]">
           <h2 className="text-base font-semibold text-white">Effect Settings</h2>
         </div>
@@ -418,7 +418,7 @@ export function VideoEffectWorkspace() {
             {/* Tips */}
             <div className="p-3 bg-[#7C6FFF]/10 rounded-lg border border-[#7C6FFF]/20">
               <div className="flex items-start gap-2">
-                <Info size={14} className="text-[#7C6FFF] mt-0.5 flex-shrink-0" />
+                <Info size={14} className="text-[#7C6FFF] mt-0.5 shrink-0" />
                 <div className="text-xs text-white min-w-0">
                   <p className="font-medium mb-1">Tips</p>
                   <ul className="space-y-0.5 text-gray-300">
