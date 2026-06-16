@@ -1,3 +1,15 @@
+# [1.7.0](https://github.com/AIEraDev/clypra-studio/compare/v1.6.0...v1.7.0) (2026-06-16)
+
+
+### Bug Fixes
+
+* render video frame on load and when seeking while paused ([5b5693c](https://github.com/AIEraDev/clypra-studio/commit/5b5693c0e5853d1fef0511cd02bfa9a267215bed))
+
+
+### Features
+
+* add renderer-based effects system with 11 effects ([d4bc9d1](https://github.com/AIEraDev/clypra-studio/commit/d4bc9d12d6c3decd32fce9ec6e37aa9f864ae263))
+
 # [1.6.0](https://github.com/AIEraDev/clypra-studio/compare/v1.5.0...v1.6.0) (2026-06-16)
 
 
