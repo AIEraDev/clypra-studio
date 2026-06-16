@@ -1,10 +1,8 @@
 /**
- * Video Effects Components
- *
- * Export all video effects testing components
+ * Common Effect Components
+ * Shared across video and body effect workspaces
  */
 
-export { VideoEffectWorkspace } from "./VideoEffectWorkspace";
 export { VideoPlayer } from "./VideoPlayer";
 export { EffectParameterEditor } from "./EffectParameterEditor";
 export { EffectComparison } from "./EffectComparison";

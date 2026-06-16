@@ -15,10 +15,12 @@
     "clean": "npm run clean --workspaces",
     "lint": "npm run lint --workspaces",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "generate:effect-previews": "tsx scripts/generateEffectPreviews.ts"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "tsx": "^4.19.2",
     "typescript": "~5.8.2",
     "vitest": "^3.2.4"
   }

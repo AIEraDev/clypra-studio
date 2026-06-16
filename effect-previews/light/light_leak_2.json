@@ -1,0 +1,12 @@
+{
+  "effectId": "light_leak_2",
+  "name": "Leak 2",
+  "category": "light",
+  "duration": 3,
+  "fps": 30,
+  "resolution": {
+    "width": 1920,
+    "height": 1080
+  },
+  "generatedAt": "2026-06-16T06:21:53.353Z"
+}

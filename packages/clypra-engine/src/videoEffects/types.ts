@@ -87,6 +87,7 @@ export type EffectRenderer =
   | "vignette"
   | "glow"
   | "light_leak"
+  | "light_leak_2"
 
   // Time effects
   | "speed_ramp"
@@ -257,6 +258,13 @@ export interface EffectParameters {
   // Film grain
   grainSize?: number;
   grainIntensity?: number;
+
+  // Light leak 2
+  duration?: number; // Animation duration in seconds
+  size?: number; // Light leak size (0-1)
+  color1?: string; // Primary color (hex)
+  color2?: string; // Secondary color (hex)
+  color3?: string; // Tertiary color (hex)
 
   // Generic
   [key: string]: any;

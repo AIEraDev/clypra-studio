@@ -14,7 +14,7 @@ import { AudioPublishPanel } from "./components/AudioPublishPanel";
 import { StickerPublishPanel } from "./components/StickerPublishPanel";
 import { OverlayPublishPanel } from "./components/OverlayPublishPanel";
 import { VideoEffectPublishPanel } from "./components/VideoEffectPublishPanel";
-import { VideoEffectWorkspace } from "./components/videoEffects";
+import { VideoEffectWorkspace } from "./components/effects";
 import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra/engine";
 import { getPresetScene } from "@clypra/engine";
 import { COMPOSITION_PRESETS } from "@clypra/engine";

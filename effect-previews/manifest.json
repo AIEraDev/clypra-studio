@@ -1,0 +1,473 @@
+{
+  "version": "1.0.0",
+  "totalCount": 11,
+  "categories": [
+    {
+      "id": "camera",
+      "name": "Camera",
+      "count": 5,
+      "description": "Camera movements and transformations"
+    },
+    {
+      "id": "light",
+      "name": "Light",
+      "count": 6,
+      "description": "Lighting effects and color adjustments"
+    }
+  ],
+  "effects": [
+    {
+      "id": "shake",
+      "name": "Shake",
+      "type": "effect",
+      "category": "camera",
+      "description": "Random camera shake effect",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/shake.jpg",
+      "renderer": "shake",
+      "params": {
+        "intensity": 50,
+        "frequency": 10
+      },
+      "parameterSchema": {
+        "intensity": {
+          "type": "number",
+          "label": "Intensity",
+          "min": 0,
+          "max": 100,
+          "default": 50,
+          "step": 1
+        },
+        "frequency": {
+          "type": "number",
+          "label": "Frequency",
+          "min": 1,
+          "max": 30,
+          "default": 10,
+          "step": 1
+        }
+      },
+      "tags": [
+        "camera",
+        "motion",
+        "dynamic"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/camera/shake.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/shake.jpg"
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "type": "effect",
+      "category": "camera",
+      "description": "Scale transformation effect",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/zoom.jpg",
+      "renderer": "zoom",
+      "params": {
+        "scale": 0.2,
+        "centerX": 0.5,
+        "centerY": 0.5
+      },
+      "parameterSchema": {
+        "scale": {
+          "type": "number",
+          "label": "Scale",
+          "min": -1,
+          "max": 1,
+          "default": 0.2,
+          "step": 0.05
+        },
+        "centerX": {
+          "type": "number",
+          "label": "Center X",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "step": 0.05
+        },
+        "centerY": {
+          "type": "number",
+          "label": "Center Y",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "step": 0.05
+        }
+      },
+      "tags": [
+        "camera",
+        "zoom",
+        "scale"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/camera/zoom.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/zoom.jpg"
+    },
+    {
+      "id": "pan",
+      "name": "Pan",
+      "type": "effect",
+      "category": "camera",
+      "description": "Horizontal and vertical camera movement",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/pan.jpg",
+      "renderer": "pan",
+      "params": {
+        "panX": 0,
+        "panY": 0
+      },
+      "parameterSchema": {
+        "panX": {
+          "type": "number",
+          "label": "Pan X",
+          "min": -500,
+          "max": 500,
+          "default": 0,
+          "step": 10
+        },
+        "panY": {
+          "type": "number",
+          "label": "Pan Y",
+          "min": -500,
+          "max": 500,
+          "default": 0,
+          "step": 10
+        }
+      },
+      "tags": [
+        "camera",
+        "pan",
+        "movement"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/camera/pan.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/pan.jpg"
+    },
+    {
+      "id": "rotate",
+      "name": "Rotate",
+      "type": "effect",
+      "category": "camera",
+      "description": "Rotate the camera view",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/rotate.jpg",
+      "renderer": "rotate",
+      "params": {
+        "angle": 0
+      },
+      "parameterSchema": {
+        "angle": {
+          "type": "number",
+          "label": "Angle",
+          "min": -180,
+          "max": 180,
+          "default": 0,
+          "step": 1
+        }
+      },
+      "tags": [
+        "camera",
+        "rotate",
+        "spin"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/camera/rotate.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/rotate.jpg"
+    },
+    {
+      "id": "dolly",
+      "name": "Dolly",
+      "type": "effect",
+      "category": "camera",
+      "description": "Dolly camera movement (zoom with slight rotation)",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/dolly.jpg",
+      "renderer": "dolly",
+      "params": {
+        "scale": 0.2
+      },
+      "parameterSchema": {
+        "scale": {
+          "type": "number",
+          "label": "Scale",
+          "min": -1,
+          "max": 1,
+          "default": 0.2,
+          "step": 0.05
+        }
+      },
+      "tags": [
+        "camera",
+        "dolly",
+        "cinematic"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/camera/dolly.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/dolly.jpg"
+    },
+    {
+      "id": "light_leak",
+      "name": "Light Leak",
+      "type": "effect",
+      "category": "light",
+      "description": "Classic light leak effect",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/light_leak.jpg",
+      "renderer": "light_leak",
+      "params": {},
+      "parameterSchema": {},
+      "tags": [
+        "light",
+        "vintage",
+        "film"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/light/light_leak.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/light_leak.jpg"
+    },
+    {
+      "id": "light_leak_2",
+      "name": "Leak 2",
+      "type": "effect",
+      "category": "light",
+      "description": "Animated red/orange light moving across the frame",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/light_leak_2.jpg",
+      "renderer": "light_leak_2",
+      "params": {
+        "duration": 3,
+        "size": 0.8,
+        "color1": "#FF6B35",
+        "color2": "#FF8C42",
+        "color3": "#FFA500"
+      },
+      "parameterSchema": {
+        "duration": {
+          "type": "number",
+          "label": "Duration",
+          "min": 1,
+          "max": 10,
+          "default": 3,
+          "step": 0.5
+        },
+        "size": {
+          "type": "number",
+          "label": "Size",
+          "min": 0.1,
+          "max": 1.5,
+          "default": 0.8,
+          "step": 0.1
+        },
+        "color1": {
+          "type": "color",
+          "label": "Primary Color",
+          "default": "#FF6B35"
+        },
+        "color2": {
+          "type": "color",
+          "label": "Secondary Color",
+          "default": "#FF8C42"
+        },
+        "color3": {
+          "type": "color",
+          "label": "Tertiary Color",
+          "default": "#FFA500"
+        }
+      },
+      "tags": [
+        "light",
+        "animated",
+        "cinematic",
+        "warm"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/light/light_leak_2.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/light_leak_2.jpg"
+    },
+    {
+      "id": "flash",
+      "name": "Flash",
+      "type": "effect",
+      "category": "light",
+      "description": "Bright flash effect",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/flash.jpg",
+      "renderer": "flash",
+      "params": {
+        "flashColor": "#ffffff",
+        "flashIntensity": 1
+      },
+      "parameterSchema": {
+        "flashColor": {
+          "type": "color",
+          "label": "Flash Color",
+          "default": "#ffffff"
+        },
+        "flashIntensity": {
+          "type": "number",
+          "label": "Intensity",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "step": 0.1
+        }
+      },
+      "tags": [
+        "light",
+        "bright",
+        "instant"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/light/flash.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/flash.jpg"
+    },
+    {
+      "id": "flicker",
+      "name": "Flicker",
+      "type": "effect",
+      "category": "light",
+      "description": "Random light flickering effect",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/flicker.jpg",
+      "renderer": "flicker",
+      "params": {},
+      "parameterSchema": {},
+      "tags": [
+        "light",
+        "flicker",
+        "dynamic"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/light/flicker.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/flicker.jpg"
+    },
+    {
+      "id": "vignette",
+      "name": "Vignette",
+      "type": "effect",
+      "category": "light",
+      "description": "Darkens the edges of the frame",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/vignette.jpg",
+      "renderer": "vignette",
+      "params": {
+        "radius": 0.7
+      },
+      "parameterSchema": {
+        "radius": {
+          "type": "number",
+          "label": "Radius",
+          "min": 0.1,
+          "max": 1,
+          "default": 0.7,
+          "step": 0.05
+        }
+      },
+      "tags": [
+        "light",
+        "vintage",
+        "cinematic"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/light/vignette.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/vignette.jpg"
+    },
+    {
+      "id": "glow",
+      "name": "Glow",
+      "type": "effect",
+      "category": "light",
+      "description": "Adds a glow effect",
+      "thumbnail": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/glow.jpg",
+      "renderer": "glow",
+      "params": {
+        "glowAmount": 10,
+        "glowColor": "#ffffff"
+      },
+      "parameterSchema": {
+        "glowAmount": {
+          "type": "number",
+          "label": "Amount",
+          "min": 0,
+          "max": 50,
+          "default": 10,
+          "step": 1
+        },
+        "glowColor": {
+          "type": "color",
+          "label": "Color",
+          "default": "#ffffff"
+        }
+      },
+      "tags": [
+        "light",
+        "soft",
+        "dreamy"
+      ],
+      "intensity": {
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "step": 0.01
+      },
+      "previewUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-previews/light/glow.webm",
+      "previewDuration": 3,
+      "thumbnailUrl": "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/public/effect-thumbnails/glow.jpg"
+    }
+  ],
+  "generatedAt": "2026-06-16T06:21:53.355Z",
+  "repository": "AIEraDev/clypra-api",
+  "branch": "main"
+}

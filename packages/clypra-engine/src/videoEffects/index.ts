@@ -8,6 +8,15 @@
 export { EffectRenderer } from "./EffectRenderer";
 export { TransitionRenderer } from "./TransitionRenderer";
 
+// Export registry, utilities, and API integration
+export * from "./effectsRegistry";
+export * from "./utils";
+export * from "./api";
+
+// Re-export renderer functions for direct use
+export * as CameraEffects from "./renderers/camera";
+export * as LightEffects from "./renderers/light";
+
 export type {
   // Effect types
   EffectCategory,

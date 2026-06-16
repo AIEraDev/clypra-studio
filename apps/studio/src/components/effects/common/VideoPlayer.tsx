@@ -40,10 +40,9 @@ export function VideoPlayer({ videoUrl, onTimeUpdate, onFrameReady, onMetadataLo
     setDuration(video.duration);
     onMetadataLoad?.(metadata);
 
-    // Render the first frame immediately
-    console.log("🎬 Rendering first frame...");
-    onFrameReady?.(video);
-  }, [onMetadataLoad, onFrameReady]);
+    // Seek to a small time to ensure the first frame is loaded
+    video.currentTime = 0.1;
+  }, [onMetadataLoad]);
 
   // Handle time update
   const handleTimeUpdate = useCallback(() => {
@@ -55,6 +54,14 @@ export function VideoPlayer({ videoUrl, onTimeUpdate, onFrameReady, onMetadataLo
     onTimeUpdate?.(video.currentTime);
     onFrameReady?.(video);
   }, [onTimeUpdate, onFrameReady]);
+
+  // Handle seeked event (when video seeks to a new position)
+  const handleSeeked = useCallback(() => {
+    const video = videoRef.current;
+    console.log("🎯 Video seeked, rendering frame");
+    if (!video) return;
+    onFrameReady?.(video);
+  }, [onFrameReady]);
 
   // Play/Pause toggle
   const togglePlay = useCallback(() => {
@@ -142,7 +149,7 @@ export function VideoPlayer({ videoUrl, onTimeUpdate, onFrameReady, onMetadataLo
   return (
     <div className={`flex flex-col ${className}`}>
       {/* Hidden video element */}
-      <video ref={videoRef} src={videoUrl} className="hidden" onLoadedMetadata={handleLoadedMetadata} onTimeUpdate={handleTimeUpdate} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} loop />
+      <video ref={videoRef} src={videoUrl} className="hidden" onLoadedMetadata={handleLoadedMetadata} onTimeUpdate={handleTimeUpdate} onSeeked={handleSeeked} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} loop />
 
       {/* Controls */}
       <div className="bg-gray-800 text-white p-4 rounded-lg space-y-3">
