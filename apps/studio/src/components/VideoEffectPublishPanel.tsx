@@ -1,14 +1,25 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle, Download, Loader2, Sparkles, UploadCloud, Wand2 } from "lucide-react";
 import { useGitHubPublish, type VideoEffectPresetPublishPayload } from "../hooks/useGitHubPublish";
-import { generateVideoOrBodyEffectPresetSuggestion, type VideoEffectPresetSuggestion } from "../services/geminiService";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 const VIDEO_RENDERERS = ["glitch", "rgb_split", "chromatic_aberration", "pixelate", "scanlines", "film_grain", "vignette", "glow"];
 const BODY_RENDERERS = ["body-segmentation-glow", "body_glow", "body_outline", "body_particles"];
 const FIELD_INPUT_CLASS = "w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-violet-500";
 
 type EffectKind = "video" | "body";
 type ExportedPreviewFile = { name: string; dataUrl: string };
+
+interface VideoEffectPresetSuggestion {
+  id: string;
+  name: string;
+  description: string;
+  renderer: string;
+  params: Record<string, unknown>;
+  tags: string[];
+  defaultIntensity: number;
+  isPremium?: boolean;
+}
 
 function toKebabId(value: string): string {
   return value
@@ -372,11 +383,22 @@ export function VideoEffectPublishPanel({ variant = "drawer" }: { variant?: "dra
     setExportedPreviewFile(null);
 
     try {
-      const preset = await generateVideoOrBodyEffectPresetSuggestion({
-        kind,
-        prompt,
-        renderer: rendererChoice,
+      const response = await fetch(`${API_BASE_URL}/ai/video-effect`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind,
+          prompt,
+          renderer: rendererChoice === "auto" ? undefined : rendererChoice,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || "Failed to generate video effect");
+      }
+
+      const preset = await response.json();
       setGeneratedPreset(preset);
       setStatus("idle");
       setMessage(`Generated ${preset.name}. Test it on sample media before publishing.`);

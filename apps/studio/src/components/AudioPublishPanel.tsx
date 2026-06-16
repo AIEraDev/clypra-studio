@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle, Loader2, Music, Settings, Zap, FileAudio, Image as ImageIcon, Sparkles } from "lucide-react";
-import { generateAudioMetadata } from "../services/geminiService";
 import { useR2Upload } from "../hooks/useR2Upload";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 const AUDIO_CATEGORIES = ["music", "lo-fi", "chill", "cinematic", "epic", "upbeat", "corporate", "hip-hop", "trap", "electronic", "synth", "acoustic", "indie", "jazz", "soul", "ambient", "background", "sfx", "transition", "impact", "ui", "notifications", "voice"] as const;
 const LICENSE_TYPES = ["cc0", "cc-by", "royalty-free", "public-domain"] as const;
 const FIELD_INPUT_CLASS = "w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500";
@@ -132,15 +132,26 @@ export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" |
     setAiMessage(null);
 
     try {
-      const metadata = await generateAudioMetadata({
-        fileName: audioFile.name,
-        currentName: name,
-        currentCategory: category,
-        currentDescription: description,
-        currentTags: tagsInput,
-        author,
-        duration: Number(duration) || undefined,
+      const response = await fetch(`${API_BASE_URL}/ai/audio-metadata`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: audioFile.name,
+          currentName: name,
+          currentCategory: category,
+          currentDescription: description,
+          currentTags: tagsInput,
+          author,
+          duration: Number(duration) || undefined,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || "Failed to generate audio metadata");
+      }
+
+      const metadata = await response.json();
 
       setName(metadata.name);
       setId(toKebabId(metadata.id || metadata.name));

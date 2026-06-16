@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, MapPin, Image as ImageIcon, ExternalLink, Sparkles } from "lucide-react";
-import { generateLottieMetadata } from "../services/geminiService";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 
 export type TemplateCategory = "lower-third" | "title-card" | "outro" | "kinetic" | "broadcast" | "social" | "cinematic" | "minimal" | "energetic" | "documentary";
 
@@ -61,14 +62,25 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
     setAiError(null);
 
     try {
-      const result = await generateLottieMetadata({
-        templateName,
-        currentId: templateId,
-        currentCategory: category,
-        currentDescription: description,
-        currentTags: tagsInput,
-        lottieData,
+      const response = await fetch(`${API_BASE_URL}/ai/lottie-metadata`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateName,
+          currentId: templateId,
+          currentCategory: category,
+          currentDescription: description,
+          currentTags: tagsInput,
+          lottieData,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || "Failed to generate metadata");
+      }
+
+      const result = await response.json();
 
       if (result.category) onCategoryChange(result.category as TemplateCategory);
       onTemplateIdChange(result.id);

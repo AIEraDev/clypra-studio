@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useGitHubPublish, type StickerPublishPayload, type StickerCategory } from "../hooks/useGitHubPublish";
 import { AlertCircle, CheckCircle, Loader2, Upload, Image as ImageIcon, Film, Sparkles } from "lucide-react";
-import { generateStickerMetadata } from "../services/geminiService";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 const STICKER_CATEGORIES: StickerCategory[] = ["trending", "emoji", "fun", "love", "gaming", "food", "animal", "shapes", "icons", "travel", "birthday", "weather", "sale", "vlog", "y2k", "glitter", "neon-text", "classic", "new", "football", "animal-meme", "hits", "free-fire", "emphasis", "cover-ups", "wrong", "letters", "mood", "text-sticker", "collage", "countdown", "music-festival", "journal", "campus", "cartoon", "fashion", "eco-friendly", "basketball", "barbie", "vibes", "shimmer", "frame", "winter", "fall", "details", "techniques", "lip-illustration", "handwriting", "retro-character", "illustration", "alphabet", "pixelated-style", "bubble", "label", "plog", "cyber", "stylish"];
 
 type StickerFormat = "static" | "gif" | "lottie";
@@ -155,7 +155,19 @@ export function StickerPublishPanel() {
 
     try {
       const imageDataUrl = imagePreview || (await fileToDataUrl(imageFile!));
-      const result = await generateStickerMetadata(imageDataUrl);
+
+      const response = await fetch(`${API_BASE_URL}/ai/sticker-metadata`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || "Failed to generate sticker metadata");
+      }
+
+      const result = await response.json();
 
       // Apply AI-generated metadata
       setFormData((prev) => ({
