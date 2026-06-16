@@ -36,3 +36,7 @@ export * from "./platform.js";
 export * from "./canvas-utils.js";
 // Procedural engines
 export { InkBrushEngine } from "./engine/procedural/InkBrushEngine.js";
+
+// Video & Body Effects (NEW)
+export * from "./videoEffects";
+export * from "./bodyEffects";

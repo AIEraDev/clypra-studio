@@ -14,6 +14,7 @@ import { AudioPublishPanel } from "./components/AudioPublishPanel";
 import { StickerPublishPanel } from "./components/StickerPublishPanel";
 import { OverlayPublishPanel } from "./components/OverlayPublishPanel";
 import { VideoEffectPublishPanel } from "./components/VideoEffectPublishPanel";
+import { VideoEffectWorkspace } from "./components/videoEffects";
 import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra/engine";
 import { getPresetScene } from "@clypra/engine";
 import { COMPOSITION_PRESETS } from "@clypra/engine";
@@ -337,6 +338,9 @@ export default function App() {
         }
         if (e.key.toLowerCase() === "l") {
           setActiveRailItem("layers");
+        }
+        if (e.key.toLowerCase() === "v") {
+          setActiveRailItem("video-effects");
         }
         if (e.key.toLowerCase() === "a") {
           setActiveRailItem("export");
@@ -1313,167 +1317,170 @@ export default function App() {
           <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
             <VideoEffectPublishPanel variant="workspace" />
           </div>
+        ) : activeRailItem === "video-effects" ? (
+          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
+            <VideoEffectWorkspace />
+          </div>
         ) : (
-        <>
-
-          {/* LEFT DRAWER — CREATION LIBRARY
+          <>
+            {/* LEFT DRAWER — CREATION LIBRARY
               Mobile:  full-width, shown only when mobileActiveTab === "controls"
               Tablet:  fixed 300px, shown only when mobileActiveTab === "controls"
               Desktop: fixed 360px, always visible */}
-          <aside
-            id="left-controls-panel"
-            data-rail={activeRailItem}
-            className={`
+            <aside
+              id="left-controls-panel"
+              data-rail={activeRailItem}
+              className={`
               ${isNarrow && mobileActiveTab !== "controls" ? "hidden" : "flex"}
               ${isMobile ? "w-full" : isTablet ? "w-[300px]" : "w-[360px]"}
               flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 overflow-y-auto select-none
             `}
-          >
-            <DrawerIntro activeItem={activeRailItem} onOpenExport={() => setActiveRailItem("export")} />
+            >
+              <DrawerIntro activeItem={activeRailItem} onOpenExport={() => setActiveRailItem("export")} />
 
-            {activeRailItem === "templates" && (
-              <div className="border-b border-(--studio-border) p-3 flex flex-col">
-                <button id="start-scratch-header-btn" onClick={handleStartFromScratch} className="mb-3 flex w-full items-center justify-center gap-2 rounded-md border border-teal-400/30 bg-teal-400/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-400/15" title="Reset active styles and start designing on a clean default canvas">
-                  <FolderPlus size={14} /> Blank Slate
-                </button>
+              {activeRailItem === "templates" && (
+                <div className="border-b border-(--studio-border) p-3 flex flex-col">
+                  <button id="start-scratch-header-btn" onClick={handleStartFromScratch} className="mb-3 flex w-full items-center justify-center gap-2 rounded-md border border-teal-400/30 bg-teal-400/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-400/15" title="Reset active styles and start designing on a clean default canvas">
+                    <FolderPlus size={14} /> Blank Slate
+                  </button>
 
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Templates</span>
-                  <button type="button" onClick={() => setShowSavePresetModal(true)} className="flex items-center gap-1 rounded border border-(--studio-border) px-2 py-1 text-[10px] font-semibold text-white hover:bg-(--studio-hover)">
-                    <Plus size={11} />
-                    Save
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Templates</span>
+                    <button type="button" onClick={() => setShowSavePresetModal(true)} className="flex items-center gap-1 rounded border border-(--studio-border) px-2 py-1 text-[10px] font-semibold text-white hover:bg-(--studio-hover)">
+                      <Plus size={11} />
+                      Save
+                    </button>
+                  </div>
+
+                  <div className="flex h-full flex-col gap-2 overflow-y-auto">
+                    {displayPresets.slice(0, 20).map((preset) => (
+                      <PresetChip
+                        key={preset.id}
+                        preset={preset}
+                        activePresetId={activePresetId}
+                        handleApplyPreset={(presetToApply) => {
+                          handleApplyPreset(presetToApply);
+                          setActiveRailItem("style");
+                        }}
+                        handleDeletePreset={handleDeletePreset}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeRailItem === "export" && (
+                <div className="border-b border-(--studio-border) p-3 space-y-2">
+                  <button id="gemini-key-settings-btn" onClick={() => setShowGeminiKeyModal(true)} className="flex w-full items-center justify-center gap-2 rounded-md border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-3 py-2 text-[12px] font-semibold text-[#B9B2FF] hover:bg-[#7C6FFF]/15">
+                    <KeyRound size={14} /> Gemini API Key
+                  </button>
+                  <button
+                    id="prompt-effect-btn"
+                    onClick={() => {
+                      setPromptInput("");
+                      setPromptStatus("idle");
+                      setPromptResultConfig(null);
+                      setPromptError(null);
+                      setPromptLogs([]);
+                      setShowPromptModal(true);
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-md border border-teal-500/30 bg-teal-500/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-500/15"
+                  >
+                    <Sparkles size={14} /> Prompt Style
+                  </button>
+                  <button
+                    id="scan-effect-btn"
+                    onClick={() => {
+                      setScanImage(null);
+                      setScanStatus("idle");
+                      setScanResultConfig(null);
+                      setScanError(null);
+                      setScanLogs([]);
+                      setShowImageScanModal(true);
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-md border border-(--studio-border) bg-(--studio-control) px-3 py-2 text-[12px] font-semibold text-white hover:bg-(--studio-hover)"
+                  >
+                    <Camera size={14} /> Scan Image
+                  </button>
+                  <button type="button" onClick={() => setActiveTab("lab")} className="flex w-full items-center justify-center gap-2 rounded-md border border-(--studio-border) bg-(--studio-control) px-3 py-2 text-[12px] font-semibold text-white hover:bg-(--studio-hover)">
+                    <Beaker size={14} /> Research & Blend
                   </button>
                 </div>
+              )}
 
-                <div className="flex h-full flex-col gap-2 overflow-y-auto">
-                  {displayPresets.slice(0, 20).map((preset) => (
-                    <PresetChip
-                      key={preset.id}
-                      preset={preset}
-                      activePresetId={activePresetId}
-                      handleApplyPreset={(presetToApply) => {
-                        handleApplyPreset(presetToApply);
-                        setActiveRailItem("style");
-                      }}
-                      handleDeletePreset={handleDeletePreset}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+              {activeRailItem === "layers" && <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode="advanced" selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} />}
 
-            {activeRailItem === "export" && (
-              <div className="border-b border-(--studio-border) p-3 space-y-2">
-                <button id="gemini-key-settings-btn" onClick={() => setShowGeminiKeyModal(true)} className="flex w-full items-center justify-center gap-2 rounded-md border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-3 py-2 text-[12px] font-semibold text-[#B9B2FF] hover:bg-[#7C6FFF]/15">
-                  <KeyRound size={14} /> Gemini API Key
-                </button>
-                <button
-                  id="prompt-effect-btn"
-                  onClick={() => {
-                    setPromptInput("");
-                    setPromptStatus("idle");
-                    setPromptResultConfig(null);
-                    setPromptError(null);
-                    setPromptLogs([]);
-                    setShowPromptModal(true);
-                  }}
-                  className="flex w-full items-center justify-center gap-2 rounded-md border border-teal-500/30 bg-teal-500/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-500/15"
-                >
-                  <Sparkles size={14} /> Prompt Style
-                </button>
-                <button
-                  id="scan-effect-btn"
-                  onClick={() => {
-                    setScanImage(null);
-                    setScanStatus("idle");
-                    setScanResultConfig(null);
-                    setScanError(null);
-                    setScanLogs([]);
-                    setShowImageScanModal(true);
-                  }}
-                  className="flex w-full items-center justify-center gap-2 rounded-md border border-(--studio-border) bg-(--studio-control) px-3 py-2 text-[12px] font-semibold text-white hover:bg-(--studio-hover)"
-                >
-                  <Camera size={14} /> Scan Image
-                </button>
-                <button type="button" onClick={() => setActiveTab("lab")} className="flex w-full items-center justify-center gap-2 rounded-md border border-(--studio-border) bg-(--studio-control) px-3 py-2 text-[12px] font-semibold text-white hover:bg-(--studio-hover)">
-                  <Beaker size={14} /> Research & Blend
-                </button>
-              </div>
-            )}
+              {activeRailItem === "audio" && <AudioPublishPanel />}
 
-            {activeRailItem === "layers" && <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode="advanced" selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} />}
+              {activeRailItem === "stickers" && <StickerPublishPanel />}
 
-            {activeRailItem === "audio" && <AudioPublishPanel />}
+              {activeRailItem === "overlays" && <OverlayPublishPanel />}
 
-            {activeRailItem === "stickers" && <StickerPublishPanel />}
+              {activeRailItem === "style" && <div className="border-b border-(--studio-border) px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Style Controls</div>}
 
-            {activeRailItem === "overlays" && <OverlayPublishPanel />}
+              <Suspense fallback={<div className="p-4 text-xs text-(--studio-muted)">Loading controls...</div>}>
+                <LegacyControlsPanel visible={activeRailItem === "style"} config={config} activeEffectId={activeEffectId} collapsedSections={collapsedSections} isGeneratingName={isGeneratingName} modifyConfig={modifyConfig} toggleSection={toggleSection} handleGenerateAiEffectName={handleGenerateAiEffectName} applyCompositionPreset={applyCompositionPreset} fitTextToComposition={fitTextToComposition} />
+              </Suspense>
+            </aside>
 
-            {activeRailItem === "style" && <div className="border-b border-(--studio-border) px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Style Controls</div>}
-
-            <Suspense fallback={<div className="p-4 text-xs text-(--studio-muted)">Loading controls...</div>}>
-              <LegacyControlsPanel visible={activeRailItem === "style"} config={config} activeEffectId={activeEffectId} collapsedSections={collapsedSections} isGeneratingName={isGeneratingName} modifyConfig={modifyConfig} toggleSection={toggleSection} handleGenerateAiEffectName={handleGenerateAiEffectName} applyCompositionPreset={applyCompositionPreset} fitTextToComposition={fitTextToComposition} />
-            </Suspense>
-          </aside>
-
-          {/* CENTER — CANVAS + TIMELINE
+            {/* CENTER — CANVAS + TIMELINE
               Mobile/Tablet: shown only when mobileActiveTab === "preview"
               Desktop: always visible, fills remaining space */}
-          <div className={`${isNarrow && mobileActiveTab !== "preview" ? "hidden" : "flex"} flex-1 flex-col min-w-0`}>
-            <PreviewCanvas
-              canvasRef={canvasRef}
-              config={config}
-              bgMode={bgMode}
-              zoom={zoom}
-              zoomMode={zoomMode}
-              onZoomChange={setZoom}
-              onZoomModeChange={setZoomMode}
-              onBgModeChange={setBgMode}
-              platformMode={platformMode}
-              onPlatformModeChange={setPlatformMode}
-              toolbarExtras={
-                <>
-                  <button id="copy-to-clipboard-image-btn" type="button" onClick={copyImageToClipboard} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium border border-[#2A2A38] hover:border-[#7C6FFF] rounded flex items-center gap-1 transition-all cursor-pointer font-sans">
-                    <Copy size={12} className={copiedImageFeedback ? "text-green-500" : "text-white"} />
-                    {copiedImageFeedback ? "Copied" : "Copy"}
-                  </button>
-                  <button id="download-canvas-image-btn" type="button" onClick={downloadPng} className="p-1.5 px-3 bg-[#7C6FFF] hover:bg-[#6859FF] text-white text-[11px] font-medium rounded flex items-center gap-1 cursor-pointer font-sans">
-                    <Download size={12} /> PNG
-                  </button>
-                  <button id="download-png-sequence-btn" type="button" onClick={downloadPngSequence} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium rounded border border-[#2A2A38] hover:border-[#7C6FFF] flex items-center gap-1 cursor-pointer font-sans" title={`Export ${webmFrameCount} PNG frames as ZIP`}>
-                    <Download size={12} /> Seq
-                  </button>
-                  {webmExportSupported && (
-                    <button id="download-webm-btn" type="button" onClick={downloadWebM} disabled={isExportingWebM} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium rounded border border-[#2A2A38] hover:border-[#7C6FFF] flex items-center gap-1 cursor-pointer font-sans disabled:opacity-50 disabled:cursor-wait" title={`Export ${webmFrameCount} frames as WebM (~${(scene.timeline.duration || 2).toFixed(1)}s)`}>
-                      {isExportingWebM ? <Loader2 size={12} className="animate-spin" /> : <Video size={12} />}
-                      {isExportingWebM ? "…" : "WebM"}
+            <div className={`${isNarrow && mobileActiveTab !== "preview" ? "hidden" : "flex"} flex-1 flex-col min-w-0`}>
+              <PreviewCanvas
+                canvasRef={canvasRef}
+                config={config}
+                bgMode={bgMode}
+                zoom={zoom}
+                zoomMode={zoomMode}
+                onZoomChange={setZoom}
+                onZoomModeChange={setZoomMode}
+                onBgModeChange={setBgMode}
+                platformMode={platformMode}
+                onPlatformModeChange={setPlatformMode}
+                toolbarExtras={
+                  <>
+                    <button id="copy-to-clipboard-image-btn" type="button" onClick={copyImageToClipboard} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium border border-[#2A2A38] hover:border-[#7C6FFF] rounded flex items-center gap-1 transition-all cursor-pointer font-sans">
+                      <Copy size={12} className={copiedImageFeedback ? "text-green-500" : "text-white"} />
+                      {copiedImageFeedback ? "Copied" : "Copy"}
                     </button>
-                  )}
-                  {webmExportError && (
-                    <span className="text-[10px] text-red-400 max-w-[140px] truncate" title={webmExportError}>
-                      {webmExportError}
-                    </span>
-                  )}
-                </>
-              }
-            />
+                    <button id="download-canvas-image-btn" type="button" onClick={downloadPng} className="p-1.5 px-3 bg-[#7C6FFF] hover:bg-[#6859FF] text-white text-[11px] font-medium rounded flex items-center gap-1 cursor-pointer font-sans">
+                      <Download size={12} /> PNG
+                    </button>
+                    <button id="download-png-sequence-btn" type="button" onClick={downloadPngSequence} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium rounded border border-[#2A2A38] hover:border-[#7C6FFF] flex items-center gap-1 cursor-pointer font-sans" title={`Export ${webmFrameCount} PNG frames as ZIP`}>
+                      <Download size={12} /> Seq
+                    </button>
+                    {webmExportSupported && (
+                      <button id="download-webm-btn" type="button" onClick={downloadWebM} disabled={isExportingWebM} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium rounded border border-[#2A2A38] hover:border-[#7C6FFF] flex items-center gap-1 cursor-pointer font-sans disabled:opacity-50 disabled:cursor-wait" title={`Export ${webmFrameCount} frames as WebM (~${(scene.timeline.duration || 2).toFixed(1)}s)`}>
+                        {isExportingWebM ? <Loader2 size={12} className="animate-spin" /> : <Video size={12} />}
+                        {isExportingWebM ? "…" : "WebM"}
+                      </button>
+                    )}
+                    {webmExportError && (
+                      <span className="text-[10px] text-red-400 max-w-[140px] truncate" title={webmExportError}>
+                        {webmExportError}
+                      </span>
+                    )}
+                  </>
+                }
+              />
 
-            {showFontCompare && (
-              <Suspense fallback={null}>
-                <FontCompare config={config} onSelectFont={(font) => modifyConfig({ fontFamily: font })} onClose={() => setShowFontCompare(false)} />
-              </Suspense>
-            )}
+              {showFontCompare && (
+                <Suspense fallback={null}>
+                  <FontCompare config={config} onSelectFont={(font) => modifyConfig({ fontFamily: font })} onClose={() => setShowFontCompare(false)} />
+                </Suspense>
+              )}
 
-            <TimelinePanel scene={scene} previewTime={previewTime} isPlaying={isPlaying} uiMode={timelinePanelMode} onPlayToggle={() => setIsPlaying((p) => !p)} onReset={() => setPreviewTime(0)} onTimeChange={setPreviewTime} onSceneChange={modifyScene} />
-          </div>
+              <TimelinePanel scene={scene} previewTime={previewTime} isPlaying={isPlaying} uiMode={timelinePanelMode} onPlayToggle={() => setIsPlaying((p) => !p)} onReset={() => setPreviewTime(0)} onTimeChange={setPreviewTime} onSceneChange={modifyScene} />
+            </div>
 
-          {/* RIGHT PANEL — INSPECTOR / EXPORT LAB
+            {/* RIGHT PANEL — INSPECTOR / EXPORT LAB
               Mobile/Tablet: shown only when mobileActiveTab === "code", full-width on mobile
               Desktop: always visible, fixed 344px */}
-          <Suspense fallback={<aside className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0 border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted) flex-col`}>Loading panel...</aside>}>
-            <div className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}>{activeRailItem === "export" ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</div>
-          </Suspense>
-        </>
+            <Suspense fallback={<aside className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0 border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted) flex-col`}>Loading panel...</aside>}>
+              <div className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}>{activeRailItem === "export" ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</div>
+            </Suspense>
+          </>
         )}
       </main>
 
