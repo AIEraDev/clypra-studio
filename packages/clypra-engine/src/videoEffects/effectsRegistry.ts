@@ -170,6 +170,141 @@ export const EFFECTS_REGISTRY: Record<string, EffectMetadata> = {
     },
     tags: ["light", "soft", "dreamy"],
   },
+
+  fire: {
+    id: "fire",
+    name: "Fire",
+    category: "light",
+    description: "Animated fire effect with particles",
+    defaultParams: {
+      fireHeight: 0.4,
+      particleCount: 50,
+      fireColor1: "#FF4500",
+      fireColor2: "#FFA500",
+      fireColor3: "#FFD700",
+    },
+    parameterSchema: {
+      fireHeight: {
+        type: "number",
+        label: "Fire Height",
+        min: 0.1,
+        max: 0.8,
+        default: 0.4,
+        step: 0.05,
+      },
+      particleCount: {
+        type: "number",
+        label: "Particle Count",
+        min: 10,
+        max: 100,
+        default: 50,
+        step: 5,
+      },
+      fireColor1: {
+        type: "color",
+        label: "Base Color",
+        default: "#FF4500",
+      },
+      fireColor2: {
+        type: "color",
+        label: "Mid Color",
+        default: "#FFA500",
+      },
+      fireColor3: {
+        type: "color",
+        label: "Top Color",
+        default: "#FFD700",
+      },
+    },
+    tags: ["light", "animated", "fire", "particles"],
+  },
+
+  particles: {
+    id: "particles",
+    name: "Particles",
+    category: "light",
+    description: "Floating particle effect",
+    defaultParams: {
+      particleCount: 100,
+      particleSize: 3,
+      particleColor: "#FFFFFF",
+      driftSpeed: 1,
+      fadeEffect: true,
+    },
+    parameterSchema: {
+      particleCount: {
+        type: "number",
+        label: "Particle Count",
+        min: 20,
+        max: 200,
+        default: 100,
+        step: 10,
+      },
+      particleSize: {
+        type: "number",
+        label: "Particle Size",
+        min: 1,
+        max: 10,
+        default: 3,
+        step: 0.5,
+      },
+      particleColor: {
+        type: "color",
+        label: "Color",
+        default: "#FFFFFF",
+      },
+      driftSpeed: {
+        type: "number",
+        label: "Drift Speed",
+        min: 0.1,
+        max: 3,
+        default: 1,
+        step: 0.1,
+      },
+      fadeEffect: {
+        type: "boolean",
+        label: "Fade at Edges",
+        default: true,
+      },
+    },
+    tags: ["light", "animated", "particles", "floating"],
+  },
+
+  dust_particles: {
+    id: "dust_particles",
+    name: "Dust Particles",
+    category: "light",
+    description: "Slow drifting dust particles",
+    defaultParams: {
+      particleCount: 60,
+      particleSize: 2,
+      particleColor: "#E0E0E0",
+    },
+    parameterSchema: {
+      particleCount: {
+        type: "number",
+        label: "Particle Count",
+        min: 20,
+        max: 150,
+        default: 60,
+        step: 10,
+      },
+      particleSize: {
+        type: "number",
+        label: "Particle Size",
+        min: 1,
+        max: 5,
+        default: 2,
+        step: 0.5,
+      },
+      particleColor: {
+        type: "color",
+        label: "Color",
+        default: "#E0E0E0",
+      },
+    },
+    tags: ["light", "particles", "dust", "subtle"],
+  },
 };
 
 /**
@@ -199,6 +334,9 @@ export function getEffectRenderer(id: EffectRendererType): ((ctx: CanvasRenderin
     glow: LightEffects.renderGlow,
     light_leak: LightEffects.renderLightLeak,
     light_leak_2: LightEffects.renderLightLeak2,
+    fire: LightEffects.renderFire,
+    particles: LightEffects.renderParticles,
+    dust_particles: LightEffects.renderDustParticles,
   };
 
   return renderers[id] || null;

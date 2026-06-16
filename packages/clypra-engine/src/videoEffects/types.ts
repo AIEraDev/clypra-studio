@@ -88,6 +88,9 @@ export type EffectRenderer =
   | "glow"
   | "light_leak"
   | "light_leak_2"
+  | "fire"
+  | "particles"
+  | "dust_particles"
 
   // Time effects
   | "speed_ramp"
