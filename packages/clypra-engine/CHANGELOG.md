@@ -1,3 +1,24 @@
+# [1.6.0](https://github.com/AIEraDev/clypra-studio/compare/v1.5.0...v1.6.0) (2026-06-16)
+
+
+### Bug Fixes
+
+* adjusted layout ([f1bfca8](https://github.com/AIEraDev/clypra-studio/commit/f1bfca8ab1111d8fae18171040cd76dc508a4631))
+* correct string quote mismatch in useGitHubPublish ([66072c0](https://github.com/AIEraDev/clypra-studio/commit/66072c03b73f17694772484e4a10b2f88574cea9))
+* ensure AI-generated effect params are always populated ([52fe912](https://github.com/AIEraDev/clypra-studio/commit/52fe9126472be947e3d91c69d30a468ff4d71bc4))
+* resolve horizontal layout overflow on landing page ([0e362d5](https://github.com/AIEraDev/clypra-studio/commit/0e362d5b9ad65ed721d6397e4d7c8dc084e09c8a))
+* resolve mobile layout overflow in navigation header ([b1f7498](https://github.com/AIEraDev/clypra-studio/commit/b1f74988039f214d51c4a8637803a6442126bad0))
+* use Git Data API for large animated sticker files ([433f051](https://github.com/AIEraDev/clypra-studio/commit/433f051777fc6601c1138a6201823b0623b9fa4b))
+
+
+### Features
+
+* add creator section and social links to showcase page ([45a56ca](https://github.com/AIEraDev/clypra-studio/commit/45a56caac08c236c6ad99822fd54e1941a003fdc))
+* add dynamic animations to all video effect previews ([683e55c](https://github.com/AIEraDev/clypra-studio/commit/683e55cbdb62cc5e5e1f6f046c3ed9cd60e282d7))
+* add video effect preset publishing system ([4ac7f4a](https://github.com/AIEraDev/clypra-studio/commit/4ac7f4aff85c101dcccc85c552f43b2c77e6fd66))
+* add WebM export for effect preview canvas ([4b82965](https://github.com/AIEraDev/clypra-studio/commit/4b82965c734f8c9922839988532f734aa075a42c))
+* integrate video effects workspace into Studio navigation ([1947815](https://github.com/AIEraDev/clypra-studio/commit/1947815211eb3f3843d6c51ce11e94fd2a5edac7))
+
 # [1.5.0](https://github.com/AIEraDev/clypra-studio/compare/v1.4.0...v1.5.0) (2026-06-12)
 
 
