@@ -1,18 +1,12 @@
 import React, { useState } from "react";
-import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, Image as ImageIcon, ExternalLink, Sparkles } from "lucide-react";
+import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, Image as ImageIcon, Sparkles } from "lucide-react";
 import { generateEffectName } from "../services/geminiService";
+import { useTextEffectR2Upload } from "../hooks/useTextEffectR2Upload";
 import type { TextEffectConfig } from "@clypra/engine";
 
-export type EffectApiCategory =
-  | "3d" | "neon" | "metallic" | "glitch" | "retro" | "gradient" | "grunge" | "outline" | "shadow" | "elements" | "luxury"
-  | "essentials" | "color" | "light" | "stylize" | "distort"
-  | "vintage" | "modern" | "cinematic" | "bw";
+export type EffectApiCategory = "3d" | "neon" | "metallic" | "glitch" | "retro" | "gradient" | "grunge" | "outline" | "shadow" | "elements" | "luxury" | "essentials" | "color" | "light" | "stylize" | "distort" | "vintage" | "modern" | "cinematic" | "bw";
 
-const EFFECT_CATEGORIES: EffectApiCategory[] = [
-  "3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury",
-  "essentials", "color", "light", "stylize", "distort",
-  "vintage", "modern", "cinematic", "bw"
-];
+const EFFECT_CATEGORIES: EffectApiCategory[] = ["3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury", "essentials", "color", "light", "stylize", "distort", "vintage", "modern", "cinematic", "bw"];
 
 interface ValidationErrors {
   id?: string;
@@ -22,36 +16,50 @@ interface ValidationErrors {
 interface PublishEffectModalProps {
   open: boolean;
   onClose: () => void;
-  effectId: string;
-  effectName: string;
-  category: EffectApiCategory;
-  description: string;
-  tagsInput: string;
-  validationErrors: ValidationErrors;
   config: TextEffectConfig;
   thumbnailDataUrl?: string;
-  onEffectIdChange: (value: string) => void;
-  onEffectNameChange: (value: string) => void;
+  category: EffectApiCategory;
   onCategoryChange: (value: EffectApiCategory) => void;
-  onDescriptionChange: (value: string) => void;
-  onTagsInputChange: (value: string) => void;
-  onPublish: () => Promise<void>;
-  publishStatus: "idle" | "publishing" | "published" | "failed";
-  publishMessage: string | null;
-  publishPrUrl: string | null;
 }
 
-export function PublishEffectModal({ open, onClose, effectId, effectName, category, description, tagsInput, validationErrors, config, thumbnailDataUrl, onEffectIdChange, onEffectNameChange, onCategoryChange, onDescriptionChange, onTagsInputChange, onPublish, publishStatus, publishMessage, publishPrUrl }: PublishEffectModalProps) {
+export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, category, onCategoryChange }: PublishEffectModalProps) {
   const [activeTab, setActiveTab] = useState<"metadata" | "preview">("metadata");
   const [isGeneratingName, setIsGeneratingName] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
+  // Form state
+  const [effectId, setEffectId] = useState("");
+  const [effectName, setEffectName] = useState("");
+  const [description, setDescription] = useState("");
+  const [tagsInput, setTagsInput] = useState("");
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+
+  const { uploadTextEffect, status, message, reset } = useTextEffectR2Upload();
+
+  const isUploading = status === "uploading";
+  const isPublished = status === "success";
+  const isFailed = status === "error";
+
   if (!open) return null;
 
+  // Initialize form when modal opens
+  React.useEffect(() => {
+    if (open) {
+      setEffectId(
+        config.effectName
+          ?.toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-") || "",
+      );
+      setEffectName(config.effectName || "");
+      setDescription("");
+      setTagsInput("");
+      setValidationErrors({});
+      reset();
+    }
+  }, [open, config.effectName, reset]);
+
   const hasErrors = Object.keys(validationErrors).length > 0;
-  const isPublishing = publishStatus === "publishing";
-  const isPublished = publishStatus === "published";
-  const isFailed = publishStatus === "failed";
 
   const handleGenerateName = async () => {
     setIsGeneratingName(true);
@@ -59,7 +67,7 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
 
     try {
       const { name: generatedName, category: generatedCategory } = await generateEffectName(config);
-      onEffectNameChange(generatedName);
+      setEffectName(generatedName);
 
       // Auto-apply suggested category
       if (EFFECT_CATEGORIES.includes(generatedCategory as EffectApiCategory)) {
@@ -73,7 +81,7 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
         .replace(/\s+/g, "-")
         .replace(/-+/g, "-")
         .trim();
-      onEffectIdChange(autoId);
+      setEffectId(autoId);
     } catch (error) {
       console.error("Name generation error:", error);
       setAiError(error instanceof Error ? error.message : "Failed to generate name");
@@ -88,8 +96,34 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
     .filter(Boolean);
 
   const handlePublish = async () => {
-    if (hasErrors || isPublishing) return;
-    await onPublish();
+    // Validate
+    const errors: ValidationErrors = {};
+    if (!effectId.trim()) errors.id = "Effect ID is required";
+    if (!effectName.trim()) errors.name = "Effect name is required";
+    if (!/^[a-z0-9-]+$/.test(effectId)) errors.id = "Effect ID must be kebab-case (lowercase, numbers, hyphens only)";
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    if (isUploading) return;
+
+    try {
+      await uploadTextEffect({
+        effect: {
+          id: effectId,
+          name: effectName,
+          category,
+          description,
+          tags,
+          ...config, // Include full effect config
+        },
+        thumbnailDataUrl,
+      });
+    } catch (error) {
+      // Error handled by hook
+    }
   };
 
   return (
@@ -104,10 +138,10 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
               </div>
               <div className="min-w-0">
                 <h3 className="text-sm font-bold text-white">Publish Text Effect to API</h3>
-                <p className="mt-1 text-[11px] leading-relaxed text-[#9A9AAA]">Review metadata and create a GitHub Pull Request with your effect</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-[#9A9AAA]">Review metadata and upload directly to R2 storage</p>
               </div>
             </div>
-            <button type="button" onClick={onClose} disabled={isPublishing} className="rounded-lg border border-[#2A2A38] p-1.5 text-[#888899] hover:bg-[#2A2A38] hover:text-white disabled:opacity-50">
+            <button type="button" onClick={onClose} disabled={isUploading} className="rounded-lg border border-[#2A2A38] p-1.5 text-[#888899] hover:bg-[#2A2A38] hover:text-white disabled:opacity-50">
               <X size={14} />
             </button>
           </div>
@@ -137,7 +171,7 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
                       <p className="text-[10px] text-purple-300/80">Generate creative effect name using Gemini</p>
                     </div>
                   </div>
-                  <button type="button" onClick={handleGenerateName} disabled={isGeneratingName || isPublishing} className="shrink-0 rounded-lg border border-purple-500/40 bg-purple-500/20 px-3 py-1.5 text-[10px] font-bold text-purple-200 hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors">
+                  <button type="button" onClick={handleGenerateName} disabled={isGeneratingName || isUploading} className="shrink-0 rounded-lg border border-purple-500/40 bg-purple-500/20 px-3 py-1.5 text-[10px] font-bold text-purple-200 hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors">
                     {isGeneratingName ? (
                       <>
                         <Loader2 size={11} className="animate-spin" />
@@ -164,7 +198,7 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">
                   Effect ID <span className="text-red-400">*</span>
                 </label>
-                <input type="text" value={effectId} onChange={(e) => onEffectIdChange(e.target.value)} placeholder="neon-glow-pulse" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs font-mono text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
+                <input type="text" value={effectId} onChange={(e) => setEffectId(e.target.value)} placeholder="neon-glow-pulse" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs font-mono text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
                 {validationErrors.id && (
                   <div className="mt-1.5 flex items-start gap-1.5 text-[10px] text-red-400">
                     <AlertTriangle size={12} className="shrink-0 mt-0.5" />
@@ -179,27 +213,27 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">
                   Effect Name <span className="text-red-400">*</span>
                 </label>
-                <input type="text" value={effectName} onChange={(e) => onEffectNameChange(e.target.value)} placeholder="Neon Glow Pulse" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
+                <input type="text" value={effectName} onChange={(e) => setEffectName(e.target.value)} placeholder="Neon Glow Pulse" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
                 {validationErrors.name && (
                   <div className="mt-1.5 flex items-start gap-1.5 text-[10px] text-red-400">
                     <AlertTriangle size={12} className="shrink-0 mt-0.5" />
                     <span>{validationErrors.name}</span>
                   </div>
                 )}
-                <p className="mt-1.5 text-[10px] text-clypra-muted">Human-readable display name for the PR title</p>
+                <p className="mt-1.5 text-[10px] text-clypra-muted">Human-readable display name</p>
               </div>
 
               {/* Description */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">Description</label>
-                <textarea value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder="A vibrant neon text effect with pulsing glow layers" rows={3} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500 resize-none" />
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A vibrant neon text effect with pulsing glow layers" rows={3} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500 resize-none" />
                 <p className="mt-1.5 text-[10px] text-clypra-muted">Brief description of the visual style and use case</p>
               </div>
 
               {/* Tags */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">Tags</label>
-                <input type="text" value={tagsInput} onChange={(e) => onTagsInputChange(e.target.value)} placeholder="neon, glow, vibrant, modern" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
+                <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="neon, glow, vibrant, modern" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
                 <p className="mt-1.5 text-[10px] text-clypra-muted">Comma-separated tags for categorization</p>
               </div>
 
@@ -228,7 +262,7 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
                   <div className="relative rounded overflow-hidden border border-[#2A2A38] bg-[#09090D]">
                     <img src={thumbnailDataUrl} alt="Effect preview" className="w-full h-auto" style={{ imageRendering: "-webkit-optimize-contrast" }} />
                   </div>
-                  <p className="mt-2 text-[9px] text-clypra-muted text-center">This preview will be included in the PR</p>
+                  <p className="mt-2 text-[9px] text-clypra-muted text-center">This preview will be uploaded to R2</p>
                 </div>
               )}
             </>
@@ -314,29 +348,24 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
 
         {/* Footer */}
         <div className="border-t border-[#2A2A38] bg-[#15151C] p-4 shrink-0 space-y-3">
-          {publishMessage && (
+          {message && (
             <div className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-[10px] ${isFailed ? "border-red-900/40 bg-red-950/30 text-red-300" : isPublished ? "border-teal-900/40 bg-teal-950/30 text-teal-300" : "border-[#2A2A38] bg-[#0B0B10] text-[#9A9AAA]"}`}>
               <div className="flex items-center gap-2 min-w-0">
                 {isFailed ? <AlertTriangle size={14} className="shrink-0" /> : isPublished ? <CheckCircle size={14} className="shrink-0" /> : <Loader2 size={14} className="shrink-0 animate-spin" />}
-                <span className="truncate">{publishMessage}</span>
+                <span className="truncate">{message}</span>
               </div>
-              {publishPrUrl && (
-                <a href={publishPrUrl} target="_blank" rel="noreferrer" className="shrink-0 rounded-lg border border-teal-500/40 bg-teal-500/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-teal-200 hover:bg-teal-500/20 flex items-center gap-1">
-                  Open PR <ExternalLink size={10} />
-                </a>
-              )}
             </div>
           )}
 
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={onClose} disabled={isPublishing} className="rounded-lg border border-[#2A2A38] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2A2A38] disabled:opacity-50">
+            <button type="button" onClick={onClose} disabled={isUploading} className="rounded-lg border border-[#2A2A38] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2A2A38] disabled:opacity-50">
               {isPublished ? "Close" : "Cancel"}
             </button>
-            <button type="button" onClick={handlePublish} disabled={hasErrors || isPublishing || isPublished} className="rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2">
-              {isPublishing ? (
+            <button type="button" onClick={handlePublish} disabled={hasErrors || isUploading || isPublished} className="rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2">
+              {isUploading ? (
                 <>
                   <Loader2 size={14} className="animate-spin" />
-                  Publishing...
+                  Uploading...
                 </>
               ) : isPublished ? (
                 <>
@@ -346,7 +375,7 @@ export function PublishEffectModal({ open, onClose, effectId, effectName, catego
               ) : (
                 <>
                   <UploadCloud size={14} />
-                  Create Pull Request
+                  Upload to R2
                 </>
               )}
             </button>
