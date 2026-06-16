@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, Image as ImageIcon, Sparkles } from "lucide-react";
-import { generateEffectName } from "../services/geminiService";
 import { useTextEffectR2Upload } from "../hooks/useTextEffectR2Upload";
 import type { TextEffectConfig } from "@clypra/engine";
 
@@ -66,7 +65,21 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
     setAiError(null);
 
     try {
-      const { name: generatedName, category: generatedCategory } = await generateEffectName(config);
+      // Call backend API instead of Gemini directly
+      const response = await fetch("https://clypra-worker-api.abdulkabirmusa.com/text-effects/generate-name", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ config }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to generate name");
+      }
+
+      const { name: generatedName, category: generatedCategory } = await response.json();
       setEffectName(generatedName);
 
       // Auto-apply suggested category
