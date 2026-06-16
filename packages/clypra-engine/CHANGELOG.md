@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/AIEraDev/clypra-studio/compare/v1.8.0...v1.9.0) (2026-06-16)
+
+
+### Features
+
+* **engine:** add fire and particle light effects ([ebea313](https://github.com/AIEraDev/clypra-studio/commit/ebea3136bd94bb4b45cfbcda82ff68d6a9e30e6f))
+
 # [1.8.0](https://github.com/AIEraDev/clypra-studio/compare/v1.7.0...v1.8.0) (2026-06-16)
 
 
