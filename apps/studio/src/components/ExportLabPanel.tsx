@@ -1,21 +1,15 @@
 import React, { useState } from "react";
-import { ArrowUpDown, Beaker, Copy, Download, Loader2, Settings, Sparkles, UploadCloud } from "lucide-react";
+import { ArrowUpDown, Beaker, Copy, Download, Loader2, Sparkles, UploadCloud } from "lucide-react";
 import type { Preset, TextEffectConfig } from "@clypra/engine";
 import type { SceneDocument } from "@clypra/engine";
 import { ExportBadge } from "./StudioChrome";
 import { getEffectRepresentation } from "../codeGenerator";
-import { useGitHubPublish } from "../hooks/useGitHubPublish";
-import { GitHubConfigModal } from "./GitHubConfigModal";
 import { PublishEffectModal } from "./PublishEffectModal";
 import type { EffectApiCategory as ModalEffectApiCategory } from "./PublishEffectModal";
 
 type CodeTab = "engine" | "definition" | "lab";
 
-const EFFECT_API_CATEGORIES = [
-  "3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury",
-  "essentials", "color", "light", "stylize", "distort",
-  "vintage", "modern", "cinematic", "bw"
-] as const;
+const EFFECT_API_CATEGORIES = ["3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury", "essentials", "color", "light", "stylize", "distort", "vintage", "modern", "cinematic", "bw"] as const;
 
 export type EffectApiCategory = (typeof EFFECT_API_CATEGORIES)[number];
 
@@ -68,88 +62,18 @@ interface ExportLabPanelProps {
 
 export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveTabChange, engineFormat, onEngineFormatChange, definitionFormat, onDefinitionFormatChange, activeEffectId, config, scene, highlightedCode, currentCodeText, copiedCodeFeedback, onCopyCode, onDownloadCode, researchTopic, onResearchTopicChange, researchStatus, researchError, researchLogs, researchResult, onExecuteResearch, onApplyResearchResult, blendAId, blendBId, blendRatio, onBlendAIdChange, onBlendBIdChange, onBlendRatioChange, onPerformBlend, presets, onCaptureEffectThumbnail, effectApiCategory, onEffectApiCategoryChange }: ExportLabPanelProps) {
   const virtualTarget = activeTab === "engine" ? (engineFormat === "html" ? `${activeEffectId}-sandbox.html` : `${activeEffectId}-engine.${engineFormat}`) : definitionFormat === "html" ? `${activeEffectId}-sandbox.html` : `${activeEffectId}-definition.${definitionFormat}`;
-  const { publishEffect, getGithubConfig } = useGitHubPublish();
-  const [showGithubConfig, setShowGithubConfig] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
-  const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "published" | "failed">("idle");
-  const [publishMessage, setPublishMessage] = useState<string | null>(null);
-  const [publishPrUrl, setPublishPrUrl] = useState<string | null>(null);
   const [thumbnailDataUrl, setThumbnailDataUrl] = useState<string | null>(null);
-
-  // Metadata state
-  const [effectId, setEffectId] = useState(activeEffectId);
-  const [effectName, setEffectName] = useState(config.effectName || "");
-  const [description, setDescription] = useState("");
-  const [tagsInput, setTagsInput] = useState("");
-  const [validationErrors, setValidationErrors] = useState<{ id?: string; name?: string }>({});
 
   const handleOpenPublishModal = () => {
     const thumbnail = onCaptureEffectThumbnail();
     if (!thumbnail) {
-      setPublishStatus("failed");
-      setPublishMessage("Preview canvas is not ready.");
+      alert("Preview canvas is not ready.");
       return;
     }
 
-    if (!getGithubConfig()) {
-      setShowGithubConfig(true);
-      return;
-    }
-
-    // Set initial values
     setThumbnailDataUrl(thumbnail);
-    setEffectId(activeEffectId);
-    setEffectName(config.effectName || "");
-    setDescription("");
-    setTagsInput("");
-    setValidationErrors({});
-    setPublishStatus("idle");
-    setPublishMessage(null);
-    setPublishPrUrl(null);
     setShowPublishModal(true);
-  };
-
-  const handlePublishEffect = async () => {
-    // Validate
-    const errors: { id?: string; name?: string } = {};
-    if (!effectId.trim()) errors.id = "Effect ID is required";
-    if (!effectName.trim()) errors.name = "Effect name is required";
-
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      return;
-    }
-
-    setPublishStatus("publishing");
-    setPublishPrUrl(null);
-    setPublishMessage("Creating publish branch, uploading files, and opening PR…");
-
-    try {
-      const definition = getEffectRepresentation(config) as any;
-      definition.id = effectId;
-      definition.name = effectName;
-      definition.description = description;
-      definition.tags = tagsInput
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
-      definition.category = effectApiCategory;
-
-      const result = await publishEffect({
-        id: definition.id,
-        category: definition.category,
-        definition,
-        thumbnailDataUrl: thumbnailDataUrl!,
-      });
-
-      setPublishStatus("published");
-      setPublishPrUrl(result.prUrl);
-      setPublishMessage(`PR ready: ${result.branch} · ${result.files.length} files`);
-    } catch (error) {
-      setPublishStatus("failed");
-      setPublishPrUrl(null);
-      setPublishMessage(error instanceof Error ? error.message : "Publish failed.");
-    }
   };
 
   return (
@@ -320,29 +244,13 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
                   ))}
                 </select>
 
-                <button id="github-settings-btn" type="button" onClick={() => setShowGithubConfig(true)} className="flex flex-1 shrink-0 justify-center cursor-pointer items-center gap-1.5 rounded border border-[#2A2A38] bg-[#1E1E26] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#2A2A38]" title="GitHub settings">
-                  <Settings size={11} />
-                  Settings
-                </button>
-
-                <button id="publish-effect-api-btn" type="button" onClick={handleOpenPublishModal} disabled={publishStatus === "publishing"} className="flex flex-1 justify-center cursor-pointer shrink-0 items-center gap-1.5 rounded border border-teal-500/45 bg-teal-500/20 px-3 py-1 text-[10px] font-bold text-teal-200 hover:bg-teal-500/30 disabled:opacity-50 whitespace-nowrap">
-                  {publishStatus === "publishing" ? <Loader2 size={11} className="animate-spin" /> : <UploadCloud size={11} />}
+                <button id="publish-effect-api-btn" type="button" onClick={handleOpenPublishModal} className="flex flex-1 justify-center cursor-pointer shrink-0 items-center gap-1.5 rounded border border-teal-500/45 bg-teal-500/20 px-3 py-1 text-[10px] font-bold text-teal-200 hover:bg-teal-500/30 disabled:opacity-50 whitespace-nowrap">
+                  <UploadCloud size={11} />
                   Publish to API
                 </button>
               </div>
             </div>
           </div>
-
-          {publishMessage ? (
-            <div className={`flex items-center justify-between gap-3 border-b border-[#2A2A38] px-4 py-2 font-mono text-[10px] ${publishStatus === "failed" ? "bg-red-950/30 text-red-300" : publishStatus === "published" ? "bg-teal-950/30 text-teal-300" : "bg-[#111116] text-[#888899]"}`}>
-              <span className="min-w-0 truncate">{publishMessage}</span>
-              {publishPrUrl ? (
-                <a href={publishPrUrl} target="_blank" rel="noreferrer" className="shrink-0 rounded border border-teal-500/40 bg-teal-500/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-teal-200 hover:bg-teal-500/20">
-                  Open PR
-                </a>
-              ) : null}
-            </div>
-          ) : null}
 
           <div id="hljs-code-scroller" className="flex flex-1 overflow-auto bg-[#09090D] p-4 font-mono">
             <div className="mr-2.5 flex w-[18px] select-none flex-col border-r border-[#1E1E26] pr-2.5 text-right font-mono text-[10px] font-semibold leading-5 text-[#313142]">
@@ -360,8 +268,7 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
           </div>
         </>
       )}
-      <GitHubConfigModal open={showGithubConfig} onClose={() => setShowGithubConfig(false)} />
-      <PublishEffectModal open={showPublishModal} onClose={() => setShowPublishModal(false)} effectId={effectId} effectName={effectName} category={effectApiCategory as ModalEffectApiCategory} description={description} tagsInput={tagsInput} validationErrors={validationErrors} config={config} thumbnailDataUrl={thumbnailDataUrl || undefined} onEffectIdChange={setEffectId} onEffectNameChange={setEffectName} onCategoryChange={(cat) => onEffectApiCategoryChange(cat as EffectApiCategory)} onDescriptionChange={setDescription} onTagsInputChange={setTagsInput} onPublish={handlePublishEffect} publishStatus={publishStatus} publishMessage={publishMessage} publishPrUrl={publishPrUrl} />
+      <PublishEffectModal open={showPublishModal} onClose={() => setShowPublishModal(false)} config={config} thumbnailDataUrl={thumbnailDataUrl || undefined} category={effectApiCategory as ModalEffectApiCategory} onCategoryChange={(cat) => onEffectApiCategoryChange(cat as EffectApiCategory)} />
     </section>
   );
 }
