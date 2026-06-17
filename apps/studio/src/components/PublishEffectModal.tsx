@@ -40,6 +40,7 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
   const isFailed = status === "error";
 
   // Initialize form when modal opens - MUST be before early return
+  // Only reset when modal opens, not when config changes
   React.useEffect(() => {
     if (open) {
       setEffectId(
@@ -56,7 +57,7 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
         reset();
       }
     }
-  }, [open, config?.effectName, reset]);
+  }, [open, reset]); // Removed config?.effectName from dependencies to prevent form reset when config changes
 
   const hasErrors = Object.keys(validationErrors).length > 0;
 
