@@ -251,6 +251,28 @@ export class FontLoader {
 
     this.state.loading.add(key);
 
+    const SYSTEM_FONTS = new Set([
+      "arial", "georgia", "times new roman", "courier new", "arial rounded mt bold", 
+      "impact", "helvetica", "sans-serif", "serif", "monospace"
+    ]);
+
+    const isGoogleFont = (family: string): boolean => {
+      return !SYSTEM_FONTS.has(family.toLowerCase());
+    };
+
+    const injectGoogleFontLink = (family: string): void => {
+      if (typeof document === "undefined") return;
+      const fontId = `gfont-${family.replace(/\s+/g, "-").toLowerCase()}`;
+      if (document.getElementById(fontId)) return;
+
+      const link = document.createElement("link");
+      link.id = fontId;
+      link.rel = "stylesheet";
+      link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/\s+/g, "+")}:wght@400;500;600;700;800;900&display=swap`;
+      document.head.appendChild(link);
+      console.log(`[FontLoader] Dynamically injected Google Fonts stylesheet for: ${family}`);
+    };
+
     try {
       if (typeof document === "undefined" || !document.fonts) {
         throw new Error("Font API not available");
@@ -259,6 +281,10 @@ export class FontLoader {
       const weight = this.normalizeFontWeight(descriptor.weight);
       const style = descriptor.style || "normal";
       const fontFace = `${style} ${weight} 16px "${descriptor.family}"`;
+
+      if (isGoogleFont(descriptor.family)) {
+        injectGoogleFontLink(descriptor.family);
+      }
 
       if (document.fonts.check(fontFace)) {
         this.state.loaded.add(key);
@@ -275,7 +301,13 @@ export class FontLoader {
       await document.fonts.load(fontFace);
 
       if (!document.fonts.check(fontFace)) {
-        throw new Error(`Font "${descriptor.family}" failed to load`);
+        // Fallback check: if weight is not 400, check if weight 400 is loaded/available
+        const fallbackFontFace = `${style} 400 16px "${descriptor.family}"`;
+        if (weight !== 400 && document.fonts.check(fallbackFontFace)) {
+          console.log(`[FontLoader] Strict check failed for "${fontFace}", but weight 400 is loaded. Accepting fallback.`);
+        } else {
+          throw new Error(`Font "${descriptor.family}" failed to load`);
+        }
       }
 
       this.state.loaded.add(key);
