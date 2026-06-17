@@ -57,7 +57,8 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
         reset();
       }
     }
-  }, [open, reset]); // Removed config?.effectName from dependencies to prevent form reset when config changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]); // Only depend on open, not reset (reset function causes infinite loop)
 
   const hasErrors = Object.keys(validationErrors).length > 0;
 
@@ -146,8 +147,16 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[#2A2A38] bg-[#121219] shadow-2xl flex flex-col max-h-[90vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+      onClick={(e) => {
+        // Only close if clicking the backdrop, not the modal content
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[#2A2A38] bg-[#121219] shadow-2xl flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="border-b border-[#2A2A38] bg-[#181824] p-4 shrink-0">
           <div className="flex items-start justify-between gap-3">
@@ -221,12 +230,15 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
                   type="text"
                   value={effectId}
                   onChange={(e) => {
+                    console.log("[PublishEffectModal] effectId onChange:", e.target.value);
                     setEffectId(e.target.value);
                     // Clear validation error when user types
                     if (validationErrors.id) {
                       setValidationErrors((prev) => ({ ...prev, id: undefined }));
                     }
                   }}
+                  onFocus={() => console.log("[PublishEffectModal] effectId focused")}
+                  onKeyDown={(e) => console.log("[PublishEffectModal] effectId keydown:", e.key)}
                   placeholder="neon-glow-pulse"
                   className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs font-mono text-white outline-none placeholder:text-[#555566] focus:border-teal-500"
                 />
