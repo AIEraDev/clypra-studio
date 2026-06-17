@@ -128,6 +128,16 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
     if (isUploading) return;
 
     try {
+      // Ensure glow layers include strength and spread properties
+      const enhancedConfig = {
+        ...config,
+        glowLayers: config.glowLayers.map((layer) => ({
+          ...layer,
+          strength: layer.strength ?? 1, // Default to 1 if not set
+          spread: layer.spread ?? 0, // Default to 0 if not set
+        })),
+      };
+
       await uploadTextEffect({
         effect: {
           id: effectId,
@@ -135,7 +145,7 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
           category,
           description,
           tags,
-          ...config, // Include full effect config
+          ...enhancedConfig, // Include enhanced config with explicit strength/spread
         },
         thumbnailDataUrl,
       });
