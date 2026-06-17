@@ -65,8 +65,8 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
     setAiError(null);
 
     try {
-      // Call backend API instead of Gemini directly
-      const response = await fetch("https://clypra-worker-api.abdulkabirmusa.com/text-effects/generate-name", {
+      // Call backend AI API endpoint
+      const response = await fetch("https://clypra-worker-api.abdulkabirmusa.com/ai/text-effect-name", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -95,6 +95,9 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
         .replace(/-+/g, "-")
         .trim();
       setEffectId(autoId);
+
+      // Clear validation errors after successful generation
+      setValidationErrors({});
     } catch (error) {
       console.error("Name generation error:", error);
       setAiError(error instanceof Error ? error.message : "Failed to generate name");
@@ -213,7 +216,19 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">
                   Effect ID <span className="text-red-400">*</span>
                 </label>
-                <input type="text" value={effectId} onChange={(e) => setEffectId(e.target.value)} placeholder="neon-glow-pulse" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs font-mono text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
+                <input
+                  type="text"
+                  value={effectId}
+                  onChange={(e) => {
+                    setEffectId(e.target.value);
+                    // Clear validation error when user types
+                    if (validationErrors.id) {
+                      setValidationErrors((prev) => ({ ...prev, id: undefined }));
+                    }
+                  }}
+                  placeholder="neon-glow-pulse"
+                  className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs font-mono text-white outline-none placeholder:text-[#555566] focus:border-teal-500"
+                />
                 {validationErrors.id && (
                   <div className="mt-1.5 flex items-start gap-1.5 text-[10px] text-red-400">
                     <AlertTriangle size={12} className="shrink-0 mt-0.5" />
@@ -228,7 +243,19 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">
                   Effect Name <span className="text-red-400">*</span>
                 </label>
-                <input type="text" value={effectName} onChange={(e) => setEffectName(e.target.value)} placeholder="Neon Glow Pulse" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
+                <input
+                  type="text"
+                  value={effectName}
+                  onChange={(e) => {
+                    setEffectName(e.target.value);
+                    // Clear validation error when user types
+                    if (validationErrors.name) {
+                      setValidationErrors((prev) => ({ ...prev, name: undefined }));
+                    }
+                  }}
+                  placeholder="Neon Glow Pulse"
+                  className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500"
+                />
                 {validationErrors.name && (
                   <div className="mt-1.5 flex items-start gap-1.5 text-[10px] text-red-400">
                     <AlertTriangle size={12} className="shrink-0 mt-0.5" />
