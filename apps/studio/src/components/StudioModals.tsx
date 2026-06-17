@@ -18,8 +18,8 @@ export function SavePresetModal({ open, name, category, isGeneratingName, onName
   if (!open) return null;
 
   return (
-    <div id="save-preset-overlay" className="fixed inset-0 z-50 flex select-none items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-[340px] rounded-xl border border-[#2A2A38] bg-[#1E1E26] p-5 shadow-2xl">
+    <div id="save-preset-overlay" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="w-[340px] rounded-xl border border-[#2A2A38] bg-[#1E1E26] p-5 shadow-2xl select-none">
         <h3 className="mb-1.5 flex items-center gap-1.5 font-sans text-sm font-semibold tracking-wide text-white">
           <Sparkles size={14} className="text-[#7C6FFF]" />
           Save Visual Preset
@@ -79,8 +79,8 @@ export function ImageScanModal({ open, scanImage, scanStatus, scanError, scanRes
   if (!open) return null;
 
   return (
-    <div id="image-scan-overlay" className="fixed inset-0 z-50 flex select-none items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] w-full max-w-[480px] flex-col gap-4 overflow-y-auto rounded-xl border border-[#2A2A38] bg-[#1E1E26] p-6 shadow-2xl">
+    <div id="image-scan-overlay" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-[480px] flex-col gap-4 overflow-y-auto rounded-xl border border-[#2A2A38] bg-[#1E1E26] p-6 shadow-2xl select-none">
         <div className="flex shrink-0 items-center justify-between border-b border-[#2A2A38] pb-3">
           <h3 className="flex items-center gap-1.5 font-sans text-sm font-semibold tracking-wide text-white">
             <Camera size={15} className="text-[#7C6FFF]" />
@@ -150,8 +150,8 @@ export function PromptStyleModal({ open, promptInput, promptStatus, promptError,
   if (!open) return null;
 
   return (
-    <div id="prompt-style-overlay" className="fixed inset-0 z-50 flex select-none items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] w-full max-w-[480px] flex-col gap-4 overflow-y-auto rounded-xl border border-[#2A2A38] bg-[#1E1E26] p-6 shadow-2xl">
+    <div id="prompt-style-overlay" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-[480px] flex-col gap-4 overflow-y-auto rounded-xl border border-[#2A2A38] bg-[#1E1E26] p-6 shadow-2xl select-none">
         <div className="flex shrink-0 items-center justify-between border-b border-[#2A2A38] pb-3">
           <h3 className="flex items-center gap-1.5 font-sans text-sm font-semibold tracking-wide text-white">
             <Sparkles size={15} className="text-teal-400" />
@@ -212,8 +212,8 @@ export function TutorialModal({ open, activeTab, onTabChange, onClose }: Tutoria
   const tabs = ["typography", "color-fill", "stroke", "glow", "bevel", "shadow", "panel", "scanner"];
 
   return (
-    <div id="tutorial-overlay" className="fixed inset-0 z-50 flex select-none items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] w-full max-w-[850px] flex-col overflow-hidden rounded-xl border border-[#2A2A38] bg-[#1E1E26] p-6 shadow-2xl">
+    <div id="tutorial-overlay" className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-[850px] flex-col overflow-hidden rounded-xl border border-[#2A2A38] bg-[#1E1E26] p-6 shadow-2xl select-none">
         <div className="mb-4 flex shrink-0 items-center justify-between border-b border-[#2A2A38] pb-4">
           <div className="flex items-center gap-2.5">
             <HelpCircle size={18} className="text-[#7C6FFF]" />
