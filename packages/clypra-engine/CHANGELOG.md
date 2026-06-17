@@ -1,3 +1,20 @@
+# [1.10.0](https://github.com/AIEraDev/clypra-studio/compare/v1.9.0...v1.10.0) (2026-06-17)
+
+
+### Bug Fixes
+
+* Clear validation errors after AI generation and update AI endpoint URL ([60b224c](https://github.com/AIEraDev/clypra-studio/commit/60b224c996e314fd780932748248778bd3b076b3))
+* Enable text selection in all inputs globally ([23fc78c](https://github.com/AIEraDev/clypra-studio/commit/23fc78cbeb0ca42cb0ecb23fbadce3b7352a2249))
+* Prevent form reset when config changes after AI generation ([ebb03c0](https://github.com/AIEraDev/clypra-studio/commit/ebb03c073920978b81363218caaf0297052ae608))
+* Remove select-none from modal overlays and improve input detection ([2879b73](https://github.com/AIEraDev/clypra-studio/commit/2879b73da2e07561916ea3b18483b9b475405acb))
+* Resolve infinite loop preventing input in PublishEffectModal ([6851e52](https://github.com/AIEraDev/clypra-studio/commit/6851e524269f591ac234a73e91653a2c2e1125ca))
+
+
+### Features
+
+* add R2 direct publishing implementation ([ac55017](https://github.com/AIEraDev/clypra-studio/commit/ac550172b2c24a8f3cbc175328a9797a8b662d32))
+* **clypra-engine:** implement dynamic google font injection and fallback weight checking for fontLoader ([128e5ce](https://github.com/AIEraDev/clypra-studio/commit/128e5cedb9d8e62a7f0289a69e8cf0f4c2006ef4))
+
 # [1.9.0](https://github.com/AIEraDev/clypra-studio/compare/v1.8.0...v1.9.0) (2026-06-16)
 
 
