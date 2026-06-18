@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Lock, Mail, User, X, Loader2, Sparkles } from "lucide-react";
+import { Lock, Mail, X, Loader2, Sparkles } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 
@@ -17,9 +17,7 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   
   const [loading, setLoading] = useState(false);
@@ -32,13 +30,12 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
   useEffect(() => {
     if (open) {
       setEmail("");
-      setUsername("");
       setPassword("");
       setError(null);
       setSuccessMsg(null);
       setLoading(false);
     }
-  }, [open, isSignUp]);
+  }, [open]);
 
   // Handle Escape key to close
   useEffect(() => {
@@ -67,10 +64,8 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
     setLoading(true);
 
     try {
-      const endpoint = isSignUp ? `${API_BASE_URL}/auth/register` : `${API_BASE_URL}/auth/login`;
-      const payload = isSignUp 
-        ? { username, email, password }
-        : { email, password };
+      const endpoint = `${API_BASE_URL}/auth/login`;
+      const payload = { email, password };
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -83,10 +78,10 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Authentication failed. Please try again.");
+        throw new Error(data.error || "Authentication failed. Please check your credentials.");
       }
 
-      setSuccessMsg(data.message || (isSignUp ? "Account created!" : "Signed in!"));
+      setSuccessMsg("Signed in successfully!");
       
       // Delay success action slightly to allow user to see success state
       setTimeout(() => {
@@ -129,12 +124,10 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
             <Sparkles size={20} className="animate-pulse" />
           </div>
           <h3 className="font-sans text-lg font-bold tracking-tight text-white">
-            {isSignUp ? "Create your Account" : "Access Clypra Studio"}
+            Access Clypra Studio
           </h3>
           <p className="mt-1 font-sans text-xs text-gray-400">
-            {isSignUp 
-              ? "Join us to save, publish and share your visual effects" 
-              : "Sign in to sync your presets and templates"}
+            Sign in to sync your presets and templates
           </p>
         </div>
 
@@ -155,29 +148,6 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 font-sans">
           
-          {/* Username Input (Only on Sign Up) */}
-          {isSignUp && (
-            <div className="flex flex-col gap-1.5">
-              <label className="font-mono text-[9px] uppercase tracking-wider text-gray-400 font-semibold">
-                Username
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-gray-500">
-                  <User size={14} />
-                </span>
-                <input 
-                  type="text" 
-                  required
-                  disabled={loading}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. creative_editor" 
-                  className="w-full rounded-lg border border-[#2A2A38] bg-[#0E0E12] py-2 pl-9 pr-3 text-xs text-white placeholder-gray-600 focus:border-[#7C6FFF] focus:outline-none focus:ring-1 focus:ring-[#7C6FFF] transition-all"
-                />
-              </div>
-            </div>
-          )}
-
           {/* Email Input */}
           <div className="flex flex-col gap-1.5">
             <label className="font-mono text-[9px] uppercase tracking-wider text-gray-400 font-semibold">
@@ -229,25 +199,10 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
             {loading ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
-              <span>{isSignUp ? "Create Account" : "Sign In"}</span>
+              <span>Sign In</span>
             )}
           </button>
         </form>
-
-        {/* Toggle Mode */}
-        <div className="mt-5 border-t border-[#2A2A38] pt-4 text-center font-sans">
-          <button 
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setError(null);
-              setSuccessMsg(null);
-            }}
-            disabled={loading}
-            className="text-xs text-gray-400 hover:text-[#7C6FFF] transition-colors cursor-pointer"
-          >
-            {isSignUp ? "Already have an account? Sign In" : "New to Clypra? Sign Up"}
-          </button>
-        </div>
       </div>
     </div>
   );
