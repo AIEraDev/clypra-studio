@@ -1,3 +1,12 @@
+## [1.10.1](https://github.com/AIEraDev/clypra-studio/compare/v1.10.0...v1.10.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* remove orphaned async code in TemplateWorkspace ([a2980f8](https://github.com/AIEraDev/clypra-studio/commit/a2980f89656919474cc22911c0b4dc49216fdc9c))
+* resolve all TypeScript linting errors ([38564a6](https://github.com/AIEraDev/clypra-studio/commit/38564a6a2d8ca843c548200c4f21dc8d78033266))
+* update audio publishing to use API endpoint instead of direct R2 upload ([5745152](https://github.com/AIEraDev/clypra-studio/commit/57451524b322881deb77792d3f269d09f983cbfa))
+
 # [1.10.0](https://github.com/AIEraDev/clypra-studio/compare/v1.9.0...v1.10.0) (2026-06-17)
 
 
