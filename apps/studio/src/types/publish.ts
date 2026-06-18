@@ -36,23 +36,30 @@ export interface AudioPublishPayload {
   };
 }
 
-export type StickerCategory = "emoji" | "reaction" | "meme" | "sticker" | "decorative" | "animated" | "game" | "holiday";
+export type StickerCategory = "trending" | "emoji" | "fun" | "love" | "gaming" | "food" | "animal" | "shapes" | "icons" | "travel" | "birthday" | "weather" | "sale" | "vlog" | "y2k" | "glitter" | "neon-text" | "classic" | "new" | "football" | "animal-meme" | "hits" | "free-fire" | "emphasis" | "cover-ups" | "wrong" | "letters" | "mood" | "text-sticker" | "collage" | "countdown" | "music-festival" | "journal" | "campus" | "cartoon" | "fashion" | "eco-friendly" | "basketball" | "barbie" | "vibes" | "shimmer" | "frame" | "winter" | "fall" | "details" | "techniques" | "lip-illustration" | "handwriting" | "retro-character" | "illustration" | "alphabet" | "pixelated-style" | "bubble" | "label" | "plog" | "cyber" | "stylish";
 
 export interface StickerPublishPayload {
   id: string;
   category: StickerCategory;
-  name: string;
-  tags: string[];
-  file: {
+  imageFile: {
     name: string;
     dataUrl: string;
   };
-  thumbnailDataUrl?: string;
+  animatedFile?: {
+    name: string;
+    dataUrl: string;
+  };
   metadata: {
-    width: number;
-    height: number;
-    animated: boolean;
-    transparent: boolean;
+    name: string;
+    tags: string[];
+    isPremium: boolean;
+    format: "static" | "gif" | "lottie";
+    isAnimated: boolean;
+    safety: {
+      status: "approved" | "pending" | "flagged";
+      reviewedAt: string;
+      notes?: string;
+    };
   };
 }
 
@@ -68,12 +75,26 @@ export interface OverlayPublishPayload {
   };
   thumbnailDataUrl?: string;
   metadata: {
+    name: string;
+    source: {
+      provider: string;
+      url: string;
+    };
+    format: string;
+    description: string;
+    defaultOpacity: number;
+    safety: {
+      status: "approved" | "pending" | "flagged";
+      reviewedAt: string;
+      notes?: string;
+    };
+    tags: string[];
     duration: number;
     width: number;
     height: number;
     fps: number;
     loopable: boolean;
-    blendMode?: "normal" | "screen" | "multiply" | "overlay" | "add";
+    blendMode?: "normal" | "screen" | "multiply" | "overlay" | "add" | "soft-light" | "hard-light" | "color-dodge" | "color-burn" | "lighten" | "darken" | "difference";
   };
 }
 

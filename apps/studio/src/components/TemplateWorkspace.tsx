@@ -7,6 +7,7 @@ import { scanTextLayers, parseLottieJson, LottieFileInfo, ParsedTextLayer, getDe
 import { injectText, injectColor, injectBatch, type TextLayerConfig, type TextCustomization, type TextStyleOverride } from "@clypra/engine";
 import { PublishTemplateModal } from "./PublishTemplateModal";
 import { GeminiKeyModal } from "./GeminiKeyModal";
+import { useR2Publish } from "../hooks/useR2Publish";
 
 import { createBlankLottie, addSolidLayer, addTextLayer, addShapeLayer, addVectorShape, updateStaticProperty, enableKeyframing, addOrUpdateKeyframe, deleteKeyframe, LottiePropertyPath, addImageLayer, updateTrackMatte } from "@clypra/engine";
 import { LOTTIE_ANIM_PRESETS, ENTRANCE_PRESETS, EXIT_PRESETS, LOOP_PRESETS, EMPHASIS_PRESETS, bakeAnimationIntoLayer, clearAnimationFromLayer, type LottieAnimPreset, type AnimationCategory } from "@clypra/engine";
@@ -41,6 +42,9 @@ function kebabToCamel(str: string): string {
 }
 
 export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
+  // Initialize R2 publish hook
+  const { publishTemplate } = useR2Publish();
+
   // Lottie JSON document state
   const [rawJson, setRawJson] = useState<any>(null);
 
@@ -1006,6 +1010,18 @@ export default ${camelId};
     } finally {
       animation.destroy();
       container.remove();
+    }
+  };
+
+  const handleExportThumbnail = async () => {
+    try {
+      const dataUrl = await captureTemplateThumbnail();
+      setThumbnailDataUrl(dataUrl);
+      setThumbnailSetFeedback(true);
+      setTimeout(() => setThumbnailSetFeedback(false), 2000);
+    } catch (error) {
+      console.error("Failed to export thumbnail:", error);
+      alert("Failed to export thumbnail: " + (error instanceof Error ? error.message : "Unknown error"));
     }
   };
 

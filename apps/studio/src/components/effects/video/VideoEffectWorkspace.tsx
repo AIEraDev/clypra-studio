@@ -38,13 +38,13 @@ export function VideoEffectWorkspace() {
       // Load Camera effects
       const cameraEffects = getEffectsByCategory("camera");
       if (cameraEffects && Array.isArray(cameraEffects) && cameraEffects.length > 0) {
-        categories.Camera = cameraEffects.map((e) => e.id as EffectRendererType);
+        categories.Camera = cameraEffects.map((e: any) => e.id as EffectRendererType);
       }
 
       // Load Light effects
       const lightEffects = getEffectsByCategory("light");
       if (lightEffects && Array.isArray(lightEffects) && lightEffects.length > 0) {
-        categories.Light = lightEffects.map((e) => e.id as EffectRendererType);
+        categories.Light = lightEffects.map((e: any) => e.id as EffectRendererType);
       }
 
       setEffectCategories(categories);

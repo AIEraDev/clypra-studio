@@ -36,9 +36,6 @@ export function StickerPublishPanel() {
   const [success, setSuccess] = useState<string>("");
   const [generatingMetadata, setGeneratingMetadata] = useState(false);
 
-  const githubConfig = getGithubConfig();
-  const isConfigured = !!githubConfig;
-
   // Generate ID from name
   const generateId = (name: string, category: string) => {
     const slug = name
@@ -221,11 +218,6 @@ export function StickerPublishPanel() {
       return;
     }
 
-    if (!isConfigured) {
-      setError("GitHub is not configured. Please set up GitHub publishing in settings.");
-      return;
-    }
-
     setPublishing(true);
 
     try {
@@ -291,8 +283,6 @@ export function StickerPublishPanel() {
       setAnimatedFile(null);
       setImagePreview("");
       setAnimatedPreview("");
-
-      window.open(result.prUrl, "_blank");
     } catch (err: any) {
       setError(`Failed to publish: ${err.message}`);
     } finally {
@@ -306,16 +296,6 @@ export function StickerPublishPanel() {
         <Upload className="w-6 h-6 text-[#7C6FFF]" />
         <h2 className="text-xl font-bold text-white">Publish Sticker to API</h2>
       </div>
-
-      {!isConfigured && (
-        <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
-          <div className="text-sm text-yellow-200">
-            <p className="font-semibold mb-1">GitHub Not Configured</p>
-            <p>Please configure GitHub publishing in settings before uploading stickers.</p>
-          </div>
-        </div>
-      )}
 
       {/* Name */}
       <div className="mb-4">
@@ -448,7 +428,7 @@ export function StickerPublishPanel() {
       )}
 
       {/* Publish Button */}
-      <button onClick={handlePublish} disabled={publishing || !isConfigured} className="w-full py-3 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2a2a2a] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
+      <button onClick={handlePublish} disabled={publishing} className="w-full py-3 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2a2a2a] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
         {publishing ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -462,7 +442,7 @@ export function StickerPublishPanel() {
         )}
       </button>
 
-      <p className="mt-4 text-xs text-gray-500 text-center">Publishing creates a GitHub pull request with your sticker files and updates the indexes automatically.</p>
+      <p className="mt-4 text-xs text-gray-500 text-center">Publishing uploads sticker directly to R2 bucket.</p>
     </div>
   );
 }
