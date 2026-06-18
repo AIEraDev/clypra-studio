@@ -170,37 +170,6 @@ export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" |
     }
   };
 
-  const handleSaveR2Config = () => {
-    if (!r2AccountId.trim() || !r2AccessKeyId.trim() || !r2SecretKey.trim() || !r2BucketName.trim()) {
-      setMessage("All R2 configuration fields are required.");
-      setStatus("failed");
-      return;
-    }
-    setR2Config({
-      accountId: r2AccountId.trim(),
-      accessKeyId: r2AccessKeyId.trim(),
-      secretAccessKey: r2SecretKey.trim(),
-      bucketName: r2BucketName.trim(),
-    });
-    setShowR2Config(false);
-    setMessage("R2 configuration saved successfully!");
-    setStatus("published");
-    setTimeout(() => {
-      setMessage(null);
-      setStatus("idle");
-    }, 2000);
-  };
-
-  const loadR2Config = () => {
-    const config = getR2Config();
-    if (config) {
-      setR2AccountId(config.accountId);
-      setR2AccessKeyId(config.accessKeyId);
-      setR2SecretKey(config.secretAccessKey);
-      setR2BucketName(config.bucketName);
-    }
-  };
-
   const handlePublish = async () => {
     if (validationMessage || !audioFile) return;
 

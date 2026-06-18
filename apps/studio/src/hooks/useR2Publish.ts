@@ -7,7 +7,7 @@
 
 import { type R2UploadConfig, getR2Config, saveR2Config, uploadFileFromDataUrl, uploadR2Json, getR2Json, upsertById, getPublicUrl, uploadBatch } from "../services/r2Service";
 
-import type { AudioPublishPayload, StickerPublishPayload, OverlayPublishPayload, VideoEffectPresetPublishPayload, VideoEffectPresetBatchPublishPayload } from "./useGitHubPublish";
+import type { AudioPublishPayload, StickerPublishPayload, OverlayPublishPayload, VideoEffectPresetPublishPayload, VideoEffectPresetBatchPublishPayload } from "../types/publish";
 
 export interface R2PublishResult {
   files: string[];
@@ -18,14 +18,28 @@ export interface R2PublishResult {
 interface EffectPublishPayload {
   id: string;
   category: string;
-  definition: Record<string, unknown>;
+  definition: {
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+    tags?: string[];
+    [key: string]: unknown;
+  };
   thumbnailDataUrl: string;
 }
 
 interface TemplatePublishPayload {
   id: string;
   category: string;
-  definition: Record<string, unknown>;
+  definition: {
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+    tags?: string[];
+    [key: string]: unknown;
+  };
   lottieData: unknown;
   thumbnailDataUrl: string;
 }

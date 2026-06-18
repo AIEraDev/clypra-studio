@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useGitHubPublish, type StickerPublishPayload, type StickerCategory } from "../hooks/useGitHubPublish";
+import type { StickerPublishPayload, StickerCategory } from "../types/publish";
 import { AlertCircle, CheckCircle, Loader2, Upload, Image as ImageIcon, Film, Sparkles } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
@@ -17,8 +17,6 @@ interface FormData {
 }
 
 export function StickerPublishPanel() {
-  const { publishSticker, getGithubConfig } = useGitHubPublish();
-
   const [formData, setFormData] = useState<FormData>({
     id: "",
     name: "",
@@ -262,18 +260,23 @@ export function StickerPublishPanel() {
         },
       };
 
-      // Add animated file if provided
-      if (animatedFile && animatedDataUrl) {
-        payload.animatedFile = {
-          name: animatedFile.name,
-          dataUrl: animatedDataUrl,
-        };
+      // Publish to R2
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+
+      const response = await fetch(`${API_BASE_URL}/stickers/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
       }
 
-      // Publish
-      const result = await publishSticker(payload);
+      const result = await response.json();
 
-      setSuccess(`✅ Published successfully! Pull Request: ${result.prUrl}`);
+      setSuccess(result.message || "✅ Sticker uploaded to R2 successfully!");
 
       // Reset form
       setFormData({
@@ -289,7 +292,6 @@ export function StickerPublishPanel() {
       setImagePreview("");
       setAnimatedPreview("");
 
-      // Open PR in new tab
       window.open(result.prUrl, "_blank");
     } catch (err: any) {
       setError(`Failed to publish: ${err.message}`);

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle, Loader2, Video, Sparkles, UploadCloud } from "lucide-react";
-import { useGitHubPublish, type OverlayPublishPayload } from "../hooks/useGitHubPublish";
+import type { OverlayPublishPayload } from "../types/publish";
 
 const OVERLAY_CATEGORIES: OverlayPublishPayload["category"][] = ["fire", "light-leak", "particle", "weather", "glitch", "texture"];
 const BLEND_MODES: OverlayPublishPayload["metadata"]["blendMode"][] = ["normal", "screen", "multiply", "overlay", "soft-light", "hard-light", "color-dodge", "color-burn", "lighten", "darken", "difference"];
@@ -91,7 +91,6 @@ async function extractThumbnailFromVideo(file: File): Promise<string> {
 }
 
 export function OverlayPublishPanel() {
-  const { publishOverlay } = useGitHubPublish();
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [autoThumbnail, setAutoThumbnail] = useState<string | null>(null);
@@ -197,40 +196,45 @@ export function OverlayPublishPanel() {
       const videoDataUrl = await fileToDataUrl(videoFile);
       const thumbnailDataUrl = thumbnailFile ? await fileToDataUrl(thumbnailFile) : autoThumbnail || undefined;
 
-      const result = await publishOverlay({
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+
+      const payload: OverlayPublishPayload = {
         id: id.trim(),
+        name: name.trim(),
         category,
+        description: description.trim(),
+        tags,
         videoFile: {
           name: videoFile.name,
           dataUrl: videoDataUrl,
         },
         thumbnailDataUrl,
         metadata: {
-          name: name.trim(),
-          description: description.trim(),
-          tags,
           duration: Number(duration),
           width: Number(width),
           height: Number(height),
-          format: videoFile.name.toLowerCase().endsWith(".webm") ? "webm" : videoFile.name.toLowerCase().endsWith(".mov") ? "mov" : "mp4",
-          blendMode,
-          defaultOpacity: Number(opacity),
+          fps: 30,
           loopable,
-          source: {
-            provider: sourceProvider.trim(),
-            url: sourceUrl.trim(),
-          },
-          safety: {
-            status: "approved",
-            reviewedAt: new Date().toISOString(),
-            notes: safetyNotes.trim() || undefined,
-          },
+          blendMode,
         },
+      };
+
+      const response = await fetch(`${API_BASE_URL}/overlays/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
       setStatus("published");
-      setMessage(`Created ${result.files.length} files on ${result.branch}`);
-      setPrUrl(result.prUrl);
+      setMessage(result.message || "Overlay uploaded to R2 successfully!");
+      setPrUrl(null);
     } catch (error) {
       setStatus("failed");
       setMessage(error instanceof Error ? error.message : "Failed to publish overlay");

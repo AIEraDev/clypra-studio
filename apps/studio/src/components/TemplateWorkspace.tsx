@@ -5,8 +5,6 @@ import { Download, Copy, Plus, Play, Pause, Loader2, HelpCircle, FolderPlus, Arr
 
 import { scanTextLayers, parseLottieJson, LottieFileInfo, ParsedTextLayer, getDefaultText } from "@clypra/engine";
 import { injectText, injectColor, injectBatch, type TextLayerConfig, type TextCustomization, type TextStyleOverride } from "@clypra/engine";
-import { useGitHubPublish } from "../hooks/useGitHubPublish";
-import { GitHubConfigModal } from "./GitHubConfigModal";
 import { PublishTemplateModal } from "./PublishTemplateModal";
 import { GeminiKeyModal } from "./GeminiKeyModal";
 
@@ -105,14 +103,12 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [copiedCodeFeedback, setCopiedCodeFeedback] = useState(false);
   const [thumbnailSetFeedback, setThumbnailSetFeedback] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [showGithubConfig, setShowGithubConfig] = useState(false);
   const [showGeminiKeyModal, setShowGeminiKeyModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "published" | "failed">("idle");
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const [publishPrUrl, setPublishPrUrl] = useState<string | null>(null);
   const [thumbnailDataUrl, setThumbnailDataUrl] = useState<string | null>(null);
-  const { publishTemplate, getGithubConfig } = useGitHubPublish();
 
   // Drag and Drop state
   const [isDragging, setIsDragging] = useState(false);
@@ -1014,10 +1010,11 @@ export default ${camelId};
   };
 
   const handleOpenPublishModal = async () => {
-    if (!getGithubConfig()) {
-      setShowGithubConfig(true);
-      return;
+    if (!thumbnailDataUrl) {
+      await handleExportThumbnail();
     }
+    setShowPublishModal(true);
+  };
 
     // Generate thumbnail preview
     try {
@@ -1301,10 +1298,6 @@ export default ${camelId};
 
               <button onClick={() => setShowGeminiKeyModal(true)} className="px-2.5 py-1 border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 hover:bg-[#7C6FFF]/15 text-[#B9B2FF] rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap" title="Gemini API Key">
                 <KeyRound size={14} />
-              </button>
-
-              <button onClick={() => setShowGithubConfig(true)} className="px-2.5 py-1 border border-(--studio-border) bg-(--studio-control) hover:bg-(--studio-hover) text-white rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors" title="GitHub Settings">
-                <Settings size={14} />
               </button>
 
               <button onClick={handleOpenPublishModal} disabled={publishStatus === "publishing"} className="px-2.5 py-1 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-200 text-xs font-bold rounded flex items-center justify-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50">
@@ -2769,8 +2762,6 @@ export default ${camelId};
               </div>
             </aside>
           </div>
-
-          <GitHubConfigModal open={showGithubConfig} onClose={() => setShowGithubConfig(false)} />
 
           <GeminiKeyModal open={showGeminiKeyModal} onClose={() => setShowGeminiKeyModal(false)} />
 

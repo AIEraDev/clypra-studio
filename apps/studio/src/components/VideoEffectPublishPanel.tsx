@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle, Download, Loader2, Sparkles, UploadCloud, Wand2 } from "lucide-react";
-import { useGitHubPublish, type VideoEffectPresetPublishPayload } from "../hooks/useGitHubPublish";
+import type { VideoEffectPresetPublishPayload } from "../types/publish";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 const VIDEO_RENDERERS = ["glitch", "rgb_split", "chromatic_aberration", "pixelate", "scanlines", "film_grain", "vignette", "glow"];
@@ -347,7 +347,6 @@ function GeneratedPresetLivePreview({ preset, sampleFile, onPreviewExported }: {
 }
 
 export function VideoEffectPublishPanel({ variant = "drawer" }: { variant?: "drawer" | "workspace" }) {
-  const { publishVideoEffectPreset } = useGitHubPublish();
   const isWorkspace = variant === "workspace";
   const [kind, setKind] = useState<EffectKind>("video");
   const [rendererChoice, setRendererChoice] = useState("auto");
@@ -417,7 +416,8 @@ export function VideoEffectPublishPanel({ variant = "drawer" }: { variant?: "dra
     try {
       const thumbnailDataUrl = thumbnailFile ? await fileToDataUrl(thumbnailFile) : undefined;
       const manualPreviewDataUrl = manualPreviewFile ? await fileToDataUrl(manualPreviewFile) : undefined;
-      const result = await publishVideoEffectPreset({
+
+      const payload: VideoEffectPresetPublishPayload = {
         id: generatedPreset.id,
         kind,
         thumbnailDataUrl,
@@ -445,11 +445,23 @@ export function VideoEffectPublishPanel({ variant = "drawer" }: { variant?: "dra
                 }
               : undefined,
         },
+      };
+
+      const response = await fetch(`${API_BASE_URL}/video-effects/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
       setStatus("published");
-      setMessage(`Created ${result.files.length} files on ${result.branch}.`);
-      setPrUrl(result.prUrl);
+      setMessage(result.message || "Video effect uploaded to R2 successfully!");
     } catch (error) {
       setStatus("failed");
       setMessage(error instanceof Error ? error.message : "Failed to publish effect preset.");
