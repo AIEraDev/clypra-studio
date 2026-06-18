@@ -7,7 +7,7 @@ import { createBlankLottie, addTextLayer, addSolidLayer, addShapeLayer, addVecto
 import { applyStyleToLottieLayer } from "./lottieTextStyle";
 import { bakeAnimationIntoLayer, getAnimPreset } from "./lottieTextAnimations";
 
-export type TemplatePresetCategory = "lower-third" | "title-card" | "callout" | "caption" | "kinetic" | "social" | "cinematic" | "sports" | "minimal" | "bold";
+export type TemplatePresetCategory = "title" | "lower-third" | "caption" | "callout" | "social" | "outro";
 
 export interface LottieTemplatePreset {
   id: string;
@@ -373,7 +373,7 @@ export const LOTTIE_TEMPLATE_PRESETS: LottieTemplatePreset[] = [
   {
     id: "neon-title",
     name: "Neon Title",
-    category: "title-card",
+    category: "title",
     description: "Vibrant neon title card with zoom bounce entrance",
     tags: ["neon", "title", "glow", "vibrant", "music"],
     aspectRatio: "16:9",
@@ -382,7 +382,7 @@ export const LOTTIE_TEMPLATE_PRESETS: LottieTemplatePreset[] = [
   {
     id: "cinematic-title",
     name: "Cinematic Title",
-    category: "cinematic",
+    category: "title",
     description: "Film-style title with letterbox bars and elegant fade",
     tags: ["cinematic", "film", "elegant", "fade", "movie"],
     aspectRatio: "16:9",
@@ -418,7 +418,7 @@ export const LOTTIE_TEMPLATE_PRESETS: LottieTemplatePreset[] = [
   {
     id: "sports-score",
     name: "Sports Score",
-    category: "sports",
+    category: "lower-third",
     description: "Live sports scoreboard overlay",
     tags: ["sports", "score", "broadcast", "live"],
     aspectRatio: "16:9",
@@ -436,7 +436,7 @@ export const LOTTIE_TEMPLATE_PRESETS: LottieTemplatePreset[] = [
   {
     id: "kinetic-text",
     name: "Kinetic Text",
-    category: "kinetic",
+    category: "title",
     description: "High-energy kinetic typography with staggered slides",
     tags: ["kinetic", "bold", "energy", "motion", "typography"],
     aspectRatio: "16:9",
@@ -445,7 +445,7 @@ export const LOTTIE_TEMPLATE_PRESETS: LottieTemplatePreset[] = [
   {
     id: "glitch-title",
     name: "Glitch Title",
-    category: "title-card",
+    category: "title",
     description: "Cyberpunk glitch effect title card",
     tags: ["glitch", "cyberpunk", "tech", "digital", "error"],
     aspectRatio: "16:9",
@@ -463,7 +463,7 @@ export const LOTTIE_TEMPLATE_PRESETS: LottieTemplatePreset[] = [
   {
     id: "drop-in-title",
     name: "Drop In Title",
-    category: "bold",
+    category: "title",
     description: "High-impact title with drop-in bounce animation",
     tags: ["bold", "impact", "drop", "bounce", "energetic"],
     aspectRatio: "16:9",
@@ -479,4 +479,4 @@ export function getTemplatesByCategory(category: TemplatePresetCategory): Lottie
   return LOTTIE_TEMPLATE_PRESETS.filter((p) => p.category === category);
 }
 
-export const TEMPLATE_CATEGORIES: TemplatePresetCategory[] = ["lower-third", "title-card", "callout", "caption", "kinetic", "social", "cinematic", "sports", "minimal", "bold"];
+export const TEMPLATE_CATEGORIES: TemplatePresetCategory[] = ["title", "lower-third", "caption", "callout", "social", "outro"];

@@ -14,7 +14,7 @@ export interface VideoEffectApiDefinition {
   id: string;
   name: string;
   type: "effect" | "video-effect";
-  category: "camera" | "light" | "blur" | "style" | "distortion" | "time" | "body";
+  category: "essentials" | "glitch" | "retro" | "light" | "motion" | "color" | "body";
   description: string;
   thumbnail: string;
 
@@ -155,12 +155,12 @@ export function getEffectCategoriesSummary(): Array<{
  */
 function getCategoryDescription(category: string): string {
   const descriptions: Record<string, string> = {
-    camera: "Camera movements and transformations",
-    light: "Lighting effects and color adjustments",
-    blur: "Blur and focus effects",
-    style: "Stylistic effects and filters",
-    distortion: "Geometric distortions",
-    time: "Time-based effects",
+    essentials: "Essential visual enhancements",
+    glitch: "Digital glitches and VHS noise",
+    retro: "Vintage film and nostalgic looks",
+    light: "Lighting flares, glow, and leaks",
+    motion: "Blur, camera movement, and speed",
+    color: "Color corrections and grading",
     body: "Body tracking and segmentation effects",
   };
   return descriptions[category] || "";

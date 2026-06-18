@@ -210,6 +210,20 @@ export function OverlayPublishPanel() {
         },
         thumbnailDataUrl,
         metadata: {
+          name: name.trim(),
+          source: {
+            provider: sourceProvider.trim() || "unknown",
+            url: sourceUrl.trim() || "",
+          },
+          format: videoFile.type || "video/mp4",
+          description: description.trim(),
+          defaultOpacity: Number(opacity) || 1.0,
+          safety: {
+            status: "approved",
+            reviewedAt: new Date().toISOString(),
+            notes: safetyNotes.trim() || undefined,
+          },
+          tags,
           duration: Number(duration),
           width: Number(width),
           height: Number(height),

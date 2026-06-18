@@ -14,7 +14,7 @@ import * as LightEffects from "./renderers/light";
 export interface EffectMetadata {
   id: EffectRendererType;
   name: string;
-  category: "camera" | "light" | "blur" | "style" | "distortion" | "time" | "body";
+  category: "essentials" | "glitch" | "retro" | "light" | "motion" | "color" | "body";
   description: string;
   defaultParams: EffectParameters;
   parameterSchema: {

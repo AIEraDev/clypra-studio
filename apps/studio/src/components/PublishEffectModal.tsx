@@ -3,9 +3,16 @@ import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, Fol
 import { useTextEffectR2Upload } from "../hooks/useTextEffectR2Upload";
 import type { TextEffectConfig } from "@clypra/engine";
 
-export type EffectApiCategory = "3d" | "neon" | "metallic" | "glitch" | "retro" | "gradient" | "grunge" | "outline" | "shadow" | "elements" | "luxury" | "essentials" | "color" | "light" | "stylize" | "distort" | "vintage" | "modern" | "cinematic" | "bw" | "classic" | "clean" | "organic";
+export type EffectApiCategory = "essentials" | "neon" | "3d" | "glitch" | "gradient" | "outline";
 
-const EFFECT_CATEGORIES: EffectApiCategory[] = ["3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury", "essentials", "color", "light", "stylize", "distort", "vintage", "modern", "cinematic", "bw", "classic", "clean", "organic"];
+const EFFECT_CATEGORIES: EffectApiCategory[] = [
+  "essentials", // plain bold/clean text — every editor's starting point
+  "neon", // highest demand on CapCut, defines "creator aesthetic"
+  "3d", // second most requested, used in thumbnails + titles
+  "glitch", // VHS/retro digital — consistent top performer
+  "gradient", // versatile, works across all content types
+  "outline", // clean, readable, popular for captions + lower thirds
+];
 
 interface ValidationErrors {
   id?: string;

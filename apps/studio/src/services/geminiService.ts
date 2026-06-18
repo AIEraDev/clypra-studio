@@ -301,17 +301,12 @@ function buildEffectVisualSummary(config: TextEffectConfig): string {
 }
 
 const EFFECT_CATEGORIES = [
-  { id: "3d", tone: "dimensional, extruded, sculptural — think chrome blocks, stadium signage, embossed metal" },
-  { id: "neon", tone: "electrifying, glowing, urban nightlife — think Vegas strip, arcade signs, laser grids" },
-  { id: "metallic", tone: "premium, reflective, industrial — think brushed steel, gold foil, titanium" },
+  { id: "essentials", tone: "plain bold/clean text — every editor's starting point, think simple bold sans-serif, clean legibility" },
+  { id: "neon", tone: "electrifying, glowing, urban nightlife — think Vegas strip, arcade signs, laser grids, highest demand on CapCut" },
+  { id: "3d", tone: "dimensional, extruded, sculptural — think chrome blocks, stadium signage, embossed metal, used in thumbnails + titles" },
   { id: "glitch", tone: "corrupted, digital artifacts, cyber distortion — think VHS damage, RGB channel split, data corruption" },
-  { id: "retro", tone: "nostalgic, era-specific warmth — think diner signs, VHS, 80s arcade, letterpress" },
-  { id: "gradient", tone: "smooth chromatic flow, vibrant spectrum — think aurora, sunset blends, holographic foil" },
-  { id: "grunge", tone: "raw, textured, worn — think spray paint, torn poster, ink stain, concrete" },
-  { id: "outline", tone: "crisp, structural, minimal — think wireframe logos, contour lines, blueprint drafts" },
-  { id: "shadow", tone: "depth, elevation, dimensional light — think long shadows, cinematic drop shadows, soft lit type" },
-  { id: "elements", tone: "natural phenomena and materials — think fire, ice, water, smoke, stone, wood" },
-  { id: "luxury", tone: "refined, editorial, high-fashion — think velvet emboss, serif elegance, champagne foil" },
+  { id: "gradient", tone: "smooth chromatic flow, vibrant spectrum — think aurora, sunset blends, holographic foil, versatile across content types" },
+  { id: "outline", tone: "crisp, structural, minimal — think wireframe logos, contour lines, clean readable text, popular for captions + lower thirds" },
 ] as const;
 
 const VALID_EFFECT_CATEGORY_IDS = EFFECT_CATEGORIES.map((c) => c.id);
@@ -323,17 +318,16 @@ function resolveEffectCategory(raw: string): EffectCategoryId {
     return normalized as EffectCategoryId;
   }
   // Best-effort fuzzy fallback — map legacy / hallucinated values to the nearest official one
-  if (normalized.includes("3d") || normalized.includes("bevel") || normalized.includes("extrude")) return "3d";
+  if (normalized.includes("essential") || normalized.includes("basic") || normalized.includes("clean") || normalized.includes("simple")) return "essentials";
   if (normalized.includes("neon") || normalized.includes("glow") || normalized.includes("light")) return "neon";
-  if (normalized.includes("metal") || normalized.includes("chrome") || normalized.includes("gold")) return "metallic";
-  if (normalized.includes("glitch") || normalized.includes("cyber") || normalized.includes("corrupt")) return "glitch";
-  if (normalized.includes("retro") || normalized.includes("vintage") || normalized.includes("classic")) return "retro";
-  if (normalized.includes("gradient") || normalized.includes("holo") || normalized.includes("rainbow")) return "gradient";
-  if (normalized.includes("grunge") || normalized.includes("texture") || normalized.includes("ink")) return "grunge";
-  if (normalized.includes("outline") || normalized.includes("stroke") || normalized.includes("minimal")) return "outline";
-  if (normalized.includes("shadow") || normalized.includes("depth") || normalized.includes("drop")) return "shadow";
-  if (normalized.includes("element") || normalized.includes("fire") || normalized.includes("ice") || normalized.includes("smoke")) return "elements";
-  if (normalized.includes("luxury") || normalized.includes("elegant") || normalized.includes("premium")) return "luxury";
+  if (normalized.includes("3d") || normalized.includes("bevel") || normalized.includes("extrude")) return "3d";
+  if (normalized.includes("glitch") || normalized.includes("cyber") || normalized.includes("corrupt") || normalized.includes("vhs")) return "glitch";
+  if (normalized.includes("gradient") || normalized.includes("spectrum") || normalized.includes("blend") || normalized.includes("rainbow")) return "gradient";
+  if (normalized.includes("outline") || normalized.includes("stroke") || normalized.includes("border") || normalized.includes("contour")) return "outline";
+  if (normalized.includes("grunge") || normalized.includes("texture") || normalized.includes("ink")) return "essentials";
+  if (normalized.includes("shadow") || normalized.includes("depth") || normalized.includes("drop")) return "3d";
+  if (normalized.includes("element") || normalized.includes("fire") || normalized.includes("ice") || normalized.includes("smoke")) return "neon";
+  if (normalized.includes("luxury") || normalized.includes("elegant") || normalized.includes("premium")) return "essentials";
   return "outline"; // safe default
 }
 
@@ -614,7 +608,7 @@ export async function generateLottieMetadata(params: { templateName?: string; cu
     const { templateName, currentId, currentDescription, currentTags, currentCategory, lottieData } = params;
 
     // Available categories - aligned with professional NLE standards
-    const availableCategories = ["lower-third", "title-card", "callout", "caption", "outro", "social", "broadcast", "sports", "countdown", "cinematic"];
+    const availableCategories = ["title", "lower-third", "caption", "callout", "social", "outro"];
 
     // Build context about the Lottie animation
     let context = `Template Name: ${templateName || "Untitled"}\n`;
@@ -788,7 +782,7 @@ Rules:
   }
 }
 
-const STICKER_CATEGORIES = ["trending", "emoji", "fun", "love", "gaming", "food", "animal", "shapes", "icons", "travel", "birthday", "weather", "sale", "vlog", "y2k", "glitter", "neon-text", "classic", "new", "football", "animal-meme", "hits", "free-fire", "emphasis", "cover-ups", "wrong", "letters", "mood", "text-sticker", "collage", "countdown", "music-festival", "journal", "campus", "cartoon", "fashion", "eco-friendly", "basketball", "barbie", "vibes", "shimmer", "frame", "winter", "fall", "details", "techniques", "lip-illustration", "handwriting", "retro-character", "illustration", "alphabet", "pixelated-style", "bubble", "label", "plog", "cyber", "stylish"] as const;
+const STICKER_CATEGORIES = ["emoji", "text", "gaming", "sports", "animals", "love", "mood", "food", "travel", "birthday", "frames", "shapes", "fashion", "retro", "illustration"] as const;
 type StickerCategoryId = (typeof STICKER_CATEGORIES)[number];
 
 function resolveStickerCategory(raw: string): StickerCategoryId {
@@ -796,36 +790,23 @@ function resolveStickerCategory(raw: string): StickerCategoryId {
   if (STICKER_CATEGORIES.includes(normalized as StickerCategoryId)) return normalized as StickerCategoryId;
 
   // Fuzzy matching for common category variations
-  if (normalized.includes("emoji") || normalized.includes("emoticon") || normalized.includes("smiley")) return "emoji";
-  if (normalized.includes("trend") || normalized.includes("popular") || normalized.includes("hot")) return "trending";
-  if (normalized.includes("love") || normalized.includes("heart") || normalized.includes("romance")) return "love";
-  if (normalized.includes("game") || normalized.includes("gaming")) return "gaming";
-  if (normalized.includes("food") || normalized.includes("eat") || normalized.includes("drink")) return "food";
-  if (normalized.includes("animal") && normalized.includes("meme")) return "animal-meme";
-  if (normalized.includes("animal") || normalized.includes("pet")) return "animal";
-  if (normalized.includes("shape") || normalized.includes("geometric")) return "shapes";
-  if (normalized.includes("icon")) return "icons";
-  if (normalized.includes("travel") || normalized.includes("vacation") || normalized.includes("trip")) return "travel";
-  if (normalized.includes("birthday") || normalized.includes("party") || normalized.includes("celebration")) return "birthday";
-  if (normalized.includes("weather") || normalized.includes("sun") || normalized.includes("rain")) return "weather";
-  if (normalized.includes("sale") || normalized.includes("discount") || normalized.includes("offer")) return "sale";
-  if (normalized.includes("vlog") || normalized.includes("youtube")) return "vlog";
-  if (normalized.includes("y2k") || normalized.includes("2000")) return "y2k";
-  if (normalized.includes("glitter") || normalized.includes("sparkle") || normalized.includes("shine")) return "glitter";
-  if (normalized.includes("neon")) return "neon-text";
-  if (normalized.includes("text")) return "text-sticker";
-  if (normalized.includes("music") || normalized.includes("festival")) return "music-festival";
-  if (normalized.includes("fashion") || normalized.includes("style") || normalized.includes("clothing")) return "fashion";
-  if (normalized.includes("sport") || normalized.includes("football") || normalized.includes("soccer")) return "football";
-  if (normalized.includes("basket")) return "basketball";
-  if (normalized.includes("cartoon") || normalized.includes("comic")) return "cartoon";
-  if (normalized.includes("retro") && normalized.includes("character")) return "retro-character";
-  if (normalized.includes("winter") || normalized.includes("snow") || normalized.includes("cold")) return "winter";
-  if (normalized.includes("fall") || normalized.includes("autumn")) return "fall";
-  if (normalized.includes("frame") || normalized.includes("border")) return "frame";
-  if (normalized.includes("cyber") || normalized.includes("tech") || normalized.includes("digital")) return "cyber";
+  if (normalized.includes("emoji") || normalized.includes("emoticon") || normalized.includes("smiley") || normalized.includes("face")) return "emoji";
+  if (normalized.includes("text") || normalized.includes("quote") || normalized.includes("phrase") || normalized.includes("word") || normalized.includes("letter")) return "text";
+  if (normalized.includes("game") || normalized.includes("gaming") || normalized.includes("play")) return "gaming";
+  if (normalized.includes("sport") || normalized.includes("football") || normalized.includes("soccer") || normalized.includes("basketball") || normalized.includes("athletic")) return "sports";
+  if (normalized.includes("animal") || normalized.includes("pet") || normalized.includes("cat") || normalized.includes("dog") || normalized.includes("creature")) return "animals";
+  if (normalized.includes("love") || normalized.includes("heart") || normalized.includes("romance") || normalized.includes("couple")) return "love";
+  if (normalized.includes("mood") || normalized.includes("vibe") || normalized.includes("feel")) return "mood";
+  if (normalized.includes("food") || normalized.includes("eat") || normalized.includes("drink") || normalized.includes("beverage") || normalized.includes("dessert") || normalized.includes("cake")) return "food";
+  if (normalized.includes("travel") || normalized.includes("vacation") || normalized.includes("trip") || normalized.includes("map") || normalized.includes("landmark")) return "travel";
+  if (normalized.includes("birthday") || normalized.includes("party") || normalized.includes("celebrate")) return "birthday";
+  if (normalized.includes("frame") || normalized.includes("border") || normalized.includes("edge")) return "frames";
+  if (normalized.includes("shape") || normalized.includes("geometric") || normalized.includes("circle") || normalized.includes("square")) return "shapes";
+  if (normalized.includes("fashion") || normalized.includes("style") || normalized.includes("clothing") || normalized.includes("wear")) return "fashion";
+  if (normalized.includes("retro") || normalized.includes("y2k") || normalized.includes("vintage") || normalized.includes("classic")) return "retro";
+  if (normalized.includes("illustration") || normalized.includes("drawing") || normalized.includes("sketch") || normalized.includes("cartoon") || normalized.includes("handwriting")) return "illustration";
 
-  return "fun"; // safe default
+  return "illustration"; // safe default
 }
 
 export async function generateStickerMetadata(imageDataUrl: string): Promise<{
@@ -855,30 +836,20 @@ ${STICKER_CATEGORIES.map((cat) => `- ${cat}`).join("\n")}
 
 Category Guidelines:
 - emoji: Faces, emotions, emoticons, reactions
-- fun: Playful, humorous, casual graphics
+- text: Text-based stickers, quotes, phrases, letters
+- gaming: Video game related, controllers, achievements, retro games
+- sports: Athletic graphics, football, basketball, games
+- animals: Pets, wildlife, creatures, animal memes
 - love: Hearts, romance, relationships, affection
-- gaming: Video game related, controllers, achievements
-- food: Food, drinks, meals, desserts
-- animal: Pets, wildlife, creatures
-- animal-meme: Funny animal memes (doge, cat memes, etc.)
+- mood: Emotional vibes, moods, expressions
+- food: Food, drinks, meals, desserts, ingredients
+- travel: Landmarks, transportation, vacation, maps, outdoor adventure
+- birthday: Birthday celebrations, cakes, balloons, parties
+- frames: Decorative frames, borders, edge decorations
 - shapes: Geometric shapes, basic forms, patterns
-- icons: UI icons, symbols, minimalist graphics
-- travel: Landmarks, transportation, vacation, maps
-- birthday: Birthday celebrations, cakes, balloons
-- weather: Weather icons, sun, rain, clouds, snow
-- sale: Sale tags, discount badges, pricing
-- vlog: YouTube, content creator, camera, video
-- y2k: Early 2000s aesthetic, retro tech
-- glitter: Sparkly, shiny, glamorous
-- neon-text: Neon sign style text
-- text-sticker: Text-based stickers, quotes, phrases
-- music-festival: Music, concerts, festivals
-- fashion: Clothing, accessories, style
-- cartoon: Cartoon characters, comic style
-- retro-character: Retro/vintage character designs
-- cyber: Cyberpunk, tech, futuristic
-- frame: Decorative frames, borders
-- winter/fall: Seasonal stickers
+- fashion: Clothing, accessories, style, trends
+- retro: Early 2000s, Y2K aesthetic, retro technology/characters, vintage
+- illustration: Drawing, cartoon, sketch, handwriting, custom graphic artwork
 
 Rules:
 - Analyze the visual content of the sticker carefully

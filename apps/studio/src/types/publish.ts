@@ -36,7 +36,7 @@ export interface AudioPublishPayload {
   };
 }
 
-export type StickerCategory = "trending" | "emoji" | "fun" | "love" | "gaming" | "food" | "animal" | "shapes" | "icons" | "travel" | "birthday" | "weather" | "sale" | "vlog" | "y2k" | "glitter" | "neon-text" | "classic" | "new" | "football" | "animal-meme" | "hits" | "free-fire" | "emphasis" | "cover-ups" | "wrong" | "letters" | "mood" | "text-sticker" | "collage" | "countdown" | "music-festival" | "journal" | "campus" | "cartoon" | "fashion" | "eco-friendly" | "basketball" | "barbie" | "vibes" | "shimmer" | "frame" | "winter" | "fall" | "details" | "techniques" | "lip-illustration" | "handwriting" | "retro-character" | "illustration" | "alphabet" | "pixelated-style" | "bubble" | "label" | "plog" | "cyber" | "stylish";
+export type StickerCategory = "emoji" | "text" | "gaming" | "sports" | "animals" | "love" | "mood" | "food" | "travel" | "birthday" | "frames" | "shapes" | "fashion" | "retro" | "illustration";
 
 export interface StickerPublishPayload {
   id: string;

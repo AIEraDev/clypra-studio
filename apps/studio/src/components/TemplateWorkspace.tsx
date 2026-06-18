@@ -20,7 +20,7 @@ export interface TemplateWorkspaceProps {
   onBackToDesign: () => void;
 }
 
-export type TemplateCategory = "lower-third" | "title-card" | "callout" | "caption" | "outro" | "social" | "broadcast" | "sports" | "countdown" | "cinematic";
+export type TemplateCategory = "title" | "lower-third" | "caption" | "callout" | "social" | "outro";
 
 export interface TextLayer {
   layerName: string;
@@ -29,7 +29,7 @@ export interface TextLayer {
   role: "primary" | "secondary" | "accent";
 }
 
-const CATEGORIES: TemplateCategory[] = ["lower-third", "title-card", "callout", "caption", "outro", "social", "broadcast", "sports", "countdown", "cinematic"];
+const CATEGORIES: TemplateCategory[] = ["title", "lower-third", "caption", "callout", "social", "outro"];
 
 const PLACEMENTS = ["lower-third", "center", "top", "full-frame"] as const;
 
@@ -1053,8 +1053,8 @@ export default ${camelId};
         thumbnailDataUrl,
       });
       setPublishStatus("published");
-      setPublishPrUrl(result.prUrl);
-      setPublishMessage(`PR ready: ${result.branch} · ${result.files.length} files`);
+      setPublishPrUrl(result.urls.lottie);
+      setPublishMessage(`${result.message} · ${result.files.length} files`);
     } catch (error) {
       setPublishStatus("failed");
       setPublishPrUrl(null);
@@ -1104,7 +1104,7 @@ export default ${camelId};
             rendererSettings: {
               canvas: tempCanvas,
               clearCanvas: true,
-            },
+            } as any,
           });
 
           // Wait for animation to load

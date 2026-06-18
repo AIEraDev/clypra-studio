@@ -9,7 +9,14 @@ import type { EffectApiCategory as ModalEffectApiCategory } from "./PublishEffec
 
 type CodeTab = "engine" | "definition" | "lab";
 
-const EFFECT_API_CATEGORIES = ["3d", "neon", "metallic", "glitch", "retro", "gradient", "grunge", "outline", "shadow", "elements", "luxury", "essentials", "color", "light", "stylize", "distort", "vintage", "modern", "cinematic", "bw", "classic", "clean", "organic"] as const;
+const EFFECT_API_CATEGORIES = [
+  "essentials", // plain bold/clean text — every editor's starting point
+  "neon", // highest demand on CapCut, defines "creator aesthetic"
+  "3d", // second most requested, used in thumbnails + titles
+  "glitch", // VHS/retro digital — consistent top performer
+  "gradient", // versatile, works across all content types
+  "outline", // clean, readable, popular for captions + lower thirds
+] as const;
 
 export type EffectApiCategory = (typeof EFFECT_API_CATEGORIES)[number];
 

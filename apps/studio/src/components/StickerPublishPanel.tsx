@@ -3,7 +3,7 @@ import type { StickerPublishPayload, StickerCategory } from "../types/publish";
 import { AlertCircle, CheckCircle, Loader2, Upload, Image as ImageIcon, Film, Sparkles } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
-const STICKER_CATEGORIES: StickerCategory[] = ["trending", "emoji", "fun", "love", "gaming", "food", "animal", "shapes", "icons", "travel", "birthday", "weather", "sale", "vlog", "y2k", "glitter", "neon-text", "classic", "new", "football", "animal-meme", "hits", "free-fire", "emphasis", "cover-ups", "wrong", "letters", "mood", "text-sticker", "collage", "countdown", "music-festival", "journal", "campus", "cartoon", "fashion", "eco-friendly", "basketball", "barbie", "vibes", "shimmer", "frame", "winter", "fall", "details", "techniques", "lip-illustration", "handwriting", "retro-character", "illustration", "alphabet", "pixelated-style", "bubble", "label", "plog", "cyber", "stylish"];
+const STICKER_CATEGORIES: StickerCategory[] = ["emoji", "text", "gaming", "sports", "animals", "love", "mood", "food", "travel", "birthday", "frames", "shapes", "fashion", "retro", "illustration"];
 
 type StickerFormat = "static" | "gif" | "lottie";
 
@@ -20,7 +20,7 @@ export function StickerPublishPanel() {
   const [formData, setFormData] = useState<FormData>({
     id: "",
     name: "",
-    category: "trending",
+    category: "emoji",
     tags: "",
     isPremium: false,
     format: "static",
@@ -274,7 +274,7 @@ export function StickerPublishPanel() {
       setFormData({
         id: "",
         name: "",
-        category: "trending",
+        category: "emoji",
         tags: "",
         isPremium: false,
         format: "static",
