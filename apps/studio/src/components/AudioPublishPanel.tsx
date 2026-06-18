@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle, Loader2, Music, Settings, Zap, FileAudio, Image as ImageIcon, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle, Loader2, Music, Zap, FileAudio, Image as ImageIcon, Sparkles } from "lucide-react";
 import { useR2Upload } from "../hooks/useR2Upload";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
@@ -54,13 +54,8 @@ function readAudioDuration(file: File): Promise<number> {
 }
 
 export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" | "workspace" }) {
-  const { uploadAudio: uploadToR2, isConfigured: isR2Configured, getConfig: getR2Config, setConfig: setR2Config } = useR2Upload();
+  const { uploadAudio: uploadToR2 } = useR2Upload();
   const isWorkspace = variant === "workspace";
-  const [showR2Config, setShowR2Config] = useState(false);
-  const [r2AccountId, setR2AccountId] = useState("");
-  const [r2AccessKeyId, setR2AccessKeyId] = useState("");
-  const [r2SecretKey, setR2SecretKey] = useState("");
-  const [r2BucketName, setR2BucketName] = useState("clypra-assets");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [id, setId] = useState("");
@@ -209,12 +204,6 @@ export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" |
   const handlePublish = async () => {
     if (validationMessage || !audioFile) return;
 
-    if (!isR2Configured) {
-      setStatus("failed");
-      setMessage("R2 is not configured. Click the Settings icon to configure R2 credentials.");
-      return;
-    }
-
     setStatus("publishing");
     setMessage(null);
 
@@ -276,60 +265,8 @@ export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" |
             <h3 className={`${isWorkspace ? "text-xl" : "text-sm"} font-bold`}>Upload audio instantly to R2</h3>
             <p className={`${isWorkspace ? "max-w-3xl text-sm" : "text-xs"} mt-1 leading-relaxed text-[#9A9AAA]`}>Upload audio you own or have a license to distribute. Files are uploaded directly to R2 and available immediately in Clypra.</p>
           </div>
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-teal-500/30 bg-teal-500/10 text-teal-300">
-            <Music size={16} />
-          </span>
-          <div className="flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-teal-300">Audio Library</p>
-            <h3 className="text-sm font-bold">Upload audio, configure metadata, publish instantly</h3>
-            <p className="mt-1 text-xs leading-relaxed text-[#9A9AAA]">Upload audio you own or have a license to distribute. Choose R2 for instant availability or GitHub PR for review workflow.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setShowR2Config(!showR2Config);
-              if (!showR2Config) loadR2Config();
-            }}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#2A2A38] bg-[#11111A] text-[#DADAE4] hover:text-white"
-            title="Configure R2"
-          >
-            <Settings size={14} />
-          </button>
         </div>
       </div>
-
-      {/* R2 Configuration Panel */}
-      {showR2Config && (
-        <div className="mb-4 rounded-xl border border-[#2A2A38] bg-[#101018] p-4">
-          <div className="mb-4 flex items-start gap-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-xs font-black text-white">
-              <Settings size={12} />
-            </span>
-            <div>
-              <h3 className="text-sm font-bold text-white">R2 Configuration</h3>
-              <p className="mt-1 text-[11px] leading-relaxed text-[#9A9AAA]">Configure Cloudflare R2 credentials for direct uploads</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <Field label="Account ID" required>
-              <input value={r2AccountId} onChange={(e) => setR2AccountId(e.target.value)} placeholder="Enter your R2 account ID" className={FIELD_INPUT_CLASS} />
-            </Field>
-            <Field label="Access Key ID" required>
-              <input value={r2AccessKeyId} onChange={(e) => setR2AccessKeyId(e.target.value)} placeholder="Enter access key ID" className={FIELD_INPUT_CLASS} />
-            </Field>
-            <Field label="Secret Access Key" required>
-              <input value={r2SecretKey} onChange={(e) => setR2SecretKey(e.target.value)} type="password" placeholder="Enter secret access key" className={FIELD_INPUT_CLASS} />
-            </Field>
-            <Field label="Bucket Name">
-              <input value={r2BucketName} onChange={(e) => setR2BucketName(e.target.value)} placeholder="clypra-assets" className={FIELD_INPUT_CLASS} />
-            </Field>
-            <button type="button" onClick={handleSaveR2Config} className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2.5 text-xs font-bold text-white hover:bg-blue-500">
-              <CheckCircle size={14} />
-              Save Configuration
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className={isWorkspace ? "grid grid-cols-[360px_minmax(0,1fr)_390px] items-start gap-5 max-[1260px]:grid-cols-[340px_minmax(0,1fr)] max-[920px]:grid-cols-1" : "grid grid-cols-1 gap-4 lg:grid-cols-[1fr_390px]"}>
         {/* Main Content */}
