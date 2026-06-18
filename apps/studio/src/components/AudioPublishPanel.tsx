@@ -3,7 +3,15 @@ import { AlertTriangle, CheckCircle, Loader2, Music, Settings, Zap, FileAudio, I
 import { useR2Upload } from "../hooks/useR2Upload";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
-const AUDIO_CATEGORIES = ["music", "lo-fi", "chill", "cinematic", "epic", "upbeat", "corporate", "hip-hop", "trap", "electronic", "synth", "acoustic", "indie", "jazz", "soul", "ambient", "background", "sfx", "transition", "impact", "ui", "notifications", "voice"] as const;
+const AUDIO_CATEGORIES = [
+  "music", // catch-all browsable music library — the primary tab
+  "cinematic", // YouTube creators, vlogs, montages — highest demand
+  "upbeat", // social content, reels, highlights — second highest demand
+  "lo-fi", // study/productivity content — massive creator niche
+  "hip-hop", // most requested genre globally on CapCut
+  "ambient", // background for talking-head/interview content
+  "sfx", // sound effects — non-negotiable, every editor needs this
+] as const;
 const LICENSE_TYPES = ["cc0", "cc-by", "royalty-free", "public-domain"] as const;
 const FIELD_INPUT_CLASS = "w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500";
 

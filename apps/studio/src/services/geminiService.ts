@@ -692,33 +692,26 @@ Make the metadata unique, professional, and SEO-friendly. Focus on the animation
   }
 }
 
-const AUDIO_CATEGORIES = ["music", "lo-fi", "chill", "cinematic", "epic", "upbeat", "corporate", "hip-hop", "trap", "electronic", "synth", "acoustic", "indie", "jazz", "soul", "ambient", "background", "sfx", "transition", "impact", "ui", "notifications", "voice"] as const;
+const AUDIO_CATEGORIES = [
+  "music", // catch-all browsable music library — the primary tab
+  "cinematic", // YouTube creators, vlogs, montages — highest demand
+  "upbeat", // social content, reels, highlights — second highest demand
+  "lo-fi", // study/productivity content — massive creator niche
+  "hip-hop", // most requested genre globally on CapCut
+  "ambient", // background for talking-head/interview content
+  "sfx", // sound effects — non-negotiable, every editor needs this
+] as const;
 type AudioCategoryId = (typeof AUDIO_CATEGORIES)[number];
 
 function resolveAudioCategory(raw: string): AudioCategoryId {
   const normalized = (raw || "").toLowerCase().trim();
   if (AUDIO_CATEGORIES.includes(normalized as AudioCategoryId)) return normalized as AudioCategoryId;
   if (normalized.includes("lofi") || normalized.includes("lo-fi") || normalized.includes("chill")) return "lo-fi";
-  if (normalized.includes("cinematic") || normalized.includes("film")) return "cinematic";
-  if (normalized.includes("epic") || normalized.includes("trailer")) return "epic";
-  if (normalized.includes("corporate")) return "corporate";
-  if (normalized.includes("upbeat") || normalized.includes("happy")) return "upbeat";
-  if (normalized.includes("hip")) return "hip-hop";
-  if (normalized.includes("trap")) return "trap";
-  if (normalized.includes("electronic") || normalized.includes("edm")) return "electronic";
-  if (normalized.includes("synth")) return "synth";
-  if (normalized.includes("acoustic")) return "acoustic";
-  if (normalized.includes("indie")) return "indie";
-  if (normalized.includes("jazz")) return "jazz";
-  if (normalized.includes("soul")) return "soul";
-  if (normalized.includes("ambient") || normalized.includes("room") || normalized.includes("noise")) return "ambient";
-  if (normalized.includes("background")) return "background";
-  if (normalized.includes("transition") || normalized.includes("whoosh") || normalized.includes("swoosh")) return "transition";
-  if (normalized.includes("impact") || normalized.includes("boom") || normalized.includes("hit")) return "impact";
-  if (normalized.includes("notification") || normalized.includes("alert")) return "notifications";
-  if (normalized.includes("ui") || normalized.includes("click") || normalized.includes("button")) return "ui";
-  if (normalized.includes("voice") || normalized.includes("vocal")) return "voice";
-  if (normalized.includes("sfx") || normalized.includes("effect")) return "sfx";
+  if (normalized.includes("cinematic") || normalized.includes("film") || normalized.includes("epic") || normalized.includes("trailer")) return "cinematic";
+  if (normalized.includes("upbeat") || normalized.includes("happy") || normalized.includes("energetic") || normalized.includes("positive")) return "upbeat";
+  if (normalized.includes("hip") || normalized.includes("trap") || normalized.includes("rap") || normalized.includes("beat")) return "hip-hop";
+  if (normalized.includes("ambient") || normalized.includes("room") || normalized.includes("noise") || normalized.includes("background") || normalized.includes("atmospheric")) return "ambient";
+  if (normalized.includes("sfx") || normalized.includes("effect") || normalized.includes("sound") || normalized.includes("transition") || normalized.includes("whoosh") || normalized.includes("impact") || normalized.includes("ui") || normalized.includes("notification")) return "sfx";
   return "music";
 }
 
