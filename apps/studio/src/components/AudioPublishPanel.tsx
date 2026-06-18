@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle, Loader2, Music, Zap, FileAudio, Image as ImageIcon, Sparkles } from "lucide-react";
-import { useR2Upload } from "../hooks/useR2Upload";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 const AUDIO_CATEGORIES = [
@@ -54,7 +53,6 @@ function readAudioDuration(file: File): Promise<number> {
 }
 
 export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" | "workspace" }) {
-  const { uploadAudio: uploadToR2 } = useR2Upload();
   const isWorkspace = variant === "workspace";
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -212,7 +210,20 @@ export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" |
         },
       };
 
-      const result = await uploadToR2(payload);
+      // Upload to API endpoint (server handles R2 upload)
+      const response = await fetch(`${API_BASE_URL}/audio/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
       setStatus("published");
       setMessage(result.message || "Audio uploaded to R2 successfully! Available immediately in Clypra app.");
     } catch (error) {
