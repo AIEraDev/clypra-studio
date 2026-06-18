@@ -36,7 +36,7 @@ export function VideoEffectWorkspace() {
       const categories: Record<string, EffectRendererType[]> = {};
 
       // Load Camera effects
-      const cameraEffects = getEffectsByCategory("camera");
+      const cameraEffects = getEffectsByCategory("camera" as any);
       if (cameraEffects && Array.isArray(cameraEffects) && cameraEffects.length > 0) {
         categories.Camera = cameraEffects.map((e: any) => e.id as EffectRendererType);
       }

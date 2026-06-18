@@ -3,84 +3,302 @@
  * Test, generate, and upload color grading filters to R2
  */
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Download, Upload, Sparkles, Zap, Image as ImageIcon, Film, Loader2, Settings } from "lucide-react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { 
+  Download, 
+  Upload, 
+  Sparkles, 
+  Zap, 
+  Image as ImageIcon, 
+  Film, 
+  Loader2, 
+  Play, 
+  Pause, 
+  RotateCcw, 
+  Search, 
+  Sliders, 
+  BarChart4, 
+  Sun, 
+  Palette, 
+  Eye, 
+  EyeOff, 
+  ChevronRight, 
+  ChevronDown, 
+  Check, 
+  Undo,
+  SlidersHorizontal,
+  Compass
+} from "lucide-react";
 
-const FILTER_CATEGORIES = ["vintage", "modern", "cinematic", "bw", "color"];
-const API_BASE_URL = "https://clypra-worker-api.abdulkabirmusa.com";
-
+// Types
 interface FilterPreset {
   id: string;
   name: string;
-  category: string;
+  category: "essentials" | "cinematic" | "vintage" | "vibrant" | "mono" | "aesthetic";
   description: string;
   cssFilter: string;
-  intensity: number;
+  intensity: number; // default strength 0-100
 }
+
+const FILTER_CATEGORIES = ["all", "essentials", "cinematic", "vintage", "vibrant", "mono", "aesthetic"] as const;
+type CategoryType = typeof FILTER_CATEGORIES[number];
+
+const API_BASE_URL = "https://clypra-worker-api.abdulkabirmusa.com";
+
+// 18 Stunning Professional Presets
+const PRESET_FILTERS: FilterPreset[] = [
+  // Essentials
+  { id: "clean-bright", name: "Clean & Bright", category: "essentials", description: "Luminous highlights and crisp clean whites", cssFilter: "brightness(107%) contrast(103%) saturate(106%)", intensity: 90 },
+  { id: "matte-contrast", name: "Matte Contrast", category: "essentials", description: "Deep faded matte blacks and clinical details", cssFilter: "contrast(116%) brightness(96%) saturate(94%) sepia(4%)", intensity: 80 },
+  { id: "cold-minimalist", name: "Cold Minimalist", category: "essentials", description: "Chilly blue hues and minimal saturation", cssFilter: "hue-rotate(12deg) saturate(78%) contrast(104%) brightness(99%)", intensity: 75 },
+
+  // Cinematic
+  { id: "teal-orange", name: "Teal & Orange", category: "cinematic", description: "Hollywood style teal shadows and warm orange midtones", cssFilter: "contrast(115%) saturate(125%) hue-rotate(-5deg) sepia(8%)", intensity: 80 },
+  { id: "blockbuster", name: "Blockbuster", category: "cinematic", description: "High-contrast, cold desaturated green/cyan atmosphere", cssFilter: "contrast(122%) saturate(82%) sepia(12%) hue-rotate(-12deg)", intensity: 75 },
+  { id: "moody-noir", name: "Moody Film", category: "cinematic", description: "Rich cinematic shadows with faded highlights", cssFilter: "contrast(118%) brightness(88%) saturate(75%) sepia(8%)", intensity: 80 },
+
+  // Vintage
+  { id: "polaroid", name: "Polaroid Fade", category: "vintage", description: "Muted retro blacks and warm polaroid paper tone", cssFilter: "contrast(92%) saturate(92%) sepia(22%) brightness(104%) hue-rotate(-3deg)", intensity: 70 },
+  { id: "super8", name: "Super 8 Film", category: "vintage", description: "Organic vintage 8mm warmth and high saturation", cssFilter: "sepia(28%) contrast(112%) saturate(110%) brightness(97%)", intensity: 80 },
+  { id: "sunset-70s", name: "1970s Sunset", category: "vintage", description: "Sun-drenched golden amber and warm tones", cssFilter: "sepia(35%) hue-rotate(-15deg) saturate(118%) contrast(94%)", intensity: 85 },
+  { id: "washed-indie", name: "Washed Indie", category: "vintage", description: "Desaturated, low-contrast washed-out indie look", cssFilter: "contrast(88%) brightness(106%) saturate(72%) sepia(10%)", intensity: 75 },
+
+  // Vibrant
+  { id: "golden-hour", name: "Golden Hour", category: "vibrant", description: "Warm sunset hues and soft glowing highlights", cssFilter: "sepia(22%) saturate(120%) brightness(103%) contrast(96%) hue-rotate(-4deg)", intensity: 90 },
+
+  // Mono
+  { id: "silver-gelatin", name: "Silver Gelatin", category: "mono", description: "Classic fine-art monochrome with rich midtones", cssFilter: "grayscale(100%) contrast(112%) brightness(98%)", intensity: 100 },
+  { id: "high-contrast-mono", name: "Noir Drama", category: "mono", description: "Aggressive contrast, deep blacks, and sharp whites", cssFilter: "grayscale(100%) contrast(142%) brightness(92%)", intensity: 100 },
+  { id: "warm-sepia", name: "Sepia Ink", category: "mono", description: "Aesthetic warm sepia paper tint with lower contrast", cssFilter: "grayscale(100%) sepia(68%) contrast(96%) brightness(97%)", intensity: 90 },
+
+  // Aesthetic
+  { id: "cyberpunk", name: "Cyberpunk Neon", category: "aesthetic", description: "Vibrant neon purples and electric turquoise glow", cssFilter: "contrast(125%) saturate(155%) hue-rotate(15deg) brightness(96%)", intensity: 85 },
+  { id: "vaporwave", name: "Vaporwave", category: "aesthetic", description: "Psychedelic pastel pinks and dreamy violet shadows", cssFilter: "hue-rotate(135deg) saturate(135%) contrast(108%) brightness(103%)", intensity: 85 },
+  { id: "duotone-violet", name: "Duotone Purple", category: "aesthetic", description: "Deep purple shadows and glowing warm highlights", cssFilter: "contrast(112%) saturate(125%) sepia(18%) hue-rotate(245deg) brightness(96%)", intensity: 90 },
+  { id: "acid-green", name: "Acid Glow", category: "aesthetic", description: "High-saturation radioactive neon look", cssFilter: "hue-rotate(55deg) saturate(155%) contrast(122%) brightness(96%)", intensity: 80 }
+];
+
+const PROMPT_SUGGESTIONS = [
+  { label: "Teal & Orange", prompt: "cinematic Hollywood style teal and orange with warm skin tones", category: "cinematic" },
+  { label: "1970s Polaroid", prompt: "warm faded 1970s polaroid film with soft contrast and yellow hues", category: "vintage" },
+  { label: "Cyberpunk Glow", prompt: "futuristic neon cyberpunk style with deep blue shadows and pink highlights", category: "aesthetic" },
+  { label: "Moody Noir", prompt: "highly dramatic high contrast black and white with deep crushed shadows", category: "mono" },
+  { label: "Washed Indie", prompt: "retro indie film aesthetic with flat blacks and desaturated soft colors", category: "vintage" },
+  { label: "Golden Hour", prompt: "dreamy sunlit golden hour glow with warm amber highlights", category: "vibrant" }
+];
+
+const INITIAL_MANUAL_ADJUSTMENTS = {
+  exposure: 0,      // -100 to 100
+  brightness: 0,    // -100 to 100
+  contrast: 0,      // -100 to 100
+  saturation: 0,    // -100 to 100
+  temperature: 0,   // -100 to 100 (blue to orange)
+  tint: 0,          // -100 to 100 (green to magenta)
+  sepia: 0,         // 0 to 100
+  grayscale: 0,     // 0 to 100
+  hueRotate: 0,     // 0 to 360
+  blur: 0,          // 0 to 15
+  vignette: 0,      // 0 to 100
+  invert: 0         // 0 to 100
+};
+
+// Helper: Interpolate CSS filter strength
+const interpolateFilter = (filterStr: string, factor: number): string => {
+  return filterStr.replace(/(\d+\.?\d*)(%|deg|px)?/g, (match, value, unit) => {
+    const num = parseFloat(value);
+    let adjusted = num * factor;
+    if (["contrast", "saturate", "brightness"].some(n => filterStr.includes(n))) {
+      adjusted = 100 + (num - 100) * factor;
+    }
+    return `${adjusted}${unit || ""}`;
+  });
+};
+
+// Helper: Combine preset & manual filters
+const getCombinedFilterString = (preset: FilterPreset | null, presetIntensity: number, manual: typeof INITIAL_MANUAL_ADJUSTMENTS) => {
+  let parts: string[] = [];
+
+  if (preset && preset.cssFilter) {
+    const factor = presetIntensity / 100;
+    parts.push(interpolateFilter(preset.cssFilter, factor));
+  }
+
+  if (manual.exposure !== 0) {
+    parts.push(`brightness(${100 + manual.exposure}%)`);
+  }
+  if (manual.brightness !== 0) {
+    parts.push(`brightness(${100 + manual.brightness}%)`);
+  }
+  if (manual.contrast !== 0) {
+    parts.push(`contrast(${100 + manual.contrast}%)`);
+  }
+  if (manual.saturation !== 0) {
+    parts.push(`saturate(${100 + manual.saturation}%)`);
+  }
+  if (manual.sepia !== 0) {
+    parts.push(`sepia(${manual.sepia}%)`);
+  }
+  if (manual.grayscale !== 0) {
+    parts.push(`grayscale(${manual.grayscale}%)`);
+  }
+  if (manual.hueRotate !== 0) {
+    parts.push(`hue-rotate(${manual.hueRotate}deg)`);
+  }
+  if (manual.blur !== 0) {
+    parts.push(`blur(${manual.blur}px)`);
+  }
+  if (manual.invert !== 0) {
+    parts.push(`invert(${manual.invert}%)`);
+  }
+
+  return parts.join(" ") || "none";
+};
+
+// Helper: Apply vignette overlay on canvas
+const applyVignette = (ctx: CanvasRenderingContext2D, width: number, height: number, value: number) => {
+  ctx.save();
+  ctx.globalCompositeOperation = "multiply";
+  const cx = width / 2;
+  const cy = height / 2;
+  const maxRadius = Math.sqrt(cx * cx + cy * cy);
+  
+  const gradient = ctx.createRadialGradient(cx, cy, maxRadius * 0.45, cx, cy, maxRadius * 1.0);
+  const maxOpacity = value / 100;
+  
+  gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+  gradient.addColorStop(0.5, `rgba(0, 0, 0, ${maxOpacity * 0.15})`);
+  gradient.addColorStop(0.8, `rgba(0, 0, 0, ${maxOpacity * 0.55})`);
+  gradient.addColorStop(1, `rgba(0, 0, 0, ${maxOpacity * 0.9})`);
+  
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
+};
+
+// Helper: Apply temperature and tint overlays on canvas
+const applyColorOverlays = (ctx: CanvasRenderingContext2D, width: number, height: number, manual: typeof INITIAL_MANUAL_ADJUSTMENTS) => {
+  if (manual.temperature !== 0) {
+    ctx.save();
+    ctx.globalCompositeOperation = "soft-light";
+    if (manual.temperature > 0) {
+      ctx.fillStyle = `rgba(255, 140, 40, ${manual.temperature / 400})`;
+    } else {
+      ctx.fillStyle = `rgba(40, 120, 255, ${-manual.temperature / 400})`;
+    }
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+  if (manual.tint !== 0) {
+    ctx.save();
+    ctx.globalCompositeOperation = "soft-light";
+    if (manual.tint > 0) {
+      ctx.fillStyle = `rgba(255, 40, 180, ${manual.tint / 450})`;
+    } else {
+      ctx.fillStyle = `rgba(40, 255, 100, ${-manual.tint / 450})`;
+    }
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+};
 
 export function FilterWorkspace() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const histogramCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Media States
   const [mediaUrl, setMediaUrl] = useState<string | undefined>();
   const [isVideo, setIsVideo] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<FilterPreset | null>(null);
-  const [intensity, setIntensity] = useState(75);
   const [mediaMetadata, setMediaMetadata] = useState<{ width: number; height: number; duration?: number } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
 
-  // AI Generation
+  // Filter States
+  const [selectedFilter, setSelectedFilter] = useState<FilterPreset | null>(null);
+  const [intensity, setIntensity] = useState(100);
+  const [manualAdjustments, setManualAdjustments] = useState(INITIAL_MANUAL_ADJUSTMENTS);
+
+  // Before/After comparison state
+  const [showSplitComparison, setShowSplitComparison] = useState(true);
+  const [splitPosition, setSplitPosition] = useState(50); // percentage 0-100
+  const [isDraggingSplit, setIsDraggingSplit] = useState(false);
+
+  // Left Sidebar Navigation
+  const [leftTab, setLeftTab] = useState<"presets" | "ai">("presets");
+  const [presetSearch, setPresetSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryType>("all");
+
+  // Right Sidebar Tabs
+  const [rightTab, setRightTab] = useState<"adjust" | "histogram">("adjust");
+  const [histogramChannel, setHistogramChannel] = useState<"all" | "r" | "g" | "b" | "l">("all");
+  const [histogramData, setHistogramData] = useState<{ r: number[]; g: number[]; b: number[]; l: number[] } | null>(null);
+
+  // AI Generation States
   const [aiPrompt, setAiPrompt] = useState("vintage film look with warm tones");
   const [aiCategory, setAiCategory] = useState<string>("vintage");
   const [aiStatus, setAiStatus] = useState<"idle" | "generating" | "success" | "error">("idle");
   const [aiMessage, setAiMessage] = useState("");
 
-  // Upload
+  // Upload States
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [uploadMessage, setUploadMessage] = useState("");
 
-  // Handle image upload
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Collapsible Right Panel Sections
+  const [expandedSections, setExpandedSections] = useState({
+    light: true,
+    color: true,
+    effects: true
+  });
 
-    const url = URL.createObjectURL(file);
-    setMediaUrl(url);
-    setIsVideo(false);
-
-    // Load image and render to canvas
-    const img = new Image();
-    img.onload = () => {
-      setMediaMetadata({ width: img.width, height: img.height });
-      imageRef.current = img;
-      renderFilterOnImage(img);
-    };
-    img.src = url;
+  // Calculate histogram from canvas (using fast offscreen downsampling)
+  const calculateHistogram = useCallback((sourceCanvas: HTMLCanvasElement) => {
+    if (!sourceCanvas) return;
+    
+    if (!histogramCanvasRef.current) {
+      histogramCanvasRef.current = document.createElement("canvas");
+    }
+    
+    const helper = histogramCanvasRef.current;
+    const w = 150;
+    const h = 90;
+    helper.width = w;
+    helper.height = h;
+    
+    const helperCtx = helper.getContext("2d");
+    if (!helperCtx) return;
+    
+    helperCtx.drawImage(sourceCanvas, 0, 0, w, h);
+    
+    const imgData = helperCtx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+    
+    const rHist = new Array(256).fill(0);
+    const gHist = new Array(256).fill(0);
+    const bHist = new Array(256).fill(0);
+    const lHist = new Array(256).fill(0);
+    
+    const len = data.length;
+    for (let i = 0; i < len; i += 4) {
+      const r = data[i];
+      const g = data[i+1];
+      const b = data[i+2];
+      const l = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+      
+      rHist[r]++;
+      gHist[g]++;
+      bHist[b]++;
+      lHist[l]++;
+    }
+    
+    setHistogramData({ r: rHist, g: gHist, b: bHist, l: lHist });
   }, []);
 
-  // Handle video upload
-  const handleVideoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-    setMediaUrl(url);
-    setIsVideo(true);
-
-    // Create video element to get metadata
-    const video = document.createElement("video");
-    video.src = url;
-    video.onloadedmetadata = () => {
-      setMediaMetadata({
-        width: video.videoWidth,
-        height: video.videoHeight,
-        duration: video.duration,
-      });
-      videoRef.current = video;
-    };
-  }, []);
+  // Combined filter calculations
+  const combinedFilterString = useMemo(() => {
+    return getCombinedFilterString(selectedFilter, intensity, manualAdjustments);
+  }, [selectedFilter, intensity, manualAdjustments]);
 
   // Render filter on image
   const renderFilterOnImage = useCallback(
@@ -88,25 +306,48 @@ export function FilterWorkspace() {
       const canvas = canvasRef.current;
       if (!canvas || !img) return;
 
-      canvas.width = img.width;
-      canvas.height = img.height;
-
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
 
-      // Clear and draw image
+      canvas.width = img.width;
+      canvas.height = img.height;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.filter = "none";
       ctx.drawImage(img, 0, 0);
 
-      // Apply CSS filter if selected
-      if (selectedFilter && selectedFilter.cssFilter) {
-        const adjustedIntensity = intensity / selectedFilter.intensity;
-        ctx.filter = interpolateFilter(selectedFilter.cssFilter, adjustedIntensity);
+      if (showSplitComparison) {
+        const splitX = (splitPosition / 100) * canvas.width;
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(splitX, 0, canvas.width - splitX, canvas.height);
+        ctx.clip();
+        
+        ctx.filter = combinedFilterString;
         ctx.drawImage(img, 0, 0);
+        
+        applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
+        
+        if (manualAdjustments.vignette > 0) {
+          applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
+        }
+        
+        ctx.restore();
+      } else {
+        ctx.filter = combinedFilterString;
+        ctx.drawImage(img, 0, 0);
+        
+        applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
+        
+        if (manualAdjustments.vignette > 0) {
+          applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
+        }
       }
+
+      calculateHistogram(canvas);
     },
-    [selectedFilter, intensity],
+    [combinedFilterString, manualAdjustments, showSplitComparison, splitPosition, calculateHistogram]
   );
 
   // Render filter on video frame
@@ -118,38 +359,54 @@ export function FilterWorkspace() {
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
 
-      // Clear and draw video frame
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.filter = "none";
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Apply CSS filter if selected
-      if (selectedFilter && selectedFilter.cssFilter) {
-        const adjustedIntensity = intensity / selectedFilter.intensity;
-        ctx.filter = interpolateFilter(selectedFilter.cssFilter, adjustedIntensity);
+      if (showSplitComparison) {
+        const splitX = (splitPosition / 100) * canvas.width;
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(splitX, 0, canvas.width - splitX, canvas.height);
+        ctx.clip();
+        
+        ctx.filter = combinedFilterString;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
+        
+        if (manualAdjustments.vignette > 0) {
+          applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
+        }
+        
+        ctx.restore();
+      } else {
+        ctx.filter = combinedFilterString;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
+        
+        if (manualAdjustments.vignette > 0) {
+          applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
+        }
       }
+
+      calculateHistogram(canvas);
     },
-    [selectedFilter, intensity],
+    [combinedFilterString, manualAdjustments, showSplitComparison, splitPosition, calculateHistogram]
   );
 
-  // Interpolate filter strength
-  const interpolateFilter = (filterStr: string, factor: number): string => {
-    return filterStr.replace(/(\d+\.?\d*)(%|deg|px)?/g, (match, value, unit) => {
-      const num = parseFloat(value);
-      const adjusted = num * factor;
-      return `${adjusted}${unit || ""}`;
-    });
-  };
-
-  // Re-render when filter or intensity changes (for images)
+  // Re-render when filters or intensity changes
   useEffect(() => {
     if (!isVideo && imageRef.current) {
       renderFilterOnImage(imageRef.current);
+    } else if (isVideo && videoRef.current && !isPlaying) {
+      renderFilterOnVideo(videoRef.current);
     }
-  }, [isVideo, selectedFilter, intensity, renderFilterOnImage]);
+  }, [isVideo, selectedFilter, intensity, manualAdjustments, showSplitComparison, splitPosition, isPlaying, renderFilterOnImage, renderFilterOnVideo]);
 
-  // Video playback animation loop
+  // Video playback loop
   useEffect(() => {
     if (!isVideo || !videoRef.current || !isPlaying) return;
 
@@ -173,45 +430,147 @@ export function FilterWorkspace() {
     };
   }, [isVideo, isPlaying, renderFilterOnVideo]);
 
-  // Update canvas dimensions when metadata loads
+  // Clean up object URLs to prevent leaks
   useEffect(() => {
-    if (mediaMetadata && canvasRef.current) {
-      const canvas = canvasRef.current;
-      canvas.width = mediaMetadata.width;
-      canvas.height = mediaMetadata.height;
-
-      if (isVideo && videoRef.current) {
-        renderFilterOnVideo(videoRef.current);
-      } else if (!isVideo && imageRef.current) {
-        renderFilterOnImage(imageRef.current);
+    return () => {
+      if (mediaUrl) {
+        URL.revokeObjectURL(mediaUrl);
       }
-    }
-  }, [mediaMetadata, isVideo, renderFilterOnVideo, renderFilterOnImage]);
+    };
+  }, [mediaUrl]);
 
-  // Video controls
+  // Handle image upload
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    setMediaUrl(url);
+    setIsVideo(false);
+
+    const img = new Image();
+    img.onload = () => {
+      setMediaMetadata({ width: img.width, height: img.height });
+      imageRef.current = img;
+      renderFilterOnImage(img);
+    };
+    img.src = url;
+  }, [renderFilterOnImage]);
+
+  // Handle video upload
+  const handleVideoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    setMediaUrl(url);
+    setIsVideo(true);
+    setIsPlaying(false);
+    setCurrentTime(0);
+  }, []);
+
+  const handleVideoMetadataLoaded = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    setMediaMetadata({
+      width: video.videoWidth,
+      height: video.videoHeight,
+      duration: video.duration,
+    });
+    if (canvasRef.current) {
+      canvasRef.current.width = video.videoWidth;
+      canvasRef.current.height = video.videoHeight;
+    }
+    video.currentTime = 0;
+  }, []);
+
+  const handleVideoSeeked = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    renderFilterOnVideo(video);
+  }, [renderFilterOnVideo]);
+
+  // Video Controls
   const handlePlayPause = useCallback(() => {
-    if (!videoRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
 
     if (isPlaying) {
-      videoRef.current.pause();
+      video.pause();
       setIsPlaying(false);
     } else {
-      videoRef.current.play();
-      setIsPlaying(true);
+      video.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => {
+        console.error("Playback failed:", err);
+      });
     }
   }, [isPlaying]);
 
   const handleSeek = useCallback(
     (time: number) => {
-      if (!videoRef.current) return;
-      videoRef.current.currentTime = time;
+      const video = videoRef.current;
+      if (!video) return;
+      video.currentTime = time;
       setCurrentTime(time);
-      if (!isPlaying) {
-        renderFilterOnVideo(videoRef.current);
-      }
     },
-    [isPlaying, renderFilterOnVideo],
+    []
   );
+
+  // Split-screen drag handlers
+  const handleMouseDown = useCallback(() => {
+    setIsDraggingSplit(true);
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDraggingSplit(false);
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingSplit || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    setSplitPosition(pct);
+  }, [isDraggingSplit]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDraggingSplit || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    setSplitPosition(pct);
+  }, [isDraggingSplit]);
+
+  // Reset all adjustments
+  const handleResetAll = useCallback(() => {
+    setManualAdjustments(INITIAL_MANUAL_ADJUSTMENTS);
+    setSelectedFilter(null);
+    setIntensity(100);
+  }, []);
+
+  // Reset a single slider adjustment
+  const handleResetSlider = useCallback((key: keyof typeof INITIAL_MANUAL_ADJUSTMENTS) => {
+    setManualAdjustments(prev => ({
+      ...prev,
+      [key]: INITIAL_MANUAL_ADJUSTMENTS[key]
+    }));
+  }, []);
+
+  // Update a slider adjustment
+  const handleAdjustmentChange = useCallback((key: keyof typeof INITIAL_MANUAL_ADJUSTMENTS, val: number) => {
+    setManualAdjustments(prev => ({
+      ...prev,
+      [key]: val
+    }));
+  }, []);
+
+  // Toggle sections
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   // Generate filter with AI
   const handleGenerateFilter = async () => {
@@ -243,10 +602,10 @@ export function FilterWorkspace() {
       const generatedFilter: FilterPreset = {
         id: data.id || `generated-${Date.now()}`,
         name: data.name || "Generated Filter",
-        category: aiCategory,
+        category: (aiCategory as any) || "modern",
         description: data.description || aiPrompt,
         cssFilter: data.cssFilter || "",
-        intensity: data.intensity?.default || 75,
+        intensity: data.intensity?.default || 100,
       };
 
       setSelectedFilter(generatedFilter);
@@ -309,236 +668,1016 @@ export function FilterWorkspace() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${selectedFilter?.name || "filter"}-preview.png`;
+      a.download = `${selectedFilter?.name || "clypra"}-grade-preview.png`;
       a.click();
       URL.revokeObjectURL(url);
     });
   }, [selectedFilter]);
 
+  // Filtered presets listing
+  const filteredPresets = useMemo(() => {
+    return PRESET_FILTERS.filter(p => {
+      const matchCat = selectedCategory === "all" || p.category === selectedCategory;
+      const matchSearch = presetSearch === "" || 
+        p.name.toLowerCase().includes(presetSearch.toLowerCase()) || 
+        p.description.toLowerCase().includes(presetSearch.toLowerCase());
+      return matchCat && matchSearch;
+    });
+  }, [selectedCategory, presetSearch]);
+
+  // Histogram Path SVG Generator
+  const histogramSVGData = useMemo(() => {
+    if (!histogramData) return { rPath: "", gPath: "", bPath: "", lPath: "", maxVal: 1 };
+
+    const width = 260;
+    const height = 110;
+
+    const maxVal = Math.max(
+      ...histogramData.r,
+      ...histogramData.g,
+      ...histogramData.b,
+      ...histogramData.l,
+      1
+    );
+
+    const getPathData = (bins: number[]) => {
+      let points = `M 0 ${height} `;
+      for (let i = 0; i < 256; i++) {
+        const x = (i / 255) * width;
+        const y = height - (bins[i] / maxVal) * height * 0.95;
+        points += `L ${x.toFixed(1)} ${y.toFixed(1)} `;
+      }
+      points += `L ${width} ${height} Z`;
+      return points;
+    };
+
+    return {
+      rPath: getPathData(histogramData.r),
+      gPath: getPathData(histogramData.g),
+      bPath: getPathData(histogramData.b),
+      lPath: getPathData(histogramData.l),
+      maxVal
+    };
+  }, [histogramData]);
+
   return (
-    <div className="flex h-screen bg-[#0E0E12]">
-      {/* Left Sidebar */}
-      <div className="w-80 bg-[#1E1E26] border-r border-[#2A2A38] overflow-y-auto shrink-0">
-        <div className="p-4 border-b border-[#2A2A38]">
-          <h1 className="text-lg font-bold text-white">Filter Lab</h1>
-          <p className="text-xs text-gray-400 mt-1">Generate, test, and upload filters</p>
+    <div className="flex h-screen bg-[#07070A] text-[#F4F4F7] font-sans overflow-hidden select-none">
+      
+      {/* ================= LEFT SIDEBAR ================= */}
+      <div className="w-[340px] bg-[#111117] border-r border-[#22222F] flex flex-col shrink-0 overflow-hidden">
+        
+        {/* Header Tab Switcher */}
+        <div className="p-4 border-b border-[#22222F] space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 bg-[#7C6FFF]/10 rounded-lg text-[#7C6FFF]">
+              <Palette size={18} />
+            </span>
+            <div>
+              <h1 className="text-sm font-bold tracking-wider uppercase text-white">Filter Lab</h1>
+              <p className="text-[10px] text-[#8A8A99]">Color grading and look development</p>
+            </div>
+          </div>
+          
+          {/* Glassmorphic Tabs */}
+          <div className="flex p-0.5 bg-[#0F0F15] rounded-lg border border-[#22222F]/40">
+            <button
+              onClick={() => setLeftTab("presets")}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 cursor-pointer ${
+                leftTab === "presets" 
+                  ? "bg-[#1E1E2A] text-white shadow-md border border-[#33334A]/50" 
+                  : "text-[#8A8A99] hover:text-white"
+              }`}
+            >
+              Preset Library
+            </button>
+            <button
+              onClick={() => setLeftTab("ai")}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                leftTab === "ai" 
+                  ? "bg-[#1E1E2A] text-white shadow-md border border-[#33334A]/50" 
+                  : "text-[#8A8A99] hover:text-white"
+              }`}
+            >
+              <Sparkles size={12} className={leftTab === "ai" ? "text-purple-400" : ""} />
+              AI Generator
+            </button>
+          </div>
         </div>
 
-        {/* Media Upload */}
-        <div className="p-4 border-b border-[#2A2A38]">
-          <label className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white text-sm rounded-lg cursor-pointer transition-colors">
-            <Film size={18} />
-            <span className="font-medium">Import Video</span>
-            <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />
-          </label>
-
-          <label className="mt-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#2A2A38] hover:bg-[#3A3A48] text-white text-sm rounded-lg cursor-pointer transition-colors">
-            <ImageIcon size={18} />
-            <span className="font-medium">Import Image</span>
-            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-          </label>
-
-          {mediaMetadata && (
-            <div className="mt-3 p-2 bg-[#0E0E12] rounded text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Type:</span>
-                <span className="font-medium">{isVideo ? "Video" : "Image"}</span>
+        {/* Tab 1: Preset Library Content */}
+        {leftTab === "presets" && (
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            {/* Search and Category filters */}
+            <div className="p-3 space-y-2.5 border-b border-[#22222F]/50">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8A99]" />
+                <input
+                  type="text"
+                  placeholder="Search color presets..."
+                  value={presetSearch}
+                  onChange={(e) => setPresetSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 bg-[#0F0F15] border border-[#22222F] rounded-md text-xs text-white placeholder-[#5B5B6E] focus:border-[#7C6FFF] focus:ring-1 focus:ring-[#7C6FFF]/30 outline-none transition-all"
+                />
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Resolution:</span>
-                <span className="font-medium">
-                  {mediaMetadata.width}x{mediaMetadata.height}
-                </span>
+              
+              {/* Category selector chips */}
+              <div className="flex flex-wrap gap-1 items-center max-h-[75px] overflow-y-auto pr-1">
+                {FILTER_CATEGORIES.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-2.5 py-0.5 text-[10px] font-medium rounded-full transition-all border cursor-pointer ${
+                      selectedCategory === cat 
+                        ? "bg-[#7C6FFF]/15 border-[#7C6FFF]/50 text-white" 
+                        : "bg-[#1C1C26]/40 border-[#22222F] text-[#8A8A99] hover:text-white hover:bg-[#1E1E2A]"
+                    }`}
+                  >
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </button>
+                ))}
               </div>
-              {isVideo && mediaMetadata.duration && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Duration:</span>
-                  <span className="font-medium">{mediaMetadata.duration.toFixed(1)}s</span>
+            </div>
+
+            {/* Presets Cards Grid */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {filteredPresets.length > 0 ? (
+                filteredPresets.map(preset => {
+                  const isSelected = selectedFilter?.id === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      onClick={() => {
+                        setSelectedFilter(preset);
+                        setIntensity(100);
+                      }}
+                      className={`w-full p-2.5 rounded-lg border text-left flex items-start gap-3 transition-all cursor-pointer group ${
+                        isSelected 
+                          ? "bg-[#1E1E2A] border-[#7C6FFF] shadow-md shadow-[#7C6FFF]/5" 
+                          : "bg-[#13131B] border-[#22222F] hover:bg-[#181824] hover:border-[#2C2C3F]"
+                      }`}
+                    >
+                      {/* Mini Preview Square */}
+                      <div className="relative w-12 h-12 rounded bg-gradient-to-tr from-[#3A3270] to-[#7C6FFF] overflow-hidden shrink-0 border border-[#22222F] group-hover:scale-105 transition-transform duration-300">
+                        <div 
+                          className="w-full h-full bg-cover bg-center bg-[url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=100&auto=format&fit=crop')]"
+                          style={{ filter: preset.cssFilter }}
+                        />
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-[#7C6FFF]/20 flex items-center justify-center text-white">
+                            <Check size={14} className="drop-shadow-md" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <span className="text-xs font-semibold text-white truncate">{preset.name}</span>
+                          <span className="text-[9px] uppercase tracking-wider text-[#8A8A99] font-mono shrink-0 scale-90">{preset.category}</span>
+                        </div>
+                        <p className="text-[10px] text-[#8A8A99] line-clamp-2 mt-1 leading-normal">
+                          {preset.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8 text-[#8A8A99] text-xs">
+                  No presets match your search
                 </div>
               )}
             </div>
-          )}
-        </div>
-
-        {/* AI Generation */}
-        <div className="p-4 border-b border-[#2A2A38] space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-purple-300">
-            <Sparkles size={14} />
-            <span>AI Filter Generation</span>
           </div>
+        )}
 
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Category</label>
-            <select value={aiCategory} onChange={(e) => setAiCategory(e.target.value)} className="w-full px-3 py-2 bg-[#0E0E12] border border-[#2A2A38] rounded text-sm text-white focus:border-[#7C6FFF] outline-none">
-              {FILTER_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Filter Description</label>
-            <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="Describe the filter look you want..." rows={3} className="w-full px-3 py-2 bg-[#0E0E12] border border-[#2A2A38] rounded text-sm text-white resize-none focus:border-[#7C6FFF] outline-none" />
-          </div>
-
-          <button onClick={handleGenerateFilter} disabled={aiStatus === "generating"} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            {aiStatus === "generating" ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles size={16} />
-                Generate Filter
-              </>
-            )}
-          </button>
-
-          {aiMessage && <div className={`p-2 rounded text-xs ${aiStatus === "error" ? "bg-red-500/10 text-red-300" : "bg-green-500/10 text-green-300"}`}>{aiMessage}</div>}
-        </div>
-
-        {/* Upload to R2 */}
-        {selectedFilter && (
-          <div className="p-4 border-b border-[#2A2A38] space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-teal-300">
-              <Zap size={14} />
-              <span>Upload to R2</span>
+        {/* Tab 2: AI Generator Content */}
+        {leftTab === "ai" && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-[#B96FFF] flex items-center gap-1.5">
+                <Sparkles size={14} className="animate-pulse" />
+                Prompt-to-Filter Engine
+              </span>
+              <p className="text-[10px] text-[#8A8A99] leading-relaxed">
+                Describe a color grading style or movie atmosphere. Our engine will generate a custom color look for you.
+              </p>
             </div>
 
-            <div className="p-3 bg-[#0E0E12] rounded space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Filter:</span>
-                <span className="font-medium">{selectedFilter.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Category:</span>
-                <span className="font-medium">{selectedFilter.category}</span>
+            {/* AI Prompts Suggestions */}
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-wider text-[#8A8A99] font-semibold">Quick Suggestions</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {PROMPT_SUGGESTIONS.map((sug, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setAiPrompt(sug.prompt);
+                      setAiCategory(sug.category);
+                    }}
+                    className="p-1.5 bg-[#13131B] hover:bg-[#1C1C2A] border border-[#22222F] hover:border-[#33334A] rounded text-[10px] text-[#8A8A99] hover:text-white text-left transition-colors truncate cursor-pointer"
+                  >
+                    ⚡ {sug.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <button onClick={handleUploadFilter} disabled={uploadStatus === "uploading"} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-              {uploadStatus === "uploading" ? (
+            {/* Textarea Prompt */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-wider text-[#8A8A99] font-semibold flex justify-between">
+                <span>Prompt Description</span>
+                <span className="text-[#8A8A99]">{aiPrompt.length} chars</span>
+              </label>
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="e.g. vintage warm sunset with golden tones and faded shadows..."
+                rows={4}
+                className="w-full px-3 py-2 bg-[#0F0F15] border border-[#22222F] focus:border-[#7C6FFF] rounded-md text-xs text-white placeholder-[#5B5B6E] resize-none outline-none focus:ring-1 focus:ring-[#7C6FFF]/30 transition-all leading-normal"
+              />
+            </div>
+
+            {/* AI Category Select */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-wider text-[#8A8A99] font-semibold">Target Style Category</label>
+              <select
+                value={aiCategory}
+                onChange={(e) => setAiCategory(e.target.value)}
+                className="w-full px-3 py-2 bg-[#0F0F15] border border-[#22222F] focus:border-[#7C6FFF] rounded-md text-xs text-white focus:ring-1 focus:ring-[#7C6FFF]/30 outline-none transition-all"
+              >
+                {FILTER_CATEGORIES.filter(c => c !== "all").map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Action button */}
+            <button
+              onClick={handleGenerateFilter}
+              disabled={aiStatus === "generating"}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#7C6FFF] hover:bg-[#685BEA] disabled:bg-[#7C6FFF]/50 text-white font-semibold text-xs rounded-lg shadow-lg shadow-[#7C6FFF]/10 transition-colors disabled:cursor-not-allowed cursor-pointer"
+            >
+              {aiStatus === "generating" ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Uploading...
+                  <Loader2 size={14} className="animate-spin" />
+                  Analyzing look...
                 </>
               ) : (
                 <>
-                  <Zap size={16} />
-                  Upload to R2
+                  <Sparkles size={14} />
+                  Generate Lookup Look
                 </>
               )}
             </button>
 
-            {uploadMessage && <div className={`p-2 rounded text-xs ${uploadStatus === "error" ? "bg-red-500/10 text-red-300" : "bg-green-500/10 text-green-300"}`}>{uploadMessage}</div>}
+            {/* Status alerts */}
+            {aiMessage && (
+              <div className={`p-2.5 rounded-lg border text-xs leading-normal flex gap-2 items-start ${
+                aiStatus === "error" 
+                  ? "bg-red-500/10 border-red-500/30 text-red-400" 
+                  : "bg-green-500/10 border-green-500/30 text-green-400"
+              }`}>
+                <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-current" />
+                <div>{aiMessage}</div>
+              </div>
+            )}
           </div>
         )}
+
+        {/* Media Import section footer */}
+        <div className="p-4 border-t border-[#22222F] bg-[#0F0F15] space-y-2 shrink-0">
+          <div className="flex gap-2">
+            <label className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-[#1C1C26] hover:bg-[#252533] border border-[#2E2E3E] hover:border-[#3A3A4E] text-[#C5C5D2] hover:text-white text-[11px] font-semibold rounded-md cursor-pointer transition-colors">
+              <Film size={13} className="text-[#8A8A99]" />
+              <span>Import Video</span>
+              <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />
+            </label>
+            
+            <label className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-[#1C1C26] hover:bg-[#252533] border border-[#2E2E3E] hover:border-[#3A3A4E] text-[#C5C5D2] hover:text-white text-[11px] font-semibold rounded-md cursor-pointer transition-colors">
+              <ImageIcon size={13} className="text-[#8A8A99]" />
+              <span>Import Image</span>
+              <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+            </label>
+          </div>
+
+          {mediaMetadata && (
+            <div className="p-2 bg-[#0A0A0E] rounded border border-[#1A1A24] text-[9px] font-mono text-[#8A8A99] flex justify-between items-center">
+              <span>{isVideo ? "VIDEO" : "IMAGE"} &bull; {mediaMetadata.width}x{mediaMetadata.height}</span>
+              {isVideo && mediaMetadata.duration && (
+                <span>{mediaMetadata.duration.toFixed(1)}s</span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Main Content - Preview */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="flex items-center justify-center bg-gray-900 p-4" style={{ height: isVideo ? "calc(100vh - 120px)" : "100vh" }}>
+      {/* ================= CENTER WORKSPACE / CANVAS VIEWPORT ================= */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#0B0B0F] overflow-hidden">
+        
+        {/* Main Toolbar */}
+        <div className="h-14 border-b border-[#1A1A24] px-4 flex items-center justify-between shrink-0 bg-[#0E0E14]/70 backdrop-blur">
+          <div className="flex items-center gap-2">
+            <span className="text-xs uppercase font-bold tracking-wider text-white">Viewer</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
+
+          {/* Quick controls */}
+          <div className="flex items-center gap-3">
+            {mediaUrl && (
+              <>
+                {/* Draggable Split Switch */}
+                <button
+                  onClick={() => setShowSplitComparison(prev => !prev)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border transition-all cursor-pointer ${
+                    showSplitComparison 
+                      ? "bg-[#7C6FFF]/15 border-[#7C6FFF]/40 text-[#A49BFF]" 
+                      : "bg-[#181824] border-[#22222F] text-[#8A8A99] hover:text-white"
+                  }`}
+                >
+                  {showSplitComparison ? <Eye size={13} /> : <EyeOff size={13} />}
+                  <span>Split Comparison</span>
+                </button>
+
+                {/* Reset button */}
+                <button
+                  onClick={handleResetAll}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#181824] hover:bg-[#1E1E2D] border border-[#22222F] hover:border-[#323247] rounded-md text-[11px] font-medium text-[#8A8A99] hover:text-white transition-colors cursor-pointer"
+                >
+                  <Undo size={13} />
+                  <span>Reset All</span>
+                </button>
+
+                {/* Export button */}
+                <button
+                  onClick={exportFrame}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#181824] hover:bg-[#1E1E2D] border border-[#22222F] hover:border-[#323247] rounded-md text-[11px] font-medium text-[#8A8A99] hover:text-white transition-colors cursor-pointer"
+                >
+                  <Download size={13} />
+                  <span>Export Frame</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Canvas Workspace Viewport Area */}
+        <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(28,26,45,0.4)_0%,transparent_70%)]">
           {mediaUrl ? (
-            <div className="relative h-full flex items-center justify-center">
+            <div 
+              ref={containerRef}
+              className="relative inline-block max-h-full max-w-full rounded-xl overflow-hidden shadow-2xl border border-[#22222F] checkerboard"
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleMouseUp}
+            >
               <canvas
                 ref={canvasRef}
-                width={mediaMetadata?.width || 1280}
-                height={mediaMetadata?.height || 720}
                 style={{
                   display: "block",
                   maxWidth: "100%",
-                  maxHeight: "100%",
+                  maxHeight: "calc(100vh - 200px)",
                   width: "auto",
                   height: "auto",
                 }}
-                className="rounded-lg shadow-2xl"
+                className="select-none pointer-events-none"
               />
 
-              {selectedFilter && (
-                <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg text-sm backdrop-blur">
-                  <div className="font-semibold">{selectedFilter.name}</div>
-                  <div className="text-gray-300 text-xs">Intensity: {intensity}%</div>
-                </div>
+              {mediaUrl && isVideo && (
+                <video
+                  ref={videoRef}
+                  src={mediaUrl}
+                  className="hidden"
+                  preload="auto"
+                  playsInline
+                  muted
+                  onLoadedMetadata={handleVideoMetadataLoaded}
+                  onSeeked={handleVideoSeeked}
+                />
               )}
 
-              <div className="absolute top-4 right-4">
-                <button onClick={exportFrame} className="flex items-center gap-2 px-3 py-2 bg-black/70 hover:bg-black/80 text-white rounded-lg text-sm backdrop-blur transition-colors">
-                  <Download size={16} />
-                  Export Frame
-                </button>
-              </div>
+              {/* Slider Drag Overlay */}
+              {showSplitComparison && (
+                <>
+                  {/* Draggable Divider line */}
+                  <div
+                    className="absolute top-0 bottom-0 w-[2px] bg-white cursor-ew-resize select-none pointer-events-auto"
+                    style={{ left: `${splitPosition}%` }}
+                    onMouseDown={handleMouseDown}
+                    onTouchStart={handleMouseDown}
+                  >
+                    {/* Glowing circular handle */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white text-black shadow-2xl border border-gray-400/30 flex items-center justify-center font-bold text-xs select-none hover:scale-110 active:scale-95 transition-all cursor-ew-resize">
+                      ↔
+                    </div>
+                  </div>
+
+                  {/* Before / After labels */}
+                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded border border-white/5 pointer-events-none select-none">
+                    Before
+                  </div>
+                  <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded border border-white/5 pointer-events-none select-none">
+                    After
+                  </div>
+                </>
+              )}
+
+              {/* Current Active Preset Overlay badge */}
+              {selectedFilter && (
+                <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md text-[#E1E1E6] px-3 py-1.5 rounded-lg border border-white/5 text-[10px] pointer-events-none select-none">
+                  <div className="font-bold">{selectedFilter.name}</div>
+                  <div className="text-[#8A8A99] font-mono text-[9px] scale-90 -ml-1 mt-0.5">Strength: {intensity}%</div>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="text-center text-gray-400">
-              <Upload size={48} className="mx-auto mb-4 opacity-50" />
-              <p className="text-lg">Import a video or image to start</p>
-              <p className="text-sm mt-2">Test filters in real-time and generate new ones with AI</p>
+            /* Styled Import drop zone placeholder */
+            <div className="max-w-md w-full p-8 rounded-2xl border border-[#22222F] bg-[#111117]/60 backdrop-blur-md text-center space-y-6 shadow-2xl">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#7C6FFF]/20 to-purple-500/20 border border-[#7C6FFF]/25 flex items-center justify-center mx-auto text-[#7C6FFF]">
+                <Compass size={28} className="animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-white">Clypra Studio Canvas</h3>
+                <p className="text-xs text-[#8A8A99] max-w-xs mx-auto leading-relaxed">
+                  Import a video or image file to start grading. You can apply stunning cinematic presets, adjust specific tones, or generate custom looks using AI.
+                </p>
+              </div>
+              <div className="flex justify-center gap-3 pt-2">
+                <label className="flex items-center gap-2 py-2 px-4 bg-[#7C6FFF] hover:bg-[#685BEA] text-white text-xs font-semibold rounded-lg shadow-lg shadow-[#7C6FFF]/10 cursor-pointer transition-colors">
+                  <Film size={14} />
+                  <span>Import Video</span>
+                  <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />
+                </label>
+                <label className="flex items-center gap-2 py-2 px-4 bg-[#1E1E2A] hover:bg-[#282837] border border-[#2A2A3D] text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors">
+                  <ImageIcon size={14} />
+                  <span>Import Image</span>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                </label>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Video Controls */}
+        {/* Video Scrubber Timeline */}
         {isVideo && mediaUrl && (
-          <div className="bg-[#1E1E26] border-t border-[#2A2A38] p-4">
-            <div className="flex items-center gap-4">
-              <button onClick={handlePlayPause} className="px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded-lg text-sm font-medium transition-colors">
-                {isPlaying ? "Pause" : "Play"}
-              </button>
+          <div className="h-16 border-t border-[#1A1A24] bg-[#0E0E14] px-4 flex items-center gap-4 shrink-0">
+            <button
+              onClick={handlePlayPause}
+              className="w-8 h-8 rounded-full bg-[#7C6FFF] hover:bg-[#685BEA] flex items-center justify-center text-white shrink-0 shadow transition-colors cursor-pointer"
+            >
+              {isPlaying ? <Pause size={14} fill="white" /> : <Play size={14} fill="white" className="ml-0.5" />}
+            </button>
 
-              <div className="flex-1">
-                <input type="range" min="0" max={mediaMetadata?.duration || 0} step="0.1" value={currentTime} onChange={(e) => handleSeek(parseFloat(e.target.value))} className="w-full" />
-              </div>
+            {/* Scrubber slider track */}
+            <div className="flex-1 relative group py-2">
+              <input
+                type="range"
+                min="0"
+                max={mediaMetadata?.duration || 0}
+                step="0.05"
+                value={currentTime}
+                onChange={(e) => handleSeek(parseFloat(e.target.value))}
+                className="w-full h-1 bg-[#1E1E2A] rounded-lg appearance-none cursor-pointer outline-none focus:outline-none accent-[#7C6FFF]"
+              />
+            </div>
 
-              <div className="text-sm text-gray-400 font-mono min-w-[100px] text-right">
-                {currentTime.toFixed(1)}s / {mediaMetadata?.duration?.toFixed(1) || 0}s
-              </div>
+            {/* Time counters */}
+            <div className="text-[11px] font-mono text-[#8A8A99] shrink-0 select-none">
+              <span className="text-white">{currentTime.toFixed(2)}s</span>
+              <span className="opacity-50"> / </span>
+              <span>{mediaMetadata?.duration?.toFixed(2) || "0.00"}s</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Right Panel - Controls */}
-      <div className="w-72 bg-[#1E1E26] border-l border-[#2A2A38] overflow-y-auto shrink-0">
-        <div className="p-4 border-b border-[#2A2A38]">
-          <h2 className="text-base font-semibold text-white">Filter Settings</h2>
+      {/* ================= RIGHT SIDEBAR ================= */}
+      <div className="w-[300px] bg-[#111117] border-l border-[#22222F] flex flex-col shrink-0 overflow-hidden">
+        
+        {/* Header Tab switches */}
+        <div className="flex border-b border-[#22222F] shrink-0 bg-[#0F0F15]/40">
+          <button
+            onClick={() => setRightTab("adjust")}
+            className={`flex-1 py-3 text-[11px] uppercase tracking-wider font-bold border-b-2 flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              rightTab === "adjust" 
+                ? "border-[#7C6FFF] text-white" 
+                : "border-transparent text-[#8A8A99] hover:text-white"
+            }`}
+          >
+            <SlidersHorizontal size={13} />
+            <span>Grading Controls</span>
+          </button>
+          
+          <button
+            onClick={() => setRightTab("histogram")}
+            className={`flex-1 py-3 text-[11px] uppercase tracking-wider font-bold border-b-2 flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+              rightTab === "histogram" 
+                ? "border-[#7C6FFF] text-white" 
+                : "border-transparent text-[#8A8A99] hover:text-white"
+            }`}
+          >
+            <BarChart4 size={13} />
+            <span>Histogram</span>
+          </button>
         </div>
 
-        {selectedFilter ? (
-          <div className="p-4 space-y-6">
-            {/* Filter Info */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-300 mb-2">Current Filter</h3>
-              <div className="p-3 bg-[#0E0E12] rounded space-y-1 text-xs">
-                <div className="font-semibold text-white">{selectedFilter.name}</div>
-                <div className="text-gray-400">{selectedFilter.description}</div>
+        {/* Tab content area */}
+        <div className="flex-1 overflow-y-auto">
+          
+          {/* Tab 1: Grading Controls */}
+          {rightTab === "adjust" && (
+            <div className="p-4 space-y-5">
+              
+              {/* Preset Intensity Slider */}
+              {selectedFilter ? (
+                <div className="p-3 bg-[#171720] rounded-xl border border-[#252535] space-y-2.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-semibold text-white">Preset: {selectedFilter.name}</span>
+                    <button 
+                      onClick={() => {
+                        setSelectedFilter(null);
+                        setIntensity(100);
+                      }} 
+                      className="text-[10px] text-[#A49BFF] hover:text-white transition-colors cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-[#8A8A99]">
+                      <span>Look Mix</span>
+                      <span className="font-mono text-[#7C6FFF] font-semibold">{intensity}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={intensity}
+                      onChange={(e) => setIntensity(parseInt(e.target.value))}
+                      className="w-full h-1 bg-[#0F0F15] rounded-md appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-[#12121A] rounded-xl border border-[#1A1A26] text-center">
+                  <p className="text-[11px] text-[#8A8A99]">
+                    Select a preset filter on the left sidebar to mix and adjust its intensity
+                  </p>
+                </div>
+              )}
+
+              {/* SECTION: LIGHT */}
+              <div className="border border-[#22222F] rounded-lg overflow-hidden bg-[#13131B]">
+                <button
+                  onClick={() => toggleSection("light")}
+                  className="w-full px-3 py-2 bg-[#171723] hover:bg-[#1B1B2C] border-b border-[#22222F] flex justify-between items-center text-xs font-bold text-white transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Sun size={13} className="text-amber-400" />
+                    <span>Light Adjustments</span>
+                  </span>
+                  {expandedSections.light ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </button>
+
+                {expandedSections.light && (
+                  <div className="p-3.5 space-y-4">
+                    {/* Exposure */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Exposure</span>
+                        <div className="flex gap-2">
+                          <button 
+                            onDoubleClick={() => handleResetSlider("exposure")}
+                            className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                            title="Double-click to reset"
+                          >
+                            {manualAdjustments.exposure > 0 ? `+${manualAdjustments.exposure}` : manualAdjustments.exposure}%
+                          </button>
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min="-100"
+                        max="100"
+                        step="1"
+                        value={manualAdjustments.exposure}
+                        onChange={(e) => handleAdjustmentChange("exposure", parseInt(e.target.value))}
+                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Brightness */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Brightness</span>
+                        <button 
+                          onDoubleClick={() => handleResetSlider("brightness")}
+                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                        >
+                          {manualAdjustments.brightness > 0 ? `+${manualAdjustments.brightness}` : manualAdjustments.brightness}%
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min="-100"
+                        max="100"
+                        step="1"
+                        value={manualAdjustments.brightness}
+                        onChange={(e) => handleAdjustmentChange("brightness", parseInt(e.target.value))}
+                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Contrast */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Contrast</span>
+                        <button 
+                          onDoubleClick={() => handleResetSlider("contrast")}
+                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                        >
+                          {manualAdjustments.contrast > 0 ? `+${manualAdjustments.contrast}` : manualAdjustments.contrast}%
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min="-100"
+                        max="100"
+                        step="1"
+                        value={manualAdjustments.contrast}
+                        onChange={(e) => handleAdjustmentChange("contrast", parseInt(e.target.value))}
+                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION: COLOR */}
+              <div className="border border-[#22222F] rounded-lg overflow-hidden bg-[#13131B]">
+                <button
+                  onClick={() => toggleSection("color")}
+                  className="w-full px-3 py-2 bg-[#171723] hover:bg-[#1B1B2C] border-b border-[#22222F] flex justify-between items-center text-xs font-bold text-white transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Palette size={13} className="text-sky-400" />
+                    <span>Color & Tone</span>
+                  </span>
+                  {expandedSections.color ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </button>
+
+                {expandedSections.color && (
+                  <div className="p-3.5 space-y-4">
+                    {/* Temperature */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Temperature (Warmth)</span>
+                        <button 
+                          onDoubleClick={() => handleResetSlider("temperature")}
+                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                        >
+                          {manualAdjustments.temperature > 0 ? `Warm (${manualAdjustments.temperature})` : manualAdjustments.temperature < 0 ? `Cool (${manualAdjustments.temperature})` : "Neutral"}
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min="-100"
+                        max="100"
+                        step="1"
+                        value={manualAdjustments.temperature}
+                        onChange={(e) => handleAdjustmentChange("temperature", parseInt(e.target.value))}
+                        className="w-full h-1 rounded appearance-none bg-gradient-to-r from-blue-500 via-[#0F0F15] to-amber-500 accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Tint */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Tint (Magenta/Green)</span>
+                        <button 
+                          onDoubleClick={() => handleResetSlider("tint")}
+                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                        >
+                          {manualAdjustments.tint > 0 ? `Magenta (${manualAdjustments.tint})` : manualAdjustments.tint < 0 ? `Green (${manualAdjustments.tint})` : "Neutral"}
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min="-100"
+                        max="100"
+                        step="1"
+                        value={manualAdjustments.tint}
+                        onChange={(e) => handleAdjustmentChange("tint", parseInt(e.target.value))}
+                        className="w-full h-1 rounded appearance-none bg-gradient-to-r from-emerald-500 via-[#0F0F15] to-pink-500 accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Saturation */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Saturation</span>
+                        <button 
+                          onDoubleClick={() => handleResetSlider("saturation")}
+                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                        >
+                          {manualAdjustments.saturation > 0 ? `+${manualAdjustments.saturation}` : manualAdjustments.saturation}%
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min="-100"
+                        max="100"
+                        step="1"
+                        value={manualAdjustments.saturation}
+                        onChange={(e) => handleAdjustmentChange("saturation", parseInt(e.target.value))}
+                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION: EFFECTS */}
+              <div className="border border-[#22222F] rounded-lg overflow-hidden bg-[#13131B]">
+                <button
+                  onClick={() => toggleSection("effects")}
+                  className="w-full px-3 py-2 bg-[#171723] hover:bg-[#1B1B2C] border-b border-[#22222F] flex justify-between items-center text-xs font-bold text-white transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Sliders size={13} className="text-purple-400" />
+                    <span>Stylized Effects</span>
+                  </span>
+                  {expandedSections.effects ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </button>
+
+                {expandedSections.effects && (
+                  <div className="p-3.5 space-y-4">
+                    {/* Vignette */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Vignette (Dark Corners)</span>
+                        <button 
+                          onDoubleClick={() => handleResetSlider("vignette")}
+                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                        >
+                          {manualAdjustments.vignette}%
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={manualAdjustments.vignette}
+                        onChange={(e) => handleAdjustmentChange("vignette", parseInt(e.target.value))}
+                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Sepia */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Vintage Sepia</span>
+                        <button 
+                          onDoubleClick={() => handleResetSlider("sepia")}
+                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                        >
+                          {manualAdjustments.sepia}%
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={manualAdjustments.sepia}
+                        onChange={(e) => handleAdjustmentChange("sepia", parseInt(e.target.value))}
+                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Grayscale */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Grayscale Mix</span>
+                        <button 
+                          onDoubleClick={() => handleResetSlider("grayscale")}
+                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                        >
+                          {manualAdjustments.grayscale}%
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={manualAdjustments.grayscale}
+                        onChange={(e) => handleAdjustmentChange("grayscale", parseInt(e.target.value))}
+                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Blur */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Lens Defocus (Blur)</span>
+                        <button 
+                          onDoubleClick={() => handleResetSlider("blur")}
+                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                        >
+                          {manualAdjustments.blur}px
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="15"
+                        step="0.5"
+                        value={manualAdjustments.blur}
+                        onChange={(e) => handleAdjustmentChange("blur", parseFloat(e.target.value))}
+                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Invert */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-[#8A8A99] font-medium">Invert Phase</span>
+                        <button 
+                          onDoubleClick={() => handleResetSlider("invert")}
+                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
+                        >
+                          {manualAdjustments.invert}%
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={manualAdjustments.invert}
+                        onChange={(e) => handleAdjustmentChange("invert", parseInt(e.target.value))}
+                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* Tab 2: Histogram Visualization */}
+          {rightTab === "histogram" && (
+            <div className="p-4 space-y-5">
+              
+              <div className="space-y-1.5">
+                <span className="text-xs font-semibold text-white">Live Signal Analysis</span>
+                <p className="text-[10px] text-[#8A8A99] leading-relaxed">
+                  Calculated dynamically from the viewport composite. Double check color clipping in shadows or highlights.
+                </p>
+              </div>
+
+              {/* Histogram Display Box */}
+              <div className="bg-[#0A0A0E] rounded-xl border border-[#22222F] p-3 space-y-3 shadow-inner">
+                {histogramData ? (
+                  <div className="relative">
+                    {/* SVG Curve */}
+                    <svg className="w-full h-[110px]" viewBox="0 0 260 110">
+                      <g className="mix-blend-screen opacity-75">
+                        
+                        {/* Red Channel */}
+                        {(histogramChannel === "all" || histogramChannel === "r") && (
+                          <path
+                            d={histogramSVGData.rPath}
+                            fill="rgba(239, 68, 68, 0.2)"
+                            stroke="rgb(239, 68, 68)"
+                            strokeWidth="1"
+                          />
+                        )}
+
+                        {/* Green Channel */}
+                        {(histogramChannel === "all" || histogramChannel === "g") && (
+                          <path
+                            d={histogramSVGData.gPath}
+                            fill="rgba(34, 197, 94, 0.18)"
+                            stroke="rgb(34, 197, 94)"
+                            strokeWidth="1"
+                          />
+                        )}
+
+                        {/* Blue Channel */}
+                        {(histogramChannel === "all" || histogramChannel === "b") && (
+                          <path
+                            d={histogramSVGData.bPath}
+                            fill="rgba(59, 130, 246, 0.25)"
+                            stroke="rgb(59, 130, 246)"
+                            strokeWidth="1"
+                          />
+                        )}
+
+                        {/* Luminance Channel */}
+                        {(histogramChannel === "all" || histogramChannel === "l") && (
+                          <path
+                            d={histogramSVGData.lPath}
+                            fill="none"
+                            stroke="rgba(255, 255, 255, 0.6)"
+                            strokeWidth="1.2"
+                            strokeDasharray="2,2"
+                          />
+                        )}
+
+                      </g>
+                    </svg>
+
+                    {/* Scale labels */}
+                    <div className="flex justify-between items-center text-[9px] font-mono text-[#5B5B6E] mt-1.5 pt-1.5 border-t border-[#22222F]/40 select-none">
+                      <span>Shadows (0)</span>
+                      <span>Midtones</span>
+                      <span>Highlights (255)</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-[120px] flex items-center justify-center text-[#5B5B6E] text-xs">
+                    No signal detected
+                  </div>
+                )}
+              </div>
+
+              {/* Histogram channel filter tabs */}
+              <div className="flex flex-wrap gap-1 p-0.5 bg-[#0F0F15] border border-[#22222F]/50 rounded-lg">
+                {(["all", "r", "g", "b", "l"] as const).map(ch => (
+                  <button
+                    key={ch}
+                    onClick={() => setHistogramChannel(ch)}
+                    className={`flex-1 py-1 text-[9px] font-semibold uppercase tracking-wider rounded transition-all cursor-pointer ${
+                      histogramChannel === ch 
+                        ? "bg-[#1E1E2A] text-white" 
+                        : "text-[#8A8A99] hover:text-white"
+                    }`}
+                  >
+                    {ch === "all" ? "RGB" : ch}
+                  </button>
+                ))}
+              </div>
+
+            </div>
+          )}
+
+        </div>
+
+        {/* Upload lookup to R2 footer */}
+        {selectedFilter && (
+          <div className="p-4 border-t border-[#22222F] bg-[#0F0F15] space-y-3 shrink-0">
+            <div className="space-y-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-[#8A8A99] font-bold flex items-center gap-1.5">
+                <Zap size={11} className="text-teal-400" />
+                Look Deployment
+              </span>
+              <div className="p-2 bg-[#0A0A0E] rounded border border-[#1A1A24] space-y-1 text-[10px] leading-normal font-mono">
+                <div className="flex justify-between text-[#8A8A99]"><span className="truncate">NAME:</span> <span className="text-white font-sans font-semibold truncate max-w-[140px]">{selectedFilter.name}</span></div>
+                <div className="flex justify-between text-[#8A8A99]"><span className="truncate">CAT:</span> <span className="text-white font-sans">{selectedFilter.category}</span></div>
               </div>
             </div>
 
-            {/* Intensity */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-300 mb-2">Intensity</h3>
-              <div className="flex justify-between items-center text-sm mb-2">
-                <span className="text-gray-400">Strength</span>
-                <span className="font-medium">{intensity}%</span>
-              </div>
-              <input type="range" min="0" max="100" step="1" value={intensity} onChange={(e) => setIntensity(parseInt(e.target.value))} className="w-full" />
-            </div>
+            <button
+              onClick={handleUploadFilter}
+              disabled={uploadStatus === "uploading"}
+              className="w-full flex items-center justify-center gap-2 py-2 bg-[#10B981] hover:bg-[#059669] disabled:bg-[#10B981]/50 text-white font-semibold text-xs rounded-lg shadow-lg shadow-[#10B981]/5 transition-colors disabled:cursor-not-allowed cursor-pointer"
+            >
+              {uploadStatus === "uploading" ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  Uploading look...
+                </>
+              ) : (
+                <>
+                  <Zap size={13} />
+                  Deploy Filter to R2
+                </>
+              )}
+            </button>
 
-            {/* CSS Filter Preview */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-300 mb-2">CSS Filter</h3>
-              <div className="p-2 bg-[#0E0E12] rounded text-xs font-mono text-gray-300 break-all">{selectedFilter.cssFilter}</div>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 text-center text-gray-400">
-            <p className="text-sm">Generate or select a filter to adjust settings</p>
+            {uploadMessage && (
+              <div className={`p-2 rounded text-[10px] leading-normal border ${
+                uploadStatus === "error" 
+                  ? "bg-red-500/10 border-red-500/30 text-red-400" 
+                  : "bg-green-500/10 border-green-500/30 text-green-400"
+              }`}>
+                {uploadMessage}
+              </div>
+            )}
           </div>
         )}
+
       </div>
+
     </div>
   );
 }

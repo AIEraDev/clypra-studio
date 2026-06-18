@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useState, useEffect, useRef, useMemo } from "react";
-import { Download, Copy, Undo2, Redo2, Sparkles, Plus, Camera, Loader2, HelpCircle, Beaker, FolderPlus, Video, KeyRound } from "lucide-react";
+import { Download, Copy, Undo2, Redo2, Sparkles, Plus, Camera, Loader2, HelpCircle, Beaker, FolderPlus, Video, KeyRound, User } from "lucide-react";
 
 import { TextEffectConfig, Preset } from "@clypra/engine";
 import { defaultConfig, builtInPresets } from "@clypra/engine";
@@ -33,6 +33,47 @@ const ImageScanModal = lazy(() => import("./components/StudioModals").then((modu
 const PromptStyleModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.PromptStyleModal })));
 const TutorialModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.TutorialModal })));
 const GeminiKeyModal = lazy(() => import("./components/GeminiKeyModal").then((module) => ({ default: module.GeminiKeyModal })));
+import { LoginModal } from "./components/LoginModal";
+
+// Global Fetch Interceptor to automatically inject Authorization header and handle 401s
+if (typeof window !== "undefined" && !(window as any).__clypra_fetch_intercepted__) {
+  (window as any).__clypra_fetch_intercepted__ = true;
+  const originalFetch = window.fetch;
+  window.fetch = async function (input, init) {
+    const token = localStorage.getItem("clypra_auth_token");
+    let modifiedInit = init;
+
+    const urlStr = typeof input === "string" 
+      ? input 
+      : input instanceof URL 
+        ? input.href 
+        : (input as Request).url || "";
+
+    const isClypraApi = urlStr.includes("clypra-worker-api.abdulkabirmusa.com") || 
+                        urlStr.includes("localhost:8787") || 
+                        urlStr.includes("127.0.0.1:8787") || 
+                        urlStr.startsWith("/");
+
+    if (token && isClypraApi) {
+      modifiedInit = init ? { ...init } : {};
+      const headers = new Headers(modifiedInit.headers || {});
+      if (!headers.has("Authorization")) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      modifiedInit.headers = headers;
+    }
+
+    const response = await originalFetch.call(this, input, modifiedInit);
+
+    // If unauthorized (401), clear local session and dispatch event (except on login/register endpoints)
+    if (response.status === 401 && isClypraApi && !urlStr.includes("/auth/login") && !urlStr.includes("/auth/register")) {
+      localStorage.removeItem("clypra_auth_token");
+      window.dispatchEvent(new CustomEvent("clypra-unauthorized"));
+    }
+
+    return response;
+  };
+}
 
 const CREATOR_SESSION_KEY = "clypra_studio_creator_session";
 
@@ -87,6 +128,78 @@ export default function App() {
   const [blendAId, setBlendAId] = useState<string>("classic-ink");
   const [blendBId, setBlendBId] = useState<string>("neon-crimson");
   const [blendRatio, setBlendRatio] = useState<number>(0.5);
+
+  // User Authentication states
+  const [user, setUser] = useState<{ id: number; username: string; email: string; createdAt: string } | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Authenticate user on mount if token exists
+  useEffect(() => {
+    const storedToken = localStorage.getItem("clypra_auth_token");
+    if (storedToken) {
+      setToken(storedToken);
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+      fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          "Authorization": `Bearer ${storedToken}`
+        }
+      })
+        .then((res) => {
+          if (res.ok) {
+            return res.json();
+          }
+          throw new Error("Token expired");
+        })
+        .then((data) => {
+          setUser(data.user);
+        })
+        .catch((err) => {
+          console.warn("Auth check failed:", err);
+          localStorage.removeItem("clypra_auth_token");
+          setToken(null);
+        });
+    }
+  }, []);
+
+  // Listen for unauthorized events to trigger login modal
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      setToken(null);
+      setShowLoginModal(true);
+    };
+    window.addEventListener("clypra-unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("clypra-unauthorized", handleUnauthorized);
+  }, []);
+
+  // Handle click outside of user dropdown to close it
+  useEffect(() => {
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    };
+    if (showUserDropdown) {
+      document.addEventListener("click", handleDocumentClick);
+    }
+    return () => document.removeEventListener("click", handleDocumentClick);
+  }, [showUserDropdown]);
+
+  const handleLoginSuccess = (newToken: string, newUser: any) => {
+    localStorage.setItem("clypra_auth_token", newToken);
+    setToken(newToken);
+    setUser(newUser);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("clypra_auth_token");
+    setToken(null);
+    setUser(null);
+    setShowUserDropdown(false);
+  };
 
   // Feedbacks
   const [copiedCodeFeedback, setCopiedCodeFeedback] = useState<boolean>(false);
@@ -1286,6 +1399,44 @@ export default function App() {
             <HelpCircle size={14} />
           </button>
 
+          {/* User Auth Section */}
+          {user ? (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="h-8 flex items-center gap-2 rounded border border-[#2A2A38] bg-[#1E1E26] px-2.5 text-xs font-semibold text-white hover:bg-[#2A2A38] cursor-pointer"
+                title={`Logged in as ${user.username}`}
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#7C6FFF] text-[10px] font-bold text-white uppercase">
+                  {user.username.charAt(0)}
+                </span>
+                <span className="hidden sm:inline">{user.username}</span>
+              </button>
+              {showUserDropdown && (
+                <div className="absolute right-0 mt-1.5 w-40 origin-top-right rounded-lg border border-[#2A2A38] bg-[#1E1E26] p-1.5 shadow-xl z-50">
+                  <div className="px-2 py-1.5 text-[9px] text-gray-500 border-b border-[#2A2A38] mb-1 truncate">
+                    {user.email}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left rounded px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="h-8 rounded border border-[#7C6FFF]/20 bg-[#7C6FFF]/10 px-2.5 text-xs font-semibold text-[#7C6FFF] hover:bg-[#7C6FFF]/15 flex items-center gap-1.5 cursor-pointer"
+              title="Sign In / Register"
+            >
+              <User size={13} />
+              <span>Sign In</span>
+            </button>
+          )}
+
           {/* Lottie Workspace Link */}
           <a href="/lottie" className="h-8 rounded border border-purple-500/20 bg-purple-500/10 px-2.5 text-xs font-semibold text-purple-300 hover:bg-purple-500/15 flex items-center gap-1.5 cursor-pointer font-sans no-underline" title="Go to Lottie Studio">
             <Video size={13} />
@@ -1555,6 +1706,8 @@ export default function App() {
         <GeminiKeyModal open={showGeminiKeyModal} onClose={() => setShowGeminiKeyModal(false)} />
 
         <TutorialModal open={showTutorialModal} activeTab={tutorialActiveTab} onTabChange={setTutorialActiveTab} onClose={() => setShowTutorialModal(false)} />
+
+        <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} onSuccess={handleLoginSuccess} />
       </Suspense>
     </div>
   );
