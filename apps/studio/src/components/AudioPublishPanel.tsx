@@ -178,15 +178,10 @@ export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" |
       const [audioDataUrl, coverArtDataUrl] = await Promise.all([fileToDataUrl(audioFile), coverFile ? fileToDataUrl(coverFile) : Promise.resolve(undefined)]);
 
       const payload = {
-        id: id.trim(),
-        category,
-        audioFile: {
-          name: audioFile.name,
-          dataUrl: audioDataUrl,
-        },
-        coverArtDataUrl,
-        metadata: {
+        audio: {
+          id: id.trim(),
           name: name.trim(),
+          category,
           description: description.trim(),
           tags,
           author: author.trim(),
@@ -207,7 +202,10 @@ export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" |
             reviewedAt: new Date().toISOString(),
             notes: safetyNotes.trim() || undefined,
           },
+          fileName: audioFile.name,
         },
+        audioFileDataUrl: audioDataUrl,
+        coverArtDataUrl,
       };
 
       // Upload to API endpoint (server handles R2 upload)
