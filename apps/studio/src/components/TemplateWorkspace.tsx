@@ -1016,18 +1016,6 @@ export default ${camelId};
     setShowPublishModal(true);
   };
 
-    // Generate thumbnail preview
-    try {
-      const thumbnailUrl = await captureTemplateThumbnail();
-      setThumbnailDataUrl(thumbnailUrl);
-    } catch (error) {
-      console.error("Failed to generate thumbnail preview:", error);
-      setThumbnailDataUrl(null);
-    }
-
-    setShowPublishModal(true);
-  };
-
   const handlePublishTemplate = async () => {
     if (Object.keys(validationErrors).length > 0) {
       setPublishStatus("failed");
