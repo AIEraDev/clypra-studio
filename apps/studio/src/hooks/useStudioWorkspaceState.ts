@@ -5,7 +5,7 @@ export type StudioPanelTab = "engine" | "definition" | "lab";
 
 // ─── URL helpers ─────────────────────────────────────────────────────────────
 
-const VALID_RAIL_ITEMS: RailItem[] = ["text-effects", "audio", "stickers", "overlays", "video-effects", "body-effects", "filters"];
+const VALID_RAIL_ITEMS: RailItem[] = ["text-effects", "audio", "stickers", "overlays", "video-effects", "body-effects", "filters", "admin"];
 
 function getRailItemFromQuery(): RailItem {
   const q = new URLSearchParams(window.location.search).get("q") as RailItem | null;

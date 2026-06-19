@@ -1,12 +1,13 @@
 import React from "react";
-import { Download, FileCode, Filter, Grid2X2, Layers, Music, Palette, Sparkles, Sticker, Type, Video, Wand2 } from "lucide-react";
+import { Download, FileCode, Filter, Grid2X2, Layers, Music, Palette, Shield, Sparkles, Sticker, Type, Video, Wand2 } from "lucide-react";
 
-export type RailItem = "text-effects" | "audio" | "stickers" | "overlays" | "video-effects" | "body-effects" | "filters";
+export type RailItem = "text-effects" | "audio" | "stickers" | "overlays" | "video-effects" | "body-effects" | "filters" | "admin";
 
 const RAIL_ITEMS: Array<{
   id: RailItem;
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
+  adminOnly?: boolean;
 }> = [
   { id: "text-effects", label: "Text Effects", icon: Type },
   { id: "audio", label: "Audio", icon: Music },
@@ -15,18 +16,22 @@ const RAIL_ITEMS: Array<{
   { id: "video-effects", label: "Video Effects", icon: Wand2 },
   { id: "body-effects", label: "Body Effects", icon: Sparkles },
   { id: "filters", label: "Filters", icon: Filter },
+  { id: "admin", label: "Admin Settings", icon: Shield, adminOnly: true },
 ];
 
 interface LeftRailProps {
   activeItem: RailItem;
   onSelectItem: (item: RailItem) => void;
+  isAdmin?: boolean;
 }
 
-export function LeftRail({ activeItem, onSelectItem }: LeftRailProps) {
+export function LeftRail({ activeItem, onSelectItem, isAdmin = false }: LeftRailProps) {
+  const visibleItems = RAIL_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+  
   return (
     <nav className="studio-left-rail flex w-14 shrink-0 flex-col items-center gap-1 border-r border-(--studio-border) bg-(--studio-shell) py-2" aria-label="Creation library">
-      {RAIL_ITEMS.map(({ id, label, icon: Icon }) => (
-        <button key={id} type="button" aria-label={label} title={label} onClick={() => onSelectItem(id)} className={`flex h-10 w-10 items-center justify-center rounded-md transition-colors cursor-pointer ${activeItem === id ? "bg-(--studio-active-oft)] text-white" : "text-(--studio-muted) hover:bg-(--studio-hover) hover:text-white"}`}>
+      {visibleItems.map(({ id, label, icon: Icon }) => (
+        <button key={id} type="button" aria-label={label} title={label} onClick={() => onSelectItem(id)} className={`flex h-10 w-10 items-center justify-center rounded-md transition-colors cursor-pointer ${activeItem === id ? "bg-(--studio-active-soft) text-white" : "text-(--studio-muted) hover:bg-(--studio-hover) hover:text-white"}`}>
           <Icon size={18} className={activeItem === id ? "text-(--studio-accent)" : ""} />
         </button>
       ))}
