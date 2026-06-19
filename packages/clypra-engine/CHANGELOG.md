@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/AIEraDev/clypra-studio/compare/v1.20.0...v1.21.0) (2026-06-19)
+
+
+### Features
+
+* **engine:** track resolved layouts & update studio workspace UI for auto width/height ([7fcc56a](https://github.com/AIEraDev/clypra-studio/commit/7fcc56afc6d8e655cd39539b29699f7c98b3c5d8))
+
 # [1.20.0](https://github.com/AIEraDev/clypra-studio/compare/v1.19.1...v1.20.0) (2026-06-19)
 
 
