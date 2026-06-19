@@ -82,6 +82,11 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const [publishPrUrl, setPublishPrUrl] = useState<string | null>(null);
   const [thumbnailDataUrl, setThumbnailDataUrl] = useState<string | null>(null);
+  const [publishVideoDataUrl, setPublishVideoDataUrl] = useState<string | null>(null);
+  const [isGeneratingPublishVideo, setIsGeneratingPublishVideo] = useState(false);
+  const [publishDescription, setPublishDescription] = useState("");
+  const [publishTagsInput, setPublishTagsInput] = useState("");
+  const [publishPlacement, setPublishPlacement] = useState<(typeof PLACEMENTS)[number]>("center");
 
   // Auto-save notification
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -130,6 +135,45 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     }
   };
 
+  const applyCustomizations = (renderer: TemplateRenderer) => {
+    if (!template) return;
+    for (const layer of template.layers) {
+      if (hiddenLayers.has(layer.id)) {
+        renderer.updateLayer(layer.id, {
+          x: -9999,
+          y: -9999,
+        });
+        continue;
+      }
+
+      const overrides: any = {};
+      if (layer.kind === "text") {
+        if (layer.role && layer.role !== "none") {
+          if (layer.role === "primary") {
+            overrides.content = customTexts.primary;
+          } else if (layer.role === "secondary") {
+            overrides.content = customTexts.secondary;
+          } else if (layer.role === "accent") {
+            overrides.content = customTexts.accent;
+          }
+        }
+      }
+
+      const colorOverride = colorOverrides.get(layer.id);
+      if (colorOverride) {
+        if (layer.kind === "text") {
+          overrides.color = colorOverride;
+        } else if (layer.kind === "shape") {
+          overrides.fill = colorOverride;
+        }
+      }
+
+      if (Object.keys(overrides).length > 0) {
+        renderer.updateLayer(layer.id, overrides);
+      }
+    }
+  };
+
   // Auto-save template state to localstorage
   useEffect(() => {
     if (!template) return;
@@ -162,44 +206,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
     // Build template rendering snapshot with overrides applied
     const renderer = new TemplateRenderer(template);
-
-    // Apply custom test texts & color overrides
-    for (const layer of template.layers) {
-      if (hiddenLayers.has(layer.id)) {
-        renderer.updateLayer(layer.id, {
-          x: -9999, // push offscreen
-          y: -9999,
-        });
-        continue;
-      }
-
-      const overrides: any = {};
-      if (layer.kind === "text") {
-        // Only apply role-based overrides if role is set and not "none"
-        if (layer.role && layer.role !== "none") {
-          if (layer.role === "primary") {
-            overrides.content = customTexts.primary;
-          } else if (layer.role === "secondary") {
-            overrides.content = customTexts.secondary;
-          } else if (layer.role === "accent") {
-            overrides.content = customTexts.accent;
-          }
-        }
-      }
-
-      const colorOverride = colorOverrides.get(layer.id);
-      if (colorOverride) {
-        if (layer.kind === "text") {
-          overrides.color = colorOverride;
-        } else if (layer.kind === "shape") {
-          overrides.fill = colorOverride;
-        }
-      }
-
-      if (Object.keys(overrides).length > 0) {
-        renderer.updateLayer(layer.id, overrides);
-      }
-    }
+    applyCustomizations(renderer);
 
     renderer.drawFrame(ctx, currentTime);
 
@@ -630,6 +637,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     if (!ctx) return null;
 
     const renderer = new TemplateRenderer(template);
+    applyCustomizations(renderer);
     // Render at the middle of the duration where all layers are fully resolved
     const midTime = template.duration / 2;
     renderer.drawFrame(ctx, midTime);
@@ -647,6 +655,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     if (!oCtx) return "";
 
     const renderer = new TemplateRenderer(template);
+    applyCustomizations(renderer);
 
     // Draw using same layout logic at thumbnail frame time
     const fps = 30;
@@ -675,6 +684,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     if (!template) return "";
 
     const renderer = new TemplateRenderer(template);
+    applyCustomizations(renderer);
     const fps = 30;
     const totalFrames = Math.ceil(template.duration * fps);
 
@@ -789,13 +799,41 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const handleOpenPublish = async () => {
     if (!template) return;
     try {
+      setPublishDescription(`Canvas-based template: ${template.label}`);
+      setPublishTagsInput(template.category || "");
+      setPublishPlacement("center");
+      setPublishVideoDataUrl(null);
+      
       const url = await captureThumbnail();
       setThumbnailDataUrl(url);
       setShowPublishModal(true);
+
+      // Asynchronously record and generate preview video in the background
+      setIsGeneratingPublishVideo(true);
+      generatePreviewVideo()
+        .then((videoUrl) => {
+          setPublishVideoDataUrl(videoUrl);
+          setIsGeneratingPublishVideo(false);
+        })
+        .catch((err) => {
+          console.error("Failed to generate background preview video", err);
+          setIsGeneratingPublishVideo(false);
+        });
     } catch (e) {
       console.error("Failed to generate preview thumbnail", e);
     }
   };
+
+  // Automatically regenerate thumbnail preview when thumbnailFrame changes while modal is open
+  useEffect(() => {
+    if (showPublishModal && template) {
+      captureThumbnail().then((url) => {
+        setThumbnailDataUrl(url);
+      }).catch((err) => {
+        console.error("Failed to auto-update thumbnail preview", err);
+      });
+    }
+  }, [thumbnailFrame, showPublishModal]);
 
   const handleGeneratePreview = async () => {
     if (!template || isGeneratingPreview) return;
@@ -827,24 +865,28 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     if (!template) return;
     setPublishStatus("publishing");
     setPublishPrUrl(null);
-    setPublishMessage("Generating preview video and preparing files…");
+    setPublishMessage("Preparing preview and files…");
 
     try {
-      // Generate thumbnail
-      const thumbnailUrl = await captureThumbnail();
+      // Use cached thumbnail or generate
+      const thumbnailUrl = thumbnailDataUrl || await captureThumbnail();
 
-      setPublishMessage("Recording preview animation…");
-      // Generate preview video
-      const previewVideoUrl = await generatePreviewVideo();
+      // Use pre-recorded video or record now
+      let videoUrl = publishVideoDataUrl;
+      if (!videoUrl) {
+        setPublishMessage("Recording preview animation…");
+        videoUrl = await generatePreviewVideo();
+      }
 
-      setPublishMessage("Uploading to R2…");
+      setPublishMessage("Uploading files to R2…");
 
       const payloadDefinition = {
         id: template.id,
         name: template.label,
         category: template.category,
-        description: `Declarative canvas template: ${template.label}`,
-        tags: [template.category],
+        description: publishDescription,
+        tags: publishTagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+        placement: publishPlacement,
         duration: template.duration,
         width: template.canvasWidth,
         height: template.canvasHeight,
@@ -857,7 +899,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         definition: payloadDefinition,
         lottieData: template, // pass full canvas template as JSON
         thumbnailDataUrl: thumbnailUrl,
-        previewDataUrl: previewVideoUrl, // include preview video
+        previewDataUrl: videoUrl, // include preview video
       });
 
       setPublishStatus("published");
@@ -1670,22 +1712,24 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           templateId={template.id}
           templateName={template.label}
           category={template.category}
-          description={`Canvas-based template: ${template.label}`}
-          tagsInput={template.category}
-          placement="center"
+          description={publishDescription}
+          tagsInput={publishTagsInput}
+          placement={publishPlacement}
           thumbnailFrame={thumbnailFrame}
           durationFrames={Math.round(template.duration * 30)}
           validationErrors={{}}
           lottieData={template} // pass full template
           thumbnailDataUrl={thumbnailDataUrl || undefined}
+          previewVideoUrl={publishVideoDataUrl || undefined}
+          isGeneratingVideo={isGeneratingPublishVideo}
           width={template.canvasWidth}
           height={template.canvasHeight}
           onTemplateIdChange={(v) => setTemplate({ ...template, id: v })}
           onTemplateNameChange={(v) => setTemplate({ ...template, label: v })}
           onCategoryChange={(v) => setTemplate({ ...template, category: v })}
-          onDescriptionChange={() => {}}
-          onTagsInputChange={() => {}}
-          onPlacementChange={() => {}}
+          onDescriptionChange={setPublishDescription}
+          onTagsInputChange={setPublishTagsInput}
+          onPlacementChange={setPublishPlacement}
           onThumbnailFrameChange={setThumbnailFrame}
           onUseCurrentFrame={() => setThumbnailFrame(Math.round(currentTime * 30))}
           onPreviewThumbnail={async () => {

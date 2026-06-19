@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, MapPin, Image as ImageIcon, ExternalLink, Sparkles } from "lucide-react";
+import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, MapPin, Image as ImageIcon, ExternalLink, Sparkles, Video } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 
@@ -28,6 +28,8 @@ interface PublishTemplateModalProps {
   validationErrors: ValidationErrors;
   lottieData?: any;
   thumbnailDataUrl?: string;
+  previewVideoUrl?: string;
+  isGeneratingVideo?: boolean;
   width: number;
   height: number;
   onTemplateIdChange: (value: string) => void;
@@ -45,7 +47,7 @@ interface PublishTemplateModalProps {
   publishPrUrl: string | null;
 }
 
-export function PublishTemplateModal({ open, onClose, templateId, templateName, category, description, tagsInput, placement, thumbnailFrame, durationFrames, validationErrors, lottieData, thumbnailDataUrl, width, height, onTemplateIdChange, onTemplateNameChange, onCategoryChange, onDescriptionChange, onTagsInputChange, onPlacementChange, onThumbnailFrameChange, onUseCurrentFrame, onPreviewThumbnail, onPublish, publishStatus, publishMessage, publishPrUrl }: PublishTemplateModalProps) {
+export function PublishTemplateModal({ open, onClose, templateId, templateName, category, description, tagsInput, placement, thumbnailFrame, durationFrames, validationErrors, lottieData, thumbnailDataUrl, previewVideoUrl, isGeneratingVideo, width, height, onTemplateIdChange, onTemplateNameChange, onCategoryChange, onDescriptionChange, onTagsInputChange, onPlacementChange, onThumbnailFrameChange, onUseCurrentFrame, onPreviewThumbnail, onPublish, publishStatus, publishMessage, publishPrUrl }: PublishTemplateModalProps) {
   const [activeTab, setActiveTab] = useState<"metadata" | "preview">("metadata");
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
     setAiError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/ai/lottie-metadata`, {
+      const response = await fetch(`${API_BASE_URL}/ai/template-metadata`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -82,7 +84,11 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
 
       const result = await response.json();
 
-      if (result.category) onCategoryChange(result.category as TemplateCategory);
+      let mappedCategory = result.category;
+      if (mappedCategory === "title") mappedCategory = "title-card";
+      if (mappedCategory === "outro") mappedCategory = "social";
+
+      if (mappedCategory) onCategoryChange(mappedCategory as TemplateCategory);
       onTemplateIdChange(result.id);
       onTemplateNameChange(result.name);
       onDescriptionChange(result.description);
@@ -116,7 +122,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                 <UploadCloud size={18} />
               </div>
               <div className="min-w-0">
-                <h3 className="text-sm font-bold text-white">Publish Lottie Template to API</h3>
+                <h3 className="text-sm font-bold text-white">Publish Text Template to API</h3>
                 <p className="mt-1 text-[11px] leading-relaxed text-[#9A9AAA]">Review metadata and create a GitHub Pull Request with your template</p>
               </div>
             </div>
@@ -261,20 +267,53 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                   Frame {thumbnailFrame} of {durationFrames - 1} will be used for the PR thumbnail
                 </p>
 
-                {/* Thumbnail Preview */}
-                {thumbnailDataUrl && (
-                  <div className="mt-3 rounded-lg border border-[#2A2A38] bg-[#0B0B10] p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ImageIcon size={12} className="text-amber-400" />
-                      <span className="text-[10px] font-bold text-[#888899] uppercase">Thumbnail Preview</span>
-                      <span className="text-[9px] text-clypra-muted ml-auto">Ultra HD</span>
-                    </div>
-                    <div className="relative aspect-video rounded overflow-hidden border border-[#2A2A38] bg-[#09090D]">
-                      <img src={thumbnailDataUrl} alt="Thumbnail preview" className="w-full h-full" style={{ objectFit: "contain", imageRendering: "-webkit-optimize-contrast" }} />
-                    </div>
-                    <p className="mt-2 text-[9px] text-clypra-muted text-center">
-                      High-resolution {width}×{height}px (4× supersampled) will be included in the PR
-                    </p>
+                {/* Thumbnail & Video Preview Grid */}
+                {(thumbnailDataUrl || previewVideoUrl || isGeneratingVideo) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    {/* Thumbnail Preview */}
+                    {thumbnailDataUrl && (
+                      <div className="rounded-lg border border-[#2A2A38] bg-[#0B0B10] p-3 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <ImageIcon size={12} className="text-amber-400" />
+                            <span className="text-[10px] font-bold text-[#888899] uppercase">Thumbnail Preview</span>
+                            <span className="text-[9px] text-clypra-muted ml-auto">Ultra HD</span>
+                          </div>
+                          <div className="relative aspect-video rounded overflow-hidden border border-[#2A2A38] bg-[#09090D]">
+                            <img src={thumbnailDataUrl} alt="Thumbnail preview" className="w-full h-full" style={{ objectFit: "contain", imageRendering: "-webkit-optimize-contrast" }} />
+                          </div>
+                        </div>
+                        <p className="mt-2 text-[9px] text-clypra-muted text-center">
+                          High-resolution {width}×{height}px (4x supersampled)
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Video Preview */}
+                    {isGeneratingVideo ? (
+                      <div className="rounded-lg border border-[#2A2A38] bg-[#0B0B10] p-3 flex flex-col items-center justify-center min-h-[140px] aspect-video">
+                        <Loader2 className="animate-spin text-teal-400 mb-2" size={20} />
+                        <p className="text-[10px] text-clypra-muted text-center">Generating WebM preview video...</p>
+                      </div>
+                    ) : (
+                      previewVideoUrl && (
+                        <div className="rounded-lg border border-[#2A2A38] bg-[#0B0B10] p-3 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Video size={12} className="text-purple-400" />
+                              <span className="text-[10px] font-bold text-[#888899] uppercase">Video Preview</span>
+                              <span className="text-[9px] text-clypra-muted ml-auto">WebM</span>
+                            </div>
+                            <div className="relative aspect-video rounded overflow-hidden border border-[#2A2A38] bg-[#09090D]">
+                              <video src={previewVideoUrl} controls autoPlay loop muted className="w-full h-full" style={{ objectFit: "contain" }} />
+                            </div>
+                          </div>
+                          <p className="mt-2 text-[9px] text-clypra-muted text-center">
+                            Full animation preview video
+                          </p>
+                        </div>
+                      )
+                    )}
                   </div>
                 )}
               </div>
@@ -339,12 +378,31 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                   </div>
                 )}
 
-                <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
-                  <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-                    <ImageIcon size={14} className="text-amber-300" /> Thumbnail
-                  </h4>
-                  <div className="text-[10px] text-[#CCCCD6]">
-                    Frame <span className="font-mono text-white">{thumbnailFrame}</span> of <span className="font-mono text-white">{durationFrames - 1}</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
+                    <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
+                      <ImageIcon size={14} className="text-amber-300" /> Thumbnail
+                    </h4>
+                    <div className="text-[10px] text-[#CCCCD6]">
+                      Frame <span className="font-mono text-white">{thumbnailFrame}</span> of <span className="font-mono text-white">{durationFrames - 1}</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
+                    <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
+                      <Video size={14} className="text-purple-300" /> Preview Video
+                    </h4>
+                    <div className="text-[10px] text-[#CCCCD6]">
+                      {isGeneratingVideo ? (
+                        <span className="flex items-center gap-1.5 text-amber-400">
+                          <Loader2 size={12} className="animate-spin" /> Generating...
+                        </span>
+                      ) : previewVideoUrl ? (
+                        <span className="text-teal-300 font-semibold">Ready (WebM)</span>
+                      ) : (
+                        <span className="text-red-400">Not generated</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
