@@ -42,6 +42,7 @@ interface TemplatePublishPayload {
   };
   lottieData: unknown;
   thumbnailDataUrl: string;
+  previewDataUrl?: string; // Optional .webm preview video
 }
 
 // ─── Helper Functions ────────────────────────────────────────────────────────
@@ -147,27 +148,44 @@ export function useR2Publish() {
     const category = payload.category.toLowerCase();
     const definition = { ...payload.definition, id: payload.id, category };
 
-    const lottieKey = `text-templates/${category}/${payload.id}.json`;
+    const templateKey = `text-templates/${category}/${payload.id}.json`;
     const thumbnailKey = `thumbnails/${payload.id}.png`;
+    const previewKey = `previews/${payload.id}.webm`;
     const categoryIndexKey = `text-templates/${category}/index.json`;
     const globalIndexKey = `text-templates/index.json`;
 
-    // Upload Lottie and thumbnail
-    await uploadR2Json(config, lottieKey, payload.lottieData);
+    // Upload template JSON, thumbnail, and preview video (if available)
+    await uploadR2Json(config, templateKey, payload.lottieData);
     await uploadFileFromDataUrl(config, thumbnailKey, payload.thumbnailDataUrl, "image/png");
+
+    // Upload preview video if provided
+    if (payload.previewDataUrl) {
+      await uploadFileFromDataUrl(config, previewKey, payload.previewDataUrl, "video/webm");
+    }
 
     // Update indexes
     const categoryIndex = await getR2Json<any[]>(config, categoryIndexKey, []);
     const globalIndex = await getR2Json<any[]>(config, globalIndexKey, []);
 
-    await uploadR2Json(config, categoryIndexKey, upsertById(categoryIndex, definition as any));
-    await uploadR2Json(config, globalIndexKey, upsertById(globalIndex, definition as any));
+    const summary = {
+      ...definition,
+      thumbnail: getPublicUrl(config.bucketName, thumbnailKey),
+      preview: payload.previewDataUrl ? getPublicUrl(config.bucketName, previewKey) : undefined,
+      durationMs: (definition as any).duration ? Math.round((definition as any).duration * 1000) : undefined,
+    };
+
+    await uploadR2Json(config, categoryIndexKey, upsertById(categoryIndex, summary as any));
+    await uploadR2Json(config, globalIndexKey, upsertById(globalIndex, summary as any));
+
+    const files = [templateKey, thumbnailKey, categoryIndexKey, globalIndexKey];
+    if (payload.previewDataUrl) files.push(previewKey);
 
     return {
-      files: [lottieKey, thumbnailKey, categoryIndexKey, globalIndexKey],
+      files,
       urls: {
-        lottie: getPublicUrl(config.bucketName, lottieKey),
+        lottie: getPublicUrl(config.bucketName, templateKey),
         thumbnail: getPublicUrl(config.bucketName, thumbnailKey),
+        ...(payload.previewDataUrl ? { preview: getPublicUrl(config.bucketName, previewKey) } : {}),
       },
       message: `Published text template: ${definition.name}`,
     };

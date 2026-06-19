@@ -467,6 +467,64 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     return offscreen.toDataURL("image/png");
   };
 
+  // Generate preview video
+  const generatePreviewVideo = async (): Promise<string> => {
+    if (!template) return "";
+
+    const canvas = document.createElement("canvas");
+    canvas.width = template.canvasWidth;
+    canvas.height = template.canvasHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+
+    const renderer = new TemplateRenderer(template);
+    const fps = 30;
+    const frameDuration = 1000 / fps;
+    const totalFrames = Math.ceil(template.duration * fps);
+
+    // Create MediaRecorder stream
+    const stream = canvas.captureStream(fps);
+    const chunks: Blob[] = [];
+
+    const mediaRecorder = new MediaRecorder(stream, {
+      mimeType: "video/webm;codecs=vp9",
+      videoBitsPerSecond: 2500000, // 2.5 Mbps
+    });
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    return new Promise((resolve) => {
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "video/webm" });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      };
+
+      mediaRecorder.start();
+
+      let currentFrame = 0;
+      const renderFrame = () => {
+        if (currentFrame >= totalFrames) {
+          mediaRecorder.stop();
+          return;
+        }
+
+        const time = currentFrame / fps;
+        renderer.drawFrame(ctx, time);
+        currentFrame++;
+
+        setTimeout(renderFrame, frameDuration);
+      };
+
+      renderFrame();
+    });
+  };
+
   const handleOpenPublish = async () => {
     if (!template) return;
     try {
@@ -482,10 +540,17 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     if (!template) return;
     setPublishStatus("publishing");
     setPublishPrUrl(null);
-    setPublishMessage("Creating publish branch, uploading files, and opening PR…");
+    setPublishMessage("Generating preview video and preparing files…");
 
     try {
-      const url = await captureThumbnail();
+      // Generate thumbnail
+      const thumbnailUrl = await captureThumbnail();
+
+      setPublishMessage("Recording preview animation…");
+      // Generate preview video
+      const previewVideoUrl = await generatePreviewVideo();
+
+      setPublishMessage("Uploading to R2…");
 
       const payloadDefinition = {
         id: template.id,
@@ -503,8 +568,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         id: template.id,
         category: template.category,
         definition: payloadDefinition,
-        lottieData: template, // pass full canvas template as custom definition payload
-        thumbnailDataUrl: url,
+        lottieData: template, // pass full canvas template as JSON
+        thumbnailDataUrl: thumbnailUrl,
+        previewDataUrl: previewVideoUrl, // include preview video
       });
 
       setPublishStatus("published");
