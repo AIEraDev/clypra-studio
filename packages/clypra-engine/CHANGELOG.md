@@ -1,3 +1,10 @@
+## [1.19.1](https://github.com/AIEraDev/clypra-studio/compare/v1.19.0...v1.19.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* **engine:** v1.19.1 — always clip text to panel bounds with fixed width/height ([d7ab27a](https://github.com/AIEraDev/clypra-studio/commit/d7ab27a144b4c51e12789e4b894ec813eb600a3d))
+
 # [1.19.0](https://github.com/AIEraDev/clypra-studio/compare/v1.18.2...v1.19.0) (2026-06-19)
 
 
