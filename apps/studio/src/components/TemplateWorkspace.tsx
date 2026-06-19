@@ -12,6 +12,14 @@ export interface TemplateWorkspaceProps {
 const CATEGORIES: TemplateCategory[] = ["lower-third", "title-card", "caption", "callout", "social", "countdown"];
 const PLACEMENTS = ["lower-third", "center", "top", "full-frame"] as const;
 
+function toKebabCase(str: string): string {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const { publishTemplate } = useR2Publish();
 
@@ -1069,7 +1077,11 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Label Name</label>
-                  <input type="text" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500" />
+                  <input type="text" value={newLabel} onChange={(e) => {
+                    const label = e.target.value;
+                    setNewLabel(label);
+                    setNewTemplateId(toKebabCase(label));
+                  }} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -1664,15 +1676,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               <div className="p-4 space-y-4">
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Template ID</label>
-                  <input type="text" value={template.id} onChange={(e) => setTemplate({ ...template, id: e.target.value })} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
+                  <input type="text" value={template.id} onChange={(e) => setTemplate(prev => prev ? { ...prev, id: e.target.value } : null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Title Name</label>
-                  <input type="text" value={template.label} onChange={(e) => setTemplate({ ...template, label: e.target.value })} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                  <input type="text" value={template.label} onChange={(e) => {
+                    const val = e.target.value;
+                    setTemplate(prev => prev ? { ...prev, label: val, id: toKebabCase(val) } : null);
+                  }} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Category</label>
-                  <select value={template.category} onChange={(e) => setTemplate({ ...template, category: e.target.value as TemplateCategory })} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
+                  <select value={template.category} onChange={(e) => {
+                    const val = e.target.value as TemplateCategory;
+                    setTemplate(prev => prev ? { ...prev, category: val } : null);
+                  }} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
                     {CATEGORIES.map((c) => (
                       <option key={c} value={c}>
                         {c}
@@ -1682,16 +1700,16 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Timeline Duration (seconds)</label>
-                  <input type="number" step={0.1} value={template.duration} onChange={(e) => setTemplate({ ...template, duration: parseFloat(e.target.value) || 3.0 })} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                  <input type="number" step={0.1} value={template.duration} onChange={(e) => setTemplate(prev => prev ? { ...prev, duration: parseFloat(e.target.value) || 3.0 } : null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Width (px)</label>
-                    <input type="number" value={template.canvasWidth} onChange={(e) => setTemplate({ ...template, canvasWidth: parseInt(e.target.value) || 1920 })} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
+                    <input type="number" value={template.canvasWidth} onChange={(e) => setTemplate(prev => prev ? { ...prev, canvasWidth: parseInt(e.target.value) || 1920 } : null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Height (px)</label>
-                    <input type="number" value={template.canvasHeight} onChange={(e) => setTemplate({ ...template, canvasHeight: parseInt(e.target.value) || 1080 })} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
+                    <input type="number" value={template.canvasHeight} onChange={(e) => setTemplate(prev => prev ? { ...prev, canvasHeight: parseInt(e.target.value) || 1080 } : null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
                   </div>
                 </div>
 
@@ -1724,9 +1742,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           isGeneratingVideo={isGeneratingPublishVideo}
           width={template.canvasWidth}
           height={template.canvasHeight}
-          onTemplateIdChange={(v) => setTemplate({ ...template, id: v })}
-          onTemplateNameChange={(v) => setTemplate({ ...template, label: v })}
-          onCategoryChange={(v) => setTemplate({ ...template, category: v })}
+          onTemplateIdChange={(v) => setTemplate(prev => prev ? { ...prev, id: v } : null)}
+          onTemplateNameChange={(v) => setTemplate(prev => prev ? { ...prev, label: v, id: toKebabCase(v) } : null)}
+          onCategoryChange={(v) => setTemplate(prev => prev ? { ...prev, category: v } : null)}
           onDescriptionChange={setPublishDescription}
           onTagsInputChange={setPublishTagsInput}
           onPlacementChange={setPublishPlacement}
