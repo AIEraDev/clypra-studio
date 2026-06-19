@@ -1,3 +1,17 @@
+# [1.11.0](https://github.com/AIEraDev/clypra-studio/compare/v1.10.1...v1.11.0) (2026-06-19)
+
+
+### Bug Fixes
+
+* use relative base path in Vite for portable asset loading ([e1eb44a](https://github.com/AIEraDev/clypra-studio/commit/e1eb44a976cdab74074448e47425295847a24332))
+
+
+### Features
+
+* login modal UI and global fetch interceptor auth integration ([698a6ec](https://github.com/AIEraDev/clypra-studio/commit/698a6ecc644e23de7ffbb5c3d440a6a5de291a61))
+* render BodyEffectWorkspace in App ([93d03c7](https://github.com/AIEraDev/clypra-studio/commit/93d03c7a2e07fa88b06eb619d16b463bc21eacfa))
+* restrict LoginModal to Sign In only, removing register UI ([4860d76](https://github.com/AIEraDev/clypra-studio/commit/4860d76e78ad295fc57cb025f4f6a3b6ef02102b))
+
 ## [1.10.1](https://github.com/AIEraDev/clypra-studio/compare/v1.10.0...v1.10.1) (2026-06-18)
 
 
