@@ -72,6 +72,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
   const [showKeyframeEditor, setShowKeyframeEditor] = useState(false);
 
+  // Preview Video State
+  const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+
   // Publishing States
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "published" | "failed">("idle");
@@ -536,6 +540,32 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     }
   };
 
+  const handleGeneratePreview = async () => {
+    if (!template || isGeneratingPreview) return;
+
+    setIsGeneratingPreview(true);
+    try {
+      const videoDataUrl = await generatePreviewVideo();
+
+      // Convert data URL to blob URL for video playback
+      const response = await fetch(videoDataUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Revoke previous URL if exists
+      if (previewVideoUrl) {
+        URL.revokeObjectURL(previewVideoUrl);
+      }
+
+      setPreviewVideoUrl(blobUrl);
+    } catch (e) {
+      console.error("Failed to generate preview video", e);
+      alert("Failed to generate preview video. Check console for details.");
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  };
+
   const handlePublish = async () => {
     if (!template) return;
     setPublishStatus("publishing");
@@ -615,6 +645,17 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <>
               <button onClick={handleResetSession} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all flex items-center gap-1.5">
                 <RefreshCw size={13} /> Reset
+              </button>
+              <button onClick={handleGeneratePreview} disabled={isGeneratingPreview} className="rounded-lg border border-purple-500 hover:bg-purple-500/10 px-4 py-1.5 text-xs font-bold text-purple-400 flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                {isGeneratingPreview ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Generating...
+                  </>
+                ) : (
+                  <>
+                    <Play size={14} /> Preview Video
+                  </>
+                )}
               </button>
               <button onClick={handleOpenPublish} className="rounded-lg bg-teal-500 hover:bg-teal-400 px-4 py-1.5 text-xs font-bold text-black shadow-lg shadow-teal-500/10 flex items-center gap-1.5 transition-colors">
                 <UploadCloud size={14} /> Publish Template
@@ -806,9 +847,19 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           <main className="flex-1 flex flex-col bg-[#09090D] min-w-0 h-full overflow-hidden p-6 gap-6">
             {/* Canvas Player Box */}
             <div className="flex-1 flex items-center justify-center bg-[#07070A] rounded-2xl border border-[#2A2A38] relative overflow-hidden p-4 shadow-inner">
-              <div className="relative aspect-video max-w-full max-h-full rounded-lg overflow-hidden border border-[#1A1A26] bg-[#0E0E14] flex items-center justify-center">
-                <canvas ref={canvasRef} width={template.canvasWidth} height={template.canvasHeight} className="w-full h-full object-contain" />
-              </div>
+              <canvas
+                ref={canvasRef}
+                width={template.canvasWidth}
+                height={template.canvasHeight}
+                className="max-w-full max-h-full rounded-lg border border-[#1A1A26] shadow-lg"
+                style={{
+                  width: "auto",
+                  height: "auto",
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                }}
+              />
             </div>
 
             {/* Playback & Customization Controls */}
@@ -848,6 +899,25 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     <option value={1.5}>1.5x</option>
                     <option value={2.0}>2.0x</option>
                   </select>
+                </div>
+                <div className="flex items-center gap-1.5 bg-[#171722] border border-[#2A2A38] rounded-lg px-2 py-1.5 shrink-0">
+                  <span className="text-[10px] text-[#888899] font-mono">Duration:</span>
+                  <input
+                    type="number"
+                    step={0.1}
+                    min={0.1}
+                    value={template.duration}
+                    onChange={(e) => {
+                      const newDuration = parseFloat(e.target.value) || 3.0;
+                      setTemplate({ ...template, duration: newDuration });
+                      // Reset time if it exceeds new duration
+                      if (currentTime > newDuration) {
+                        setCurrentTime(newDuration);
+                      }
+                    }}
+                    className="bg-transparent text-xs text-white border-none outline-none font-mono font-bold w-12 text-right cursor-pointer"
+                  />
+                  <span className="text-[10px] text-[#666677] font-mono">s</span>
                 </div>
               </div>
 
@@ -1304,6 +1374,47 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           publishMessage={publishMessage}
           publishPrUrl={publishPrUrl}
         />
+      )}
+
+      {/* Preview Video Modal */}
+      {previewVideoUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setPreviewVideoUrl(null)}>
+          <div className="relative w-full max-w-4xl mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="rounded-2xl border border-[#2A2A38] bg-[#121219] overflow-hidden shadow-2xl">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-[#2A2A38]">
+                <div className="flex items-center gap-2">
+                  <Play size={18} className="text-purple-400" />
+                  <h3 className="text-sm font-bold text-white">Preview Video</h3>
+                </div>
+                <button onClick={() => setPreviewVideoUrl(null)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-[#2A2A38] transition-colors">
+                  <X size={16} className="text-white" />
+                </button>
+              </div>
+
+              {/* Video Player */}
+              <div className="p-6 bg-[#09090D]">
+                <video src={previewVideoUrl} controls autoPlay loop className="w-full rounded-lg border border-[#2A2A38]" style={{ maxHeight: "70vh" }} />
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-[#2A2A38] flex items-center justify-between">
+                <p className="text-[10px] text-[#888899]">Preview of exported .webm video • {template?.duration.toFixed(1)}s @ 30fps</p>
+                <button
+                  onClick={() => {
+                    const a = document.createElement("a");
+                    a.href = previewVideoUrl;
+                    a.download = `${template?.id || "preview"}.webm`;
+                    a.click();
+                  }}
+                  className="rounded-lg border border-[#2A2A38] hover:bg-[#2A2A38] px-3 py-1.5 text-xs font-semibold text-white transition-colors flex items-center gap-1.5"
+                >
+                  <Download size={12} /> Download
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
