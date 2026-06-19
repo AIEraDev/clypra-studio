@@ -581,41 +581,48 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   // Update selected layer property
   const handleUpdateLayerProperty = (property: string, value: any) => {
-    if (!template || !selectedLayerId) return;
-    setTemplate({
-      ...template,
-      layers: template.layers.map((l) => {
-        if (l.id !== selectedLayerId) return l;
-        if (property.includes(".")) {
-          const [parent, child] = property.split(".");
+    if (!selectedLayerId) return;
+    setTemplate((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        layers: prev.layers.map((l) => {
+          if (l.id !== selectedLayerId) return l;
+          if (property.includes(".")) {
+            const [parent, child] = property.split(".");
+            return {
+              ...l,
+              [parent]: {
+                ...(l as any)[parent],
+                [child]: value,
+              },
+            };
+          }
           return {
             ...l,
-            [parent]: {
-              ...(l as any)[parent],
-              [child]: value,
-            },
+            [property]: value,
           };
-        }
-        return {
-          ...l,
-          [property]: value,
-        };
-      }),
+        }),
+      };
     });
   };
 
   // Apply multiple flat property updates in a single setTemplate call to avoid
   // stale-closure overwrites when setting several fields at once (e.g. padding sides).
   const handleUpdateMultipleLayerProperties = (updates: Record<string, any>) => {
-    if (!template || !selectedLayerId) return;
-    setTemplate({
-      ...template,
-      layers: template.layers.map((l) => {
-        if (l.id !== selectedLayerId) return l;
-        return { ...l, ...updates };
-      }),
+    if (!selectedLayerId) return;
+    setTemplate((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        layers: prev.layers.map((l) => {
+          if (l.id !== selectedLayerId) return l;
+          return { ...l, ...updates };
+        }),
+      };
     });
   };
+
 
   // Get keyframes for a property
   const getPropertyKeyframes = (property: string): TemplateKeyframe<any>[] | null => {
