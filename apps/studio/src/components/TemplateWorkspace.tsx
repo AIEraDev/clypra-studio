@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Download, Copy, Plus, Play, Pause, Loader2, FolderPlus, ArrowLeft, Sparkles, FileJson, UploadCloud, X, RefreshCw, AlertTriangle, CheckCircle, Info, Layers, Lock, Unlock, Eye, EyeOff, Trash2, ChevronUp, ChevronDown, Settings, Image as ImageIcon, Sparkle } from "lucide-react";
+import { Download, Copy, Plus, Play, Pause, Loader2, FolderPlus, ArrowLeft, Sparkles, FileJson, UploadCloud, X, RefreshCw, AlertTriangle, CheckCircle, Info, Layers, Lock, Unlock, Eye, EyeOff, Trash2, ChevronUp, ChevronDown, Settings, Image as ImageIcon, Sparkle, Clock } from "lucide-react";
 
-import { TemplateRenderer, BUILTIN_CANVAS_TEMPLATES, TemplateCategory, TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer, LayerAnimation, AnimationPreset } from "@clypra/engine";
+import { TemplateRenderer, BUILTIN_CANVAS_TEMPLATES, TemplateCategory, TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer, LayerAnimation, AnimationPreset, AnimatableValue, TemplateKeyframe, TemplateEasingFunction, addKeyframe, removeTemplateKeyframe, isKeyframed } from "@clypra/engine";
 import { PublishTemplateModal } from "./PublishTemplateModal";
 import { useR2Publish } from "../hooks/useR2Publish";
 
@@ -67,6 +67,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   // Workspace visual layers settings
   const [lockedLayers, setLockedLayers] = useState<Set<string>>(new Set());
   const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
+
+  // Keyframe Editor State
+  const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
+  const [showKeyframeEditor, setShowKeyframeEditor] = useState(false);
 
   // Publishing States
   const [showPublishModal, setShowPublishModal] = useState(false);
@@ -390,6 +394,58 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         };
       }),
     });
+  };
+
+  // Get keyframes for a property
+  const getPropertyKeyframes = (property: string): TemplateKeyframe<any>[] | null => {
+    if (!selectedLayer) return null;
+    const value = (selectedLayer as any)[property];
+    if (isKeyframed(value)) {
+      return value.keyframes;
+    }
+    return null;
+  };
+
+  // Add keyframe at current time
+  const handleAddKeyframe = (property: string, easing: TemplateEasingFunction = "ease-in-out") => {
+    if (!template || !selectedLayerId || !selectedLayer) return;
+
+    const currentValue = (selectedLayer as any)[property];
+    const newKeyframedValue = addKeyframe(currentValue, currentTime, currentValue, easing);
+
+    handleUpdateLayerProperty(property, newKeyframedValue);
+  };
+
+  // Remove keyframe at specific time
+  const handleRemoveKeyframe = (property: string, time: number) => {
+    if (!template || !selectedLayerId || !selectedLayer) return;
+
+    const currentValue = (selectedLayer as any)[property];
+    if (!isKeyframed(currentValue)) return;
+
+    try {
+      const newValue = removeTemplateKeyframe(currentValue, time);
+      handleUpdateLayerProperty(property, newValue);
+    } catch (e) {
+      console.error("Cannot remove keyframe:", e);
+    }
+  };
+
+  // Update keyframe value
+  const handleUpdateKeyframe = (property: string, time: number, newValue: any, easing?: TemplateEasingFunction) => {
+    if (!template || !selectedLayerId || !selectedLayer) return;
+
+    const currentValue = (selectedLayer as any)[property];
+    if (!isKeyframed(currentValue)) return;
+
+    const keyframes = currentValue.keyframes.map((kf: TemplateKeyframe<any>) => {
+      if (Math.abs(kf.time - time) < 0.01) {
+        return { ...kf, value: newValue, easing: easing ?? kf.easing };
+      }
+      return kf;
+    });
+
+    handleUpdateLayerProperty(property, { keyframes });
   };
 
   // Export static high-res thumbnail frame
@@ -985,6 +1041,120 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       <option value={2}>2.0 seconds</option>
                     </select>
                   </div>
+                </div>
+
+                {/* Keyframe Editor */}
+                <div className="border-t border-[#2A2A38]/50 pt-4 space-y-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] flex items-center gap-1.5">
+                      <Clock size={13} className="text-purple-400" /> Keyframe Animation
+                    </h4>
+                    <button onClick={() => setShowKeyframeEditor(!showKeyframeEditor)} className="text-[9px] text-purple-400 hover:text-purple-300 font-semibold">
+                      {showKeyframeEditor ? "Hide" : "Show"}
+                    </button>
+                  </div>
+
+                  {showKeyframeEditor && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[9px] text-[#888899] mb-1">Animate Property</label>
+                        <select value={selectedProperty || ""} onChange={(e) => setSelectedProperty(e.target.value || null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500">
+                          <option value="">Select property...</option>
+                          {selectedLayer.kind === "text" && (
+                            <>
+                              <option value="fontSize">Font Size</option>
+                              <option value="fontWeight">Font Weight</option>
+                              <option value="color">Text Color</option>
+                              <option value="backgroundColor">Background Color</option>
+                              <option value="backgroundOpacity">Background Opacity</option>
+                              <option value="backgroundRadius">Background Radius</option>
+                              <option value="padding">Padding</option>
+                              <option value="backgroundBorderColor">Border Color</option>
+                              <option value="backgroundBorderWidth">Border Width</option>
+                            </>
+                          )}
+                          {selectedLayer.kind === "shape" && (
+                            <>
+                              <option value="fill">Fill Color</option>
+                              {selectedLayer.stroke && (
+                                <>
+                                  <option value="stroke.color">Stroke Color</option>
+                                  <option value="stroke.width">Stroke Width</option>
+                                </>
+                              )}
+                            </>
+                          )}
+                          <option value="x">X Position</option>
+                          <option value="y">Y Position</option>
+                          <option value="width">Width</option>
+                          <option value="height">Height</option>
+                        </select>
+                      </div>
+
+                      {selectedProperty && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handleAddKeyframe(selectedProperty)} className="flex-1 rounded bg-purple-500 hover:bg-purple-400 px-3 py-2 text-[10px] font-bold text-white transition-colors flex items-center justify-center gap-1.5">
+                              <Plus size={12} /> Add Keyframe at {currentTime.toFixed(2)}s
+                            </button>
+                          </div>
+
+                          {(() => {
+                            const keyframes = getPropertyKeyframes(selectedProperty);
+                            if (!keyframes || keyframes.length === 0) {
+                              return (
+                                <div className="rounded border border-dashed border-[#2A2A38] p-3 text-center">
+                                  <p className="text-[10px] text-[#666677]">No keyframes yet. Click "Add Keyframe" to animate this property over time.</p>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className="space-y-2">
+                                <p className="text-[9px] text-[#888899] uppercase font-bold tracking-wider">Keyframes ({keyframes.length})</p>
+                                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                  {keyframes.map((kf, idx) => (
+                                    <div key={idx} className="rounded border border-[#2A2A38] bg-[#0E0E14] p-2.5 space-y-2">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-mono text-purple-400 font-bold">{kf.time.toFixed(2)}s</span>
+                                        <button onClick={() => handleRemoveKeyframe(selectedProperty, kf.time)} className="text-[#666677] hover:text-red-400 transition-colors">
+                                          <Trash2 size={11} />
+                                        </button>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <label className="block text-[8px] text-[#666677] mb-0.5">Value</label>
+                                          <input
+                                            type={typeof kf.value === "number" ? "number" : "text"}
+                                            value={kf.value}
+                                            onChange={(e) => {
+                                              const newValue = typeof kf.value === "number" ? parseFloat(e.target.value) || 0 : e.target.value;
+                                              handleUpdateKeyframe(selectedProperty, kf.time, newValue);
+                                            }}
+                                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1.5 py-1 text-[10px] text-white outline-none focus:border-purple-500"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-[8px] text-[#666677] mb-0.5">Easing</label>
+                                          <select value={kf.easing || "linear"} onChange={(e) => handleUpdateKeyframe(selectedProperty, kf.time, kf.value, e.target.value as TemplateEasingFunction)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1.5 py-1 text-[10px] text-white outline-none focus:border-purple-500">
+                                            <option value="linear">Linear</option>
+                                            <option value="ease">Ease</option>
+                                            <option value="ease-in">Ease In</option>
+                                            <option value="ease-out">Ease Out</option>
+                                            <option value="ease-in-out">Ease In-Out</option>
+                                          </select>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
