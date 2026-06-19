@@ -382,6 +382,7 @@ export interface TemplateTextLayer {
   backgroundBorderWidth?: AnimatableValue<number>; // Border/stroke width in pixels
   animation: LayerAnimation;
   role?: "primary" | "secondary" | "accent" | "none";
+  overflow?: "wrap" | "shrink" | "expand-panel" | "clip";
 }
 
 export interface TemplateShapeLayer {

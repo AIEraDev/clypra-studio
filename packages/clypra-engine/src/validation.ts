@@ -296,7 +296,8 @@ export const TextLayerSchema = z.object({
   width: z.number().positive(),
   height: z.number().positive(),
   animation: LayerAnimationSchema,
-  role: z.enum(["primary", "secondary", "accent"]).optional()
+  role: z.enum(["primary", "secondary", "accent", "none"]).optional(),
+  overflow: z.enum(["wrap", "shrink", "expand-panel", "clip"]).optional()
 });
 
 export const ShapeLayerSchema = z.object({

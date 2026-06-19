@@ -1399,6 +1399,16 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                         </select>
                       </div>
 
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Overflow Strategy</label>
+                        <select value={selectedLayer.overflow || "clip"} onChange={(e) => handleUpdateLayerProperty("overflow", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
+                          <option value="clip">clip (Safety Net Clipping)</option>
+                          <option value="wrap">wrap (Approach 5: Multi-line Word Wrap)</option>
+                          <option value="shrink">shrink (Approach 1: Auto-Fit/Shrink Font Size)</option>
+                          <option value="expand-panel">expand-panel (Approach 2: Dynamic Panel Expansion)</option>
+                        </select>
+                      </div>
+
                       {/* Background Panel Properties */}
                       <div className="border-t border-[#2A2A38]/50 pt-3 mt-2 space-y-3">
                         <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Background Panel (Optional)</h4>

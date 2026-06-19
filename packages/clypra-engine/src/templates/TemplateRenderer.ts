@@ -1,5 +1,6 @@
 import { TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer } from "../types";
 import { evaluateAnimatable } from "./keyframes";
+import { wrapTextToWidth } from "../engine/textLayout";
 
 // Newton-Raphson approximation solver for cubic bezier curve easing
 export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
@@ -204,6 +205,66 @@ export class TemplateRenderer {
     const backgroundBorderColor = resolved.backgroundBorderColor ? evaluateAnimatable(resolved.backgroundBorderColor, this.currentTime, this.template.duration) : null;
     const backgroundBorderWidth = resolved.backgroundBorderWidth !== undefined ? evaluateAnimatable(resolved.backgroundBorderWidth, this.currentTime, this.template.duration) : 0;
 
+    const overflow = resolved.overflow;
+
+    // Slice characters for typewriter animations
+    const visibleCharsCount = Math.floor(transform.typewriterProgress * content.length);
+    const textToDraw = content.slice(0, visibleCharsCount);
+
+    ctx.save();
+    ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}", sans-serif`;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = align;
+
+    let adjustedFontSize = fontSize;
+    let lines = [textToDraw];
+    let bgWidth = width + padding * 2;
+    let bgHeight = height + padding * 2;
+    let bgX = x - padding;
+    let bgY = y - padding;
+
+    if (overflow === "shrink") {
+      const initialTextWidth = ctx.measureText(textToDraw).width;
+      if (initialTextWidth > width && width > 0) {
+        adjustedFontSize = fontSize * (width / initialTextWidth);
+        ctx.font = `${fontWeight} ${adjustedFontSize}px "${fontFamily}", sans-serif`;
+      }
+    } else if (overflow === "wrap") {
+      lines = wrapTextToWidth(ctx, textToDraw, width, 0);
+      const lineHeight = adjustedFontSize * 1.2;
+      const totalTextHeight = lines.length * lineHeight;
+      bgHeight = totalTextHeight + padding * 2;
+    } else if (overflow === "expand-panel") {
+      const measuredWidth = ctx.measureText(textToDraw).width;
+      bgWidth = measuredWidth + padding * 2;
+      if (align === "center") {
+        bgX = (x + width / 2) - bgWidth / 2;
+      } else if (align === "right") {
+        bgX = (x + width) - bgWidth + padding;
+      }
+    }
+
+    // Apply clipping if specified
+    if (overflow === "clip") {
+      ctx.save();
+      ctx.beginPath();
+      if (backgroundRadius > 0) {
+        ctx.moveTo(bgX + backgroundRadius, bgY);
+        ctx.lineTo(bgX + bgWidth - backgroundRadius, bgY);
+        ctx.quadraticCurveTo(bgX + bgWidth, bgY, bgX + bgWidth, bgY + backgroundRadius);
+        ctx.lineTo(bgX + bgWidth, bgY + bgHeight - backgroundRadius);
+        ctx.quadraticCurveTo(bgX + bgWidth, bgY + bgHeight, bgX + bgWidth - backgroundRadius, bgY + bgHeight);
+        ctx.lineTo(bgX + backgroundRadius, bgY + bgHeight);
+        ctx.quadraticCurveTo(bgX, bgY + bgHeight, bgX, bgY + bgHeight - backgroundRadius);
+        ctx.lineTo(bgX, bgY + backgroundRadius);
+        ctx.quadraticCurveTo(bgX, bgY, bgX + backgroundRadius, bgY);
+      } else {
+        ctx.rect(bgX, bgY, bgWidth, bgHeight);
+      }
+      ctx.closePath();
+      ctx.clip();
+    }
+
     // Draw background panel if backgroundColor is set
     if (backgroundColor) {
       // Save current globalAlpha to restore later
@@ -213,11 +274,6 @@ export class TemplateRenderer {
       ctx.fillStyle = backgroundColor;
       // Apply background opacity multiplied by current globalAlpha (which includes layer opacity)
       ctx.globalAlpha = currentAlpha * backgroundOpacity;
-
-      const bgX = x - padding;
-      const bgY = y - padding;
-      const bgWidth = width + padding * 2;
-      const bgHeight = height + padding * 2;
 
       if (backgroundRadius > 0) {
         // Draw rounded rectangle
@@ -259,24 +315,34 @@ export class TemplateRenderer {
       ctx.globalAlpha = currentAlpha;
     }
 
-    // Slice characters for typewriter animations
-    const visibleCharsCount = Math.floor(transform.typewriterProgress * content.length);
-    const textToDraw = content.slice(0, visibleCharsCount);
-
-    ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}", sans-serif`;
+    // Render text lines
     ctx.fillStyle = color;
-    ctx.textBaseline = "middle";
-    ctx.textAlign = align;
-
     let drawX = x;
     if (align === "center") {
       drawX = x + width / 2;
     } else if (align === "right") {
       drawX = x + width;
     }
-    const drawY = y + height / 2;
 
-    ctx.fillText(textToDraw, drawX, drawY);
+    if (overflow === "wrap") {
+      const lineHeight = adjustedFontSize * 1.2;
+      const totalTextHeight = lines.length * lineHeight;
+      const startY = y + (height - totalTextHeight) / 2 + lineHeight / 2;
+      lines.forEach((line, index) => {
+        const lineY = startY + index * lineHeight;
+        ctx.fillText(line, drawX, lineY);
+      });
+    } else {
+      const drawY = y + height / 2;
+      ctx.fillText(lines[0], drawX, drawY);
+    }
+
+    // Restore clipping if it was applied
+    if (overflow === "clip") {
+      ctx.restore();
+    }
+
+    ctx.restore();
   }
 
   private drawShapeLayer(ctx: CanvasRenderingContext2D, layer: TemplateShapeLayer): void {

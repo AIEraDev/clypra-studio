@@ -102,4 +102,46 @@ describe("TemplateRenderer", () => {
 
     expect(() => renderer.drawFrame(ctx, 1.5)).not.toThrow();
   });
+
+  it("handles different text overflow strategies without errors", () => {
+    const canvas = createCanvas(800, 600);
+    const ctx = canvas.getContext("2d") as unknown as CanvasRenderingContext2D;
+
+    const strategies: ("clip" | "wrap" | "shrink" | "expand-panel")[] = ["clip", "wrap", "shrink", "expand-panel"];
+
+    strategies.forEach((strategy) => {
+      const templateWithStrategy: TextTemplate = {
+        ...mockTemplate,
+        layers: [
+          {
+            kind: "text",
+            id: "overflow-text",
+            content: "This is a very long string that will definitely exceed the standard bounds of the container box.",
+            fontFamily: "Arial",
+            fontSize: 24,
+            color: "#ffffff",
+            align: "center",
+            x: 50,
+            y: 50,
+            width: 100,
+            height: 50,
+            animation: {
+              in: "none",
+              out: "none",
+              inDuration: 0,
+              outDuration: 0,
+              hold: "full",
+            },
+            backgroundColor: "#000000",
+            padding: 10,
+            backgroundRadius: 5,
+            overflow: strategy,
+          },
+        ],
+      };
+
+      const renderer = new TemplateRenderer(templateWithStrategy);
+      expect(() => renderer.drawFrame(ctx, 1.5)).not.toThrow();
+    });
+  });
 });
