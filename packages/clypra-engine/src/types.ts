@@ -336,26 +336,20 @@ export interface EvaluatedTextLayer {
 
 // ─── Declarative Canvas Templates types ─────────────────────────────────────
 
-export type TemplateCategory =
-  | "lower-third"
-  | "title-card"
-  | "caption"
-  | "callout"
-  | "social"
-  | "countdown";
+export type TemplateCategory = "lower-third" | "title-card" | "caption" | "callout" | "social" | "countdown";
 
-export type AnimationPreset =
-  | "fade"
-  | "slide-up"
-  | "slide-down"
-  | "slide-left"
-  | "slide-right"
-  | "scale-in"
-  | "scale-out"
-  | "blur-in"
-  | "blur-out"
-  | "typewriter"
-  | "none";
+export type AnimationPreset = "fade" | "slide-up" | "slide-down" | "slide-left" | "slide-right" | "scale-in" | "scale-out" | "blur-in" | "blur-out" | "typewriter" | "none";
+
+// Keyframe System Types for Templates
+export type TemplateEasingFunction = "linear" | "ease-in-out" | "ease-in" | "ease-out" | "ease";
+
+export interface TemplateKeyframe<T> {
+  time: number; // Time in seconds
+  value: T;
+  easing?: TemplateEasingFunction;
+}
+
+export type AnimatableValue<T> = T | { keyframes: TemplateKeyframe<T>[] };
 
 export interface LayerAnimation {
   in: AnimationPreset;
@@ -370,27 +364,35 @@ export interface TemplateTextLayer {
   id: string;
   content: string;
   fontFamily: string;
-  fontSize: number;
-  color: string;
+  fontSize: AnimatableValue<number>;
+  fontWeight: AnimatableValue<number>; // 100-900
+  color: AnimatableValue<string>;
   align: "left" | "center" | "right";
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  x: AnimatableValue<number>;
+  y: AnimatableValue<number>;
+  width: AnimatableValue<number>;
+  height: AnimatableValue<number>;
+  // Background panel
+  backgroundColor?: AnimatableValue<string>;
+  backgroundOpacity?: AnimatableValue<number>; // 0-1
+  backgroundRadius?: AnimatableValue<number>; // Border radius in pixels
+  padding?: AnimatableValue<number>; // Padding in pixels
+  backgroundBorderColor?: AnimatableValue<string>; // Border/stroke color
+  backgroundBorderWidth?: AnimatableValue<number>; // Border/stroke width in pixels
   animation: LayerAnimation;
-  role?: "primary" | "secondary" | "accent";
+  role?: "primary" | "secondary" | "accent" | "none";
 }
 
 export interface TemplateShapeLayer {
   kind: "shape";
   id: string;
   shape: "rect" | "line" | "circle";
-  fill: string;
-  stroke?: { color: string; width: number };
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  fill: AnimatableValue<string>;
+  stroke?: { color: AnimatableValue<string>; width: AnimatableValue<number> };
+  x: AnimatableValue<number>;
+  y: AnimatableValue<number>;
+  width: AnimatableValue<number>;
+  height: AnimatableValue<number>;
   animation: LayerAnimation;
 }
 
@@ -398,10 +400,10 @@ export interface TemplateImageLayer {
   kind: "image";
   id: string;
   url: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  x: AnimatableValue<number>;
+  y: AnimatableValue<number>;
+  width: AnimatableValue<number>;
+  height: AnimatableValue<number>;
   animation: LayerAnimation;
 }
 
@@ -418,4 +420,3 @@ export interface TextTemplate {
   preview?: string;
   layers: TemplateLayer[];
 }
-

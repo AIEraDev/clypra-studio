@@ -282,6 +282,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         content: "New Text Layer",
         fontFamily: "Poppins",
         fontSize: 32,
+        fontWeight: 400,
         color: "#ffffff",
         align: "center",
         x: 400,
@@ -814,6 +815,12 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       </div>
 
                       <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Font Weight</label>
+                        <input type="number" min={100} max={900} step={100} value={selectedLayer.fontWeight} onChange={(e) => handleUpdateLayerProperty("fontWeight", parseInt(e.target.value) || 400)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                        <p className="text-[9px] text-[#666677] mt-0.5">100 (Thin) to 900 (Black)</p>
+                      </div>
+
+                      <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Role / Placement Mapping</label>
                         <select value={selectedLayer.role || "none"} onChange={(e) => handleUpdateLayerProperty("role", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
                           <option value="none">none (Use Static Content)</option>
@@ -821,6 +828,51 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           <option value="secondary">secondary (Secondary Subtext)</option>
                           <option value="accent">accent (Attribution / Highlight)</option>
                         </select>
+                      </div>
+
+                      {/* Background Panel Properties */}
+                      <div className="border-t border-[#2A2A38]/50 pt-3 mt-2 space-y-3">
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Background Panel (Optional)</h4>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[9px] text-[#888899] mb-0.5">Background Color</label>
+                            <div className="flex gap-1">
+                              <input type="color" value={selectedLayer.backgroundColor || "#000000"} onChange={(e) => handleUpdateLayerProperty("backgroundColor", e.target.value)} className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer" />
+                              <input type="text" value={selectedLayer.backgroundColor || ""} onChange={(e) => handleUpdateLayerProperty("backgroundColor", e.target.value)} placeholder="none" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500" />
+                            </div>
+                            <p className="text-[9px] text-[#666677] mt-0.5">Leave empty to disable</p>
+                          </div>
+                          <div>
+                            <label className="block text-[9px] text-[#888899] mb-0.5">Opacity (0-1)</label>
+                            <input type="number" min={0} max={1} step={0.1} value={selectedLayer.backgroundOpacity ?? 1} onChange={(e) => handleUpdateLayerProperty("backgroundOpacity", parseFloat(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[9px] text-[#888899] mb-0.5">Padding (px)</label>
+                            <input type="number" min={0} value={selectedLayer.padding ?? 0} onChange={(e) => handleUpdateLayerProperty("padding", parseInt(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] text-[#888899] mb-0.5">Border Radius (px)</label>
+                            <input type="number" min={0} value={selectedLayer.backgroundRadius ?? 0} onChange={(e) => handleUpdateLayerProperty("backgroundRadius", parseInt(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[9px] text-[#888899] mb-0.5">Border Color</label>
+                            <div className="flex gap-1">
+                              <input type="color" value={selectedLayer.backgroundBorderColor || "#ffffff"} onChange={(e) => handleUpdateLayerProperty("backgroundBorderColor", e.target.value)} className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer" />
+                              <input type="text" value={selectedLayer.backgroundBorderColor || ""} onChange={(e) => handleUpdateLayerProperty("backgroundBorderColor", e.target.value)} placeholder="none" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500" />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[9px] text-[#888899] mb-0.5">Border Width (px)</label>
+                            <input type="number" min={0} value={selectedLayer.backgroundBorderWidth ?? 0} onChange={(e) => handleUpdateLayerProperty("backgroundBorderWidth", parseInt(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                          </div>
+                        </div>
                       </div>
                     </>
                   )}

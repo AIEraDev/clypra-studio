@@ -44,3 +44,4 @@ export * from "./bodyEffects";
 // Declarative Canvas Templates (NEW)
 export * from "./templates/TemplateRenderer.js";
 export * from "./templates/presets.js";
+export * from "./templates/keyframes.js";
