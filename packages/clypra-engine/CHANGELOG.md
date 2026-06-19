@@ -1,3 +1,16 @@
+# [1.13.0](https://github.com/AIEraDev/clypra-studio/compare/v1.12.0...v1.13.0) (2026-06-19)
+
+
+### Bug Fixes
+
+* add 'none' role option and sync test inputs with layer content ([22420a5](https://github.com/AIEraDev/clypra-studio/commit/22420a53d9f1149b6601a3e076fe7d3adda903bc))
+* update branding from Clypra Studio to Text Templates ([71aedd0](https://github.com/AIEraDev/clypra-studio/commit/71aedd040aec5308e24e6cad3e0272dcb7990e64))
+
+
+### Features
+
+* add fontWeight and background panel properties with border support ([9046d00](https://github.com/AIEraDev/clypra-studio/commit/9046d000302992e302f8eb2bed8f778e16678d38))
+
 # [1.12.0](https://github.com/AIEraDev/clypra-studio/compare/v1.11.0...v1.12.0) (2026-06-19)
 
 
