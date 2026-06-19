@@ -206,9 +206,13 @@ export class TemplateRenderer {
 
     // Draw background panel if backgroundColor is set
     if (backgroundColor) {
+      // Save current globalAlpha to restore later
+      const currentAlpha = ctx.globalAlpha;
+
       ctx.save();
       ctx.fillStyle = backgroundColor;
-      ctx.globalAlpha = backgroundOpacity;
+      // Apply background opacity multiplied by current globalAlpha (which includes layer opacity)
+      ctx.globalAlpha = currentAlpha * backgroundOpacity;
 
       const bgX = x - padding;
       const bgY = y - padding;
@@ -234,7 +238,7 @@ export class TemplateRenderer {
         if (backgroundBorderColor && backgroundBorderWidth > 0) {
           ctx.strokeStyle = backgroundBorderColor;
           ctx.lineWidth = backgroundBorderWidth;
-          ctx.globalAlpha = 1; // Border at full opacity
+          ctx.globalAlpha = currentAlpha; // Border at layer opacity
           ctx.stroke();
         }
       } else {
@@ -245,12 +249,14 @@ export class TemplateRenderer {
         if (backgroundBorderColor && backgroundBorderWidth > 0) {
           ctx.strokeStyle = backgroundBorderColor;
           ctx.lineWidth = backgroundBorderWidth;
-          ctx.globalAlpha = 1; // Border at full opacity
+          ctx.globalAlpha = currentAlpha; // Border at layer opacity
           ctx.strokeRect(bgX, bgY, bgWidth, bgHeight);
         }
       }
 
       ctx.restore();
+      // Restore the original globalAlpha for text rendering
+      ctx.globalAlpha = currentAlpha;
     }
 
     // Slice characters for typewriter animations
