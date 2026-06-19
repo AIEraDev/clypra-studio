@@ -1,7 +1,7 @@
 import React from "react";
-import { Download, FileCode, Filter, Grid2X2, LayoutTemplate, Layers, Music, Palette, Sparkles, Sticker, Type, Video, Wand2 } from "lucide-react";
+import { Download, FileCode, Filter, Grid2X2, Layers, Music, Palette, Sparkles, Sticker, Type, Video, Wand2 } from "lucide-react";
 
-export type RailItem = "text-effects" | "lottie-templates" | "audio" | "stickers" | "overlays" | "video-effects" | "body-effects" | "filters";
+export type RailItem = "text-effects" | "audio" | "stickers" | "overlays" | "video-effects" | "body-effects" | "filters";
 
 const RAIL_ITEMS: Array<{
   id: RailItem;
@@ -9,7 +9,6 @@ const RAIL_ITEMS: Array<{
   icon: React.ComponentType<{ size?: number; className?: string }>;
 }> = [
   { id: "text-effects", label: "Text Effects", icon: Type },
-  { id: "lottie-templates", label: "Lottie Templates", icon: LayoutTemplate },
   { id: "audio", label: "Audio", icon: Music },
   { id: "stickers", label: "Stickers", icon: Sticker },
   { id: "overlays", label: "Overlays", icon: Video },

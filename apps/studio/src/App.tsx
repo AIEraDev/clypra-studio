@@ -43,16 +43,9 @@ if (typeof window !== "undefined" && !(window as any).__clypra_fetch_intercepted
     const token = localStorage.getItem("clypra_auth_token");
     let modifiedInit = init;
 
-    const urlStr = typeof input === "string" 
-      ? input 
-      : input instanceof URL 
-        ? input.href 
-        : (input as Request).url || "";
+    const urlStr = typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url || "";
 
-    const isClypraApi = urlStr.includes("clypra-worker-api.abdulkabirmusa.com") || 
-                        urlStr.includes("localhost:8787") || 
-                        urlStr.includes("127.0.0.1:8787") || 
-                        urlStr.startsWith("/");
+    const isClypraApi = urlStr.includes("clypra-worker-api.abdulkabirmusa.com") || urlStr.includes("localhost:8787") || urlStr.includes("127.0.0.1:8787") || urlStr.startsWith("/");
 
     if (token && isClypraApi) {
       modifiedInit = init ? { ...init } : {};
@@ -145,8 +138,8 @@ export default function App() {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
       fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
-          "Authorization": `Bearer ${storedToken}`
-        }
+          Authorization: `Bearer ${storedToken}`,
+        },
       })
         .then((res) => {
           if (res.ok) {
@@ -365,7 +358,7 @@ export default function App() {
 
   // Sync effect names and kebab IDs
   const activeEffectId = toKebabCase(getEnrichedEffectName(config));
-  const timelinePanelMode = (activeRailItem === "text-effects" && textSubTab === "layers") ? "advanced" : uiMode;
+  const timelinePanelMode = activeRailItem === "text-effects" && textSubTab === "layers" ? "advanced" : uiMode;
 
   // Unified, filtered, and sorted presets
   const getPresetRecency = (preset: Preset) => {
@@ -1410,45 +1403,30 @@ export default function App() {
           {/* User Auth Section */}
           {user ? (
             <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="h-8 flex items-center gap-2 rounded border border-[#2A2A38] bg-[#1E1E26] px-2.5 text-xs font-semibold text-white hover:bg-[#2A2A38] cursor-pointer"
-                title={`Logged in as ${user.username}`}
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#7C6FFF] text-[10px] font-bold text-white uppercase">
-                  {user.username.charAt(0)}
-                </span>
+              <button onClick={() => setShowUserDropdown(!showUserDropdown)} className="h-8 flex items-center gap-2 rounded border border-[#2A2A38] bg-[#1E1E26] px-2.5 text-xs font-semibold text-white hover:bg-[#2A2A38] cursor-pointer" title={`Logged in as ${user.username}`}>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#7C6FFF] text-[10px] font-bold text-white uppercase">{user.username.charAt(0)}</span>
                 <span className="hidden sm:inline">{user.username}</span>
               </button>
               {showUserDropdown && (
                 <div className="absolute right-0 mt-1.5 w-40 origin-top-right rounded-lg border border-[#2A2A38] bg-[#1E1E26] p-1.5 shadow-xl z-50">
-                  <div className="px-2 py-1.5 text-[9px] text-gray-500 border-b border-[#2A2A38] mb-1 truncate">
-                    {user.email}
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left rounded px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                  >
+                  <div className="px-2 py-1.5 text-[9px] text-gray-500 border-b border-[#2A2A38] mb-1 truncate">{user.email}</div>
+                  <button onClick={handleLogout} className="w-full text-left rounded px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer">
                     Log Out
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="h-8 rounded border border-[#7C6FFF]/20 bg-[#7C6FFF]/10 px-2.5 text-xs font-semibold text-[#7C6FFF] hover:bg-[#7C6FFF]/15 flex items-center gap-1.5 cursor-pointer"
-              title="Sign In / Register"
-            >
+            <button onClick={() => setShowLoginModal(true)} className="h-8 rounded border border-[#7C6FFF]/20 bg-[#7C6FFF]/10 px-2.5 text-xs font-semibold text-[#7C6FFF] hover:bg-[#7C6FFF]/15 flex items-center gap-1.5 cursor-pointer" title="Sign In / Register">
               <User size={13} />
               <span>Sign In</span>
             </button>
           )}
 
-          {/* Lottie Workspace Link */}
-          <a href="/lottie" className="h-8 rounded border border-purple-500/20 bg-purple-500/10 px-2.5 text-xs font-semibold text-purple-300 hover:bg-purple-500/15 flex items-center gap-1.5 cursor-pointer font-sans no-underline" title="Go to Lottie Studio">
+          {/* Studio Workspace Link */}
+          <a href="/lottie" className="h-8 rounded border border-purple-500/20 bg-purple-500/10 px-2.5 text-xs font-semibold text-purple-300 hover:bg-purple-500/15 flex items-center gap-1.5 cursor-pointer font-sans no-underline" title="Go to Clypra Studio">
             <Video size={13} />
-            <span className="hidden md:inline">Lottie Studio</span>
+            <span className="hidden md:inline">Clypra Studio</span>
           </a>
         </div>
       </header>
@@ -1497,21 +1475,6 @@ export default function App() {
           <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
             <FilterWorkspace />
           </div>
-        ) : activeRailItem === "lottie-templates" ? (
-          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center">
-                  <div className="text-center">
-                    <Loader2 size={28} className="animate-spin text-[#7C6FFF] mx-auto mb-3" />
-                    <p className="text-xs text-[#888899] font-sans">Loading Lottie Studio…</p>
-                  </div>
-                </div>
-              }
-            >
-              <TemplateWorkspacePanel onBackToDesign={() => setActiveRailItem("text-effects")} />
-            </Suspense>
-          </div>
         ) : (
           <>
             {/* LEFT DRAWER — CREATION LIBRARY
@@ -1527,7 +1490,14 @@ export default function App() {
               flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 overflow-y-auto select-none
             `}
             >
-              <DrawerIntro activeItem={activeRailItem} showExport={activeRailItem === "text-effects" && textSubTab !== "export"} onOpenExport={() => { setActiveRailItem("text-effects"); setTextSubTab("export"); }} />
+              <DrawerIntro
+                activeItem={activeRailItem}
+                showExport={activeRailItem === "text-effects" && textSubTab !== "export"}
+                onOpenExport={() => {
+                  setActiveRailItem("text-effects");
+                  setTextSubTab("export");
+                }}
+              />
 
               {activeRailItem === "text-effects" && (
                 <div className="flex border-b border-(--studio-border) bg-(--studio-shell) text-xs font-semibold shrink-0 select-none p-1 gap-1">
@@ -1544,11 +1514,7 @@ export default function App() {
                         setTextSubTab(tab.id);
                         if (tab.id === "layers") setUiMode("advanced");
                       }}
-                      className={`flex-1 py-1.5 text-center rounded transition-all cursor-pointer text-[11px] font-sans ${
-                        textSubTab === tab.id
-                          ? "bg-[#7C6FFF] text-white font-bold"
-                          : "text-(--studio-muted) hover:text-white hover:bg-(--studio-hover)"
-                      }`}
+                      className={`flex-1 py-1.5 text-center rounded transition-all cursor-pointer text-[11px] font-sans ${textSubTab === tab.id ? "bg-[#7C6FFF] text-white font-bold" : "text-(--studio-muted) hover:text-white hover:bg-(--studio-hover)"}`}
                     >
                       {tab.label}
                     </button>
@@ -1628,8 +1594,6 @@ export default function App() {
 
               {activeRailItem === "text-effects" && textSubTab === "layers" && <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode="advanced" selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} />}
 
-
-
               {activeRailItem === "text-effects" && textSubTab === "style" && <div className="border-b border-(--studio-border) px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Style Controls</div>}
 
               <Suspense fallback={<div className="p-4 text-xs text-(--studio-muted)">Loading controls...</div>}>
@@ -1692,7 +1656,7 @@ export default function App() {
               Mobile/Tablet: shown only when mobileActiveTab === "code", full-width on mobile
               Desktop: always visible, fixed 344px */}
             <Suspense fallback={<aside className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0 border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted) flex-col`}>Loading panel...</aside>}>
-              <div className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}>{(activeRailItem === "text-effects" && textSubTab === "export") ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</div>
+              <div className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}>{activeRailItem === "text-effects" && textSubTab === "export" ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</div>
             </Suspense>
           </>
         )}

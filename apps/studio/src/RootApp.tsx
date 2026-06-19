@@ -18,8 +18,8 @@ const ROUTE_METADATA = {
   },
   lottie: {
     canonical: "https://clypra.abdulkabirmusa.com/lottie",
-    description: "Professional Lottie animation editor and template creator. Design, customize, and publish Lottie templates with advanced layer controls, keyframe animation, and GitHub integration.",
-    title: "Clypra Lottie Studio - Animation Template Editor",
+    description: "Professional animation editor and template creator. Design, customize, and publish templates with advanced layer controls, keyframe animation, and GitHub integration.",
+    title: "Clypra Studio - Animation Template Editor",
   },
 };
 
@@ -91,7 +91,7 @@ export default function RootApp() {
             <div className="flex-1 flex items-center justify-center text-white">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C6FFF] mx-auto mb-4" />
-                <p className="text-sm text-gray-400">Loading Lottie Studio...</p>
+                <p className="text-sm text-gray-400">Loading Clypra Studio...</p>
               </div>
             </div>
           }
