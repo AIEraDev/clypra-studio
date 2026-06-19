@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/AIEraDev/clypra-studio/compare/v1.14.0...v1.14.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* apply layer opacity to background panel rendering ([8f65bda](https://github.com/AIEraDev/clypra-studio/commit/8f65bda175483a3abc6515bfc8d2a97722e7641b))
+
 # [1.14.0](https://github.com/AIEraDev/clypra-studio/compare/v1.13.0...v1.14.0) (2026-06-19)
 
 
