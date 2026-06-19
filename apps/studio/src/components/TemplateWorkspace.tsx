@@ -1,23 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { 
-  Download, Copy, Plus, Play, Pause, Loader2, FolderPlus, ArrowLeft, 
-  Sparkles, FileJson, UploadCloud, X, RefreshCw, AlertTriangle, 
-  CheckCircle, Info, Layers, Lock, Unlock, Eye, EyeOff, Trash2, 
-  ChevronUp, ChevronDown, Settings, Image as ImageIcon, Sparkle
-} from "lucide-react";
+import { Download, Copy, Plus, Play, Pause, Loader2, FolderPlus, ArrowLeft, Sparkles, FileJson, UploadCloud, X, RefreshCw, AlertTriangle, CheckCircle, Info, Layers, Lock, Unlock, Eye, EyeOff, Trash2, ChevronUp, ChevronDown, Settings, Image as ImageIcon, Sparkle } from "lucide-react";
 
-import { 
-  TemplateRenderer, 
-  BUILTIN_CANVAS_TEMPLATES, 
-  TemplateCategory, 
-  TextTemplate, 
-  TemplateLayer,
-  TemplateTextLayer,
-  TemplateShapeLayer,
-  TemplateImageLayer,
-  LayerAnimation,
-  AnimationPreset
-} from "@clypra/engine";
+import { TemplateRenderer, BUILTIN_CANVAS_TEMPLATES, TemplateCategory, TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer, LayerAnimation, AnimationPreset } from "@clypra/engine";
 import { PublishTemplateModal } from "./PublishTemplateModal";
 import { useR2Publish } from "../hooks/useR2Publish";
 
@@ -34,13 +18,36 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   // Template State
   const [template, setTemplate] = useState<TextTemplate | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
-  
+
   // Preview / Customization States
   const [customTexts, setCustomTexts] = useState({
     primary: "Primary Text",
     secondary: "Secondary Text",
     accent: "Accent Text",
   });
+
+  // Sync customTexts with layer content when template loads or changes
+  useEffect(() => {
+    if (!template) return;
+
+    const newCustomTexts = { ...customTexts };
+    let hasChanges = false;
+
+    for (const layer of template.layers) {
+      if (layer.kind === "text" && layer.role && layer.role !== "none") {
+        const roleKey = layer.role as "primary" | "secondary" | "accent";
+        // Only update if the current value is still the default placeholder
+        if (newCustomTexts[roleKey] === `${roleKey.charAt(0).toUpperCase() + roleKey.slice(1)} Text`) {
+          newCustomTexts[roleKey] = layer.content;
+          hasChanges = true;
+        }
+      }
+    }
+
+    if (hasChanges) {
+      setCustomTexts(newCustomTexts);
+    }
+  }, [template?.id, template?.layers]); // Only re-run when template changes
   const [colorOverrides, setColorOverrides] = useState<Map<string, string>>(new Map());
 
   // Playback / Timeline clock
@@ -142,12 +149,15 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
       const overrides: any = {};
       if (layer.kind === "text") {
-        if (layer.role === "primary") {
-          overrides.content = customTexts.primary;
-        } else if (layer.role === "secondary") {
-          overrides.content = customTexts.secondary;
-        } else if (layer.role === "accent") {
-          overrides.content = customTexts.accent;
+        // Only apply role-based overrides if role is set and not "none"
+        if (layer.role && layer.role !== "none") {
+          if (layer.role === "primary") {
+            overrides.content = customTexts.primary;
+          } else if (layer.role === "secondary") {
+            overrides.content = customTexts.secondary;
+          } else if (layer.role === "accent") {
+            overrides.content = customTexts.accent;
+          }
         }
       }
 
@@ -236,7 +246,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   // Create Blank Template Action
   const handleCreateBlank = () => {
     const blank: TextTemplate = {
-      id: newTemplateId.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+      id: newTemplateId
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "-"),
       label: newLabel.trim() || "My Custom Template",
       category: newCategory,
       duration: newDuration,
@@ -388,7 +401,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     if (!oCtx) return "";
 
     const renderer = new TemplateRenderer(template);
-    
+
     // Draw using same layout logic at thumbnail frame time
     const fps = 30;
     const time = thumbnailFrame / fps;
@@ -416,7 +429,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
     try {
       const url = await captureThumbnail();
-      
+
       const payloadDefinition = {
         id: template.id,
         name: template.label,
@@ -461,11 +474,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <Sparkle size={18} className="text-teal-400" />
             <h1 className="text-sm font-bold text-white tracking-tight">Clypra Canvas Template Studio</h1>
           </div>
-          {template && (
-            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border border-[#2A2A38] bg-[#1A1A26] text-teal-300">
-              {template.category}
-            </span>
-          )}
+          {template && <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border border-[#2A2A38] bg-[#1A1A26] text-teal-300">{template.category}</span>}
         </div>
 
         <div className="flex items-center gap-4">
@@ -496,7 +505,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       {!template ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#09090D] overflow-y-auto">
           <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-            
             {/* Builtin Preset selector */}
             <div className="rounded-2xl border border-[#2A2A38] bg-[#121219] p-6 space-y-4">
               <div className="flex items-center gap-2 mb-2">
@@ -504,13 +512,15 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 <h2 className="text-sm font-bold text-white">Start with a Builtin Preset</h2>
               </div>
               <p className="text-xs text-[#9A9AAA] leading-relaxed">Choose from pre-configured canvas animation templates covering all standard launch categories.</p>
-              
+
               <div className="grid grid-cols-2 gap-3 mt-4">
                 {BUILTIN_CANVAS_TEMPLATES.map((preset) => (
                   <button key={preset.id} onClick={() => handleSelectPreset(preset)} className="flex flex-col items-start p-4 rounded-xl border border-[#2A2A38] bg-[#171722] hover:border-teal-500/50 hover:bg-[#1C1C2A] text-left transition-all">
                     <span className="text-xs font-bold text-white">{preset.label}</span>
                     <span className="text-[10px] text-teal-400 font-semibold mt-1 uppercase tracking-wider">{preset.category}</span>
-                    <span className="text-[10px] text-[#888899] mt-2 font-mono">{preset.duration}s · {preset.layers.length} layers</span>
+                    <span className="text-[10px] text-[#888899] mt-2 font-mono">
+                      {preset.duration}s · {preset.layers.length} layers
+                    </span>
                   </button>
                 ))}
               </div>
@@ -522,7 +532,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 <FolderPlus className="text-purple-400" size={18} />
                 <h2 className="text-sm font-bold text-white">Create Template from Scratch</h2>
               </div>
-              
+
               <div className="space-y-3">
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Template ID</label>
@@ -532,13 +542,15 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Label Name</label>
                   <input type="text" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500" />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Category</label>
                     <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as TemplateCategory)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500">
                       {CATEGORIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -564,12 +576,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 Create Blank Template
               </button>
             </div>
-
           </div>
         </div>
       ) : (
         <div className="flex-1 flex overflow-hidden min-h-0">
-          
           {/* Sidebar Left: Layers Panel */}
           <aside className="w-72 border-r border-[#2A2A38] bg-[#121219] flex flex-col shrink-0 min-h-0">
             <div className="p-4 border-b border-[#2A2A38] flex items-center justify-between shrink-0">
@@ -603,27 +613,62 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-[10px] font-mono text-[#555566] shrink-0">#{idx + 1}</span>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate">
-                            {layer.kind === "text" ? layer.content : `${layer.kind} (${(layer as any).shape || "layer"})`}
-                          </p>
+                          <p className="text-xs font-bold text-white truncate">{layer.kind === "text" ? layer.content : `${layer.kind} (${(layer as any).shape || "layer"})`}</p>
                           <p className="text-[9px] text-teal-400 font-semibold tracking-wider uppercase mt-0.5">{layer.kind}</p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <button type="button" onClick={(e) => { e.stopPropagation(); toggleVisibility(layer.id); }} className={`p-1 rounded hover:bg-[#2A2A38] ${isHidden ? "text-red-400" : "text-[#888899]"}`}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleVisibility(layer.id);
+                          }}
+                          className={`p-1 rounded hover:bg-[#2A2A38] ${isHidden ? "text-red-400" : "text-[#888899]"}`}
+                        >
                           {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
                         </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); toggleLock(layer.id); }} className={`p-1 rounded hover:bg-[#2A2A38] ${isLocked ? "text-amber-400" : "text-[#888899]"}`}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleLock(layer.id);
+                          }}
+                          className={`p-1 rounded hover:bg-[#2A2A38] ${isLocked ? "text-amber-400" : "text-[#888899]"}`}
+                        >
                           {isLocked ? <Lock size={11} /> : <Unlock size={11} />}
                         </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); handleMoveLayer(idx, "up"); }} disabled={idx === template.layers.length - 1} className="p-1 rounded hover:bg-[#2A2A38] text-[#888899] disabled:opacity-30">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveLayer(idx, "up");
+                          }}
+                          disabled={idx === template.layers.length - 1}
+                          className="p-1 rounded hover:bg-[#2A2A38] text-[#888899] disabled:opacity-30"
+                        >
                           <ChevronUp size={11} />
                         </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); handleMoveLayer(idx, "down"); }} disabled={idx === 0} className="p-1 rounded hover:bg-[#2A2A38] text-[#888899] disabled:opacity-30">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveLayer(idx, "down");
+                          }}
+                          disabled={idx === 0}
+                          className="p-1 rounded hover:bg-[#2A2A38] text-[#888899] disabled:opacity-30"
+                        >
                           <ChevronDown size={11} />
                         </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); handleDeleteLayer(layer.id); }} className="p-1 rounded hover:bg-red-500/10 text-[#888899] hover:text-red-400">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteLayer(layer.id);
+                          }}
+                          className="p-1 rounded hover:bg-red-500/10 text-[#888899] hover:text-red-400"
+                        >
                           <Trash2 size={11} />
                         </button>
                       </div>
@@ -636,22 +681,15 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
           {/* Center Column: Preview and Scrubber controls */}
           <main className="flex-1 flex flex-col bg-[#09090D] min-w-0 h-full overflow-hidden p-6 gap-6">
-            
             {/* Canvas Player Box */}
             <div className="flex-1 flex items-center justify-center bg-[#07070A] rounded-2xl border border-[#2A2A38] relative overflow-hidden p-4 shadow-inner">
               <div className="relative aspect-video max-w-full max-h-full rounded-lg overflow-hidden border border-[#1A1A26] bg-[#0E0E14] flex items-center justify-center">
-                <canvas 
-                  ref={canvasRef} 
-                  width={template.canvasWidth} 
-                  height={template.canvasHeight}
-                  className="w-full h-full object-contain"
-                />
+                <canvas ref={canvasRef} width={template.canvasWidth} height={template.canvasHeight} className="w-full h-full object-contain" />
               </div>
             </div>
 
             {/* Playback & Customization Controls */}
             <div className="rounded-2xl border border-[#2A2A38] bg-[#121219] p-4 shrink-0 flex flex-col gap-4">
-              
               {/* Scrub timeline */}
               <div className="flex items-center gap-4">
                 <button onClick={() => setIsPlaying(!isPlaying)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500 text-black hover:bg-teal-400 transition-colors">
@@ -659,19 +697,23 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 </button>
                 <div className="flex-1 flex flex-col gap-1">
                   <div className="flex items-center justify-between text-[10px] font-mono text-[#888899]">
-                    <span>Frame {Math.round(currentTime * 30)} / {Math.round(template.duration * 30)}</span>
-                    <span>{currentTime.toFixed(2)}s / {template.duration.toFixed(1)}s</span>
+                    <span>
+                      Frame {Math.round(currentTime * 30)} / {Math.round(template.duration * 30)}
+                    </span>
+                    <span>
+                      {currentTime.toFixed(2)}s / {template.duration.toFixed(1)}s
+                    </span>
                   </div>
-                  <input 
-                    type="range" 
-                    min={0} 
-                    max={template.duration} 
-                    step={0.033} 
-                    value={currentTime} 
+                  <input
+                    type="range"
+                    min={0}
+                    max={template.duration}
+                    step={0.033}
+                    value={currentTime}
                     onChange={(e) => {
                       setIsPlaying(false);
                       setCurrentTime(parseFloat(e.target.value));
-                    }} 
+                    }}
                     className="w-full accent-teal-500 cursor-pointer h-1.5 rounded-lg bg-[#2A2A38]"
                   />
                 </div>
@@ -707,13 +749,11 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   </div>
                 </div>
               </div>
-
             </div>
           </main>
 
           {/* Sidebar Right: Inspector Panel */}
           <aside className="w-80 border-l border-[#2A2A38] bg-[#121219] flex flex-col shrink-0 overflow-y-auto">
-            
             {/* Section Header */}
             <div className="p-4 border-b border-[#2A2A38] bg-[#151520] shrink-0">
               <span className="text-[10px] uppercase font-bold tracking-wider text-[#888899] flex items-center gap-1.5">
@@ -730,14 +770,14 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Layer ID</label>
                     <input type="text" value={selectedLayer.id} onChange={(e) => handleUpdateLayerProperty("id", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
                   </div>
-                  
+
                   {selectedLayer.kind === "text" && (
                     <>
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Static Text Content</label>
                         <input type="text" value={selectedLayer.content} onChange={(e) => handleUpdateLayerProperty("content", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Font Family</label>
@@ -775,7 +815,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Role / Placement Mapping</label>
-                        <select value={selectedLayer.role || "primary"} onChange={(e) => handleUpdateLayerProperty("role", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
+                        <select value={selectedLayer.role || "none"} onChange={(e) => handleUpdateLayerProperty("role", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
+                          <option value="none">none (Use Static Content)</option>
                           <option value="primary">primary (Primary Text)</option>
                           <option value="secondary">secondary (Secondary Subtext)</option>
                           <option value="accent">accent (Attribution / Highlight)</option>
@@ -812,13 +853,12 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       <input type="text" value={selectedLayer.url} onChange={(e) => handleUpdateLayerProperty("url", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
                     </div>
                   )}
-
                 </div>
 
                 {/* Layer Layout Coordinates */}
                 <div className="border-t border-[#2A2A38]/50 pt-4 space-y-3">
                   <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Layout Bounds (px)</h4>
-                  
+
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[9px] text-[#888899] mb-0.5">X Coordinate</label>
@@ -845,7 +885,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 {/* Layer Transitions & Animations */}
                 <div className="border-t border-[#2A2A38]/50 pt-4 space-y-3">
                   <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Transitions & Animations</h4>
-                  
+
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[9px] text-[#888899] mb-0.5">Entrance Preset</label>
@@ -893,7 +933,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       <option value={2}>2.0 seconds</option>
                     </select>
                   </div>
-
                 </div>
               </div>
             ) : (
@@ -911,7 +950,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Category</label>
                   <select value={template.category} onChange={(e) => setTemplate({ ...template, category: e.target.value as TemplateCategory })} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
                     {CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -936,7 +977,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               </div>
             )}
           </aside>
-
         </div>
       )}
 
