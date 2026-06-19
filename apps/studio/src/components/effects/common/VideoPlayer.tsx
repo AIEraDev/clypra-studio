@@ -149,7 +149,7 @@ export function VideoPlayer({ videoUrl, onTimeUpdate, onFrameReady, onMetadataLo
   return (
     <div className={`flex flex-col ${className}`}>
       {/* Hidden video element */}
-      <video ref={videoRef} src={videoUrl} className="hidden" onLoadedMetadata={handleLoadedMetadata} onTimeUpdate={handleTimeUpdate} onSeeked={handleSeeked} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} loop />
+      <video ref={videoRef} src={videoUrl} className="hidden" playsInline muted onLoadedMetadata={handleLoadedMetadata} onTimeUpdate={handleTimeUpdate} onSeeked={handleSeeked} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} loop />
 
       {/* Controls */}
       <div className="bg-gray-800 text-white p-4 rounded-lg space-y-3">

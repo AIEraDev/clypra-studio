@@ -8,5 +8,5 @@
  */
 
 // Export body effect components here when implemented
-// export { BodyEffectWorkspace } from "./BodyEffectWorkspace";
+export { BodyEffectWorkspace } from "./BodyEffectWorkspace";
 // export { BodyEffectList } from "./BodyEffectList";

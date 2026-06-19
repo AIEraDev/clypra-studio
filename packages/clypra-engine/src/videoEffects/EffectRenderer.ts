@@ -18,10 +18,10 @@ export class EffectRenderer {
    * @param intensity - Effect intensity (0-1)
    * @param time - Current time for animated effects
    */
-  static apply(ctx: CanvasRenderingContext2D, renderer: EffectRendererType, params: EffectParameters, intensity: number = 1, time: number = 0): void {
+  static apply(ctx: CanvasRenderingContext2D, renderer: EffectRendererType, params: EffectParameters, intensity: number = 1, time: number = 0, bodyMask?: ImageData): void {
     const method = getEffectRenderer(renderer);
     if (method) {
-      method.call(this, ctx, params, intensity, time);
+      method.call(this, ctx, params, intensity, time, bodyMask);
     } else {
       console.warn(`Unknown effect renderer: ${renderer}`);
     }

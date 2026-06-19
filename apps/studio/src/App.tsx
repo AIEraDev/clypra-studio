@@ -14,7 +14,7 @@ import { AudioPublishPanel } from "./components/AudioPublishPanel";
 import { StickerPublishPanel } from "./components/StickerPublishPanel";
 import { OverlayPublishPanel } from "./components/OverlayPublishPanel";
 import { VideoEffectPublishPanel } from "./components/VideoEffectPublishPanel";
-import { VideoEffectWorkspace, FilterWorkspace } from "./components/effects";
+import { VideoEffectWorkspace, FilterWorkspace, BodyEffectWorkspace } from "./components/effects";
 import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra/engine";
 import { getPresetScene } from "@clypra/engine";
 import { COMPOSITION_PRESETS } from "@clypra/engine";
@@ -1476,6 +1476,10 @@ export default function App() {
         ) : activeRailItem === "video-effects" ? (
           <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
             <VideoEffectWorkspace />
+          </div>
+        ) : activeRailItem === "body-effects" ? (
+          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
+            <BodyEffectWorkspace />
           </div>
         ) : activeRailItem === "filters" ? (
           <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">

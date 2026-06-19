@@ -1,7 +1,7 @@
 import React from "react";
 import { Download, FileCode, Filter, Grid2X2, Layers, Music, Palette, Sparkles, Sticker, Video, Wand2 } from "lucide-react";
 
-export type RailItem = "templates" | "style" | "layers" | "audio" | "stickers" | "overlays" | "effects" | "video-effects" | "filters" | "export";
+export type RailItem = "templates" | "style" | "layers" | "audio" | "stickers" | "overlays" | "effects" | "video-effects" | "body-effects" | "filters" | "export";
 
 const RAIL_ITEMS: Array<{
   id: RailItem;
@@ -14,8 +14,9 @@ const RAIL_ITEMS: Array<{
   { id: "audio", label: "Audio", icon: Music },
   { id: "stickers", label: "Stickers", icon: Sticker },
   { id: "overlays", label: "Overlays", icon: Video },
-  { id: "effects", label: "Effects", icon: Sparkles },
   { id: "video-effects", label: "Video Effects", icon: Wand2 },
+  { id: "body-effects", label: "Body Effects", icon: Sparkles },
+  { id: "effects", label: "Effects Lab", icon: FileCode },
   { id: "filters", label: "Filters", icon: Filter },
   { id: "export", label: "Export", icon: Download },
 ];
