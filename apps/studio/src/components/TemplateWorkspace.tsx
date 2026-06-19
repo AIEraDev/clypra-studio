@@ -113,6 +113,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [apiTemplatesLoading, setApiTemplatesLoading] = useState(false);
   const [loadTab, setLoadTab] = useState<"local" | "api">("local");
   const [isLoadingApiTemplate, setIsLoadingApiTemplate] = useState(false);
+  const [publishingApiTemplateId, setPublishingApiTemplateId] = useState<string | null>(null);
   const [publishApproved, setPublishApproved] = useState(true); // admin publish checkbox
 
   // Parse JWT token to check if user is admin
@@ -148,6 +149,29 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       console.error("Failed to fetch templates from API", err);
     } finally {
       setApiTemplatesLoading(false);
+    }
+  };
+
+  const handlePublishApiTemplateDirectly = async (category: string, id: string) => {
+    if (!confirm("Are you sure you want to approve and publish this template immediately?")) {
+      return;
+    }
+    setPublishingApiTemplateId(id);
+    try {
+      const response = await fetch(`https://clypra-worker-api.abdulkabirmusa.com/text-templates/${category}/${id}/publish`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || err.error || "Failed to publish template");
+      }
+      await fetchApiTemplates();
+      alert("Template published successfully!");
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Publishing failed");
+    } finally {
+      setPublishingApiTemplateId(null);
     }
   };
 
@@ -1207,6 +1231,15 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
+                      {saved.published === false && (
+                        <button
+                          onClick={() => handlePublishApiTemplateDirectly(saved.category, saved.id)}
+                          disabled={publishingApiTemplateId === saved.id}
+                          className="rounded-lg bg-teal-500 hover:bg-teal-400 disabled:opacity-50 px-3 py-1.5 text-xs font-bold text-black shadow-lg shadow-teal-500/10 transition-colors"
+                        >
+                          {publishingApiTemplateId === saved.id ? "Publishing..." : "Publish"}
+                        </button>
+                      )}
                       <button
                         onClick={() => handleLoadApiTemplate(saved.category, saved.id)}
                         disabled={isLoadingApiTemplate}
