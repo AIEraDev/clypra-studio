@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/AIEraDev/clypra-studio/compare/v1.15.0...v1.15.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* resolve WebM export stuttering and type errors ([965ec40](https://github.com/AIEraDev/clypra-studio/commit/965ec40b2f4a6f106659163e9d2694302eba2e33))
+
 # [1.15.0](https://github.com/AIEraDev/clypra-studio/compare/v1.14.1...v1.15.0) (2026-06-19)
 
 
