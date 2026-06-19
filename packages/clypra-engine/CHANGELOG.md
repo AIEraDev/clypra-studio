@@ -1,3 +1,11 @@
+# [1.14.0](https://github.com/AIEraDev/clypra-studio/compare/v1.13.0...v1.14.0) (2026-06-19)
+
+
+### Features
+
+* add opacity property for layer display/visibility animation ([73925e9](https://github.com/AIEraDev/clypra-studio/commit/73925e91048606fa12598b3a73e7f9991c728dcd))
+* implement keyframe editor UI for property animation ([cec4419](https://github.com/AIEraDev/clypra-studio/commit/cec44199338cb50ba88bca9e32e381c4c003375d))
+
 # [1.13.0](https://github.com/AIEraDev/clypra-studio/compare/v1.12.0...v1.13.0) (2026-06-19)
 
 
