@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/AIEraDev/clypra-studio/compare/v1.11.0...v1.12.0) (2026-06-19)
+
+
+### Features
+
+* enhance studio workspace and template publishing ([d252827](https://github.com/AIEraDev/clypra-studio/commit/d252827294cece1e39ae82fd0dd57e5ee15e35b4))
+
 # [1.11.0](https://github.com/AIEraDev/clypra-studio/compare/v1.10.1...v1.11.0) (2026-06-19)
 
 
