@@ -211,9 +211,11 @@ export class TemplateRenderer {
     const visibleCharsCount = Math.floor(transform.typewriterProgress * content.length);
     const textToDraw = content.slice(0, visibleCharsCount);
 
+    const verticalAlign = resolved.verticalAlign || "middle";
+
     ctx.save();
     ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}", sans-serif`;
-    ctx.textBaseline = "middle";
+    ctx.textBaseline = verticalAlign;
     ctx.textAlign = align;
 
     let adjustedFontSize = fontSize;
@@ -234,6 +236,14 @@ export class TemplateRenderer {
       const lineHeight = adjustedFontSize * 1.2;
       const totalTextHeight = lines.length * lineHeight;
       bgHeight = totalTextHeight + padding * 2;
+      // Adjust background Y based on vertical alignment inside bounding box
+      if (verticalAlign === "top") {
+        bgY = y - padding;
+      } else if (verticalAlign === "bottom") {
+        bgY = y + height - totalTextHeight - padding;
+      } else { // middle
+        bgY = y + (height - totalTextHeight) / 2 - padding;
+      }
     } else if (overflow === "expand-panel") {
       const measuredWidth = ctx.measureText(textToDraw).width;
       bgWidth = measuredWidth + padding * 2;
@@ -327,13 +337,25 @@ export class TemplateRenderer {
     if (overflow === "wrap") {
       const lineHeight = adjustedFontSize * 1.2;
       const totalTextHeight = lines.length * lineHeight;
-      const startY = y + (height - totalTextHeight) / 2 + lineHeight / 2;
+      let startY = y;
+      if (verticalAlign === "top") {
+        startY = y;
+      } else if (verticalAlign === "bottom") {
+        startY = y + height - (lines.length - 1) * lineHeight;
+      } else { // "middle"
+        startY = y + (height - totalTextHeight) / 2 + lineHeight / 2;
+      }
       lines.forEach((line, index) => {
         const lineY = startY + index * lineHeight;
         ctx.fillText(line, drawX, lineY);
       });
     } else {
-      const drawY = y + height / 2;
+      let drawY = y + height / 2;
+      if (verticalAlign === "top") {
+        drawY = y;
+      } else if (verticalAlign === "bottom") {
+        drawY = y + height;
+      }
       ctx.fillText(lines[0], drawX, drawY);
     }
 

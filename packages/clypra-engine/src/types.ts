@@ -383,6 +383,7 @@ export interface TemplateTextLayer {
   animation: LayerAnimation;
   role?: "primary" | "secondary" | "accent" | "none";
   overflow?: "wrap" | "shrink" | "expand-panel" | "clip";
+  verticalAlign?: "top" | "middle" | "bottom";
 }
 
 export interface TemplateShapeLayer {
@@ -435,4 +436,7 @@ export interface TextTemplate {
   thumbnail?: string;
   preview?: string;
   layers: TemplateLayer[];
+  published?: boolean;
+  creatorName?: string;
+  creatorLink?: string;
 }

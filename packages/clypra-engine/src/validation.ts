@@ -297,7 +297,8 @@ export const TextLayerSchema = z.object({
   height: z.number().positive(),
   animation: LayerAnimationSchema,
   role: z.enum(["primary", "secondary", "accent", "none"]).optional(),
-  overflow: z.enum(["wrap", "shrink", "expand-panel", "clip"]).optional()
+  overflow: z.enum(["wrap", "shrink", "expand-panel", "clip"]).optional(),
+  verticalAlign: z.enum(["top", "middle", "bottom"]).optional()
 });
 
 export const ShapeLayerSchema = z.object({
@@ -342,7 +343,10 @@ export const TextTemplateSchema = z.object({
   canvasHeight: z.number().positive(),
   thumbnail: z.string().optional(),
   preview: z.string().optional(),
-  layers: z.array(TemplateLayerSchema)
+  layers: z.array(TemplateLayerSchema),
+  published: z.boolean().optional(),
+  creatorName: z.string().optional(),
+  creatorLink: z.string().optional()
 });
 
 export function validateTextTemplate(data: unknown) {

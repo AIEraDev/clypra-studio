@@ -93,6 +93,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [publishDescription, setPublishDescription] = useState("");
   const [publishTagsInput, setPublishTagsInput] = useState("");
   const [publishPlacement, setPublishPlacement] = useState<(typeof PLACEMENTS)[number]>("center");
+  const [publishCreatorName, setPublishCreatorName] = useState("");
+  const [publishCreatorLink, setPublishCreatorLink] = useState("");
 
   // Auto-save notification
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -104,6 +106,81 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   // Saved templates management
   const [savedTemplates, setSavedTemplates] = useState<Array<{ id: string; name: string; savedAt: number }>>([]);
   const [showSavedTemplates, setShowSavedTemplates] = useState(false);
+
+  // Admin API template loading states
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [apiTemplates, setApiTemplates] = useState<any[]>([]);
+  const [apiTemplatesLoading, setApiTemplatesLoading] = useState(false);
+  const [loadTab, setLoadTab] = useState<"local" | "api">("local");
+  const [isLoadingApiTemplate, setIsLoadingApiTemplate] = useState(false);
+  const [publishApproved, setPublishApproved] = useState(true); // admin publish checkbox
+
+  // Parse JWT token to check if user is admin
+  useEffect(() => {
+    const token = localStorage.getItem("clypra_auth_token");
+    if (!token) {
+      setIsAdmin(false);
+      return;
+    }
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setIsAdmin(!!payload.isAdmin);
+    } catch (e) {
+      setIsAdmin(false);
+    }
+  }, [showSavedTemplates, showPublishModal]);
+
+  useEffect(() => {
+    if (showSavedTemplates && isAdmin) {
+      setLoadTab("local");
+      fetchApiTemplates();
+    }
+  }, [showSavedTemplates, isAdmin]);
+
+  const fetchApiTemplates = async () => {
+    setApiTemplatesLoading(true);
+    try {
+      const response = await fetch("https://clypra-worker-api.abdulkabirmusa.com/text-templates");
+      if (!response.ok) throw new Error("Failed to fetch API templates index");
+      const data = await response.json();
+      setApiTemplates(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch templates from API", err);
+    } finally {
+      setApiTemplatesLoading(false);
+    }
+  };
+
+  const handleLoadApiTemplate = async (category: string, id: string) => {
+    setIsLoadingApiTemplate(true);
+    try {
+      const response = await fetch(`https://clypra-worker-api.abdulkabirmusa.com/text-templates/${category}/${id}`);
+      if (!response.ok) throw new Error("Failed to fetch template from API");
+      const lottieData = await response.json();
+      
+      setTemplate(lottieData);
+      setSelectedLayerId(lottieData.layers?.[0]?.id || null);
+      
+      // Extract custom texts from layers
+      const textLayers = (lottieData.layers || []).filter((l: any) => l.kind === "text");
+      const primary = textLayers.find((tl: any) => tl.role === "primary")?.content || "Primary Text";
+      const secondary = textLayers.find((tl: any) => tl.role === "secondary")?.content || "Secondary Text";
+      const accent = textLayers.find((tl: any) => tl.role === "accent")?.content || "Accent Text";
+      setCustomTexts({ primary, secondary, accent });
+      
+      setColorOverrides(new Map());
+      setThumbnailFrame(0);
+      setCurrentTime(0);
+      setIsPlaying(false);
+      setSaveStatus("saved");
+      setShowSavedTemplates(false);
+    } catch (err) {
+      console.error("Failed to load template from API", err);
+      alert("Failed to load template from API!");
+    } finally {
+      setIsLoadingApiTemplate(false);
+    }
+  };
 
   // Load template session from LocalStorage on mount
   useEffect(() => {
@@ -805,10 +882,12 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const handleOpenPublish = async () => {
     if (!template) return;
     try {
-      setPublishDescription(`Canvas-based template: ${template.label}`);
-      setPublishTagsInput(template.category || "");
+      setPublishDescription(template.description || `Canvas-based template: ${template.label}`);
+      setPublishTagsInput(template.tags?.join(", ") || template.category || "");
       setPublishPlacement("center");
       setPublishVideoDataUrl(null);
+      setPublishCreatorName(template.creatorName || "");
+      setPublishCreatorLink(template.creatorLink || "");
       
       const url = await captureThumbnail();
       setThumbnailDataUrl(url);
@@ -896,6 +975,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             ...template,
             description: publishDescription,
             tags: publishTagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+            published: isAdmin ? publishApproved : false,
+            creatorName: publishCreatorName,
+            creatorLink: publishCreatorLink,
           },
           thumbnailDataUrl: thumbnailUrl,
           previewDataUrl: videoUrl,
@@ -910,6 +992,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       const result = await response.json();
 
       setPublishStatus("published");
+      if (result.template) {
+        setTemplate(result.template);
+      }
       const lottieUrl = `https://clypra-worker-api.abdulkabirmusa.com/media/text-templates/${template.category}/${template.id}.json`;
       setPublishPrUrl(lottieUrl);
       setPublishMessage(`${result.message || "Template published successfully"}`);
@@ -1003,31 +1088,105 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <FolderPlus size={16} className="text-teal-400" />
-                Saved Templates ({savedTemplates.length})
+                {isAdmin ? "Manage & Load Templates" : `Saved Templates (${savedTemplates.length})`}
               </h3>
               <button onClick={() => setShowSavedTemplates(false)} className="rounded-lg p-1.5 hover:bg-[#2A2A38] transition-colors">
                 <X size={16} />
               </button>
             </div>
 
-            {savedTemplates.length === 0 ? (
+            {isAdmin && (
+              <div className="flex border-b border-[#2A2A38] bg-[#15151C] mb-4 rounded-t-lg overflow-hidden">
+                <button
+                  onClick={() => setLoadTab("local")}
+                  className={`flex-1 py-2.5 text-center text-xs font-semibold transition-colors ${
+                    loadTab === "local" ? "text-teal-300 bg-[#0E0E14] border-b-2 border-teal-500" : "text-[#888899] hover:text-white"
+                  }`}
+                >
+                  Local Saved ({savedTemplates.length})
+                </button>
+                <button
+                  onClick={() => setLoadTab("api")}
+                  className={`flex-1 py-2.5 text-center text-xs font-semibold transition-colors ${
+                    loadTab === "api" ? "text-teal-300 bg-[#0E0E14] border-b-2 border-teal-500" : "text-[#888899] hover:text-white"
+                  }`}
+                >
+                  API Templates ({apiTemplates.length})
+                </button>
+              </div>
+            )}
+
+            {loadTab === "local" ? (
+              savedTemplates.length === 0 ? (
+                <div className="py-12 text-center">
+                  <p className="text-xs text-[#888899]">No saved templates yet. Save your current work to access it later.</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {savedTemplates.map((saved) => (
+                    <div key={saved.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2A2A38] bg-[#09090D] hover:border-teal-500/30 transition-all">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-white truncate">{saved.name}</p>
+                        <p className="text-[10px] text-[#888899] mt-0.5">Saved {new Date(saved.savedAt).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <button onClick={() => handleLoadTemplate(saved.id)} className="rounded-lg border border-teal-500 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-400 transition-colors">
+                          Load
+                        </button>
+                        <button onClick={() => handleDeleteSavedTemplate(saved.id)} className="rounded-lg p-1.5 hover:bg-red-500/10 text-red-400 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : apiTemplatesLoading ? (
+              <div className="py-12 text-center flex flex-col items-center justify-center gap-2">
+                <Loader2 className="animate-spin text-teal-400" size={20} />
+                <p className="text-xs text-[#888899]">Loading templates from API...</p>
+              </div>
+            ) : apiTemplates.length === 0 ? (
               <div className="py-12 text-center">
-                <p className="text-xs text-[#888899]">No saved templates yet. Save your current work to access it later.</p>
+                <p className="text-xs text-[#888899]">No templates found on API.</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {savedTemplates.map((saved) => (
+                {apiTemplates.map((saved) => (
                   <div key={saved.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2A2A38] bg-[#09090D] hover:border-teal-500/30 transition-all">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-white truncate">{saved.name}</p>
-                      <p className="text-[10px] text-[#888899] mt-0.5">Saved {new Date(saved.savedAt).toLocaleString()}</p>
+                    <div className="flex-1 min-w-0 flex items-center gap-3">
+                      {saved.thumbnail && (
+                        <img src={saved.thumbnail} className="w-12 aspect-video rounded border border-[#2A2A38] bg-black object-contain" alt="" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-semibold text-white truncate">{saved.label || saved.name}</p>
+                          {saved.published === false && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold uppercase tracking-wider">Unpublished</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-[#888899] mt-0.5 font-mono">{saved.id} · {saved.category}</p>
+                        {saved.creatorName && (
+                          <p className="text-[9px] text-teal-400/80 mt-0.5">
+                            by{" "}
+                            {saved.creatorLink ? (
+                              <a href={saved.creatorLink} target="_blank" rel="noreferrer" className="hover:underline text-teal-300 font-semibold" onClick={(e) => e.stopPropagation()}>
+                                {saved.creatorName}
+                              </a>
+                            ) : (
+                              <span className="font-semibold">{saved.creatorName}</span>
+                            )}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
-                      <button onClick={() => handleLoadTemplate(saved.id)} className="rounded-lg border border-teal-500 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-400 transition-colors">
-                        Load
-                      </button>
-                      <button onClick={() => handleDeleteSavedTemplate(saved.id)} className="rounded-lg p-1.5 hover:bg-red-500/10 text-red-400 transition-colors">
-                        <Trash2 size={14} />
+                      <button
+                        onClick={() => handleLoadApiTemplate(saved.category, saved.id)}
+                        disabled={isLoadingApiTemplate}
+                        className="rounded-lg border border-teal-500 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-400 transition-colors disabled:opacity-50"
+                      >
+                        {isLoadingApiTemplate ? "Loading..." : "Edit"}
                       </button>
                     </div>
                   </div>
@@ -1374,19 +1533,28 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           </div>
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Align</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Font Weight</label>
+                          <input type="number" min={100} max={900} step={100} value={selectedLayer.fontWeight} onChange={(e) => handleUpdateLayerProperty("fontWeight", parseInt(e.target.value) || 400)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Horizontal Align</label>
                           <select value={selectedLayer.align} onChange={(e) => handleUpdateLayerProperty("align", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
                             <option value="left">Left</option>
                             <option value="center">Center</option>
                             <option value="right">Right</option>
                           </select>
                         </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Font Weight</label>
-                        <input type="number" min={100} max={900} step={100} value={selectedLayer.fontWeight} onChange={(e) => handleUpdateLayerProperty("fontWeight", parseInt(e.target.value) || 400)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
-                        <p className="text-[9px] text-[#666677] mt-0.5">100 (Thin) to 900 (Black)</p>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Vertical Align</label>
+                          <select value={selectedLayer.verticalAlign || "middle"} onChange={(e) => handleUpdateLayerProperty("verticalAlign", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
+                            <option value="top">Top</option>
+                            <option value="middle">Middle</option>
+                            <option value="bottom">Bottom</option>
+                          </select>
+                        </div>
                       </div>
 
                       <div>
@@ -1742,6 +1910,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           category={template.category}
           description={publishDescription}
           tagsInput={publishTagsInput}
+          creatorName={publishCreatorName}
+          creatorLink={publishCreatorLink}
           placement={publishPlacement}
           thumbnailFrame={thumbnailFrame}
           durationFrames={Math.round(template.duration * 30)}
@@ -1757,6 +1927,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           onCategoryChange={(v) => setTemplate(prev => prev ? { ...prev, category: v } : null)}
           onDescriptionChange={setPublishDescription}
           onTagsInputChange={setPublishTagsInput}
+          onCreatorNameChange={setPublishCreatorName}
+          onCreatorLinkChange={setPublishCreatorLink}
           onPlacementChange={setPublishPlacement}
           onThumbnailFrameChange={setThumbnailFrame}
           onUseCurrentFrame={() => setThumbnailFrame(Math.round(currentTime * 30))}
@@ -1768,6 +1940,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           publishStatus={publishStatus}
           publishMessage={publishMessage}
           publishPrUrl={publishPrUrl}
+          published={publishApproved}
+          onPublishedChange={setPublishApproved}
+          isAdmin={isAdmin}
         />
       )}
 

@@ -22,6 +22,8 @@ interface PublishTemplateModalProps {
   category: TemplateCategory;
   description: string;
   tagsInput: string;
+  creatorName: string;
+  creatorLink: string;
   placement: (typeof PLACEMENTS)[number];
   thumbnailFrame: number;
   durationFrames: number;
@@ -37,6 +39,8 @@ interface PublishTemplateModalProps {
   onCategoryChange: (value: TemplateCategory) => void;
   onDescriptionChange: (value: string) => void;
   onTagsInputChange: (value: string) => void;
+  onCreatorNameChange: (value: string) => void;
+  onCreatorLinkChange: (value: string) => void;
   onPlacementChange: (value: (typeof PLACEMENTS)[number]) => void;
   onThumbnailFrameChange: (value: number) => void;
   onUseCurrentFrame: () => void;
@@ -45,9 +49,12 @@ interface PublishTemplateModalProps {
   publishStatus: "idle" | "publishing" | "published" | "failed";
   publishMessage: string | null;
   publishPrUrl: string | null;
+  published: boolean;
+  onPublishedChange: (value: boolean) => void;
+  isAdmin: boolean;
 }
 
-export function PublishTemplateModal({ open, onClose, templateId, templateName, category, description, tagsInput, placement, thumbnailFrame, durationFrames, validationErrors, lottieData, thumbnailDataUrl, previewVideoUrl, isGeneratingVideo, width, height, onTemplateIdChange, onTemplateNameChange, onCategoryChange, onDescriptionChange, onTagsInputChange, onPlacementChange, onThumbnailFrameChange, onUseCurrentFrame, onPreviewThumbnail, onPublish, publishStatus, publishMessage, publishPrUrl }: PublishTemplateModalProps) {
+export function PublishTemplateModal({ open, onClose, templateId, templateName, category, description, tagsInput, creatorName, creatorLink, placement, thumbnailFrame, durationFrames, validationErrors, lottieData, thumbnailDataUrl, previewVideoUrl, isGeneratingVideo, width, height, onTemplateIdChange, onTemplateNameChange, onCategoryChange, onDescriptionChange, onTagsInputChange, onCreatorNameChange, onCreatorLinkChange, onPlacementChange, onThumbnailFrameChange, onUseCurrentFrame, onPreviewThumbnail, onPublish, publishStatus, publishMessage, publishPrUrl, published, onPublishedChange, isAdmin }: PublishTemplateModalProps) {
   const [activeTab, setActiveTab] = useState<"metadata" | "preview">("metadata");
   const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -222,6 +229,20 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                 <p className="mt-1.5 text-[10px] text-clypra-muted">Comma-separated tags for categorization</p>
               </div>
 
+              {/* Creator Credits */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">Creator Name</label>
+                  <input type="text" value={creatorName} onChange={(e) => onCreatorNameChange(e.target.value)} placeholder="John Doe" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
+                  <p className="mt-1.5 text-[9px] text-clypra-muted">Your display name for credits</p>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">Creator Social Link</label>
+                  <input type="text" value={creatorLink} onChange={(e) => onCreatorLinkChange(e.target.value)} placeholder="https://twitter.com/username" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
+                  <p className="mt-1.5 text-[9px] text-clypra-muted">Social/portfolio link for credit</p>
+                </div>
+              </div>
+
               {/* Category & Placement */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -248,6 +269,22 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                   </select>
                 </div>
               </div>
+              
+              {/* Admin Moderation - Published toggle */}
+              {isAdmin && (
+                <div className="flex items-center gap-2 p-3 rounded-lg border border-[#2A2A38] bg-[#0E0E12] select-none">
+                  <input
+                    id="publish-checkbox"
+                    type="checkbox"
+                    checked={published}
+                    onChange={(e) => onPublishedChange(e.target.checked)}
+                    className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-teal-500 focus:ring-teal-500 cursor-pointer"
+                  />
+                  <label htmlFor="publish-checkbox" className="text-xs font-semibold text-white cursor-pointer">
+                    Approve and Publish immediately (Make available in editor)
+                  </label>
+                </div>
+              )}
 
               {/* Thumbnail Frame */}
               <div>
@@ -374,6 +411,30 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                           {tag}
                         </span>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {(creatorName || creatorLink) && (
+                  <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
+                    <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
+                      <ExternalLink size={14} className="text-teal-300" /> Creator Credits
+                    </h4>
+                    <div className="space-y-2 text-[10px]">
+                      {creatorName && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#888899] w-24 shrink-0">Name:</span>
+                          <span className="text-white font-semibold">{creatorName}</span>
+                        </div>
+                      )}
+                      {creatorLink && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#888899] w-24 shrink-0">Social Link:</span>
+                          <a href={creatorLink} target="_blank" rel="noreferrer" className="text-teal-400 hover:underline flex items-center gap-1">
+                            {creatorLink} <ExternalLink size={10} />
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
