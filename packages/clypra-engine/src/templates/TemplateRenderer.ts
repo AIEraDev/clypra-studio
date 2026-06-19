@@ -234,7 +234,9 @@ export class TemplateRenderer {
 
     ctx.save();
     ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}", sans-serif`;
-    ctx.textBaseline = verticalAlign;
+    // Always use alphabetic baseline — we position manually using real font metrics
+    // so we never double-account the baseline shift.
+    ctx.textBaseline = "alphabetic";
     ctx.textAlign = align;
 
     let adjustedFontSize = fontSize;
@@ -345,28 +347,43 @@ export class TemplateRenderer {
       drawX = contentX;
     }
 
+    // Measure real ascent for the current font so we can anchor ink precisely.
+    // actualBoundingBoxAscent is the distance from the alphabetic baseline to the
+    // top of the tallest glyph — this is the value we add to get the baseline y
+    // from a desired top-of-ink y.
+    const sampleMetrics = ctx.measureText(lines[0] || "Ag");
+    const ascent = sampleMetrics.actualBoundingBoxAscent ?? adjustedFontSize * 0.8;
+    const descent = sampleMetrics.actualBoundingBoxDescent ?? adjustedFontSize * 0.2;
+    const inkLineH = ascent + descent; // visual height of one line of ink
+    const lineHeight = adjustedFontSize * 1.2;
+
     if (overflow === "wrap") {
-      const lineHeight = adjustedFontSize * 1.2;
-      const totalTextHeight = lines.length * lineHeight;
-      let startY: number;
+      const totalInkHeight = inkLineH + (lines.length - 1) * lineHeight;
+      let firstBaselineY: number;
       if (verticalAlign === "top") {
-        startY = contentY;
+        // Top of first glyph ink flush with contentY
+        firstBaselineY = contentY + ascent;
       } else if (verticalAlign === "bottom") {
-        startY = contentY + contentH - (lines.length - 1) * lineHeight;
+        // Bottom of last glyph ink flush with contentY + contentH
+        firstBaselineY = contentY + contentH - totalInkHeight + ascent;
       } else { // middle
-        startY = contentY + (contentH - totalTextHeight) / 2 + lineHeight / 2;
+        // Centre of ink block aligned to centre of content area
+        firstBaselineY = contentY + (contentH - totalInkHeight) / 2 + ascent;
       }
       lines.forEach((line, index) => {
-        ctx.fillText(line, drawX, startY + index * lineHeight);
+        ctx.fillText(line, drawX, firstBaselineY + index * lineHeight);
       });
     } else {
       let drawY: number;
       if (verticalAlign === "top") {
-        drawY = contentY;
+        // Top of glyph ink flush with contentY
+        drawY = contentY + ascent;
       } else if (verticalAlign === "bottom") {
-        drawY = contentY + contentH;
+        // Bottom of glyph ink flush with contentY + contentH
+        drawY = contentY + contentH - descent;
       } else { // middle
-        drawY = contentY + contentH / 2;
+        // Ink block vertically centred within content area
+        drawY = contentY + (contentH - inkLineH) / 2 + ascent;
       }
       ctx.fillText(lines[0], drawX, drawY);
     }
