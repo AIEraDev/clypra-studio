@@ -1,3 +1,10 @@
+## [1.18.2](https://github.com/AIEraDev/clypra-studio/compare/v1.18.1...v1.18.2) (2026-06-19)
+
+
+### Bug Fixes
+
+* professional vertical alignment using real font metrics (actualBoundingBoxAscent/Descent) ([b0b6c90](https://github.com/AIEraDev/clypra-studio/commit/b0b6c908ba9d121dc1353c849318750d7cde0a25))
+
 ## [1.18.1](https://github.com/AIEraDev/clypra-studio/compare/v1.18.0...v1.18.1) (2026-06-19)
 
 
