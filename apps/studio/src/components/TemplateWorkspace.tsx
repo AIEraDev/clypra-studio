@@ -604,6 +604,19 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     });
   };
 
+  // Apply multiple flat property updates in a single setTemplate call to avoid
+  // stale-closure overwrites when setting several fields at once (e.g. padding sides).
+  const handleUpdateMultipleLayerProperties = (updates: Record<string, any>) => {
+    if (!template || !selectedLayerId) return;
+    setTemplate({
+      ...template,
+      layers: template.layers.map((l) => {
+        if (l.id !== selectedLayerId) return l;
+        return { ...l, ...updates };
+      }),
+    });
+  };
+
   // Get keyframes for a property
   const getPropertyKeyframes = (property: string): TemplateKeyframe<any>[] | null => {
     if (!selectedLayer) return null;
@@ -1624,18 +1637,23 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                     type="number"
                                     min={0}
                                     value={val}
-                                    onChange={(e) => {
+                                     onChange={(e) => {
                                       const v = parseInt(e.target.value) || 0;
                                       if (linked) {
-                                        handleUpdateLayerProperty("paddingTop", v);
-                                        handleUpdateLayerProperty("paddingRight", v);
-                                        handleUpdateLayerProperty("paddingBottom", v);
-                                        handleUpdateLayerProperty("paddingLeft", v);
-                                        // Clear legacy field so renderer uses individual sides
-                                        handleUpdateLayerProperty("padding", undefined);
+                                        // All 4 sides + clear legacy field in one atomic update
+                                        handleUpdateMultipleLayerProperties({
+                                          paddingTop: v,
+                                          paddingRight: v,
+                                          paddingBottom: v,
+                                          paddingLeft: v,
+                                          padding: undefined,
+                                        });
                                       } else {
-                                        handleUpdateLayerProperty(key, v);
-                                        handleUpdateLayerProperty("padding", undefined);
+                                        // Single side + clear legacy field in one atomic update
+                                        handleUpdateMultipleLayerProperties({
+                                          [key]: v,
+                                          padding: undefined,
+                                        });
                                       }
                                     }}
                                     className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
