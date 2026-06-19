@@ -249,3 +249,108 @@ export function formatValidationErrors(error: z.ZodError): string[] {
 
 export type ValidatedEffectDefinition = z.infer<typeof EffectFullDefinitionSchema>;
 export type ValidatedTextEffectDefinition = z.infer<typeof TextEffectDefinitionSchema>;
+
+// ── Text Template Schemas ───────────────────────────────────────────────────
+
+export const TemplateCategorySchema = z.enum([
+  "lower-third",
+  "title-card",
+  "caption",
+  "callout",
+  "social",
+  "countdown"
+]);
+
+export const AnimationPresetSchema = z.enum([
+  "fade",
+  "slide-up",
+  "slide-down",
+  "slide-left",
+  "slide-right",
+  "scale-in",
+  "scale-out",
+  "blur-in",
+  "blur-out",
+  "typewriter",
+  "none"
+]);
+
+export const LayerAnimationSchema = z.object({
+  in: AnimationPresetSchema,
+  out: AnimationPresetSchema,
+  inDuration: z.number().nonnegative(),
+  outDuration: z.number().nonnegative(),
+  hold: z.union([z.enum(["full"]), z.number().nonnegative()])
+});
+
+export const TextLayerSchema = z.object({
+  kind: z.literal("text"),
+  id: z.string().min(1),
+  content: z.string(),
+  fontFamily: z.string(),
+  fontSize: z.number().positive(),
+  color: z.string(),
+  align: z.enum(["left", "center", "right"]),
+  x: z.number(),
+  y: z.number(),
+  width: z.number().positive(),
+  height: z.number().positive(),
+  animation: LayerAnimationSchema,
+  role: z.enum(["primary", "secondary", "accent"]).optional()
+});
+
+export const ShapeLayerSchema = z.object({
+  kind: z.literal("shape"),
+  id: z.string().min(1),
+  shape: z.enum(["rect", "line", "circle"]),
+  fill: z.string(),
+  stroke: z.object({
+    color: z.string(),
+    width: z.number().nonnegative()
+  }).optional(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number().nonnegative(),
+  height: z.number().nonnegative(),
+  animation: LayerAnimationSchema
+});
+
+export const ImageLayerSchema = z.object({
+  kind: z.literal("image"),
+  id: z.string().min(1),
+  url: z.string(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number().nonnegative(),
+  height: z.number().nonnegative(),
+  animation: LayerAnimationSchema
+});
+
+export const TemplateLayerSchema = z.discriminatedUnion("kind", [
+  TextLayerSchema,
+  ShapeLayerSchema,
+  ImageLayerSchema
+]);
+
+export const TextTemplateSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  category: TemplateCategorySchema,
+  duration: z.number().positive(),
+  canvasWidth: z.number().positive(),
+  canvasHeight: z.number().positive(),
+  thumbnail: z.string().optional(),
+  preview: z.string().optional(),
+  layers: z.array(TemplateLayerSchema)
+});
+
+export function validateTextTemplate(data: unknown) {
+  return TextTemplateSchema.safeParse(data);
+}
+
+export function validateTextTemplateStrict(data: unknown) {
+  return TextTemplateSchema.parse(data);
+}
+
+export type ValidatedTextTemplate = z.infer<typeof TextTemplateSchema>;
+

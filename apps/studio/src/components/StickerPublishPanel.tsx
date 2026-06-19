@@ -16,7 +16,8 @@ interface FormData {
   format: StickerFormat;
 }
 
-export function StickerPublishPanel() {
+export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer" | "workspace" }) {
+  const isWorkspace = variant === "workspace";
   const [formData, setFormData] = useState<FormData>({
     id: "",
     name: "",
@@ -291,158 +292,195 @@ export function StickerPublishPanel() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-[#1a1a1a] rounded-lg border border-[#2a2a2a]">
-      <div className="flex items-center gap-3 mb-6">
-        <Upload className="w-6 h-6 text-[#7C6FFF]" />
-        <h2 className="text-xl font-bold text-white">Publish Sticker to API</h2>
-      </div>
-
-      {/* Name */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-300 mb-2">
-          Sticker Name <span className="text-red-400">*</span>
-        </label>
-        <div className="flex gap-2">
-          <input type="text" value={formData.name} onChange={(e) => handleNameChange(e.target.value)} placeholder="e.g., Fire Emoji" className="flex-1 px-4 py-2 bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#7C6FFF]" />
-          <button onClick={handleGenerateMetadata} disabled={generatingMetadata || !imagePreview} title="AI-generate name, tags, and category from image" className="px-4 py-2 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2a2a2a] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2">
-            {generatingMetadata ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-          </button>
-        </div>
-        {!imagePreview && <p className="mt-1 text-xs text-gray-500">Upload an image first to use AI generation</p>}
-      </div>
-
-      {/* Auto-generated ID */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-300 mb-2">Sticker ID (auto-generated)</label>
-        <input type="text" value={formData.id} onChange={(e) => setFormData({ ...formData, id: e.target.value })} placeholder="sticker-category-name" className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7C6FFF]" />
-      </div>
-
-      {/* Category */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-300 mb-2">
-          Category <span className="text-red-400">*</span>
-        </label>
-        <select value={formData.category} onChange={(e) => handleCategoryChange(e.target.value as StickerCategory)} className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#7C6FFF]">
-          {STICKER_CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Format */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-300 mb-2">
-          Format <span className="text-red-400">*</span>
-        </label>
-        <div className="flex gap-2">
-          {(["static", "gif", "lottie"] as StickerFormat[]).map((format) => (
-            <button key={format} onClick={() => handleFormatChange(format)} className={`flex-1 px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${formData.format === format ? "bg-[#7C6FFF] text-white" : "bg-[#0f0f0f] text-gray-400 border border-[#2a2a2a] hover:border-[#7C6FFF]"}`}>
-              {format.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tags */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-300 mb-2">Tags (comma-separated)</label>
-        <input type="text" value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} placeholder="e.g., fire, emoji, hot" className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#7C6FFF]" />
-      </div>
-
-      {/* Premium Toggle */}
-      <div className="mb-6 flex items-center gap-3">
-        <input type="checkbox" id="premium" checked={formData.isPremium} onChange={(e) => setFormData({ ...formData, isPremium: e.target.checked })} className="w-4 h-4 rounded border-[#2a2a2a] bg-[#0f0f0f] text-[#7C6FFF] focus:ring-2 focus:ring-[#7C6FFF]" />
-        <label htmlFor="premium" className="text-sm text-gray-300 cursor-pointer">
-          Premium Sticker (shows sparkle badge)
-        </label>
-      </div>
-
-      {/* Image File */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-300 mb-2">
-          Image File <span className="text-red-400">*</span>
-          {formData.format !== "static" && " (thumbnail)"}
-        </label>
-        <div className="flex items-start gap-4">
-          <label className="flex-1 cursor-pointer">
-            <div className="border-2 border-dashed border-[#2a2a2a] rounded-lg p-4 hover:border-[#7C6FFF] transition-colors">
-              <div className="flex flex-col items-center justify-center text-center">
-                <ImageIcon className="w-8 h-8 text-gray-500 mb-2" />
-                <p className="text-sm text-gray-400">{imageFile ? imageFile.name : "Click to select PNG/WebP/GIF image"}</p>
-                {!imageFile && formData.format === "static" && <p className="text-xs text-gray-500 mt-1">STATIC format: PNG/WebP only</p>}
-                {!imageFile && formData.format === "gif" && <p className="text-xs text-gray-500 mt-1">Upload a GIF file</p>}
-              </div>
-            </div>
-            <input type="file" accept="image/png,image/webp,image/jpeg,image/gif" onChange={handleImageSelect} className="hidden" />
-          </label>
-          {imagePreview && (
-            <div className="w-24 h-24 rounded-lg overflow-hidden border border-[#2a2a2a]">
-              <img src={imagePreview} alt="Preview" className="w-full h-full object-contain bg-[#0f0f0f]" />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Animated File (for GIF and Lottie) */}
-      {formData.format !== "static" && (
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-300 mb-2">
-            Animation File <span className="text-red-400">*</span>
-            {formData.format === "gif" ? " (GIF)" : " (Lottie JSON)"}
-          </label>
-          <div className="flex items-start gap-4">
-            <label className="flex-1 cursor-pointer">
-              <div className="border-2 border-dashed border-[#2a2a2a] rounded-lg p-4 hover:border-[#7C6FFF] transition-colors">
-                <div className="flex flex-col items-center justify-center text-center">
-                  <Film className="w-8 h-8 text-gray-500 mb-2" />
-                  <p className="text-sm text-gray-400">{animatedFile ? animatedFile.name : `Click to select ${formData.format === "gif" ? "GIF" : "JSON"} file`}</p>
-                </div>
-              </div>
-              <input type="file" accept={formData.format === "gif" ? "image/gif" : "application/json"} onChange={handleAnimatedSelect} className="hidden" />
-            </label>
-            {animatedPreview && formData.format === "gif" && (
-              <div className="w-24 h-24 rounded-lg overflow-hidden border border-[#2a2a2a]">
-                <img src={animatedPreview} alt="Animation" className="w-full h-full object-contain bg-[#0f0f0f]" />
-              </div>
-            )}
+    <div className={`h-full overflow-y-auto text-sm text-white ${isWorkspace ? "p-6" : "p-4"}`}>
+      {/* Header */}
+      <div className={`${isWorkspace ? "mb-5 border-b border-[#20202A] pb-5" : "mb-4 rounded-xl border border-[#2A2A38] bg-[#15151C] p-4"}`}>
+        <div className="flex items-start gap-3">
+          <span className={`${isWorkspace ? "h-11 w-11" : "h-9 w-9"} flex shrink-0 items-center justify-center rounded-lg border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 text-[#B9B2FF]`}>
+            <Upload size={isWorkspace ? 20 : 16} />
+          </span>
+          <div className="flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#B9B2FF]">Sticker Library</p>
+            <h3 className={`${isWorkspace ? "text-xl" : "text-sm"} font-bold`}>Publish Sticker to API</h3>
+            <p className={`${isWorkspace ? "max-w-3xl text-sm" : "text-xs"} mt-1 leading-relaxed text-[#9A9AAA]`}>Publish stickers (static, GIF, or Lottie animations) to the R2 bucket immediately.</p>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
-          <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-          <p className="text-sm text-red-300">{error}</p>
-        </div>
-      )}
+      <div className={isWorkspace ? "grid grid-cols-[360px_minmax(0,1fr)_390px] items-start gap-5 max-[1260px]:grid-cols-[340px_minmax(0,1fr)] max-[920px]:grid-cols-1" : "space-y-4"}>
+        {/* Column 1: Form Fields */}
+        <section className="rounded-xl border border-[#2A2A38] bg-[#101018] p-4 space-y-4">
+          <div className="flex items-center gap-1.5 border-b border-[#2A2A38] pb-2 font-mono text-[10px] font-bold uppercase tracking-wider text-[#B9B2FF]">
+            <span>1. Sticker Metadata</span>
+          </div>
 
-      {/* Success Message */}
-      {success && (
-        <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-start gap-2">
-          <CheckCircle className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
-          <p className="text-sm text-green-300">{success}</p>
-        </div>
-      )}
+          {/* Name */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+              Sticker Name <span className="text-red-400">*</span>
+            </label>
+            <div className="flex gap-2">
+              <input type="text" value={formData.name} onChange={(e) => handleNameChange(e.target.value)} placeholder="e.g., Fire Emoji" className="flex-1 px-3 py-1.5 bg-[#09090D] border border-[#2A2A38] rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-[#7C6FFF] text-xs" />
+              <button onClick={handleGenerateMetadata} disabled={generatingMetadata || !imagePreview} title="AI-generate name, tags, and category from image" className="px-3 py-1.5 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2A2A38] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-xs">
+                {generatingMetadata ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+            {!imagePreview && <p className="mt-1 text-[10px] text-gray-500">Upload an image first to use AI generation</p>}
+          </div>
 
-      {/* Publish Button */}
-      <button onClick={handlePublish} disabled={publishing} className="w-full py-3 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2a2a2a] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
-        {publishing ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Publishing...
-          </>
-        ) : (
-          <>
-            <Upload className="w-5 h-5" />
-            Publish Sticker
-          </>
-        )}
-      </button>
+          {/* Auto-generated ID */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">Sticker ID (auto-generated)</label>
+            <input type="text" value={formData.id} onChange={(e) => setFormData({ ...formData, id: e.target.value })} placeholder="sticker-category-name" className="w-full px-3 py-1.5 bg-[#09090D] border border-[#2A2A38] rounded-lg text-gray-400 focus:outline-none focus:border-[#7C6FFF] text-xs font-mono" />
+          </div>
 
-      <p className="mt-4 text-xs text-gray-500 text-center">Publishing uploads sticker directly to R2 bucket.</p>
+          {/* Category */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+              Category <span className="text-red-400">*</span>
+            </label>
+            <select value={formData.category} onChange={(e) => handleCategoryChange(e.target.value as StickerCategory)} className="w-full px-3 py-1.5 bg-[#09090D] border border-[#2A2A38] rounded-lg text-white focus:outline-none focus:border-[#7C6FFF] text-xs">
+              {STICKER_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Format */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+              Format <span className="text-red-400">*</span>
+            </label>
+            <div className="flex gap-2">
+              {(["static", "gif", "lottie"] as StickerFormat[]).map((format) => (
+                <button key={format} onClick={() => handleFormatChange(format)} className={`flex-1 py-1.5 rounded-lg font-semibold text-xs transition-colors ${formData.format === format ? "bg-[#7C6FFF] text-white" : "bg-[#09090D] text-gray-400 border border-[#2A2A38] hover:border-[#7C6FFF]"}`}>
+                  {format.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">Tags (comma-separated)</label>
+            <input type="text" value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} placeholder="e.g., fire, emoji, hot" className="w-full px-3 py-1.5 bg-[#09090D] border border-[#2A2A38] rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-[#7C6FFF] text-xs" />
+          </div>
+
+          {/* Premium Toggle */}
+          <div className="flex items-center gap-2.5">
+            <input type="checkbox" id="premium" checked={formData.isPremium} onChange={(e) => setFormData({ ...formData, isPremium: e.checked })} className="w-4 h-4 rounded border-[#2A2A38] bg-[#09090D] text-[#7C6FFF] focus:ring-1 focus:ring-[#7C6FFF]" />
+            <label htmlFor="premium" className="text-xs text-gray-300 cursor-pointer">
+              Premium Sticker (shows sparkle badge)
+            </label>
+          </div>
+        </section>
+
+        {/* Column 2: Media Files and Previews */}
+        <section className="rounded-xl border border-[#2A2A38] bg-[#101018] p-4 space-y-4">
+          <div className="flex items-center gap-1.5 border-b border-[#2A2A38] pb-2 font-mono text-[10px] font-bold uppercase tracking-wider text-[#B9B2FF]">
+            <span>2. Media Assets</span>
+          </div>
+
+          {/* Image File */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+              Image File <span className="text-red-400">*</span>
+              {formData.format !== "static" && " (thumbnail)"}
+            </label>
+            <div className="flex items-start gap-4">
+              <label className="flex-1 cursor-pointer">
+                <div className="border-2 border-dashed border-[#2A2A38] rounded-lg p-4 hover:border-[#7C6FFF] transition-colors bg-[#09090D]">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <ImageIcon className="w-6 h-6 text-gray-500 mb-1.5" />
+                    <p className="text-xs text-gray-400">{imageFile ? imageFile.name : "Click to select PNG/WebP/GIF image"}</p>
+                    {!imageFile && formData.format === "static" && <p className="text-[10px] text-gray-500 mt-1">STATIC format: PNG/WebP only</p>}
+                    {!imageFile && formData.format === "gif" && <p className="text-[10px] text-gray-500 mt-1">Upload a GIF file</p>}
+                  </div>
+                </div>
+                <input type="file" accept="image/png,image/webp,image/jpeg,image/gif" onChange={handleImageSelect} className="hidden" />
+              </label>
+              {imagePreview && (
+                <div className="w-20 h-20 rounded-lg overflow-hidden border border-[#2A2A38] shrink-0">
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-contain bg-[#09090D]" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Animated File (for GIF and Lottie) */}
+          {formData.format !== "static" && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                Animation File <span className="text-red-400">*</span>
+                {formData.format === "gif" ? " (GIF)" : " (Lottie JSON)"}
+              </label>
+              <div className="flex items-start gap-4">
+                <label className="flex-1 cursor-pointer">
+                  <div className="border-2 border-dashed border-[#2A2A38] rounded-lg p-4 hover:border-[#7C6FFF] transition-colors bg-[#09090D]">
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <Film className="w-6 h-6 text-gray-500 mb-1.5" />
+                      <p className="text-xs text-gray-400">{animatedFile ? animatedFile.name : `Click to select ${formData.format === "gif" ? "GIF" : "JSON"} file`}</p>
+                    </div>
+                  </div>
+                  <input type="file" accept={formData.format === "gif" ? "image/gif" : "application/json"} onChange={handleAnimatedSelect} className="hidden" />
+                </label>
+                {animatedPreview && formData.format === "gif" && (
+                  <div className="w-20 h-20 rounded-lg overflow-hidden border border-[#2A2A38] shrink-0">
+                    <img src={animatedPreview} alt="Animation" className="w-full h-full object-contain bg-[#09090D]" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Column 3: Publish controls & instructions */}
+        <section className="rounded-xl border border-[#2A2A38] bg-[#101018] p-4 space-y-4">
+          <div className="flex items-center gap-1.5 border-b border-[#2A2A38] pb-2 font-mono text-[10px] font-bold uppercase tracking-wider text-[#B9B2FF]">
+            <span>3. Review &amp; Submit</span>
+          </div>
+
+          <div className="rounded-lg border border-[#2A2A38] bg-[#09090D] p-3 text-xs text-[#9A9AAA]">
+            <p className="font-bold text-white mb-1">Upload validation</p>
+            <p className="text-[11px] leading-relaxed">Ensure file coordinates are centered. Large animation sequences must use compressed SVG path vectors to guarantee fast load times on devices.</p>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-red-300">{error}</p>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {success && (
+            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-green-300">{success}</p>
+            </div>
+          )}
+
+          {/* Publish Button */}
+          <button onClick={handlePublish} disabled={publishing} className="w-full py-2.5 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2A2A38] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-xs">
+            {publishing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Publishing...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                Publish Sticker
+              </>
+            )}
+          </button>
+
+          <p className="text-[10px] text-gray-500 text-center">Uploading directly packages and deploys assets to R2.</p>
+        </section>
+      </div>
     </div>
   );
 }

@@ -3,9 +3,9 @@ import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, Fol
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 
-export type TemplateCategory = "title" | "lower-third" | "caption" | "callout" | "social" | "outro";
+export type TemplateCategory = "lower-third" | "title-card" | "caption" | "callout" | "social" | "countdown";
 
-const CATEGORIES: TemplateCategory[] = ["title", "lower-third", "caption", "callout", "social", "outro"];
+const CATEGORIES: TemplateCategory[] = ["lower-third", "title-card", "caption", "callout", "social", "countdown"];
 
 const PLACEMENTS = ["lower-third", "center", "top", "full-frame"] as const;
 

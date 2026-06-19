@@ -13,7 +13,6 @@ import { DrawerIntro, LeftRail } from "./components/StudioChrome";
 import { AudioPublishPanel } from "./components/AudioPublishPanel";
 import { StickerPublishPanel } from "./components/StickerPublishPanel";
 import { OverlayPublishPanel } from "./components/OverlayPublishPanel";
-import { VideoEffectPublishPanel } from "./components/VideoEffectPublishPanel";
 import { VideoEffectWorkspace, FilterWorkspace, BodyEffectWorkspace } from "./components/effects";
 import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra/engine";
 import { getPresetScene } from "@clypra/engine";
@@ -28,6 +27,7 @@ const InspectorPanel = lazy(() => import("./components/InspectorPanel").then((mo
 const ExportLabPanel = lazy(() => import("./components/ExportLabPanel").then((module) => ({ default: module.ExportLabPanel })));
 import type { EffectApiCategory } from "./components/ExportLabPanel";
 const LegacyControlsPanel = lazy(() => import("./components/LegacyControlsPanel").then((module) => ({ default: module.LegacyControlsPanel })));
+const TemplateWorkspacePanel = lazy(() => import("./components/TemplateWorkspace").then((module) => ({ default: module.TemplateWorkspace })));
 const SavePresetModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.SavePresetModal })));
 const ImageScanModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.ImageScanModal })));
 const PromptStyleModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.PromptStyleModal })));
@@ -82,6 +82,7 @@ export default function App() {
   const [config, setConfig] = useState<TextEffectConfig>(defaultConfig);
   const [scene, setScene] = useState<SceneDocument>(() => textEffectConfigToScene(defaultConfig));
   const { activeRailItem, activeTab, selectedLayerId, setActiveRailItem, setActiveTab, setSelectedLayerId, setUiMode, uiMode } = useStudioWorkspaceState();
+  const [textSubTab, setTextSubTab] = useState<"templates" | "style" | "layers" | "export">("templates");
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
   const skipConfigToScene = useRef(false);
@@ -299,6 +300,7 @@ export default function App() {
         if (session.ui) {
           if (session.ui.uiMode) setUiMode(session.ui.uiMode);
           if (session.ui.activeRailItem) setActiveRailItem(session.ui.activeRailItem);
+          if (session.ui.textSubTab) setTextSubTab(session.ui.textSubTab);
           if (session.ui.activeTab) setActiveTab(session.ui.activeTab);
           if (session.ui.selectedLayerId !== undefined) setSelectedLayerId(session.ui.selectedLayerId);
           if (session.ui.mobileActiveTab) setMobileActiveTab(session.ui.mobileActiveTab);
@@ -363,7 +365,7 @@ export default function App() {
 
   // Sync effect names and kebab IDs
   const activeEffectId = toKebabCase(getEnrichedEffectName(config));
-  const timelinePanelMode = activeRailItem === "layers" ? "advanced" : uiMode;
+  const timelinePanelMode = (activeRailItem === "text-effects" && textSubTab === "layers") ? "advanced" : uiMode;
 
   // Unified, filtered, and sorted presets
   const getPresetRecency = (preset: Preset) => {
@@ -423,7 +425,7 @@ export default function App() {
         // Space -> toggle play when layers panel is active
         if (e.key === " ") {
           e.preventDefault();
-          if (activeRailItem === "layers") {
+          if (activeRailItem === "text-effects" && textSubTab === "layers") {
             setIsPlaying((prev) => !prev);
           } else {
             setBgMode((prev) => (prev === "checkerboard" ? "black" : "checkerboard"));
@@ -442,22 +444,27 @@ export default function App() {
         }
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
           e.preventDefault();
-          setActiveRailItem("export");
+          setActiveRailItem("text-effects");
+          setTextSubTab("export");
         }
         if (e.key.toLowerCase() === "t") {
-          setActiveRailItem("style");
+          setActiveRailItem("text-effects");
+          setTextSubTab("style");
         }
         if (e.key.toLowerCase() === "e") {
-          setActiveRailItem("style");
+          setActiveRailItem("text-effects");
+          setTextSubTab("style");
         }
         if (e.key.toLowerCase() === "l") {
-          setActiveRailItem("layers");
+          setActiveRailItem("text-effects");
+          setTextSubTab("layers");
         }
         if (e.key.toLowerCase() === "v") {
           setActiveRailItem("video-effects");
         }
         if (e.key.toLowerCase() === "a") {
-          setActiveRailItem("export");
+          setActiveRailItem("text-effects");
+          setTextSubTab("export");
         }
       }
 
@@ -594,6 +601,7 @@ export default function App() {
             activeTab,
             selectedLayerId,
             mobileActiveTab,
+            textSubTab,
           },
           exportSettings: {
             engineFormat,
@@ -632,7 +640,7 @@ export default function App() {
         clearTimeout(creatorSaveTimeoutRef.current);
       }
     };
-  }, [isCreatorSessionLoaded, config, scene, activePresetId, uiMode, activeRailItem, activeTab, selectedLayerId, mobileActiveTab, engineFormat, definitionFormat, bgMode, zoom, zoomMode, platformMode, blendAId, blendBId, blendRatio, selectedCategory, sortBy, effectApiCategory]);
+  }, [isCreatorSessionLoaded, config, scene, activePresetId, uiMode, activeRailItem, activeTab, selectedLayerId, mobileActiveTab, textSubTab, engineFormat, definitionFormat, bgMode, zoom, zoomMode, platformMode, blendAId, blendBId, blendRatio, selectedCategory, sortBy, effectApiCategory]);
 
   // Animation preview loop
   useEffect(() => {
@@ -1465,13 +1473,17 @@ export default function App() {
         {/* Left icon rail — hidden on mobile only, visible on tablet + desktop */}
         {!isMobile && <LeftRail activeItem={activeRailItem} onSelectItem={setActiveRailItem} />}
 
-        {activeRailItem === "effects" ? (
-          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
-            <VideoEffectPublishPanel variant="workspace" />
-          </div>
-        ) : activeRailItem === "audio" ? (
+        {activeRailItem === "audio" ? (
           <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
             <AudioPublishPanel variant="workspace" />
+          </div>
+        ) : activeRailItem === "stickers" ? (
+          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
+            <StickerPublishPanel variant="workspace" />
+          </div>
+        ) : activeRailItem === "overlays" ? (
+          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
+            <OverlayPublishPanel variant="workspace" />
           </div>
         ) : activeRailItem === "video-effects" ? (
           <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
@@ -1484,6 +1496,21 @@ export default function App() {
         ) : activeRailItem === "filters" ? (
           <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
             <FilterWorkspace />
+          </div>
+        ) : activeRailItem === "lottie-templates" ? (
+          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center">
+                  <div className="text-center">
+                    <Loader2 size={28} className="animate-spin text-[#7C6FFF] mx-auto mb-3" />
+                    <p className="text-xs text-[#888899] font-sans">Loading Lottie Studio…</p>
+                  </div>
+                </div>
+              }
+            >
+              <TemplateWorkspacePanel onBackToDesign={() => setActiveRailItem("text-effects")} />
+            </Suspense>
           </div>
         ) : (
           <>
@@ -1500,9 +1527,36 @@ export default function App() {
               flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 overflow-y-auto select-none
             `}
             >
-              <DrawerIntro activeItem={activeRailItem} onOpenExport={() => setActiveRailItem("export")} />
+              <DrawerIntro activeItem={activeRailItem} showExport={activeRailItem === "text-effects" && textSubTab !== "export"} onOpenExport={() => { setActiveRailItem("text-effects"); setTextSubTab("export"); }} />
 
-              {activeRailItem === "templates" && (
+              {activeRailItem === "text-effects" && (
+                <div className="flex border-b border-(--studio-border) bg-(--studio-shell) text-xs font-semibold shrink-0 select-none p-1 gap-1">
+                  {[
+                    { id: "templates" as const, label: "Templates" },
+                    { id: "style" as const, label: "Style" },
+                    { id: "layers" as const, label: "Layers" },
+                    { id: "export" as const, label: "Export" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        setTextSubTab(tab.id);
+                        if (tab.id === "layers") setUiMode("advanced");
+                      }}
+                      className={`flex-1 py-1.5 text-center rounded transition-all cursor-pointer text-[11px] font-sans ${
+                        textSubTab === tab.id
+                          ? "bg-[#7C6FFF] text-white font-bold"
+                          : "text-(--studio-muted) hover:text-white hover:bg-(--studio-hover)"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {activeRailItem === "text-effects" && textSubTab === "templates" && (
                 <div className="border-b border-(--studio-border) p-3 flex flex-col">
                   <button id="start-scratch-header-btn" onClick={handleStartFromScratch} className="mb-3 flex w-full items-center justify-center gap-2 rounded-md border border-teal-400/30 bg-teal-400/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-400/15" title="Reset active styles and start designing on a clean default canvas">
                     <FolderPlus size={14} /> Blank Slate
@@ -1524,7 +1578,7 @@ export default function App() {
                         activePresetId={activePresetId}
                         handleApplyPreset={(presetToApply) => {
                           handleApplyPreset(presetToApply);
-                          setActiveRailItem("style");
+                          setTextSubTab("style");
                         }}
                         handleDeletePreset={handleDeletePreset}
                       />
@@ -1533,7 +1587,7 @@ export default function App() {
                 </div>
               )}
 
-              {activeRailItem === "export" && (
+              {activeRailItem === "text-effects" && textSubTab === "export" && (
                 <div className="border-b border-(--studio-border) p-3 space-y-2">
                   <button id="gemini-key-settings-btn" onClick={() => setShowGeminiKeyModal(true)} className="flex w-full items-center justify-center gap-2 rounded-md border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-3 py-2 text-[12px] font-semibold text-[#B9B2FF] hover:bg-[#7C6FFF]/15">
                     <KeyRound size={14} /> Gemini API Key
@@ -1572,16 +1626,14 @@ export default function App() {
                 </div>
               )}
 
-              {activeRailItem === "layers" && <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode="advanced" selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} />}
+              {activeRailItem === "text-effects" && textSubTab === "layers" && <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode="advanced" selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} />}
 
-              {activeRailItem === "stickers" && <StickerPublishPanel />}
 
-              {activeRailItem === "overlays" && <OverlayPublishPanel />}
 
-              {activeRailItem === "style" && <div className="border-b border-(--studio-border) px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Style Controls</div>}
+              {activeRailItem === "text-effects" && textSubTab === "style" && <div className="border-b border-(--studio-border) px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Style Controls</div>}
 
               <Suspense fallback={<div className="p-4 text-xs text-(--studio-muted)">Loading controls...</div>}>
-                <LegacyControlsPanel visible={activeRailItem === "style"} config={config} activeEffectId={activeEffectId} collapsedSections={collapsedSections} isGeneratingName={isGeneratingName} modifyConfig={modifyConfig} toggleSection={toggleSection} handleGenerateAiEffectName={handleGenerateAiEffectName} applyCompositionPreset={applyCompositionPreset} fitTextToComposition={fitTextToComposition} />
+                <LegacyControlsPanel visible={activeRailItem === "text-effects" && textSubTab === "style"} config={config} activeEffectId={activeEffectId} collapsedSections={collapsedSections} isGeneratingName={isGeneratingName} modifyConfig={modifyConfig} toggleSection={toggleSection} handleGenerateAiEffectName={handleGenerateAiEffectName} applyCompositionPreset={applyCompositionPreset} fitTextToComposition={fitTextToComposition} />
               </Suspense>
             </aside>
 
@@ -1640,7 +1692,7 @@ export default function App() {
               Mobile/Tablet: shown only when mobileActiveTab === "code", full-width on mobile
               Desktop: always visible, fixed 344px */}
             <Suspense fallback={<aside className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0 border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted) flex-col`}>Loading panel...</aside>}>
-              <div className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}>{activeRailItem === "export" ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</div>
+              <div className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}>{(activeRailItem === "text-effects" && textSubTab === "export") ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</div>
             </Suspense>
           </>
         )}

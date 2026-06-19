@@ -90,7 +90,8 @@ async function extractThumbnailFromVideo(file: File): Promise<string> {
   });
 }
 
-export function OverlayPublishPanel() {
+export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer" | "workspace" }) {
+  const isWorkspace = variant === "workspace";
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [autoThumbnail, setAutoThumbnail] = useState<string | null>(null);
@@ -256,99 +257,171 @@ export function OverlayPublishPanel() {
   };
 
   return (
-    <div className="border-b border-(--studio-border) p-3 space-y-3">
-      <div className="rounded-lg border border-violet-500/20 bg-violet-500/10 p-3">
-        <div className="flex items-center gap-2 text-xs font-semibold text-violet-200">
-          <Video size={14} />
-          Animated Overlay Library
+    <div className={`h-full overflow-y-auto text-sm text-white ${isWorkspace ? "p-6" : "p-3"}`}>
+      {/* Header */}
+      <div className={`${isWorkspace ? "mb-5 border-b border-[#20202A] pb-5" : "mb-4 rounded-xl border border-[#2A2A38] bg-[#15151C] p-4"}`}>
+        <div className="flex items-start gap-3">
+          <span className={`${isWorkspace ? "h-11 w-11" : "h-9 w-9"} flex shrink-0 items-center justify-center rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-300`}>
+            <Video size={isWorkspace ? 20 : 16} />
+          </span>
+          <div className="flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300">Animated Overlay Library</p>
+            <h3 className={`${isWorkspace ? "text-xl" : "text-sm"} font-bold`}>Publish Overlay to API</h3>
+            <p className={`${isWorkspace ? "max-w-3xl text-sm" : "text-xs"} mt-1 leading-relaxed text-[#9A9AAA]`}>Publish video overlays you own or have a license to distribute. Approved files become available in Clypra for timeline compositing.</p>
+          </div>
         </div>
-        <p className="mt-1 text-[10px] leading-relaxed text-violet-100/70">Publish only video overlays you own or have a license to distribute. Approved files become available in Clypra for timeline compositing.</p>
       </div>
 
-      <label className="block text-[10px] font-bold uppercase tracking-wider text-(--studio-muted)">Video File (WebM, MP4, MOV)</label>
-      <input type="file" accept="video/webm,video/mp4,video/quicktime,.webm,.mp4,.mov" onChange={(event) => void handleVideoFileChange(event.target.files?.[0] || null)} className="w-full rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white" />
+      <div className={isWorkspace ? "grid grid-cols-[360px_minmax(0,1fr)_390px] items-start gap-5 max-[1260px]:grid-cols-[340px_minmax(0,1fr)] max-[920px]:grid-cols-1" : "space-y-3"}>
+        {/* Column 1: Metadata Fields */}
+        <section className="rounded-xl border border-[#2A2A38] bg-[#101018] p-4 space-y-3">
+          <div className="flex items-center gap-1.5 border-b border-[#2A2A38] pb-2 font-mono text-[10px] font-bold uppercase tracking-wider text-violet-300">
+            <span>1. Overlay Metadata</span>
+          </div>
 
-      {videoFile && (
-        <div className="text-[10px] text-(--studio-muted)">
-          File size: {(videoFile.size / 1024 / 1024).toFixed(2)} MB {videoFile.size > 100 * 1024 * 1024 && <span className="text-red-400 ml-2">⚠️ Exceeds 100MB limit</span>}
-        </div>
-      )}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Name</label>
+              <input value={name} onChange={(event) => handleNameChange(event.target.value)} placeholder="Name" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Asset ID</label>
+              <input value={id} onChange={(event) => setId(toKebabId(event.target.value))} placeholder="asset-id" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-violet-500" />
+            </div>
+          </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <input value={name} onChange={(event) => handleNameChange(event.target.value)} placeholder="Name" className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500" />
-        <input value={id} onChange={(event) => setId(toKebabId(event.target.value))} placeholder="asset-id" className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] font-mono text-white outline-none focus:border-violet-500" />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Category</label>
+              <select value={category} onChange={(event) => setCategory(event.target.value as OverlayPublishPayload["category"])} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500">
+                {OVERLAY_CATEGORIES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Duration seconds</label>
+              <input value={duration} onChange={(event) => setDuration(event.target.value)} placeholder="Duration" inputMode="decimal" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Width px</label>
+              <input value={width} onChange={(event) => setWidth(event.target.value)} placeholder="Width px" inputMode="numeric" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Height px</label>
+              <input value={height} onChange={(event) => setHeight(event.target.value)} placeholder="Height px" inputMode="numeric" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-300 mb-1">Description</label>
+            <textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Description" rows={2} className="w-full resize-none rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-300 mb-1">Tags (comma-separated)</label>
+            <input value={tagsInput} onChange={(event) => setTagsInput(event.target.value)} placeholder="tags, comma, separated" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Blend Mode</label>
+              <select value={blendMode} onChange={(event) => setBlendMode(event.target.value as OverlayPublishPayload["metadata"]["blendMode"])} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500">
+                {BLEND_MODES.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {mode}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Opacity 0.0-1.0</label>
+              <input value={opacity} onChange={(event) => setOpacity(event.target.value)} placeholder="Opacity" inputMode="decimal" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5">
+            <input type="checkbox" checked={loopable} id="loopable" onChange={(event) => setLoopable(event.target.checked)} className="w-4 h-4 rounded border-[#2A2A38] bg-[#09090D] text-violet-500 focus:ring-1 focus:ring-violet-500" />
+            <label htmlFor="loopable" className="text-xs text-gray-300 cursor-pointer select-none">Loopable</label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Source Provider</label>
+              <input value={sourceProvider} onChange={(event) => setSourceProvider(event.target.value)} placeholder="Source provider" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Source URL</label>
+              <input value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="https://source.example/item" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+            </div>
+          </div>
+        </section>
+
+        {/* Column 2: Video Selector & Previews */}
+        <section className="rounded-xl border border-[#2A2A38] bg-[#101018] p-4 space-y-4">
+          <div className="flex items-center gap-1.5 border-b border-[#2A2A38] pb-2 font-mono text-[10px] font-bold uppercase tracking-wider text-violet-300">
+            <span>2. Video &amp; Thumbnail</span>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">Video File (WebM, MP4, MOV)</label>
+            <input type="file" accept="video/webm,video/mp4,video/quicktime,.webm,.mp4,.mov" onChange={(event) => void handleVideoFileChange(event.target.files?.[0] || null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-2 text-xs text-white file:mr-3 file:rounded file:border-0 file:bg-violet-500/20 file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-violet-100" />
+            {videoFile && (
+              <p className="mt-1.5 text-[10px] text-gray-400">
+                File size: {(videoFile.size / 1024 / 1024).toFixed(2)} MB {videoFile.size > 100 * 1024 * 1024 && <span className="text-red-400 font-bold ml-1.5">⚠️ Exceeds 100MB limit</span>}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">Thumbnail (Optional)</label>
+            {autoThumbnail && !thumbnailFile && <div className="text-[10px] text-green-400 mb-1">✓ Thumbnail auto-extracted from video</div>}
+            <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={(event) => setThumbnailFile(event.target.files?.[0] || null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-2 text-xs text-white file:mr-3 file:rounded file:border-0 file:bg-violet-500/20 file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-violet-100" />
+          </div>
+        </section>
+
+        {/* Column 3: Review Notes & Submit */}
+        <section className="rounded-xl border border-[#2A2A38] bg-[#101018] p-4 space-y-4">
+          <div className="flex items-center gap-1.5 border-b border-[#2A2A38] pb-2 font-mono text-[10px] font-bold uppercase tracking-wider text-violet-300">
+            <span>3. Verification &amp; Submit</span>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">Review Notes / Copyright Confirmation</label>
+            <textarea value={safetyNotes} onChange={(event) => setSafetyNotes(event.target.value)} placeholder="Review notes, copyright confirmation, source notes" rows={3} className="w-full resize-none rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+          </div>
+
+          {validationMessage && (
+            <div className="flex items-start gap-2 rounded border border-amber-500/20 bg-amber-500/10 p-2.5 text-[10px] text-amber-200">
+              <AlertTriangle size={12} className="mt-0.5 shrink-0" />
+              <span>{validationMessage}</span>
+            </div>
+          )}
+
+          {message && (
+            <div className={`flex items-start gap-2 rounded border p-2.5 text-[10px] ${status === "failed" ? "border-red-500/20 bg-red-500/10 text-red-200" : "border-violet-500/20 bg-violet-500/10 text-violet-200"}`}>
+              {status === "failed" ? <AlertTriangle size={12} className="mt-0.5 shrink-0" /> : <CheckCircle size={12} className="mt-0.5 shrink-0" />}
+              <span>{message}</span>
+            </div>
+          )}
+
+          {prUrl && (
+            <a href={prUrl} target="_blank" rel="noreferrer" className="block rounded border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-center text-xs font-semibold text-white hover:bg-zinc-800 transition-colors">
+              Open Pull Request
+            </a>
+          )}
+
+          <button type="button" onClick={handlePublish} disabled={!!validationMessage || status === "publishing"} className="flex w-full items-center justify-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/15 px-3 py-2.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/25 disabled:cursor-not-allowed disabled:opacity-50">
+            {status === "publishing" ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+            Publish Overlay to R2
+          </button>
+        </section>
       </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <select value={category} onChange={(event) => setCategory(event.target.value as OverlayPublishPayload["category"])} className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500">
-          {OVERLAY_CATEGORIES.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-        <input value={duration} onChange={(event) => setDuration(event.target.value)} placeholder="Duration seconds" inputMode="decimal" className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <input value={width} onChange={(event) => setWidth(event.target.value)} placeholder="Width px" inputMode="numeric" className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500" />
-        <input value={height} onChange={(event) => setHeight(event.target.value)} placeholder="Height px" inputMode="numeric" className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500" />
-      </div>
-
-      <textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Description" rows={2} className="w-full resize-none rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500" />
-      <input value={tagsInput} onChange={(event) => setTagsInput(event.target.value)} placeholder="tags, comma, separated" className="w-full rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500" />
-
-      <div className="grid grid-cols-2 gap-2">
-        <select value={blendMode} onChange={(event) => setBlendMode(event.target.value as OverlayPublishPayload["metadata"]["blendMode"])} className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500">
-          {BLEND_MODES.map((mode) => (
-            <option key={mode} value={mode}>
-              {mode}
-            </option>
-          ))}
-        </select>
-        <input value={opacity} onChange={(event) => setOpacity(event.target.value)} placeholder="Opacity 0.0-1.0" inputMode="decimal" className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500" />
-      </div>
-
-      <label className="flex items-center gap-2 rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white">
-        <input type="checkbox" checked={loopable} onChange={(event) => setLoopable(event.target.checked)} />
-        Loopable
-      </label>
-
-      <div className="grid grid-cols-2 gap-2">
-        <input value={sourceProvider} onChange={(event) => setSourceProvider(event.target.value)} placeholder="Source provider" className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500" />
-        <input value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="https://source.example/item" className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500" />
-      </div>
-
-      <label className="block text-[10px] font-bold uppercase tracking-wider text-(--studio-muted)">Thumbnail (Optional - auto-extracted if not provided)</label>
-      {autoThumbnail && !thumbnailFile && <div className="text-[10px] text-green-400 mb-1">✓ Thumbnail auto-extracted from video</div>}
-      <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={(event) => setThumbnailFile(event.target.files?.[0] || null)} className="w-full rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white" />
-
-      <textarea value={safetyNotes} onChange={(event) => setSafetyNotes(event.target.value)} placeholder="Review notes, copyright confirmation, source notes" rows={2} className="w-full resize-none rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1.5 text-[11px] text-white outline-none focus:border-violet-500" />
-
-      {validationMessage && (
-        <div className="flex items-start gap-2 rounded border border-amber-500/20 bg-amber-500/10 p-2 text-[10px] text-amber-200">
-          <AlertTriangle size={12} className="mt-0.5 shrink-0" />
-          <span>{validationMessage}</span>
-        </div>
-      )}
-
-      {message && (
-        <div className={`flex items-start gap-2 rounded border p-2 text-[10px] ${status === "failed" ? "border-red-500/20 bg-red-500/10 text-red-200" : "border-violet-500/20 bg-violet-500/10 text-violet-200"}`}>
-          {status === "failed" ? <AlertTriangle size={12} className="mt-0.5 shrink-0" /> : <CheckCircle size={12} className="mt-0.5 shrink-0" />}
-          <span>{message}</span>
-        </div>
-      )}
-
-      {prUrl && (
-        <a href={prUrl} target="_blank" rel="noreferrer" className="block rounded border border-(--studio-border) bg-(--studio-control) px-3 py-2 text-center text-[11px] font-semibold text-white hover:bg-(--studio-hover)">
-          Open Pull Request
-        </a>
-      )}
-
-      <button type="button" onClick={handlePublish} disabled={!!validationMessage || status === "publishing"} className="flex w-full items-center justify-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/15 px-3 py-2 text-[12px] font-semibold text-violet-200 hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50">
-        {status === "publishing" ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
-        Publish Overlay to API
-      </button>
     </div>
   );
 }

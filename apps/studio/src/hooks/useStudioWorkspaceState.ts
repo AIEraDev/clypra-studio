@@ -5,12 +5,12 @@ export type StudioPanelTab = "engine" | "definition" | "lab";
 
 // ─── URL helpers ─────────────────────────────────────────────────────────────
 
-const VALID_RAIL_ITEMS: RailItem[] = ["templates", "style", "layers", "audio", "stickers", "overlays", "effects", "video-effects", "export"];
+const VALID_RAIL_ITEMS: RailItem[] = ["text-effects", "lottie-templates", "audio", "stickers", "overlays", "video-effects", "body-effects", "filters"];
 
 function getRailItemFromQuery(): RailItem {
   const q = new URLSearchParams(window.location.search).get("q") as RailItem | null;
   if (q && VALID_RAIL_ITEMS.includes(q)) return q;
-  return "templates";
+  return "text-effects";
 }
 
 function buildQueryUrl(item: RailItem): string {
@@ -33,7 +33,7 @@ export function useStudioWorkspaceState() {
   // On mount: if ?q= is missing, write the default into the URL without a history entry
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).get("q")) {
-      window.history.replaceState({ q: "templates" }, "", buildQueryUrl("templates"));
+      window.history.replaceState({ q: "text-effects" }, "", buildQueryUrl("text-effects"));
     }
   }, []);
 
@@ -42,7 +42,6 @@ export function useStudioWorkspaceState() {
     const handlePopState = () => {
       const item = getRailItemFromQuery();
       setActiveRailItemState(item);
-      if (item === "layers") setUiMode("advanced");
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -51,7 +50,6 @@ export function useStudioWorkspaceState() {
   // Write ?q= to URL and update state
   const setActiveRailItem = useCallback((item: RailItem) => {
     setActiveRailItemState(item);
-    if (item === "layers") setUiMode("advanced");
     window.history.pushState({ q: item }, "", buildQueryUrl(item));
   }, []);
 

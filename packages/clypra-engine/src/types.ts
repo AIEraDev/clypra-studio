@@ -333,3 +333,89 @@ export interface EvaluatedTextLayer {
   };
   readonly styleId?: string;
 }
+
+// ─── Declarative Canvas Templates types ─────────────────────────────────────
+
+export type TemplateCategory =
+  | "lower-third"
+  | "title-card"
+  | "caption"
+  | "callout"
+  | "social"
+  | "countdown";
+
+export type AnimationPreset =
+  | "fade"
+  | "slide-up"
+  | "slide-down"
+  | "slide-left"
+  | "slide-right"
+  | "scale-in"
+  | "scale-out"
+  | "blur-in"
+  | "blur-out"
+  | "typewriter"
+  | "none";
+
+export interface LayerAnimation {
+  in: AnimationPreset;
+  out: AnimationPreset;
+  inDuration: number;
+  outDuration: number;
+  hold: "full" | number;
+}
+
+export interface TemplateTextLayer {
+  kind: "text";
+  id: string;
+  content: string;
+  fontFamily: string;
+  fontSize: number;
+  color: string;
+  align: "left" | "center" | "right";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  animation: LayerAnimation;
+  role?: "primary" | "secondary" | "accent";
+}
+
+export interface TemplateShapeLayer {
+  kind: "shape";
+  id: string;
+  shape: "rect" | "line" | "circle";
+  fill: string;
+  stroke?: { color: string; width: number };
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  animation: LayerAnimation;
+}
+
+export interface TemplateImageLayer {
+  kind: "image";
+  id: string;
+  url: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  animation: LayerAnimation;
+}
+
+export type TemplateLayer = TemplateTextLayer | TemplateShapeLayer | TemplateImageLayer;
+
+export interface TextTemplate {
+  id: string;
+  label: string;
+  category: TemplateCategory;
+  duration: number;
+  canvasWidth: number;
+  canvasHeight: number;
+  thumbnail?: string;
+  preview?: string;
+  layers: TemplateLayer[];
+}
+
