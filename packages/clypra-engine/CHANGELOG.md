@@ -1,3 +1,12 @@
+# [1.15.0](https://github.com/AIEraDev/clypra-studio/compare/v1.14.1...v1.15.0) (2026-06-19)
+
+
+### Features
+
+* add preview video generation and improved canvas display ([0c938da](https://github.com/AIEraDev/clypra-studio/commit/0c938dabc63531ef2de40d0644a843659a256dac))
+* add preview video generation for text template publishing ([ed97a10](https://github.com/AIEraDev/clypra-studio/commit/ed97a10715deab40419533ed63925536764cdb55))
+* center all text layers on canvas by default ([43bfbab](https://github.com/AIEraDev/clypra-studio/commit/43bfbab5b959e59519ca86aaf033b8faaab24fa6))
+
 ## [1.14.1](https://github.com/AIEraDev/clypra-studio/compare/v1.14.0...v1.14.1) (2026-06-19)
 
 
