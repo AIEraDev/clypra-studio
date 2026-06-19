@@ -1,3 +1,16 @@
+# [1.19.0](https://github.com/AIEraDev/clypra-studio/compare/v1.18.2...v1.19.0) (2026-06-19)
+
+
+### Bug Fixes
+
+* font size, padding and all property inputs not applying — stale closure ([c7ca6a7](https://github.com/AIEraDev/clypra-studio/commit/c7ca6a7076e99f686ed69e490bfa5d32463b1068))
+* padding inputs not applying — stale closure overwrites ([0c59913](https://github.com/AIEraDev/clypra-studio/commit/0c59913a0ce9f9d7d18d94cacddcc06a4c098fc7))
+
+
+### Features
+
+* **engine:** v1.19.0 — per-side padding, border-box layout, precise vertical alignment ([b6eb989](https://github.com/AIEraDev/clypra-studio/commit/b6eb989b83cd01f938e76ec4459aacf45782e08d))
+
 ## [1.18.2](https://github.com/AIEraDev/clypra-studio/compare/v1.18.1...v1.18.2) (2026-06-19)
 
 
