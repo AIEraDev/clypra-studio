@@ -212,12 +212,25 @@ export class TemplateRenderer {
     const pl = resolved.paddingLeft   !== undefined ? evaluateAnimatable(resolved.paddingLeft,   this.currentTime, this.template.duration) : legacyPadding;
 
     const overflow = resolved.overflow;
+    const verticalAlign = resolved.verticalAlign || "middle";
+
+    // ── BORDER-BOX: panel occupies exactly the declared layer bounds ────────
+    // Padding shrinks the text content area inward — it does NOT expand the panel.
+    // Exception: expand-panel grows the panel itself to fit the text + padding.
+    let bgX = x;
+    let bgY = y;
+    let bgWidth = width;
+    let bgHeight = height;
+
+    // Content area (where text lives)
+    let contentX = x + pl;
+    let contentW = Math.max(0, width - pl - pr);
+    let contentY = y + pt;
+    let contentH = Math.max(0, height - pt - pb);
 
     // Slice characters for typewriter animations
     const visibleCharsCount = Math.floor(transform.typewriterProgress * content.length);
     const textToDraw = content.slice(0, visibleCharsCount);
-
-    const verticalAlign = resolved.verticalAlign || "middle";
 
     ctx.save();
     ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}", sans-serif`;
@@ -227,50 +240,38 @@ export class TemplateRenderer {
     let adjustedFontSize = fontSize;
     let lines = [textToDraw];
 
-    // Background geometry: left edge = x - paddingLeft, top edge = y - paddingTop
-    // Width = layer width + paddingLeft + paddingRight
-    // Height = layer height + paddingTop + paddingBottom
-    let bgWidth = width + pl + pr;
-    let bgHeight = height + pt + pb;
-    let bgX = x - pl;
-    let bgY = y - pt;
-
     if (overflow === "shrink") {
-      // Shrink font so text fits in the layer content area (excluding padding — padding is decorative)
-      const contentWidth = width; // padding is visual, text still fills declared width
-      const initialTextWidth = ctx.measureText(textToDraw).width;
-      if (initialTextWidth > contentWidth && contentWidth > 0) {
-        adjustedFontSize = fontSize * (contentWidth / initialTextWidth);
+      // Shrink font to fit inside the content area width
+      const measuredWidth = ctx.measureText(textToDraw).width;
+      if (measuredWidth > contentW && contentW > 0) {
+        adjustedFontSize = fontSize * (contentW / measuredWidth);
         ctx.font = `${fontWeight} ${adjustedFontSize}px "${fontFamily}", sans-serif`;
       }
     } else if (overflow === "wrap") {
-      lines = wrapTextToWidth(ctx, textToDraw, width, 0);
-      const lineHeight = adjustedFontSize * 1.2;
-      const totalTextHeight = lines.length * lineHeight;
-      // Background height grows to fit wrapped text + padding on both sides
-      bgHeight = totalTextHeight + pt + pb;
-      // Recompute bgY based on vertical alignment of wrapped block inside bounding box
-      if (verticalAlign === "top") {
-        bgY = y - pt;
-      } else if (verticalAlign === "bottom") {
-        bgY = y + height - totalTextHeight - pt;
-      } else { // middle
-        bgY = y + (height - totalTextHeight) / 2 - pt;
-      }
+      // Wrap text to content width; background height stays at declared height
+      // (text simply flows within the content area)
+      lines = wrapTextToWidth(ctx, textToDraw, contentW, 0);
     } else if (overflow === "expand-panel") {
-      // Background width expands to measured text width; padding still applied around it
+      // Panel grows to measured text width + padding — border-box means padding
+      // is included in the new bgWidth, so text still has its full measured space.
       const measuredWidth = ctx.measureText(textToDraw).width;
       bgWidth = measuredWidth + pl + pr;
+      bgHeight = height; // height stays as declared
       if (align === "center") {
         bgX = (x + width / 2) - bgWidth / 2;
       } else if (align === "right") {
-        bgX = (x + width) - measuredWidth - pl;
+        bgX = (x + width) - bgWidth;
       } else {
-        bgX = x - pl;
+        bgX = x; // left: starts at original x
       }
+      // Recompute content area for the expanded panel
+      contentX = bgX + pl;
+      contentW = measuredWidth;
+      contentY = bgY + pt;
+      contentH = Math.max(0, bgHeight - pt - pb);
     }
 
-    // Apply clipping if specified
+    // Apply clipping against panel bounds if specified
     if (overflow === "clip") {
       ctx.save();
       ctx.beginPath();
@@ -293,16 +294,12 @@ export class TemplateRenderer {
 
     // Draw background panel if backgroundColor is set
     if (backgroundColor) {
-      // Save current globalAlpha to restore later
       const currentAlpha = ctx.globalAlpha;
-
       ctx.save();
       ctx.fillStyle = backgroundColor;
-      // Apply background opacity multiplied by current globalAlpha (which includes layer opacity)
       ctx.globalAlpha = currentAlpha * backgroundOpacity;
 
       if (backgroundRadius > 0) {
-        // Draw rounded rectangle
         ctx.beginPath();
         ctx.moveTo(bgX + backgroundRadius, bgY);
         ctx.lineTo(bgX + bgWidth - backgroundRadius, bgY);
@@ -315,73 +312,73 @@ export class TemplateRenderer {
         ctx.quadraticCurveTo(bgX, bgY, bgX + backgroundRadius, bgY);
         ctx.closePath();
         ctx.fill();
-
-        // Draw border if specified
         if (backgroundBorderColor && backgroundBorderWidth > 0) {
           ctx.strokeStyle = backgroundBorderColor;
           ctx.lineWidth = backgroundBorderWidth;
-          ctx.globalAlpha = currentAlpha; // Border at layer opacity
+          ctx.globalAlpha = currentAlpha;
           ctx.stroke();
         }
       } else {
-        // Draw regular rectangle
         ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
-
-        // Draw border if specified
         if (backgroundBorderColor && backgroundBorderWidth > 0) {
           ctx.strokeStyle = backgroundBorderColor;
           ctx.lineWidth = backgroundBorderWidth;
-          ctx.globalAlpha = currentAlpha; // Border at layer opacity
+          ctx.globalAlpha = currentAlpha;
           ctx.strokeRect(bgX, bgY, bgWidth, bgHeight);
         }
       }
 
       ctx.restore();
-      // Restore the original globalAlpha for text rendering
       ctx.globalAlpha = currentAlpha;
     }
 
-    // Render text lines
+    // ── Render text inside the content area ────────────────────────────────
     ctx.fillStyle = color;
-    let drawX = x;
+
+    // Horizontal anchor inside content area
+    let drawX: number;
     if (align === "center") {
-      drawX = x + width / 2;
+      drawX = contentX + contentW / 2;
     } else if (align === "right") {
-      drawX = x + width;
+      drawX = contentX + contentW;
+    } else {
+      drawX = contentX;
     }
 
     if (overflow === "wrap") {
       const lineHeight = adjustedFontSize * 1.2;
       const totalTextHeight = lines.length * lineHeight;
-      let startY = y;
+      let startY: number;
       if (verticalAlign === "top") {
-        startY = y;
+        startY = contentY;
       } else if (verticalAlign === "bottom") {
-        startY = y + height - (lines.length - 1) * lineHeight;
-      } else { // "middle"
-        startY = y + (height - totalTextHeight) / 2 + lineHeight / 2;
+        startY = contentY + contentH - (lines.length - 1) * lineHeight;
+      } else { // middle
+        startY = contentY + (contentH - totalTextHeight) / 2 + lineHeight / 2;
       }
       lines.forEach((line, index) => {
-        const lineY = startY + index * lineHeight;
-        ctx.fillText(line, drawX, lineY);
+        ctx.fillText(line, drawX, startY + index * lineHeight);
       });
     } else {
-      let drawY = y + height / 2;
+      let drawY: number;
       if (verticalAlign === "top") {
-        drawY = y;
+        drawY = contentY;
       } else if (verticalAlign === "bottom") {
-        drawY = y + height;
+        drawY = contentY + contentH;
+      } else { // middle
+        drawY = contentY + contentH / 2;
       }
       ctx.fillText(lines[0], drawX, drawY);
     }
 
-    // Restore clipping if it was applied
+    // Restore clipping context
     if (overflow === "clip") {
       ctx.restore();
     }
 
     ctx.restore();
   }
+
 
   private drawShapeLayer(ctx: CanvasRenderingContext2D, layer: TemplateShapeLayer): void {
     const resolved = layer;
