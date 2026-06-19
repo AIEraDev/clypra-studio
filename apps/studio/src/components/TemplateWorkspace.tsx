@@ -90,6 +90,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const requestRef = useRef<number | null>(null);
   const previousTimeRef = useRef<number | null>(null);
 
+  // Saved templates management
+  const [savedTemplates, setSavedTemplates] = useState<Array<{ id: string; name: string; savedAt: number }>>([]);
+  const [showSavedTemplates, setShowSavedTemplates] = useState(false);
+
   // Load template session from LocalStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("clypra_canvas_studio_session");
@@ -110,7 +114,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         console.error("Failed to load template session", err);
       }
     }
+
+    // Load saved templates list
+    loadSavedTemplatesList();
   }, []);
+
+  const loadSavedTemplatesList = () => {
+    try {
+      const saved = localStorage.getItem("clypra_saved_templates_list");
+      if (saved) {
+        setSavedTemplates(JSON.parse(saved));
+      }
+    } catch (err) {
+      console.error("Failed to load saved templates list", err);
+    }
+  };
 
   // Auto-save template state to localstorage
   useEffect(() => {
@@ -227,6 +245,92 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
   }, [isPlaying, currentTime, playbackSpeed, template]);
+
+  // Save current template to library
+  const handleSaveTemplate = () => {
+    if (!template) return;
+
+    const name = prompt("Enter a name for this template:", template.label || template.id);
+    if (!name) return;
+
+    const savedId = `saved_${Date.now()}`;
+    const savedTemplate = {
+      template,
+      selectedLayerId,
+      customTexts,
+      colorOverrides: Object.fromEntries(colorOverrides),
+      thumbnailFrame,
+    };
+
+    // Save template data
+    localStorage.setItem(`clypra_saved_template_${savedId}`, JSON.stringify(savedTemplate));
+
+    // Update saved templates list
+    const newList = [
+      ...savedTemplates,
+      {
+        id: savedId,
+        name,
+        savedAt: Date.now(),
+      },
+    ];
+    setSavedTemplates(newList);
+    localStorage.setItem("clypra_saved_templates_list", JSON.stringify(newList));
+
+    alert(`Template "${name}" saved successfully!`);
+  };
+
+  // Load a saved template
+  const handleLoadTemplate = (savedId: string) => {
+    try {
+      const saved = localStorage.getItem(`clypra_saved_template_${savedId}`);
+      if (!saved) {
+        alert("Template not found!");
+        return;
+      }
+
+      const parsed = JSON.parse(saved);
+      setTemplate(parsed.template);
+      setSelectedLayerId(parsed.selectedLayerId);
+      setCustomTexts(parsed.customTexts || { primary: "Primary Text", secondary: "Secondary Text", accent: "Accent Text" });
+      if (parsed.colorOverrides) {
+        setColorOverrides(new Map(Object.entries(parsed.colorOverrides)));
+      }
+      setThumbnailFrame(parsed.thumbnailFrame || 0);
+      setCurrentTime(0);
+      setIsPlaying(false);
+      setSaveStatus("saved");
+      setShowSavedTemplates(false);
+    } catch (err) {
+      console.error("Failed to load template", err);
+      alert("Failed to load template!");
+    }
+  };
+
+  // Delete a saved template
+  const handleDeleteSavedTemplate = (savedId: string) => {
+    if (!confirm("Are you sure you want to delete this saved template?")) return;
+
+    localStorage.removeItem(`clypra_saved_template_${savedId}`);
+    const newList = savedTemplates.filter((t) => t.id !== savedId);
+    setSavedTemplates(newList);
+    localStorage.setItem("clypra_saved_templates_list", JSON.stringify(newList));
+  };
+
+  // Start a new template (saves current to session)
+  const handleNewTemplate = () => {
+    if (template && !confirm("Start a new template? Your current work is auto-saved and can be resumed later.")) {
+      return;
+    }
+
+    setTemplate(null);
+    setSelectedLayerId(null);
+    setCustomTexts({ primary: "Primary Text", secondary: "Secondary Text", accent: "Accent Text" });
+    setColorOverrides(new Map());
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setSaveStatus("idle");
+  };
 
   // Reset/Clear workspace sandbox
   const handleResetSession = () => {
@@ -481,7 +585,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     return offscreen.toDataURL("image/png");
   };
 
-  // Generate preview video
+  // Generate preview video with proper frame timing
   const generatePreviewVideo = async (): Promise<string> => {
     if (!template) return "";
 
@@ -493,7 +597,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
     const renderer = new TemplateRenderer(template);
     const fps = 30;
-    const frameDuration = 1000 / fps;
     const totalFrames = Math.ceil(template.duration * fps);
 
     // Create MediaRecorder stream
@@ -522,17 +625,25 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       mediaRecorder.start();
 
       let currentFrame = 0;
+      const startTime = performance.now();
+
       const renderFrame = () => {
         if (currentFrame >= totalFrames) {
           mediaRecorder.stop();
           return;
         }
 
+        // Use precise timing based on frame number to avoid drift
         const time = currentFrame / fps;
         renderer.drawFrame(ctx, time);
         currentFrame++;
 
-        setTimeout(renderFrame, frameDuration);
+        // Request next frame at exact interval to maintain consistent timing
+        const expectedTime = startTime + (currentFrame * 1000) / fps;
+        const currentTime = performance.now();
+        const delay = Math.max(0, expectedTime - currentTime);
+
+        setTimeout(renderFrame, delay);
       };
 
       renderFrame();
@@ -643,18 +754,24 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         <div className="flex items-center gap-4">
           {saveStatus === "saving" && (
             <span className="text-[11px] text-[#888899] flex items-center gap-1.5 font-medium">
-              <Loader2 size={12} className="animate-spin text-teal-400" /> Saving sandbox...
+              <Loader2 size={12} className="animate-spin text-teal-400" /> Auto-saving...
             </span>
           )}
           {saveStatus === "saved" && (
             <span className="text-[11px] text-teal-400 flex items-center gap-1.5 font-medium">
-              <CheckCircle size={12} /> Sandbox saved
+              <CheckCircle size={12} /> Auto-saved
             </span>
           )}
           {template && (
             <>
-              <button onClick={handleResetSession} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all flex items-center gap-1.5">
-                <RefreshCw size={13} /> Reset
+              <button onClick={handleSaveTemplate} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5">
+                <Copy size={13} /> Save Template
+              </button>
+              <button onClick={() => setShowSavedTemplates(true)} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5">
+                <FolderPlus size={13} /> Load ({savedTemplates.length})
+              </button>
+              <button onClick={handleNewTemplate} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5">
+                <Plus size={13} /> New
               </button>
               <button onClick={handleGeneratePreview} disabled={isGeneratingPreview} className="rounded-lg border border-purple-500 hover:bg-purple-500/10 px-4 py-1.5 text-xs font-bold text-purple-400 flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 {isGeneratingPreview ? (
@@ -674,6 +791,48 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           )}
         </div>
       </header>
+
+      {/* Saved Templates Modal */}
+      {showSavedTemplates && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl border border-[#2A2A38] bg-[#121219] p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <FolderPlus size={16} className="text-teal-400" />
+                Saved Templates ({savedTemplates.length})
+              </h3>
+              <button onClick={() => setShowSavedTemplates(false)} className="rounded-lg p-1.5 hover:bg-[#2A2A38] transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+
+            {savedTemplates.length === 0 ? (
+              <div className="py-12 text-center">
+                <p className="text-xs text-[#888899]">No saved templates yet. Save your current work to access it later.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {savedTemplates.map((saved) => (
+                  <div key={saved.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2A2A38] bg-[#09090D] hover:border-teal-500/30 transition-all">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-white truncate">{saved.name}</p>
+                      <p className="text-[10px] text-[#888899] mt-0.5">Saved {new Date(saved.savedAt).toLocaleString()}</p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      <button onClick={() => handleLoadTemplate(saved.id)} className="rounded-lg border border-teal-500 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-400 transition-colors">
+                        Load
+                      </button>
+                      <button onClick={() => handleDeleteSavedTemplate(saved.id)} className="rounded-lg p-1.5 hover:bg-red-500/10 text-red-400 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Sandbox */}
       {!template ? (
