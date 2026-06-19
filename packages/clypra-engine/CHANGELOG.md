@@ -1,3 +1,10 @@
+## [1.18.1](https://github.com/AIEraDev/clypra-studio/compare/v1.18.0...v1.18.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* switch text layer renderer to border-box sizing ([c188fc6](https://github.com/AIEraDev/clypra-studio/commit/c188fc6dcf39f8fe84a024564c714e8e5e5db561))
+
 # [1.18.0](https://github.com/AIEraDev/clypra-studio/compare/v1.17.0...v1.18.0) (2026-06-19)
 
 
