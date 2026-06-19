@@ -25,6 +25,6 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@clypra/engine": "^1.19.1"
+    "@clypra/engine": "^1.21.0"
   }
 }
