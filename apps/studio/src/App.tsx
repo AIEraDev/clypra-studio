@@ -1423,10 +1423,10 @@ export default function App() {
             </button>
           )}
 
-          {/* Studio Workspace Link */}
-          <a href="/lottie" className="h-8 rounded border border-purple-500/20 bg-purple-500/10 px-2.5 text-xs font-semibold text-purple-300 hover:bg-purple-500/15 flex items-center gap-1.5 cursor-pointer font-sans no-underline" title="Go to Clypra Studio">
+          {/* Text Templates Workspace Link */}
+          <a href="/lottie" className="h-8 rounded border border-purple-500/20 bg-purple-500/10 px-2.5 text-xs font-semibold text-purple-300 hover:bg-purple-500/15 flex items-center gap-1.5 cursor-pointer font-sans no-underline" title="Go to Text Templates">
             <Video size={13} />
-            <span className="hidden md:inline">Clypra Studio</span>
+            <span className="hidden md:inline">Text Templates</span>
           </a>
         </div>
       </header>
