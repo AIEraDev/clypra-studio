@@ -316,7 +316,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                             <span className="text-[10px] font-bold text-[#888899] uppercase">Thumbnail Preview</span>
                             <span className="text-[9px] text-clypra-muted ml-auto">Ultra HD</span>
                           </div>
-                          <div className="relative aspect-video rounded overflow-hidden border border-[#2A2A38] bg-[#09090D]">
+                          <div className="relative aspect-video rounded overflow-hidden border border-[#2A2A38] checkerboard">
                             <img src={thumbnailDataUrl} alt="Thumbnail preview" className="w-full h-full" style={{ objectFit: "contain", imageRendering: "-webkit-optimize-contrast" }} />
                           </div>
                         </div>
@@ -341,7 +341,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                               <span className="text-[10px] font-bold text-[#888899] uppercase">Video Preview</span>
                               <span className="text-[9px] text-clypra-muted ml-auto">WebM</span>
                             </div>
-                            <div className="relative aspect-video rounded overflow-hidden border border-[#2A2A38] bg-[#09090D]">
+                            <div className="relative aspect-video rounded overflow-hidden border border-[#2A2A38] checkerboard">
                               <video src={previewVideoUrl} controls autoPlay loop muted className="w-full h-full" style={{ objectFit: "contain" }} />
                             </div>
                           </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Download, Copy, Plus, Play, Pause, Loader2, FolderPlus, ArrowLeft, Sparkles, FileJson, UploadCloud, X, RefreshCw, AlertTriangle, CheckCircle, Info, Layers, Lock, Unlock, Eye, EyeOff, Trash2, ChevronUp, ChevronDown, Settings, Image as ImageIcon, Sparkle, Clock } from "lucide-react";
 
-import { TemplateRenderer, BUILTIN_CANVAS_TEMPLATES, TemplateCategory, TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer, LayerAnimation, AnimationPreset, AnimatableValue, TemplateKeyframe, TemplateEasingFunction, addKeyframe, removeTemplateKeyframe, isKeyframed } from "@clypra/engine";
+import { TemplateRenderer, BUILTIN_CANVAS_TEMPLATES, TemplateCategory, TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer, LayerAnimation, AnimationPreset, AnimatableValue, TemplateKeyframe, TemplateEasingFunction, addKeyframe, removeTemplateKeyframe, isKeyframed, getSupportedWebMMimeType } from "@clypra/engine";
 import { PublishTemplateModal } from "./PublishTemplateModal";
 
 export interface TemplateWorkspaceProps {
@@ -850,8 +850,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     const videoTrack = stream.getVideoTracks()[0] as any;
     const chunks: Blob[] = [];
 
+    const mimeType = getSupportedWebMMimeType() || "video/webm";
     const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: "video/webm;codecs=vp9",
+      mimeType,
       videoBitsPerSecond: 2500000, // 2.5 Mbps
     });
 
@@ -861,7 +862,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
     return new Promise((resolve) => {
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "video/webm" });
+        const baseMime = mimeType.split(";")[0] ?? "video/webm";
+        const blob = new Blob(chunks, { type: baseMime });
         const reader = new FileReader();
         reader.onloadend = () => {
           resolve(reader.result as string);
@@ -1441,7 +1443,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           {/* Center Column: Preview and Scrubber controls */}
           <main className="flex-1 flex flex-col bg-[#09090D] min-w-0 h-full overflow-hidden p-6 gap-6">
             {/* Canvas Player Box */}
-            <div className="flex-1 flex items-center justify-center bg-[#07070A] rounded-2xl border border-[#2A2A38] relative overflow-hidden p-4 shadow-inner">
+            <div className="flex-1 flex items-center justify-center rounded-2xl border border-[#2A2A38] relative overflow-hidden p-4 shadow-inner checkerboard">
               <canvas
                 ref={canvasRef}
                 width={template.canvasWidth}
@@ -2107,7 +2109,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               </div>
 
               {/* Video Player */}
-              <div className="p-6 bg-[#09090D]">
+              <div className="p-6 checkerboard">
                 <video src={previewVideoUrl} controls autoPlay loop className="w-full rounded-lg border border-[#2A2A38]" style={{ maxHeight: "70vh" }} />
               </div>
 
