@@ -34,6 +34,7 @@ export class TemplateRenderer {
   private editedValues: Map<string, Partial<TemplateLayer>>;
   private imageCache = new Map<string, any>(); // cache loaded images to prevent flickering
   private currentTime: number = 0; // Track current time for keyframe evaluation
+  private lastLayerLayouts = new Map<string, { x: number; y: number; width: number; height: number }>();
 
   constructor(template: TextTemplate) {
     this.template = template;
@@ -43,6 +44,10 @@ export class TemplateRenderer {
   updateLayer(layerId: string, changes: Partial<TemplateLayer>): void {
     const existing = this.editedValues.get(layerId) ?? {};
     this.editedValues.set(layerId, { ...existing, ...changes } as Partial<TemplateLayer>);
+  }
+
+  getLayerLayout(layerId: string): { x: number; y: number; width: number; height: number } | null {
+    return this.lastLayerLayouts.get(layerId) ?? null;
   }
 
   // Merge default values with studio edits / customizations
@@ -146,6 +151,7 @@ export class TemplateRenderer {
     this.currentTime = time; // Store current time for keyframe evaluation
     ctx.clearRect(0, 0, this.template.canvasWidth, this.template.canvasHeight);
     if (!this.template || !Array.isArray(this.template.layers)) return;
+    this.lastLayerLayouts.clear();
 
     for (const layer of this.template.layers) {
       const resolved = this.resolveLayer(layer);
@@ -347,6 +353,8 @@ export class TemplateRenderer {
       }
     }
 
+    this.lastLayerLayouts.set(resolved.id, { x: bgX, y: bgY, width: bgWidth, height: bgHeight });
+
     // Content area (where text lives)
     let contentX = bgX + pl;
     let contentY = bgY + pt;
@@ -480,6 +488,8 @@ export class TemplateRenderer {
     const height = evaluateAnimatable(resolved.height, this.currentTime, this.template.duration);
     const stroke = resolved.stroke;
 
+    this.lastLayerLayouts.set(resolved.id, { x, y, width, height });
+
     ctx.fillStyle = fill;
     ctx.beginPath();
 
@@ -517,6 +527,8 @@ export class TemplateRenderer {
     const y = evaluateAnimatable(resolved.y, this.currentTime, this.template.duration);
     const width = evaluateAnimatable(resolved.width, this.currentTime, this.template.duration);
     const height = evaluateAnimatable(resolved.height, this.currentTime, this.template.duration);
+
+    this.lastLayerLayouts.set(resolved.id, { x, y, width, height });
 
     if (!url) return;
 

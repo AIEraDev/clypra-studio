@@ -301,7 +301,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         ctx.strokeStyle = "#3b82f6";
         ctx.lineWidth = 3;
         ctx.setLineDash([6, 6]);
-        ctx.strokeRect(activeLayer.x, activeLayer.y, activeLayer.width, activeLayer.height);
+        const layout = renderer.getLayerLayout(activeLayer.id) || {
+          x: activeLayer.x,
+          y: activeLayer.y,
+          width: typeof activeLayer.width === "number" ? activeLayer.width : 100,
+          height: typeof activeLayer.height === "number" ? activeLayer.height : 50,
+        };
+        ctx.strokeRect(layout.x, layout.y, layout.width, layout.height);
         ctx.restore();
       }
     }
@@ -1742,12 +1748,46 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">Width</label>
-                      <input type="number" value={selectedLayer.width} onChange={(e) => handleUpdateLayerProperty("width", parseInt(e.target.value) || 50)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                      <div className="flex items-center justify-between mb-0.5">
+                        <label className="block text-[9px] text-[#888899]">Width</label>
+                        {selectedLayer.kind === "text" && (
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateLayerProperty("width", selectedLayer.width === "auto" ? 400 : "auto")}
+                            className={`text-[9px] px-1 rounded transition-colors ${selectedLayer.width === "auto" ? "text-teal-400 bg-teal-500/10 border border-teal-500/30" : "text-[#666677] hover:text-white"}`}
+                          >
+                            Auto
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type={selectedLayer.width === "auto" ? "text" : "number"}
+                        value={selectedLayer.width === "auto" ? "auto" : (selectedLayer.width ?? "")}
+                        disabled={selectedLayer.width === "auto"}
+                        onChange={(e) => handleUpdateLayerProperty("width", parseInt(e.target.value) || 50)}
+                        className={`w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500 ${selectedLayer.width === "auto" ? "opacity-50 cursor-not-allowed text-center font-semibold" : ""}`}
+                      />
                     </div>
                     <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">Height</label>
-                      <input type="number" value={selectedLayer.height} onChange={(e) => handleUpdateLayerProperty("height", parseInt(e.target.value) || 50)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                      <div className="flex items-center justify-between mb-0.5">
+                        <label className="block text-[9px] text-[#888899]">Height</label>
+                        {selectedLayer.kind === "text" && (
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateLayerProperty("height", selectedLayer.height === "auto" ? 100 : "auto")}
+                            className={`text-[9px] px-1 rounded transition-colors ${selectedLayer.height === "auto" ? "text-teal-400 bg-teal-500/10 border border-teal-500/30" : "text-[#666677] hover:text-white"}`}
+                          >
+                            Auto
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type={selectedLayer.height === "auto" ? "text" : "number"}
+                        value={selectedLayer.height === "auto" ? "auto" : (selectedLayer.height ?? "")}
+                        disabled={selectedLayer.height === "auto"}
+                        onChange={(e) => handleUpdateLayerProperty("height", parseInt(e.target.value) || 50)}
+                        className={`w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500 ${selectedLayer.height === "auto" ? "opacity-50 cursor-not-allowed text-center font-semibold" : ""}`}
+                      />
                     </div>
                   </div>
                 </div>
