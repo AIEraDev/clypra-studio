@@ -146,10 +146,73 @@ export class TemplateRenderer {
     return { opacity, x, y, scale, blur, typewriterProgress };
   }
 
-  // Draw template frame at a specific point in time (0 to duration)
-  drawFrame(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, time: number): void {
-    this.currentTime = time; // Store current time for keyframe evaluation
+  drawFrame(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, time: number, fitToContent = false): void {
+    this.currentTime = time; // Track current time for keyframe evaluation
+
+    if (fitToContent) {
+      // If we don't have layouts yet, draw once to populate them
+      const hasLayouts = this.lastLayerLayouts.size > 0;
+      if (!hasLayouts) {
+        this.drawLayers(ctx, time);
+      }
+
+      const bounds = this.getContentBounds();
+      if (bounds && bounds.width > 0 && bounds.height > 0) {
+        ctx.clearRect(0, 0, this.template.canvasWidth, this.template.canvasHeight);
+        ctx.save();
+
+        const padding = 0.85; // 15% margin
+        const scale = Math.min(
+          this.template.canvasWidth / bounds.width,
+          this.template.canvasHeight / bounds.height
+        ) * padding;
+
+        // Limit maximum scale to 3.0 to prevent pixelation of very small text
+        const finalScale = Math.min(3.0, scale);
+
+        const cx = bounds.x + bounds.width / 2;
+        const cy = bounds.y + bounds.height / 2;
+
+        ctx.translate(this.template.canvasWidth / 2, this.template.canvasHeight / 2);
+        ctx.scale(finalScale, finalScale);
+        ctx.translate(-cx, -cy);
+
+        this.drawLayers(ctx, time);
+
+        ctx.restore();
+        return;
+      }
+    }
+
+    // Default normal draw
     ctx.clearRect(0, 0, this.template.canvasWidth, this.template.canvasHeight);
+    this.drawLayers(ctx, time);
+  }
+
+  getContentBounds(): { x: number; y: number; width: number; height: number } | null {
+    if (this.lastLayerLayouts.size === 0) return null;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const layout of this.lastLayerLayouts.values()) {
+      minX = Math.min(minX, layout.x);
+      minY = Math.min(minY, layout.y);
+      maxX = Math.max(maxX, layout.x + layout.width);
+      maxY = Math.max(maxY, layout.y + layout.height);
+    }
+
+    if (minX === Infinity || minY === Infinity) return null;
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+    };
+  }
+
+  private drawLayers(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, time: number): void {
     if (!this.template || !Array.isArray(this.template.layers)) return;
     this.lastLayerLayouts.clear();
 
