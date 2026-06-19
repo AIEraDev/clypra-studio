@@ -1,3 +1,19 @@
+# [1.16.0](https://github.com/AIEraDev/clypra-studio/compare/v1.15.1...v1.16.0) (2026-06-19)
+
+
+### Bug Fixes
+
+* compute template crop rect at mid-duration to resolve empty bounding box at frame 0 ([65dd0a8](https://github.com/AIEraDev/clypra-studio/commit/65dd0a87710db70d4fb83cd1df7834cc1e28fe25))
+
+
+### Features
+
+* auto-generate template ID in kebab-case when template name changes ([e238c54](https://github.com/AIEraDev/clypra-studio/commit/e238c540170b6f82d6b242db5acb28d1a38f8ef4))
+* crop template WebM/PNG exports and add Download PNG button ([c23b0db](https://github.com/AIEraDev/clypra-studio/commit/c23b0db8a419b870677577bfbe2b2e5ab10a754c))
+* implement text overflow handling strategies (wrap, shrink, expand-panel, clip) in template renderer ([a177340](https://github.com/AIEraDev/clypra-studio/commit/a177340809fafed17a1c38a15b345c757601acc6))
+* publish template directly to clypra-api without requiring local R2 credentials configuration ([cd5d7f2](https://github.com/AIEraDev/clypra-studio/commit/cd5d7f25b12d0badb2252a22c48ae5dcd4cb2661))
+* **studio:** support text template video preview and auto-refresh thumbnail frame ([d5ac6f7](https://github.com/AIEraDev/clypra-studio/commit/d5ac6f7c8c1eafaccedafb2c5648380431297692))
+
 ## [1.15.1](https://github.com/AIEraDev/clypra-studio/compare/v1.15.0...v1.15.1) (2026-06-19)
 
 
