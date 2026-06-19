@@ -243,19 +243,28 @@ export class TemplateRenderer {
     let lines = [textToDraw];
 
     if (overflow === "shrink") {
-      // Shrink font to fit inside the content area width
+      // Shrink font to fit inside the content area in BOTH dimensions.
+      // 1. Fit to width first.
       const measuredWidth = ctx.measureText(textToDraw).width;
-      if (measuredWidth > contentW && contentW > 0) {
-        adjustedFontSize = fontSize * (contentW / measuredWidth);
+      let scale = (measuredWidth > contentW && contentW > 0)
+        ? contentW / measuredWidth
+        : 1;
+      // 2. Also fit to height (single-line: inkLineH ≈ fontSize).
+      const singleLineH = fontSize * 1.0; // approximate ink height before measure
+      if (singleLineH * scale > contentH && contentH > 0) {
+        scale = Math.min(scale, contentH / singleLineH);
+      }
+      if (scale < 1) {
+        adjustedFontSize = fontSize * scale;
         ctx.font = `${fontWeight} ${adjustedFontSize}px "${fontFamily}", sans-serif`;
       }
     } else if (overflow === "wrap") {
-      // Wrap text to content width; background height stays at declared height
-      // (text simply flows within the content area)
+      // Wrap text to content width; panel bounds are the hard clip constraint.
       lines = wrapTextToWidth(ctx, textToDraw, contentW, 0);
     } else if (overflow === "expand-panel") {
-      // Panel grows to measured text width + padding — border-box means padding
-      // is included in the new bgWidth, so text still has its full measured space.
+      // Panel grows to measured text width + padding.
+      // expand-panel is the ONLY strategy that changes bgWidth/bgX — because the
+      // whole point is that the panel grows to fit the text (no clip needed on X axis).
       const measuredWidth = ctx.measureText(textToDraw).width;
       bgWidth = measuredWidth + pl + pr;
       bgHeight = height; // height stays as declared
@@ -264,7 +273,7 @@ export class TemplateRenderer {
       } else if (align === "right") {
         bgX = (x + width) - bgWidth;
       } else {
-        bgX = x; // left: starts at original x
+        bgX = x;
       }
       // Recompute content area for the expanded panel
       contentX = bgX + pl;
@@ -273,26 +282,29 @@ export class TemplateRenderer {
       contentH = Math.max(0, bgHeight - pt - pb);
     }
 
-    // Apply clipping against panel bounds if specified
-    if (overflow === "clip") {
-      ctx.save();
-      ctx.beginPath();
-      if (backgroundRadius > 0) {
-        ctx.moveTo(bgX + backgroundRadius, bgY);
-        ctx.lineTo(bgX + bgWidth - backgroundRadius, bgY);
-        ctx.quadraticCurveTo(bgX + bgWidth, bgY, bgX + bgWidth, bgY + backgroundRadius);
-        ctx.lineTo(bgX + bgWidth, bgY + bgHeight - backgroundRadius);
-        ctx.quadraticCurveTo(bgX + bgWidth, bgY + bgHeight, bgX + bgWidth - backgroundRadius, bgY + bgHeight);
-        ctx.lineTo(bgX + backgroundRadius, bgY + bgHeight);
-        ctx.quadraticCurveTo(bgX, bgY + bgHeight, bgX, bgY + bgHeight - backgroundRadius);
-        ctx.lineTo(bgX, bgY + backgroundRadius);
-        ctx.quadraticCurveTo(bgX, bgY, bgX + backgroundRadius, bgY);
-      } else {
-        ctx.rect(bgX, bgY, bgWidth, bgHeight);
-      }
-      ctx.closePath();
-      ctx.clip();
+    // ── Always clip to panel bounds ─────────────────────────────────────────
+    // Every overflow strategy (clip, shrink, wrap, expand-panel) must respect
+    // the panel rectangle as a hard boundary. Text must never visually escape
+    // the panel regardless of content length or font size.
+    // For expand-panel, bgWidth/bgX have already been grown to fit the text,
+    // so clipping to those grown bounds is still correct (no visible clipping).
+    ctx.save(); // clip save — restored after text drawing
+    ctx.beginPath();
+    if (backgroundRadius > 0) {
+      ctx.moveTo(bgX + backgroundRadius, bgY);
+      ctx.lineTo(bgX + bgWidth - backgroundRadius, bgY);
+      ctx.quadraticCurveTo(bgX + bgWidth, bgY, bgX + bgWidth, bgY + backgroundRadius);
+      ctx.lineTo(bgX + bgWidth, bgY + bgHeight - backgroundRadius);
+      ctx.quadraticCurveTo(bgX + bgWidth, bgY + bgHeight, bgX + bgWidth - backgroundRadius, bgY + bgHeight);
+      ctx.lineTo(bgX + backgroundRadius, bgY + bgHeight);
+      ctx.quadraticCurveTo(bgX, bgY + bgHeight, bgX, bgY + bgHeight - backgroundRadius);
+      ctx.lineTo(bgX, bgY + backgroundRadius);
+      ctx.quadraticCurveTo(bgX, bgY, bgX + backgroundRadius, bgY);
+    } else {
+      ctx.rect(bgX, bgY, bgWidth, bgHeight);
     }
+    ctx.closePath();
+    ctx.clip();
 
     // Draw background panel if backgroundColor is set
     if (backgroundColor) {
@@ -348,26 +360,20 @@ export class TemplateRenderer {
     }
 
     // Measure real ascent for the current font so we can anchor ink precisely.
-    // actualBoundingBoxAscent is the distance from the alphabetic baseline to the
-    // top of the tallest glyph — this is the value we add to get the baseline y
-    // from a desired top-of-ink y.
     const sampleMetrics = ctx.measureText(lines[0] || "Ag");
     const ascent = sampleMetrics.actualBoundingBoxAscent ?? adjustedFontSize * 0.8;
     const descent = sampleMetrics.actualBoundingBoxDescent ?? adjustedFontSize * 0.2;
-    const inkLineH = ascent + descent; // visual height of one line of ink
+    const inkLineH = ascent + descent;
     const lineHeight = adjustedFontSize * 1.2;
 
     if (overflow === "wrap") {
       const totalInkHeight = inkLineH + (lines.length - 1) * lineHeight;
       let firstBaselineY: number;
       if (verticalAlign === "top") {
-        // Top of first glyph ink flush with contentY
         firstBaselineY = contentY + ascent;
       } else if (verticalAlign === "bottom") {
-        // Bottom of last glyph ink flush with contentY + contentH
         firstBaselineY = contentY + contentH - totalInkHeight + ascent;
       } else { // middle
-        // Centre of ink block aligned to centre of content area
         firstBaselineY = contentY + (contentH - totalInkHeight) / 2 + ascent;
       }
       lines.forEach((line, index) => {
@@ -376,22 +382,17 @@ export class TemplateRenderer {
     } else {
       let drawY: number;
       if (verticalAlign === "top") {
-        // Top of glyph ink flush with contentY
         drawY = contentY + ascent;
       } else if (verticalAlign === "bottom") {
-        // Bottom of glyph ink flush with contentY + contentH
         drawY = contentY + contentH - descent;
       } else { // middle
-        // Ink block vertically centred within content area
         drawY = contentY + (contentH - inkLineH) / 2 + ascent;
       }
       ctx.fillText(lines[0], drawX, drawY);
     }
 
-    // Restore clipping context
-    if (overflow === "clip") {
-      ctx.restore();
-    }
+    // Restore panel clip context
+    ctx.restore();
 
     ctx.restore();
   }
