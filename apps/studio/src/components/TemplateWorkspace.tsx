@@ -3,7 +3,6 @@ import { Download, Copy, Plus, Play, Pause, Loader2, FolderPlus, ArrowLeft, Spar
 
 import { TemplateRenderer, BUILTIN_CANVAS_TEMPLATES, TemplateCategory, TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer, LayerAnimation, AnimationPreset, AnimatableValue, TemplateKeyframe, TemplateEasingFunction, addKeyframe, removeTemplateKeyframe, isKeyframed } from "@clypra/engine";
 import { PublishTemplateModal } from "./PublishTemplateModal";
-import { useR2Publish } from "../hooks/useR2Publish";
 
 export interface TemplateWorkspaceProps {
   onBackToDesign: () => void;
@@ -21,7 +20,6 @@ function toKebabCase(str: string): string {
 }
 
 export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
-  const { publishTemplate } = useR2Publish();
 
   // Template State
   const [template, setTemplate] = useState<TextTemplate | null>(null);
@@ -886,33 +884,35 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         videoUrl = await generatePreviewVideo();
       }
 
-      setPublishMessage("Uploading files to R2…");
+      setPublishMessage("Uploading files to clypra-api…");
 
-      const payloadDefinition = {
-        id: template.id,
-        name: template.label,
-        category: template.category,
-        description: publishDescription,
-        tags: publishTagsInput.split(",").map((t) => t.trim()).filter(Boolean),
-        placement: publishPlacement,
-        duration: template.duration,
-        width: template.canvasWidth,
-        height: template.canvasHeight,
-        thumbnail: "",
-      };
-
-      const result = await publishTemplate({
-        id: template.id,
-        category: template.category,
-        definition: payloadDefinition,
-        lottieData: template, // pass full canvas template as JSON
-        thumbnailDataUrl: thumbnailUrl,
-        previewDataUrl: videoUrl, // include preview video
+      const response = await fetch("https://clypra-worker-api.abdulkabirmusa.com/text-templates/upload", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          template: {
+            ...template,
+            description: publishDescription,
+            tags: publishTagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+          },
+          thumbnailDataUrl: thumbnailUrl,
+          previewDataUrl: videoUrl,
+        }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || `Upload failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
       setPublishStatus("published");
-      setPublishPrUrl(result.urls.lottie);
-      setPublishMessage(`${result.message} · Uploaded successfully`);
+      const lottieUrl = `https://clypra-worker-api.abdulkabirmusa.com/media/text-templates/${template.category}/${template.id}.json`;
+      setPublishPrUrl(lottieUrl);
+      setPublishMessage(`${result.message || "Template published successfully"}`);
     } catch (error) {
       setPublishStatus("failed");
       setPublishMessage(error instanceof Error ? error.message : "Publishing failed");

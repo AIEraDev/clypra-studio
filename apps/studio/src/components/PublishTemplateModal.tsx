@@ -123,7 +123,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
               </div>
               <div className="min-w-0">
                 <h3 className="text-sm font-bold text-white">Publish Text Template to API</h3>
-                <p className="mt-1 text-[11px] leading-relaxed text-[#9A9AAA]">Review metadata and create a GitHub Pull Request with your template</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-[#9A9AAA]">Review metadata and upload your template directly to the Clypra API</p>
               </div>
             </div>
             <button type="button" onClick={onClose} disabled={isPublishing} className="rounded-lg border border-[#2A2A38] p-1.5 text-[#888899] hover:bg-[#2A2A38] hover:text-white disabled:opacity-50">
@@ -205,7 +205,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                     <span>{validationErrors.name}</span>
                   </div>
                 )}
-                <p className="mt-1.5 text-[10px] text-clypra-muted">Human-readable display name for the PR title</p>
+                <p className="mt-1.5 text-[10px] text-clypra-muted">Human-readable display name for the text template</p>
               </div>
 
               {/* Description */}
@@ -264,7 +264,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
                   </button>
                 </div>
                 <p className="mt-1.5 text-[10px] text-clypra-muted">
-                  Frame {thumbnailFrame} of {durationFrames - 1} will be used for the PR thumbnail
+                  Frame {thumbnailFrame} of {durationFrames - 1} will be used for the thumbnail preview
                 </p>
 
                 {/* Thumbnail & Video Preview Grid */}
@@ -436,7 +436,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
               </div>
               {publishPrUrl && (
                 <a href={publishPrUrl} target="_blank" rel="noreferrer" className="shrink-0 rounded-lg border border-teal-500/40 bg-teal-500/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-teal-200 hover:bg-teal-500/20 flex items-center gap-1">
-                  Open PR <ExternalLink size={10} />
+                  {publishPrUrl.includes("pull") ? "Open PR" : "View JSON"} <ExternalLink size={10} />
                 </a>
               )}
             </div>
@@ -460,7 +460,7 @@ export function PublishTemplateModal({ open, onClose, templateId, templateName, 
               ) : (
                 <>
                   <UploadCloud size={14} />
-                  Create Pull Request
+                  Publish Template
                 </>
               )}
             </button>
