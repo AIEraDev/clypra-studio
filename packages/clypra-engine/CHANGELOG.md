@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/AIEraDev/clypra-studio/compare/v1.16.0...v1.17.0) (2026-06-19)
+
+
+### Features
+
+* vertical alignment, creator credits UI, thin manifests, moderation controls in Studio ([e3d8e21](https://github.com/AIEraDev/clypra-studio/commit/e3d8e215fb33ed573961f8a0e45d3c443440f491))
+
 # [1.16.0](https://github.com/AIEraDev/clypra-studio/compare/v1.15.1...v1.16.0) (2026-06-19)
 
 
