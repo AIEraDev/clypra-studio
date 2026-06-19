@@ -370,8 +370,11 @@ export interface TemplateTextLayer {
   align: "left" | "center" | "right";
   x: AnimatableValue<number>;
   y: AnimatableValue<number>;
-  width: AnimatableValue<number>;
-  height: AnimatableValue<number>;
+  /** Panel width in px, or `"auto"` to size to measured text width + horizontal padding. */
+  width: AnimatableValue<number> | "auto";
+  /** Panel height in px, or `"auto"` to size to measured ink height + vertical padding.
+   *  When combined with `overflow: "wrap"`, the panel grows to fit all wrapped lines. */
+  height: AnimatableValue<number> | "auto";
   opacity?: AnimatableValue<number>; // 0-1, controls layer visibility
   // Background panel
   backgroundColor?: AnimatableValue<string>;

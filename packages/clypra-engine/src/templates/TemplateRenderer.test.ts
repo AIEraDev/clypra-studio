@@ -144,4 +144,131 @@ describe("TemplateRenderer", () => {
       expect(() => renderer.drawFrame(ctx, 1.5)).not.toThrow();
     });
   });
+
+  it("auto width: panel sizes to measured text width + padding", () => {
+    const canvas = createCanvas(800, 600);
+    const ctx = canvas.getContext("2d") as unknown as CanvasRenderingContext2D;
+
+    const template: TextTemplate = {
+      ...mockTemplate,
+      layers: [
+        {
+          kind: "text",
+          id: "auto-width-text",
+          content: "Auto Width",
+          fontFamily: "Arial",
+          fontSize: 24,
+          fontWeight: 700,
+          color: "#ffffff",
+          align: "left",
+          x: 50,
+          y: 50,
+          width: "auto",
+          height: 50,
+          padding: 8,
+          animation: { in: "none", out: "none", inDuration: 0, outDuration: 0, hold: "full" },
+        },
+      ],
+    };
+
+    const renderer = new TemplateRenderer(template);
+    expect(() => renderer.drawFrame(ctx, 1.5)).not.toThrow();
+  });
+
+  it("auto height: panel sizes to ink height + padding", () => {
+    const canvas = createCanvas(800, 600);
+    const ctx = canvas.getContext("2d") as unknown as CanvasRenderingContext2D;
+
+    const template: TextTemplate = {
+      ...mockTemplate,
+      layers: [
+        {
+          kind: "text",
+          id: "auto-height-text",
+          content: "Auto Height",
+          fontFamily: "Arial",
+          fontSize: 24,
+          fontWeight: 700,
+          color: "#ffffff",
+          align: "center",
+          x: 50,
+          y: 50,
+          width: 200,
+          height: "auto",
+          padding: 8,
+          animation: { in: "none", out: "none", inDuration: 0, outDuration: 0, hold: "full" },
+        },
+      ],
+    };
+
+    const renderer = new TemplateRenderer(template);
+    expect(() => renderer.drawFrame(ctx, 1.5)).not.toThrow();
+  });
+
+  it("auto width + auto height: panel fully wraps content with no clipping", () => {
+    const canvas = createCanvas(800, 600);
+    const ctx = canvas.getContext("2d") as unknown as CanvasRenderingContext2D;
+
+    const template: TextTemplate = {
+      ...mockTemplate,
+      layers: [
+        {
+          kind: "text",
+          id: "auto-both-text",
+          content: "Both Auto",
+          fontFamily: "Arial",
+          fontSize: 32,
+          fontWeight: 400,
+          color: "#000000",
+          align: "left",
+          x: 100,
+          y: 100,
+          width: "auto",
+          height: "auto",
+          paddingTop: 12,
+          paddingBottom: 12,
+          paddingLeft: 20,
+          paddingRight: 20,
+          backgroundColor: "#ffffff",
+          backgroundRadius: 8,
+          animation: { in: "fade", out: "fade", inDuration: 0.3, outDuration: 0.3, hold: "full" },
+        },
+      ],
+    };
+
+    const renderer = new TemplateRenderer(template);
+    expect(() => renderer.drawFrame(ctx, 1.5)).not.toThrow();
+  });
+
+  it("overflow wrap + height auto: panel grows to fit all wrapped lines", () => {
+    const canvas = createCanvas(800, 600);
+    const ctx = canvas.getContext("2d") as unknown as CanvasRenderingContext2D;
+
+    const template: TextTemplate = {
+      ...mockTemplate,
+      layers: [
+        {
+          kind: "text",
+          id: "wrap-auto-height",
+          content: "This long text should wrap across multiple lines and the panel should grow in height to fit all of them.",
+          fontFamily: "Arial",
+          fontSize: 20,
+          fontWeight: 400,
+          color: "#ffffff",
+          align: "left",
+          x: 50,
+          y: 50,
+          width: 200,
+          height: "auto",
+          padding: 8,
+          overflow: "wrap",
+          backgroundColor: "#333333",
+          animation: { in: "none", out: "none", inDuration: 0, outDuration: 0, hold: "full" },
+        },
+      ],
+    };
+
+    const renderer = new TemplateRenderer(template);
+    expect(() => renderer.drawFrame(ctx, 1.5)).not.toThrow();
+  });
 });

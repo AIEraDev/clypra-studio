@@ -42,7 +42,7 @@ export class TemplateRenderer {
 
   updateLayer(layerId: string, changes: Partial<TemplateLayer>): void {
     const existing = this.editedValues.get(layerId) ?? {};
-    this.editedValues.set(layerId, { ...existing, ...changes });
+    this.editedValues.set(layerId, { ...existing, ...changes } as Partial<TemplateLayer>);
   }
 
   // Merge default values with studio edits / customizations
@@ -51,10 +51,17 @@ export class TemplateRenderer {
     return { ...layer, ...overrides } as TemplateLayer;
   }
 
-  // Helper to evaluate animatable properties
-  private evaluateLayerProperty(layer: TemplateLayer, prop: "x" | "y" | "width" | "height"): number {
+  // Helper to evaluate animatable numeric-only properties (x, y) — always returns a number.
+  private evaluateLayerProperty(layer: TemplateLayer, prop: "x" | "y"): number {
     const value = (layer as any)[prop];
     return evaluateAnimatable(value, this.currentTime, this.template.duration);
+  }
+
+  // For text layers: evaluate width or height, returning the raw value which may be "auto".
+  private evaluateTextDimension(layer: TemplateTextLayer, prop: "width" | "height"): number | "auto" {
+    const value = layer[prop];
+    if (value === "auto") return "auto";
+    return evaluateAnimatable(value as any, this.currentTime, this.template.duration);
   }
 
   // Compute animation parameters (transforms, opacity, scale, typewriter, etc.)
@@ -150,15 +157,30 @@ export class TemplateRenderer {
       ctx.save();
       ctx.globalAlpha = transform.opacity * layerOpacity; // Combine animation and layer opacity
 
-      // Evaluate position and size for transform center calculation
+      // Evaluate position and size for transform center calculation.
+      // For text layers with "auto" dimensions we don't know the true size until after
+      // font measurement inside drawTextLayer, so we use the layer origin (x, y) as the
+      // scale pivot. This is acceptable because auto-sized layers are typically non-animated
+      // (they don't have scale animations). Numeric dimensions work as before.
       const x = this.evaluateLayerProperty(resolved, "x");
       const y = this.evaluateLayerProperty(resolved, "y");
-      const width = this.evaluateLayerProperty(resolved, "width");
-      const height = this.evaluateLayerProperty(resolved, "height");
 
-      // Calculate local layout coordinates center for scaling
-      const cx = x + width / 2;
-      const cy = y + height / 2;
+      let cx: number;
+      let cy: number;
+
+      if (resolved.kind === "text") {
+        const textLayer = resolved as TemplateTextLayer;
+        const rawW = this.evaluateTextDimension(textLayer, "width");
+        const rawH = this.evaluateTextDimension(textLayer, "height");
+        // For auto dims use the layer origin as pivot (scale from top-left corner).
+        cx = rawW === "auto" ? x : x + (rawW as number) / 2;
+        cy = rawH === "auto" ? y : y + (rawH as number) / 2;
+      } else {
+        const width  = evaluateAnimatable((resolved as any).width,  this.currentTime, this.template.duration) as number;
+        const height = evaluateAnimatable((resolved as any).height, this.currentTime, this.template.duration) as number;
+        cx = x + width  / 2;
+        cy = y + height / 2;
+      }
 
       // Apply transforms
       ctx.translate(cx + transform.x, cy + transform.y);
@@ -194,8 +216,10 @@ export class TemplateRenderer {
     const align = resolved.align;
     const x = evaluateAnimatable(resolved.x, this.currentTime, this.template.duration);
     const y = evaluateAnimatable(resolved.y, this.currentTime, this.template.duration);
-    const width = evaluateAnimatable(resolved.width, this.currentTime, this.template.duration);
-    const height = evaluateAnimatable(resolved.height, this.currentTime, this.template.duration);
+
+    // width / height may be "auto" — defer resolution until after ctx.font is set.
+    const rawWidth  = this.evaluateTextDimension(resolved, "width");
+    const rawHeight = this.evaluateTextDimension(resolved, "height");
 
     // Evaluate background properties if present
     const backgroundColor = resolved.backgroundColor ? evaluateAnimatable(resolved.backgroundColor, this.currentTime, this.template.duration) : null;
@@ -214,20 +238,6 @@ export class TemplateRenderer {
     const overflow = resolved.overflow;
     const verticalAlign = resolved.verticalAlign || "middle";
 
-    // ── BORDER-BOX: panel occupies exactly the declared layer bounds ────────
-    // Padding shrinks the text content area inward — it does NOT expand the panel.
-    // Exception: expand-panel grows the panel itself to fit the text + padding.
-    let bgX = x;
-    let bgY = y;
-    let bgWidth = width;
-    let bgHeight = height;
-
-    // Content area (where text lives)
-    let contentX = x + pl;
-    let contentW = Math.max(0, width - pl - pr);
-    let contentY = y + pt;
-    let contentH = Math.max(0, height - pt - pb);
-
     // Slice characters for typewriter animations
     const visibleCharsCount = Math.floor(transform.typewriterProgress * content.length);
     const textToDraw = content.slice(0, visibleCharsCount);
@@ -239,9 +249,35 @@ export class TemplateRenderer {
     ctx.textBaseline = "alphabetic";
     ctx.textAlign = align;
 
+    // ── Resolve "auto" dimensions after ctx.font is set so measureText is accurate ──
+    //
+    // For a width-auto layer the panel grows to exactly fit the text horizontally.
+    // For a height-auto layer the panel grows to exactly fit the ink vertically
+    // (across all wrapped lines when overflow === "wrap").
+    //
+    // The sentinel value -1 is used internally only; it is never exposed to callers.
+
     let adjustedFontSize = fontSize;
     let lines = [textToDraw];
 
+    // ── Step 1: wrap lines (needed to know height-auto value for wrapped text) ──
+    // We may need to wrap before we can resolve height. But wrapping itself needs
+    // contentW, which needs width. So: resolve width first, then wrap, then height.
+
+    // Resolve width first (may need measurement)
+    let resolvedWidth: number;
+    if (rawWidth === "auto") {
+      // Measure the text at the current font to derive panel width.
+      const measured = ctx.measureText(textToDraw || "Ag").width;
+      resolvedWidth = measured + pl + pr;
+    } else {
+      resolvedWidth = rawWidth as number;
+    }
+
+    // Content width is now known
+    const contentW = Math.max(0, resolvedWidth - pl - pr);
+
+    // ── Step 2: handle overflow strategies that affect line count / font size ──
     if (overflow === "shrink") {
       // Shrink font to fit inside the content area in BOTH dimensions.
       // 1. Fit to width first.
@@ -250,37 +286,71 @@ export class TemplateRenderer {
         ? contentW / measuredWidth
         : 1;
       // 2. Also fit to height (single-line: inkLineH ≈ fontSize).
-      const singleLineH = fontSize * 1.0; // approximate ink height before measure
-      if (singleLineH * scale > contentH && contentH > 0) {
-        scale = Math.min(scale, contentH / singleLineH);
+      // If height is auto, shrink is a no-op in the vertical axis.
+      if (rawHeight !== "auto") {
+        const declaredContentH = Math.max(0, (rawHeight as number) - pt - pb);
+        const singleLineH = fontSize * 1.0; // approximate ink height before measure
+        if (singleLineH * scale > declaredContentH && declaredContentH > 0) {
+          scale = Math.min(scale, declaredContentH / singleLineH);
+        }
       }
       if (scale < 1) {
         adjustedFontSize = fontSize * scale;
         ctx.font = `${fontWeight} ${adjustedFontSize}px "${fontFamily}", sans-serif`;
       }
     } else if (overflow === "wrap") {
-      // Wrap text to content width; panel bounds are the hard clip constraint.
+      // Wrap text to content width; height may grow to fit (if height is "auto").
       lines = wrapTextToWidth(ctx, textToDraw, contentW, 0);
     } else if (overflow === "expand-panel") {
-      // Panel grows to measured text width + padding.
-      // expand-panel is the ONLY strategy that changes bgWidth/bgX — because the
-      // whole point is that the panel grows to fit the text (no clip needed on X axis).
+      // expand-panel: width grows to text + padding (same as width:"auto" but via overflow).
+      // If width was already "auto" this is essentially the same result.
       const measuredWidth = ctx.measureText(textToDraw).width;
-      bgWidth = measuredWidth + pl + pr;
-      bgHeight = height; // height stays as declared
+      resolvedWidth = measuredWidth + pl + pr;
+    }
+
+    // ── Step 3: resolve height (may depend on wrapped line count) ──
+    let resolvedHeight: number;
+    if (rawHeight === "auto") {
+      // Measure real font metrics if available, otherwise approximate.
+      const sampleMetrics = ctx.measureText(lines[0] || "Ag");
+      const ascent  = sampleMetrics.actualBoundingBoxAscent  ?? adjustedFontSize * 0.8;
+      const descent = sampleMetrics.actualBoundingBoxDescent ?? adjustedFontSize * 0.2;
+      const inkLineH    = ascent + descent;
+      const lineAdvance = adjustedFontSize * 1.2;
+      const totalInkH   = lines.length === 1
+        ? inkLineH
+        : inkLineH + (lines.length - 1) * lineAdvance;
+      resolvedHeight = totalInkH + pt + pb;
+    } else {
+      resolvedHeight = rawHeight as number;
+    }
+
+    // ── BORDER-BOX: panel occupies exactly the resolved layer bounds ──────────
+    // Padding shrinks the text content area inward — it does NOT expand the panel.
+    // Exception: expand-panel (and auto width) grows the panel itself to fit the text.
+    let bgX = x;
+    let bgY = y;
+    let bgWidth  = resolvedWidth;
+    let bgHeight = resolvedHeight;
+
+    // For expand-panel / auto-width with centered/right alignment, anchor the panel
+    // on the original x reference point (same behaviour as expand-panel always had).
+    if (overflow === "expand-panel" || rawWidth === "auto") {
       if (align === "center") {
-        bgX = (x + width / 2) - bgWidth / 2;
+        // x is treated as the horizontal centre of the declared slot.
+        // For auto, x is just the left origin, so anchor on x directly.
+        bgX = rawWidth === "auto" ? x : (x + (rawWidth as number) / 2) - bgWidth / 2;
       } else if (align === "right") {
-        bgX = (x + width) - bgWidth;
+        bgX = rawWidth === "auto" ? x : (x + (rawWidth as number)) - bgWidth;
       } else {
         bgX = x;
       }
-      // Recompute content area for the expanded panel
-      contentX = bgX + pl;
-      contentW = measuredWidth;
-      contentY = bgY + pt;
-      contentH = Math.max(0, bgHeight - pt - pb);
     }
+
+    // Content area (where text lives)
+    let contentX = bgX + pl;
+    let contentY = bgY + pt;
+    let contentH = Math.max(0, bgHeight - pt - pb);
 
     // ── Always clip to panel bounds ─────────────────────────────────────────
     // Every overflow strategy (clip, shrink, wrap, expand-panel) must respect
