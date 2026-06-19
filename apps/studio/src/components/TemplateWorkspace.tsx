@@ -621,6 +621,22 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     };
   };
 
+  const getTemplateCropRect = (padding = 15): CropRect | null => {
+    if (!template) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = template.canvasWidth;
+    canvas.height = template.canvasHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    const renderer = new TemplateRenderer(template);
+    // Render at the middle of the duration where all layers are fully resolved
+    const midTime = template.duration / 2;
+    renderer.drawFrame(ctx, midTime);
+
+    return getCanvasCropRect(canvas, padding);
+  };
+
   // Export static high-res thumbnail frame
   const captureThumbnail = async (crop = true): Promise<string> => {
     if (!template) return "";
@@ -638,7 +654,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     renderer.drawFrame(oCtx, time);
 
     if (crop) {
-      const rect = getCanvasCropRect(offscreen);
+      const rect = getTemplateCropRect();
       if (rect) {
         const croppedCanvas = document.createElement("canvas");
         croppedCanvas.width = rect.width;
@@ -662,15 +678,14 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     const fps = 30;
     const totalFrames = Math.ceil(template.duration * fps);
 
-    // Render the thumbnail frame onto a temporary canvas to determine the crop rectangle
+    // Render the middle frame onto a temporary canvas to determine the crop rectangle
     const renderCanvas = document.createElement("canvas");
     renderCanvas.width = template.canvasWidth;
     renderCanvas.height = template.canvasHeight;
     const renderCtx = renderCanvas.getContext("2d");
     if (!renderCtx) return "";
 
-    renderer.drawFrame(renderCtx, thumbnailFrame / fps);
-    const cropRect = getCanvasCropRect(renderCanvas);
+    const cropRect = getTemplateCropRect();
 
     // Create the recording canvas (cropped to cropRect if found, otherwise full size)
     const canvas = document.createElement("canvas");
