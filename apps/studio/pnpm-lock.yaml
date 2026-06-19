@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@clypra/engine':
-        specifier: ^1.18.2
-        version: 1.18.2
+        specifier: ^1.19.0
+        version: 1.19.0
       '@google/genai':
         specifier: ^2.4.0
         version: 2.9.0
@@ -143,8 +143,8 @@ packages:
     resolution: {integrity: sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==}
     engines: {node: '>=6.9.0'}
 
-  '@clypra/engine@1.18.2':
-    resolution: {integrity: sha512-Iw1o8QXpySKCk0DCDQubWqv+v3+gCkvgW51WEmZc5hxOsoKL7ZqQDOUZosb7PiF1DW+/3z1oAIJBgEKZeeQuRg==}
+  '@clypra/engine@1.19.0':
+    resolution: {integrity: sha512-QHxW2x4c6xv3lhM6R4dVgNc4HNpZsg7/gn0EdBCoIV6S4vjVqsyANiNe+GzkH5bS/vl9nXIH63/KmwQDwl0ATg==}
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -1218,7 +1218,7 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@clypra/engine@1.18.2':
+  '@clypra/engine@1.19.0':
     dependencies:
       jszip: 3.10.1
       lottie-web: 5.13.0
