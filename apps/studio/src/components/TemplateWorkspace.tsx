@@ -282,45 +282,55 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       hold: "full",
     };
 
+    // Center new layers on canvas
+    const centerX = template.canvasWidth / 2;
+    const centerY = template.canvasHeight / 2;
+
     let newLayer: TemplateLayer;
     if (kind === "text") {
+      const width = 600;
+      const height = 100;
       newLayer = {
         kind: "text",
         id,
         content: "New Text Layer",
         fontFamily: "Poppins",
-        fontSize: 32,
+        fontSize: 48,
         fontWeight: 400,
         color: "#ffffff",
         align: "center",
-        x: 400,
-        y: 400,
-        width: 400,
-        height: 80,
+        x: centerX - width / 2, // Center horizontally
+        y: centerY - height / 2, // Center vertically
+        width,
+        height,
         animation,
         role: "primary",
       };
     } else if (kind === "shape") {
+      const width = 400;
+      const height = 200;
       newLayer = {
         kind: "shape",
         id,
         shape: "rect",
         fill: "#7c6fff",
-        x: 400,
-        y: 400,
-        width: 300,
-        height: 150,
+        x: centerX - width / 2, // Center horizontally
+        y: centerY - height / 2, // Center vertically
+        width,
+        height,
         animation,
       };
     } else {
+      const width = 400;
+      const height = 300;
       newLayer = {
         kind: "image",
         id,
         url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
-        x: 400,
-        y: 400,
-        width: 300,
-        height: 200,
+        x: centerX - width / 2, // Center horizontally
+        y: centerY - height / 2, // Center vertically
+        width,
+        height,
         animation,
       };
     }

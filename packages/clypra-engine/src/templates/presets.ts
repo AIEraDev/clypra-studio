@@ -15,8 +15,8 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         shape: "rect",
         fill: "rgba(30, 30, 40, 0.85)",
         stroke: { color: "#7c6fff", width: 2 },
-        x: 100,
-        y: 850,
+        x: 735, // Centered: (1920 - 450) / 2
+        y: 500, // Centered vertically
         width: 450,
         height: 120,
         animation: {
@@ -33,13 +33,13 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         content: "Alex Rivers",
         fontFamily: "Poppins",
         fontSize: 36,
-        fontWeight: 400,
+        fontWeight: 700,
         color: "#ffffff",
-        align: "left",
-        x: 130,
-        y: 865,
-        width: 390,
-        height: 45,
+        align: "center",
+        x: 735,
+        y: 495,
+        width: 450,
+        height: 50,
         role: "primary",
         animation: {
           in: "slide-right",
@@ -57,11 +57,11 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         fontSize: 24,
         fontWeight: 400,
         color: "#9A9AAA",
-        align: "left",
-        x: 130,
-        y: 915,
-        width: 390,
-        height: 35,
+        align: "center",
+        x: 735,
+        y: 545,
+        width: 450,
+        height: 40,
         role: "secondary",
         animation: {
           in: "slide-right",
@@ -86,8 +86,8 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         id: "block-bg",
         shape: "rect",
         fill: "#7c6fff",
-        x: 460,
-        y: 400,
+        x: 460, // Centered: (1920 - 1000) / 2
+        y: 400, // Centered vertically
         width: 1000,
         height: 280,
         animation: {
@@ -104,7 +104,7 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         content: "EXPLORE MORE",
         fontFamily: "Poppins",
         fontSize: 84,
-        fontWeight: 400,
+        fontWeight: 700,
         color: "#ffffff",
         align: "center",
         x: 460,
@@ -157,10 +157,10 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         id: "caption-bg",
         shape: "rect",
         fill: "rgba(0, 0, 0, 0.7)",
-        x: 460,
-        y: 920,
+        x: 460, // Centered: (1920 - 1000) / 2
+        y: 490, // Centered vertically
         width: 1000,
-        height: 80,
+        height: 100,
         animation: {
           in: "fade",
           out: "fade",
@@ -174,12 +174,12 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         id: "caption-content",
         content: "Enter your subtitles or captions here",
         fontFamily: "Arial",
-        fontSize: 30,
-        fontWeight: 400,
+        fontSize: 32,
+        fontWeight: 600,
         color: "#ffd43b",
         align: "center",
         x: 460,
-        y: 935,
+        y: 515,
         width: 1000,
         height: 50,
         role: "primary",
@@ -206,8 +206,8 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         id: "pill-bg",
         shape: "circle",
         fill: "#ffd43b",
-        x: 200,
-        y: 200,
+        x: 800, // Centered: (1920 - 320) / 2
+        y: 500, // Centered vertically
         width: 320,
         height: 80,
         animation: {
@@ -223,13 +223,13 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         id: "callout-text",
         content: "LOOK HERE!",
         fontFamily: "Poppins",
-        fontSize: 28,
-        fontWeight: 400,
+        fontSize: 32,
+        fontWeight: 700,
         color: "#000000",
         align: "center",
-        x: 210,
-        y: 215,
-        width: 300,
+        x: 800,
+        y: 515,
+        width: 320,
         height: 50,
         role: "primary",
         animation: {
@@ -255,8 +255,8 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         id: "btn-bg",
         shape: "rect",
         fill: "#ff0000",
-        x: 810,
-        y: 900,
+        x: 810, // Centered: (1920 - 300) / 2
+        y: 505, // Centered vertically
         width: 300,
         height: 70,
         animation: {
@@ -273,12 +273,12 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         content: "SUBSCRIBE",
         fontFamily: "Poppins",
         fontSize: 28,
-        fontWeight: 400,
+        fontWeight: 700,
         color: "#ffffff",
         align: "center",
-        x: 820,
-        y: 910,
-        width: 280,
+        x: 810,
+        y: 515,
+        width: 300,
         height: 50,
         role: "primary",
         animation: {
@@ -305,8 +305,8 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         shape: "circle",
         fill: "rgba(124, 111, 255, 0.1)",
         stroke: { color: "#7c6fff", width: 4 },
-        x: 810,
-        y: 390,
+        x: 810, // Centered: (1920 - 300) / 2
+        y: 390, // Centered vertically
         width: 300,
         height: 300,
         animation: {
@@ -323,12 +323,12 @@ export const BUILTIN_CANVAS_TEMPLATES: TextTemplate[] = [
         content: "5",
         fontFamily: "Poppins",
         fontSize: 120,
-        fontWeight: 400,
+        fontWeight: 700,
         color: "#ffffff",
         align: "center",
-        x: 820,
+        x: 810,
         y: 440,
-        width: 280,
+        width: 300,
         height: 200,
         role: "primary",
         animation: {
