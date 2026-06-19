@@ -1,3 +1,12 @@
+# [1.22.0](https://github.com/AIEraDev/clypra-studio/compare/v1.21.0...v1.22.0) (2026-06-19)
+
+
+### Features
+
+* **admin:** add admin cache purging settings dashboard in clypra-studio ([f316096](https://github.com/AIEraDev/clypra-studio/commit/f316096e2d006c374126f25a696d252099696847))
+* **studio:** add direct publish button for unpublished templates in API load panel ([a24616c](https://github.com/AIEraDev/clypra-studio/commit/a24616cca2f3dd19c832f21abaaf4c6aa0ed2e68))
+* **templates:** support content scaling and bounds centering in TemplateRenderer ([be88867](https://github.com/AIEraDev/clypra-studio/commit/be88867cbea5acd6f98c104b4a6b605f2003c795))
+
 # [1.21.0](https://github.com/AIEraDev/clypra-studio/compare/v1.20.0...v1.21.0) (2026-06-19)
 
 
