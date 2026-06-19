@@ -1088,6 +1088,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           <option value="y">Y Position</option>
                           <option value="width">Width</option>
                           <option value="height">Height</option>
+                          <option value="opacity">Opacity (Display)</option>
                         </select>
                       </div>
 

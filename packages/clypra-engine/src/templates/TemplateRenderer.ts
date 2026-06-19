@@ -143,8 +143,11 @@ export class TemplateRenderer {
       const resolved = this.resolveLayer(layer);
       const transform = this.computeTransform(resolved, time);
 
+      // Evaluate layer opacity
+      const layerOpacity = (resolved as any).opacity !== undefined ? evaluateAnimatable((resolved as any).opacity, this.currentTime, this.template.duration) : 1;
+
       ctx.save();
-      ctx.globalAlpha = transform.opacity;
+      ctx.globalAlpha = transform.opacity * layerOpacity; // Combine animation and layer opacity
 
       // Evaluate position and size for transform center calculation
       const x = this.evaluateLayerProperty(resolved, "x");

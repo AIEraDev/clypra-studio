@@ -372,6 +372,7 @@ export interface TemplateTextLayer {
   y: AnimatableValue<number>;
   width: AnimatableValue<number>;
   height: AnimatableValue<number>;
+  opacity?: AnimatableValue<number>; // 0-1, controls layer visibility
   // Background panel
   backgroundColor?: AnimatableValue<string>;
   backgroundOpacity?: AnimatableValue<number>; // 0-1
@@ -393,6 +394,7 @@ export interface TemplateShapeLayer {
   y: AnimatableValue<number>;
   width: AnimatableValue<number>;
   height: AnimatableValue<number>;
+  opacity?: AnimatableValue<number>; // 0-1, controls layer visibility
   animation: LayerAnimation;
 }
 
@@ -404,6 +406,19 @@ export interface TemplateImageLayer {
   y: AnimatableValue<number>;
   width: AnimatableValue<number>;
   height: AnimatableValue<number>;
+  opacity?: AnimatableValue<number>; // 0-1, controls layer visibility
+  animation: LayerAnimation;
+}
+
+export interface TemplateImageLayer {
+  kind: "image";
+  id: string;
+  url: string;
+  x: AnimatableValue<number>;
+  y: AnimatableValue<number>;
+  width: AnimatableValue<number>;
+  height: AnimatableValue<number>;
+  opacity?: AnimatableValue<number>; // 0-1, controls layer visibility
   animation: LayerAnimation;
 }
 
