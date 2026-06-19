@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/AIEraDev/clypra-studio/compare/v1.17.0...v1.18.0) (2026-06-19)
+
+
+### Features
+
+* per-side padding controls (paddingTop/Right/Bottom/Left) for text layers ([aefb946](https://github.com/AIEraDev/clypra-studio/commit/aefb946549abf44da88a967fec71b6c9eb766968))
+
 # [1.17.0](https://github.com/AIEraDev/clypra-studio/compare/v1.16.0...v1.17.0) (2026-06-19)
 
 
