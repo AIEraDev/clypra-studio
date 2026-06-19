@@ -566,8 +566,63 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     handleUpdateLayerProperty(property, { keyframes });
   };
 
+  interface CropRect {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+    width: number;
+    height: number;
+  }
+
+  const getCanvasCropRect = (canvas: HTMLCanvasElement, padding = 15): CropRect | null => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+
+    let minX = w;
+    let maxX = 0;
+    let minY = h;
+    let maxY = 0;
+    let hasPixels = false;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const alpha = data[(y * w + x) * 4 + 3];
+        if (alpha > 0) {
+          hasPixels = true;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (!hasPixels) return null;
+
+    // Add padding
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = Math.min(w, maxX + padding);
+    maxY = Math.min(h, maxY + padding);
+
+    return {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      width: maxX - minX,
+      height: maxY - minY,
+    };
+  };
+
   // Export static high-res thumbnail frame
-  const captureThumbnail = async (): Promise<string> => {
+  const captureThumbnail = async (crop = true): Promise<string> => {
     if (!template) return "";
     const offscreen = document.createElement("canvas");
     offscreen.width = template.canvasWidth;
@@ -582,6 +637,20 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     const time = thumbnailFrame / fps;
     renderer.drawFrame(oCtx, time);
 
+    if (crop) {
+      const rect = getCanvasCropRect(offscreen);
+      if (rect) {
+        const croppedCanvas = document.createElement("canvas");
+        croppedCanvas.width = rect.width;
+        croppedCanvas.height = rect.height;
+        const croppedCtx = croppedCanvas.getContext("2d");
+        if (croppedCtx) {
+          croppedCtx.drawImage(offscreen, rect.minX, rect.minY, rect.width, rect.height, 0, 0, rect.width, rect.height);
+          return croppedCanvas.toDataURL("image/png");
+        }
+      }
+    }
+
     return offscreen.toDataURL("image/png");
   };
 
@@ -589,15 +658,28 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const generatePreviewVideo = async (): Promise<string> => {
     if (!template) return "";
 
-    const canvas = document.createElement("canvas");
-    canvas.width = template.canvasWidth;
-    canvas.height = template.canvasHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return "";
-
     const renderer = new TemplateRenderer(template);
     const fps = 30;
     const totalFrames = Math.ceil(template.duration * fps);
+
+    // Render the thumbnail frame onto a temporary canvas to determine the crop rectangle
+    const renderCanvas = document.createElement("canvas");
+    renderCanvas.width = template.canvasWidth;
+    renderCanvas.height = template.canvasHeight;
+    const renderCtx = renderCanvas.getContext("2d");
+    if (!renderCtx) return "";
+
+    renderer.drawFrame(renderCtx, thumbnailFrame / fps);
+    const cropRect = getCanvasCropRect(renderCanvas);
+
+    // Create the recording canvas (cropped to cropRect if found, otherwise full size)
+    const canvas = document.createElement("canvas");
+    const width = cropRect ? cropRect.width : template.canvasWidth;
+    const height = cropRect ? cropRect.height : template.canvasHeight;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
 
     // Check requestFrame support
     const tempStream = canvas.captureStream(0);
@@ -647,8 +729,28 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         if (now >= expectedTime) {
           // Use precise timing based on frame number to avoid drift
           const time = currentFrame / fps;
-          ctx.clearRect(0, 0, template.canvasWidth, template.canvasHeight);
-          renderer.drawFrame(ctx, time);
+          
+          // Render full size
+          renderCtx.clearRect(0, 0, template.canvasWidth, template.canvasHeight);
+          renderer.drawFrame(renderCtx, time);
+
+          // Copy cropped region to recording canvas
+          ctx.clearRect(0, 0, width, height);
+          if (cropRect) {
+            ctx.drawImage(
+              renderCanvas,
+              cropRect.minX,
+              cropRect.minY,
+              cropRect.width,
+              cropRect.height,
+              0,
+              0,
+              cropRect.width,
+              cropRect.height
+            );
+          } else {
+            ctx.drawImage(renderCanvas, 0, 0);
+          }
 
           if (hasRequestFrame && typeof videoTrack.requestFrame === "function") {
             videoTrack.requestFrame();
@@ -752,6 +854,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     }
   };
 
+  const handleDownloadThumbnail = async () => {
+    if (!template) return;
+    try {
+      const url = await captureThumbnail(true);
+      if (!url) return;
+      const link = document.createElement("a");
+      link.download = `${template.id || "template"}-thumbnail.png`;
+      link.href = url;
+      link.click();
+    } catch (e) {
+      console.error("Failed to download thumbnail", e);
+      alert("Failed to download thumbnail.");
+    }
+  };
+
   // Active layer properties
   const selectedLayer = template?.layers.find((l) => l.id === selectedLayerId);
 
@@ -785,6 +902,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <>
               <button onClick={handleSaveTemplate} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5">
                 <Copy size={13} /> Save Template
+              </button>
+              <button onClick={handleDownloadThumbnail} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5" title="Download cropped template thumbnail as PNG">
+                <Download size={13} /> Download PNG
               </button>
               <button onClick={() => setShowSavedTemplates(true)} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5">
                 <FolderPlus size={13} /> Load ({savedTemplates.length})
