@@ -222,7 +222,13 @@ export async function renderSceneWebM(doc: SceneDocument, options: WebMExportOpt
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not create export canvas.");
 
-  const stream = canvas.captureStream(0);
+  // Check if track has requestFrame to support captureStream(0)
+  const tempStream = canvas.captureStream(0);
+  const tempTrack = tempStream.getVideoTracks()[0] as CanvasCaptureTrack;
+  const hasRequestFrame = tempTrack && typeof tempTrack.requestFrame === "function";
+  tempStream.getTracks().forEach((t) => t.stop());
+
+  const stream = canvas.captureStream(hasRequestFrame ? 0 : fps);
   const videoTrack = stream.getVideoTracks()[0] as CanvasCaptureTrack;
 
   const recorder = new MediaRecorder(stream, {
@@ -231,7 +237,6 @@ export async function renderSceneWebM(doc: SceneDocument, options: WebMExportOpt
   });
 
   const chunks: BlobPart[] = [];
-  const frameIntervalMs = 1000 / fps;
   const pace = options.realtimePacing !== false;
 
   const blob = await new Promise<Blob>((resolve, reject) => {
@@ -248,19 +253,36 @@ export async function renderSceneWebM(doc: SceneDocument, options: WebMExportOpt
 
     recorder.start();
 
-    (async () => {
+    let currentFrame = 0;
+    const startTime = performance.now();
+
+    const renderNextFrame = () => {
       try {
-        for (let i = 0; i < frameCount; i++) {
-          const time = i / fps;
+        if (currentFrame >= frameCount) {
+          recorder.stop();
+          return;
+        }
+
+        const now = performance.now();
+        const expectedTime = startTime + (currentFrame * 1000) / fps;
+
+        if (!pace || now >= expectedTime) {
+          const time = currentFrame / fps;
           ctx.clearRect(0, 0, width, height);
           evaluateScene(doc, time, ctx);
-          if (typeof videoTrack.requestFrame === "function") {
+
+          if (hasRequestFrame && typeof videoTrack.requestFrame === "function") {
             videoTrack.requestFrame();
           }
-          if (pace) await sleep(frameIntervalMs);
-          else await new Promise<void>((r) => requestAnimationFrame(() => r()));
+
+          currentFrame++;
         }
-        recorder.stop();
+
+        if (currentFrame < frameCount) {
+          requestAnimationFrame(renderNextFrame);
+        } else {
+          recorder.stop();
+        }
       } catch (err) {
         try {
           recorder.stop();
@@ -268,11 +290,13 @@ export async function renderSceneWebM(doc: SceneDocument, options: WebMExportOpt
           /* ignore */
         }
         reject(err);
-      } finally {
-        stream.getTracks().forEach((t) => t.stop());
       }
-    })();
+    };
+
+    requestAnimationFrame(renderNextFrame);
   });
+
+  stream.getTracks().forEach((t) => t.stop());
 
   return blob;
 }

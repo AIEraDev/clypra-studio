@@ -599,8 +599,15 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     const fps = 30;
     const totalFrames = Math.ceil(template.duration * fps);
 
+    // Check requestFrame support
+    const tempStream = canvas.captureStream(0);
+    const tempTrack = tempStream.getVideoTracks()[0] as any;
+    const hasRequestFrame = tempTrack && typeof tempTrack.requestFrame === "function";
+    tempStream.getTracks().forEach((t) => t.stop());
+
     // Create MediaRecorder stream
-    const stream = canvas.captureStream(fps);
+    const stream = canvas.captureStream(hasRequestFrame ? 0 : fps);
+    const videoTrack = stream.getVideoTracks()[0] as any;
     const chunks: Blob[] = [];
 
     const mediaRecorder = new MediaRecorder(stream, {
@@ -627,26 +634,38 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       let currentFrame = 0;
       const startTime = performance.now();
 
-      const renderFrame = () => {
+      const tick = () => {
         if (currentFrame >= totalFrames) {
           mediaRecorder.stop();
+          stream.getTracks().forEach((t) => t.stop());
           return;
         }
 
-        // Use precise timing based on frame number to avoid drift
-        const time = currentFrame / fps;
-        renderer.drawFrame(ctx, time);
-        currentFrame++;
-
-        // Request next frame at exact interval to maintain consistent timing
+        const now = performance.now();
         const expectedTime = startTime + (currentFrame * 1000) / fps;
-        const currentTime = performance.now();
-        const delay = Math.max(0, expectedTime - currentTime);
 
-        setTimeout(renderFrame, delay);
+        if (now >= expectedTime) {
+          // Use precise timing based on frame number to avoid drift
+          const time = currentFrame / fps;
+          ctx.clearRect(0, 0, template.canvasWidth, template.canvasHeight);
+          renderer.drawFrame(ctx, time);
+
+          if (hasRequestFrame && typeof videoTrack.requestFrame === "function") {
+            videoTrack.requestFrame();
+          }
+
+          currentFrame++;
+        }
+
+        if (currentFrame < totalFrames) {
+          requestAnimationFrame(tick);
+        } else {
+          mediaRecorder.stop();
+          stream.getTracks().forEach((t) => t.stop());
+        }
       };
 
-      renderFrame();
+      requestAnimationFrame(tick);
     });
   };
 
