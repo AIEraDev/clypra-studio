@@ -201,9 +201,15 @@ export class TemplateRenderer {
     const backgroundColor = resolved.backgroundColor ? evaluateAnimatable(resolved.backgroundColor, this.currentTime, this.template.duration) : null;
     const backgroundOpacity = resolved.backgroundOpacity !== undefined ? evaluateAnimatable(resolved.backgroundOpacity, this.currentTime, this.template.duration) : 1;
     const backgroundRadius = resolved.backgroundRadius !== undefined ? evaluateAnimatable(resolved.backgroundRadius, this.currentTime, this.template.duration) : 0;
-    const padding = resolved.padding !== undefined ? evaluateAnimatable(resolved.padding, this.currentTime, this.template.duration) : 0;
     const backgroundBorderColor = resolved.backgroundBorderColor ? evaluateAnimatable(resolved.backgroundBorderColor, this.currentTime, this.template.duration) : null;
     const backgroundBorderWidth = resolved.backgroundBorderWidth !== undefined ? evaluateAnimatable(resolved.backgroundBorderWidth, this.currentTime, this.template.duration) : 0;
+
+    // Resolve per-side padding — individual sides take priority; fall back to legacy `padding`
+    const legacyPadding = resolved.padding !== undefined ? evaluateAnimatable(resolved.padding, this.currentTime, this.template.duration) : 0;
+    const pt = resolved.paddingTop    !== undefined ? evaluateAnimatable(resolved.paddingTop,    this.currentTime, this.template.duration) : legacyPadding;
+    const pr = resolved.paddingRight  !== undefined ? evaluateAnimatable(resolved.paddingRight,  this.currentTime, this.template.duration) : legacyPadding;
+    const pb = resolved.paddingBottom !== undefined ? evaluateAnimatable(resolved.paddingBottom, this.currentTime, this.template.duration) : legacyPadding;
+    const pl = resolved.paddingLeft   !== undefined ? evaluateAnimatable(resolved.paddingLeft,   this.currentTime, this.template.duration) : legacyPadding;
 
     const overflow = resolved.overflow;
 
@@ -220,37 +226,47 @@ export class TemplateRenderer {
 
     let adjustedFontSize = fontSize;
     let lines = [textToDraw];
-    let bgWidth = width + padding * 2;
-    let bgHeight = height + padding * 2;
-    let bgX = x - padding;
-    let bgY = y - padding;
+
+    // Background geometry: left edge = x - paddingLeft, top edge = y - paddingTop
+    // Width = layer width + paddingLeft + paddingRight
+    // Height = layer height + paddingTop + paddingBottom
+    let bgWidth = width + pl + pr;
+    let bgHeight = height + pt + pb;
+    let bgX = x - pl;
+    let bgY = y - pt;
 
     if (overflow === "shrink") {
+      // Shrink font so text fits in the layer content area (excluding padding — padding is decorative)
+      const contentWidth = width; // padding is visual, text still fills declared width
       const initialTextWidth = ctx.measureText(textToDraw).width;
-      if (initialTextWidth > width && width > 0) {
-        adjustedFontSize = fontSize * (width / initialTextWidth);
+      if (initialTextWidth > contentWidth && contentWidth > 0) {
+        adjustedFontSize = fontSize * (contentWidth / initialTextWidth);
         ctx.font = `${fontWeight} ${adjustedFontSize}px "${fontFamily}", sans-serif`;
       }
     } else if (overflow === "wrap") {
       lines = wrapTextToWidth(ctx, textToDraw, width, 0);
       const lineHeight = adjustedFontSize * 1.2;
       const totalTextHeight = lines.length * lineHeight;
-      bgHeight = totalTextHeight + padding * 2;
-      // Adjust background Y based on vertical alignment inside bounding box
+      // Background height grows to fit wrapped text + padding on both sides
+      bgHeight = totalTextHeight + pt + pb;
+      // Recompute bgY based on vertical alignment of wrapped block inside bounding box
       if (verticalAlign === "top") {
-        bgY = y - padding;
+        bgY = y - pt;
       } else if (verticalAlign === "bottom") {
-        bgY = y + height - totalTextHeight - padding;
+        bgY = y + height - totalTextHeight - pt;
       } else { // middle
-        bgY = y + (height - totalTextHeight) / 2 - padding;
+        bgY = y + (height - totalTextHeight) / 2 - pt;
       }
     } else if (overflow === "expand-panel") {
+      // Background width expands to measured text width; padding still applied around it
       const measuredWidth = ctx.measureText(textToDraw).width;
-      bgWidth = measuredWidth + padding * 2;
+      bgWidth = measuredWidth + pl + pr;
       if (align === "center") {
         bgX = (x + width / 2) - bgWidth / 2;
       } else if (align === "right") {
-        bgX = (x + width) - bgWidth + padding;
+        bgX = (x + width) - measuredWidth - pl;
+      } else {
+        bgX = x - pl;
       }
     }
 

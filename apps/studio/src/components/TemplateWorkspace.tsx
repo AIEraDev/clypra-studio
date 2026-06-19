@@ -1596,11 +1596,57 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[9px] text-[#888899] mb-0.5">Padding (px)</label>
-                            <input type="number" min={0} value={selectedLayer.padding ?? 0} onChange={(e) => handleUpdateLayerProperty("padding", parseInt(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                        <div className="border-t border-[#2A2A38]/50 pt-2 mt-1">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-[#888899]">Padding (px)</label>
+                            <button
+                              type="button"
+                              title={selectedLayer._paddingLinked ? "Unlink sides" : "Link all sides"}
+                              onClick={() => handleUpdateLayerProperty("_paddingLinked", !(selectedLayer as any)._paddingLinked)}
+                              className={`rounded p-0.5 text-[10px] transition-colors ${(selectedLayer as any)._paddingLinked !== false ? "text-teal-400 bg-teal-500/10 border border-teal-500/30" : "text-[#666677] border border-[#2A2A38]"}`}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                              </svg>
+                            </button>
                           </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {(["Top", "Right", "Bottom", "Left"] as const).map((side) => {
+                              const key = `padding${side}` as "paddingTop" | "paddingRight" | "paddingBottom" | "paddingLeft";
+                              const legacyVal = (selectedLayer as any).padding ?? 0;
+                              const val = (selectedLayer as any)[key] !== undefined ? (selectedLayer as any)[key] : legacyVal;
+                              const linked = (selectedLayer as any)._paddingLinked !== false;
+                              return (
+                                <div key={side}>
+                                  <label className="block text-[9px] text-[#666677] mb-0.5">{side}</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={val}
+                                    onChange={(e) => {
+                                      const v = parseInt(e.target.value) || 0;
+                                      if (linked) {
+                                        handleUpdateLayerProperty("paddingTop", v);
+                                        handleUpdateLayerProperty("paddingRight", v);
+                                        handleUpdateLayerProperty("paddingBottom", v);
+                                        handleUpdateLayerProperty("paddingLeft", v);
+                                        // Clear legacy field so renderer uses individual sides
+                                        handleUpdateLayerProperty("padding", undefined);
+                                      } else {
+                                        handleUpdateLayerProperty(key, v);
+                                        handleUpdateLayerProperty("padding", undefined);
+                                      }
+                                    }}
+                                    className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mt-2">
                           <div>
                             <label className="block text-[9px] text-[#888899] mb-0.5">Border Radius (px)</label>
                             <input type="number" min={0} value={selectedLayer.backgroundRadius ?? 0} onChange={(e) => handleUpdateLayerProperty("backgroundRadius", parseInt(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />

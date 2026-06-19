@@ -377,7 +377,13 @@ export interface TemplateTextLayer {
   backgroundColor?: AnimatableValue<string>;
   backgroundOpacity?: AnimatableValue<number>; // 0-1
   backgroundRadius?: AnimatableValue<number>; // Border radius in pixels
-  padding?: AnimatableValue<number>; // Padding in pixels
+  /** Legacy uniform padding — still honoured for backwards compat. Prefer individual sides. */
+  padding?: AnimatableValue<number>;
+  /** Per-side padding (overrides `padding` when set) */
+  paddingTop?: AnimatableValue<number>;
+  paddingRight?: AnimatableValue<number>;
+  paddingBottom?: AnimatableValue<number>;
+  paddingLeft?: AnimatableValue<number>;
   backgroundBorderColor?: AnimatableValue<string>; // Border/stroke color
   backgroundBorderWidth?: AnimatableValue<number>; // Border/stroke width in pixels
   animation: LayerAnimation;

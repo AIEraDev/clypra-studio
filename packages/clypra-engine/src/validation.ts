@@ -298,7 +298,14 @@ export const TextLayerSchema = z.object({
   animation: LayerAnimationSchema,
   role: z.enum(["primary", "secondary", "accent", "none"]).optional(),
   overflow: z.enum(["wrap", "shrink", "expand-panel", "clip"]).optional(),
-  verticalAlign: z.enum(["top", "middle", "bottom"]).optional()
+  verticalAlign: z.enum(["top", "middle", "bottom"]).optional(),
+  // Legacy uniform padding
+  padding: z.number().min(0).optional(),
+  // Per-side padding (takes precedence over `padding` when set)
+  paddingTop: z.number().min(0).optional(),
+  paddingRight: z.number().min(0).optional(),
+  paddingBottom: z.number().min(0).optional(),
+  paddingLeft: z.number().min(0).optional(),
 });
 
 export const ShapeLayerSchema = z.object({
