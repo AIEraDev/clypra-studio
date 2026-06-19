@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/AIEraDev/clypra-studio/compare/v1.19.1...v1.20.0) (2026-06-19)
+
+
+### Features
+
+* **engine:** v1.19.2 — width/height "auto" for TemplateTextLayer ([bbaf14c](https://github.com/AIEraDev/clypra-studio/commit/bbaf14c801e2115fcba044fa4b587d6c97621fff))
+
 ## [1.19.1](https://github.com/AIEraDev/clypra-studio/compare/v1.19.0...v1.19.1) (2026-06-19)
 
 
