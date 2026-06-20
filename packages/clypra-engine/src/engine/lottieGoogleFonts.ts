@@ -7,6 +7,8 @@
 
 // ─── Font family → Google Fonts slug mapping ─────────────────────────────────
 
+import { resolveFontFamilyName } from "./migrate";
+
 /** Families that ship with the OS — no Google Fonts needed */
 const SYSTEM_FONTS = new Set(["Arial", "Arial Black", "Comic Sans MS", "Courier New", "Georgia", "Impact", "Times New Roman", "Trebuchet MS", "Verdana", "Helvetica", "Helvetica Neue", "Tahoma", "Palatino"]);
 
@@ -147,11 +149,12 @@ function injectFontFaceRules(usages: LottieFontUsage[]): void {
 
     // lottie-web looks up fonts by font-family matching fName exactly.
     // We create a @font-face that aliases fName → the actual loaded family.
+    const resolvedFamily = resolveFontFamilyName(usage.fFamily);
     rules.push(
       `
 @font-face {
   font-family: "${usage.fName}";
-  src: local("${usage.fFamily}");
+  src: local("${resolvedFamily}"), local("${usage.fFamily}");
   font-weight: ${usage.fWeight};
   font-style: ${usage.fStyle};
 }

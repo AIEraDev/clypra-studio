@@ -1,6 +1,7 @@
 import { TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer } from "../types";
 import { evaluateAnimatable } from "./keyframes";
 import { wrapTextToWidth } from "../engine/textLayout";
+import { resolveFontFamilyName } from "../engine/migrate";
 
 // Newton-Raphson approximation solver for cubic bezier curve easing
 export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
@@ -289,7 +290,8 @@ export class TemplateRenderer {
 
     // Evaluate all animatable properties at current time
     const content = resolved.content;
-    const fontFamily = resolved.fontFamily;
+    const rawFontFamily = resolved.fontFamily;
+    const fontFamily = resolveFontFamilyName(rawFontFamily);
     const fontSize = evaluateAnimatable(resolved.fontSize, this.currentTime, this.template.duration);
     const fontWeight = evaluateAnimatable(resolved.fontWeight, this.currentTime, this.template.duration);
     const color = evaluateAnimatable(resolved.color, this.currentTime, this.template.duration);
@@ -323,7 +325,7 @@ export class TemplateRenderer {
     const textToDraw = content.slice(0, visibleCharsCount);
 
     ctx.save();
-    ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}", sans-serif`;
+    ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}", "${rawFontFamily}", sans-serif`;
     // Always use alphabetic baseline — we position manually using real font metrics
     // so we never double-account the baseline shift.
     ctx.textBaseline = "alphabetic";
@@ -376,7 +378,7 @@ export class TemplateRenderer {
       }
       if (scale < 1) {
         adjustedFontSize = fontSize * scale;
-        ctx.font = `${fontWeight} ${adjustedFontSize}px "${fontFamily}", sans-serif`;
+        ctx.font = `${fontWeight} ${adjustedFontSize}px "${fontFamily}", "${rawFontFamily}", sans-serif`;
       }
     } else if (overflow === "wrap") {
       // Wrap text to content width; height may grow to fit (if height is "auto").

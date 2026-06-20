@@ -6,6 +6,8 @@
  * to the actual loaded fonts with proper styling.
  */
 
+import { resolveFontFamilyName } from "./engine/migrate";
+
 export interface FontVariant {
   variantName: string; // e.g., "Poppins-Italic"
   baseFontFamily: string; // e.g., "Poppins"
@@ -53,10 +55,11 @@ export function injectFontVariantRules(): void {
   let css = "/* Dynamically injected font variants for lottie-web */\n";
 
   FONT_VARIANTS.forEach((variant) => {
+    const resolvedFamily = resolveFontFamilyName(variant.baseFontFamily);
     css += `
 @font-face {
   font-family: "${variant.variantName}";
-  src: local("${variant.baseFontFamily}");
+  src: local("${resolvedFamily}"), local("${variant.baseFontFamily}");
   font-weight: ${variant.weight};
   font-style: ${variant.style};
   font-display: swap;
@@ -185,7 +188,9 @@ export class FontLoader {
   };
 
   async ensureFont(descriptor: FontDescriptor): Promise<FontLoadResult> {
-    const key = this.getFontKey(descriptor);
+    const resolvedFamily = resolveFontFamilyName(descriptor.family);
+    const resolvedDescriptor = { ...descriptor, family: resolvedFamily };
+    const key = this.getFontKey(resolvedDescriptor);
 
     if (this.state.loaded.has(key)) {
       return {
@@ -208,7 +213,10 @@ export class FontLoader {
       return this.state.promises.get(key)!;
     }
 
-    const promise = this.loadFont(descriptor);
+    const promise = this.loadFont(resolvedDescriptor).then(res => ({
+      ...res,
+      font: descriptor
+    }));
     this.state.promises.set(key, promise);
 
     return promise;
