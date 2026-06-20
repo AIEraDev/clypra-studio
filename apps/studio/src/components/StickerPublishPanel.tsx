@@ -171,17 +171,16 @@ const generatePreviewVideo = async (lottieJson: any): Promise<string> => {
 
           anim.goToAndStop(currentFrame, true);
 
-          // Give a tiny delay for canvas rendering to update before capture
-          setTimeout(() => {
+          requestAnimationFrame(() => {
             if (hasRequestFrame && videoTrack) {
               videoTrack.requestFrame();
             }
             currentFrame++;
-            requestAnimationFrame(tick);
-          }, 1000 / fps);
+            setTimeout(tick, 1000 / fps);
+          });
         };
 
-        requestAnimationFrame(tick);
+        tick();
       });
 
       anim.addEventListener("data_failed", () => {
