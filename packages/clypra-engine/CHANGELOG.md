@@ -1,3 +1,11 @@
+# [1.23.0](https://github.com/AIEraDev/clypra-studio/compare/v1.22.0...v1.23.0) (2026-06-20)
+
+
+### Features
+
+* **templates:** add skipClear option to drawFrame in TemplateRenderer ([d893108](https://github.com/AIEraDev/clypra-studio/commit/d893108598c678d00ba0fc7f4e50d627cf8e0c9f))
+* universally enforce transparent checkerboard for text templates and support alpha in WebM preview/export ([5531e88](https://github.com/AIEraDev/clypra-studio/commit/5531e886f2eabce63b091310d7e281c9fd71cfe4))
+
 # [1.22.0](https://github.com/AIEraDev/clypra-studio/compare/v1.21.0...v1.22.0) (2026-06-19)
 
 
