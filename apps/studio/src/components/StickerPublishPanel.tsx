@@ -569,7 +569,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
                 <input type="file" accept="application/json" onChange={handleLottieSelect} className="hidden" />
               </label>
 
-              {extractingThumbnail && (
+              {(extractingThumbnail || isGeneratingPreview) && (
                 <div className="flex items-center justify-center gap-2 py-3 bg-[#09090D] rounded-lg border border-[#2A2A38]">
                   <Loader2 className="w-4 h-4 animate-spin text-[#7C6FFF]" />
                   <span className="text-xs text-gray-400">{isGeneratingPreview ? "Generating preview video..." : "Extracting thumbnail..."}</span>
@@ -671,7 +671,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
           )}
 
           {/* Publish Button */}
-          <button onClick={handlePublish} disabled={publishing || extractingThumbnail || !animatedFile} className="w-full py-2.5 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2A2A38] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-xs cursor-pointer">
+          <button onClick={handlePublish} disabled={publishing || extractingThumbnail || isGeneratingPreview || !animatedFile} className="w-full py-2.5 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2A2A38] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-xs cursor-pointer">
             {publishing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
