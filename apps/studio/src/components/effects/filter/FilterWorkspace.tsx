@@ -225,6 +225,54 @@ export function FilterWorkspace() {
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [uploadMessage, setUploadMessage] = useState("");
 
+  // Preview Frame State
+  const [previewFrameUrl, setPreviewFrameUrl] = useState<string | undefined>();
+  const [creatorName, setCreatorName] = useState("");
+  const [creatorSocialLink, setCreatorSocialLink] = useState("");
+
+  // Debounced effect to capture raw preview frame when scrubbing or paused
+  useEffect(() => {
+    if (isPlaying) return;
+    if (!mediaUrl) {
+      setPreviewFrameUrl(undefined);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      try {
+        if (isVideo) {
+          const video = videoRef.current;
+          if (!video || video.readyState < 2) return;
+          const tempCanvas = document.createElement("canvas");
+          const aspect = video.videoWidth / video.videoHeight;
+          tempCanvas.height = 80;
+          tempCanvas.width = Math.round(80 * (aspect || 16 / 9));
+          const tempCtx = tempCanvas.getContext("2d");
+          if (tempCtx) {
+            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+            setPreviewFrameUrl(tempCanvas.toDataURL("image/jpeg", 0.7));
+          }
+        } else {
+          const img = imageRef.current;
+          if (!img) return;
+          const tempCanvas = document.createElement("canvas");
+          const aspect = img.width / img.height;
+          tempCanvas.height = 80;
+          tempCanvas.width = Math.round(80 * (aspect || 1));
+          const tempCtx = tempCanvas.getContext("2d");
+          if (tempCtx) {
+            tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+            setPreviewFrameUrl(tempCanvas.toDataURL("image/jpeg", 0.7));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to capture preview frame:", err);
+      }
+    }, 250); // 250ms debounce
+
+    return () => clearTimeout(timer);
+  }, [currentTime, isPlaying, isVideo, mediaUrl]);
+
   // Collapsible Right Panel Sections
   const [expandedSections, setExpandedSections] = useState({
     light: true,
@@ -434,6 +482,21 @@ export function FilterWorkspace() {
         setMediaMetadata({ width: img.width, height: img.height });
         imageRef.current = img;
         renderFilterOnImage(img);
+
+        // Capture initial preview frame for presets
+        try {
+          const tempCanvas = document.createElement("canvas");
+          const aspect = img.width / img.height;
+          tempCanvas.height = 80;
+          tempCanvas.width = Math.round(80 * (aspect || 1));
+          const tempCtx = tempCanvas.getContext("2d");
+          if (tempCtx) {
+            tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+            setPreviewFrameUrl(tempCanvas.toDataURL("image/jpeg", 0.7));
+          }
+        } catch (err) {
+          console.error("Failed to capture initial image preview:", err);
+        }
       };
       img.src = url;
     },
@@ -474,7 +537,6 @@ export function FilterWorkspace() {
     [renderFilterOnVideo],
   );
 
-  // Video Controls
   const handlePlayPause = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -482,6 +544,7 @@ export function FilterWorkspace() {
     if (isPlaying) {
       video.pause();
       setIsPlaying(false);
+      setCurrentTime(video.currentTime);
     } else {
       video
         .play()
@@ -623,6 +686,13 @@ export function FilterWorkspace() {
 
     // Check if R2 direct publishing configuration is present
     const r2Config = getR2Config();
+    const creatorInfo = creatorName.trim()
+      ? {
+          name: creatorName.trim(),
+          socialLink: creatorSocialLink.trim() || undefined,
+        }
+      : undefined;
+
     if (r2Config) {
       try {
         let thumbnailDataUrl: string | undefined;
@@ -649,6 +719,7 @@ export function FilterWorkspace() {
             description: selectedFilter.description || "",
             intensity: "Medium",
             swatch: selectedFilter.cssFilter,
+            creator: creatorInfo,
           },
           thumbnailDataUrl,
         });
@@ -675,6 +746,7 @@ export function FilterWorkspace() {
             description: selectedFilter.description,
             intensity: "Medium",
             swatch: selectedFilter.cssFilter,
+            creator: creatorInfo,
           },
         }),
       });
@@ -810,7 +882,15 @@ export function FilterWorkspace() {
                     >
                       {/* Mini Preview Square */}
                       <div className="relative w-12 h-12 rounded bg-gradient-to-tr from-[#3A3270] to-[#7C6FFF] overflow-hidden shrink-0 border border-[#22222F] group-hover:scale-105 transition-transform duration-300">
-                        <div className="w-full h-full bg-cover bg-center bg-[url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=100&auto=format&fit=crop')]" style={{ filter: preset.cssFilter }} />
+                        <div
+                          className="w-full h-full bg-cover bg-center"
+                          style={{
+                            backgroundImage: previewFrameUrl
+                              ? `url(${previewFrameUrl})`
+                              : "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=100&auto=format&fit=crop')",
+                            filter: preset.cssFilter,
+                          }}
+                        />
                         {isSelected && (
                           <div className="absolute inset-0 bg-[#7C6FFF]/20 flex items-center justify-center text-white">
                             <Check size={14} className="drop-shadow-md" />
@@ -1349,6 +1429,28 @@ export function FilterWorkspace() {
                 </div>
                 <div className="flex justify-between text-[#8A8A99]">
                   <span className="truncate">CAT:</span> <span className="text-white font-sans">{selectedFilter.category}</span>
+                </div>
+              </div>
+              <div className="space-y-2 pt-1">
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase tracking-wider text-[#8A8A99] font-bold">Creator Name</label>
+                  <input
+                    type="text"
+                    value={creatorName}
+                    onChange={(e) => setCreatorName(e.target.value)}
+                    placeholder="Your Name / Handle"
+                    className="w-full px-2.5 py-1.5 bg-[#0A0A0E] border border-[#1A1A24] focus:border-[#7C6FFF] rounded-md text-[11px] text-white placeholder-[#5B5B6E] outline-none transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase tracking-wider text-[#8A8A99] font-bold">Social Link</label>
+                  <input
+                    type="url"
+                    value={creatorSocialLink}
+                    onChange={(e) => setCreatorSocialLink(e.target.value)}
+                    placeholder="e.g. instagram.com/handle"
+                    className="w-full px-2.5 py-1.5 bg-[#0A0A0E] border border-[#1A1A24] focus:border-[#7C6FFF] rounded-md text-[11px] text-white placeholder-[#5B5B6E] outline-none transition-all"
+                  />
                 </div>
               </div>
             </div>

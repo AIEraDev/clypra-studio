@@ -151,6 +151,10 @@ export interface FilterPublishPayload {
     description: string;
     intensity: string;
     swatch: string;
+    creator?: {
+      name: string;
+      socialLink?: string;
+    };
   };
   thumbnailDataUrl?: string;
 }

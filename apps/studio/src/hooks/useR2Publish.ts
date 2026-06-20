@@ -551,20 +551,33 @@ export function useR2Publish() {
     if (!config) throw new Error("R2 publishing is not configured.");
 
     const category = payload.category.toLowerCase();
+    const definitionKey = `filters/${category}/${payload.id}.json`;
+    const thumbnailKey = `filters/${category}/${payload.id}.png`;
+    const categoryIndexKey = `filters/${category}/index.json`;
+    const globalIndexKey = `filters/index.json`;
+
+    const thumbnailUrl = payload.thumbnailDataUrl ? getPublicUrl(config.bucketName, thumbnailKey) : "";
+
     const definition = {
       id: payload.id,
       name: payload.definition.name,
+      type: "filter",
       category,
       description: payload.definition.description || "",
-      intensity: payload.definition.intensity || "Medium",
+      thumbnail: thumbnailUrl,
       swatch: payload.definition.swatch,
+      intensity: {
+        min: 0,
+        max: 100,
+        default: 100,
+        step: 1,
+      },
+      creator: payload.definition.creator,
     };
 
-    const categoryIndexKey = `filters/${category}/index.json`;
-    const thumbnailKey = `filters/${category}/${payload.id}.png`;
-
-    const files = [categoryIndexKey];
+    const files = [definitionKey, categoryIndexKey, globalIndexKey];
     const urls: Record<string, string> = {
+      definition: getPublicUrl(config.bucketName, definitionKey),
       index: getPublicUrl(config.bucketName, categoryIndexKey),
     };
 
@@ -572,17 +585,34 @@ export function useR2Publish() {
     if (payload.thumbnailDataUrl) {
       await uploadFileFromDataUrl(config, thumbnailKey, payload.thumbnailDataUrl, "image/png");
       files.push(thumbnailKey);
-      urls.thumbnail = getPublicUrl(config.bucketName, thumbnailKey);
+      urls.thumbnail = thumbnailUrl;
     }
 
-    // Load existing category index
+    // Upload full filter JSON
+    await uploadR2Json(config, definitionKey, definition);
+
+    // Load existing category and global indexes
     const categoryIndex = await getR2Json<any[]>(config, categoryIndexKey, []);
+    const globalIndex = await getR2Json<any[]>(config, globalIndexKey, []);
 
-    // Update or append filter by ID
-    const nextCategoryIndex = upsertById(categoryIndex, definition as any);
+    const summary = {
+      id: definition.id,
+      name: definition.name,
+      type: "filter",
+      category,
+      description: definition.description,
+      thumbnail: definition.thumbnail,
+      url: urls.definition,
+      creator: definition.creator,
+    };
 
-    // Save back to R2
+    // Update indexes
+    const nextCategoryIndex = upsertById(categoryIndex, summary as any);
+    const nextGlobalIndex = upsertById(globalIndex, summary as any);
+
+    // Save indexes back to R2
     await uploadR2Json(config, categoryIndexKey, nextCategoryIndex);
+    await uploadR2Json(config, globalIndexKey, nextGlobalIndex);
 
     return {
       files,
