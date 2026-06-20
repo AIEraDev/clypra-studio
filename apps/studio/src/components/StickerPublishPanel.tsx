@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import type { StickerPublishPayload, StickerCategory } from "../types/publish";
-import { AlertCircle, CheckCircle, Loader2, Upload, Image as ImageIcon, Film, Sparkles } from "lucide-react";
+import type { StickerCategory } from "../types/publish";
+import { AlertCircle, CheckCircle, Loader2, Upload, Film, Sparkles } from "lucide-react";
+import lottie from "lottie-web";
+import { Player } from "@lottiefiles/react-lottie-player";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 const STICKER_CATEGORIES: StickerCategory[] = ["emoji", "text", "gaming", "sports", "animals", "love", "mood", "food", "travel", "birthday", "frames", "shapes", "fashion", "retro", "illustration"];
 
-type StickerFormat = "static" | "gif" | "lottie";
+type StickerFormat = "lottie";
 
 interface FormData {
   id: string;
@@ -16,6 +18,77 @@ interface FormData {
   format: StickerFormat;
 }
 
+// Helper to extract a representative frame (thumbnail) from Lottie JSON data
+const extractLottieThumbnail = (lottieJson: any): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const container = document.createElement("div");
+      container.style.width = "512px";
+      container.style.height = "512px";
+      container.style.position = "absolute";
+      container.style.top = "-9999px";
+      container.style.left = "-9999px";
+      document.body.appendChild(container);
+
+      const anim = lottie.loadAnimation({
+        container: container,
+        renderer: "canvas",
+        loop: false,
+        autoplay: false,
+        animationData: lottieJson,
+      });
+
+      anim.addEventListener("DOMLoaded", () => {
+        const totalFrames = anim.totalFrames;
+        // Grab frame at 10% progress to avoid a blank/empty initial frame
+        const targetFrame = Math.min(Math.max(0, Math.floor(totalFrames * 0.1)), totalFrames - 1);
+        anim.goToAndStop(targetFrame, true);
+
+        // Give it a tiny moment to complete rendering to canvas
+        setTimeout(() => {
+          try {
+            const canvas = container.querySelector("canvas");
+            if (canvas) {
+              const dataUrl = canvas.toDataURL("image/png");
+              anim.destroy();
+              document.body.removeChild(container);
+              resolve(dataUrl);
+            } else {
+              anim.destroy();
+              document.body.removeChild(container);
+              reject(new Error("Canvas element not found in Lottie container"));
+            }
+          } catch (err) {
+            anim.destroy();
+            document.body.removeChild(container);
+            reject(err);
+          }
+        }, 100);
+      });
+
+      anim.addEventListener("data_failed", () => {
+        document.body.removeChild(container);
+        reject(new Error("Lottie animation data failed to load"));
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
+// Helper to convert base64 Data URL to a File object
+const dataURLtoFile = (dataurl: string, filename: string): File => {
+  const arr = dataurl.split(",");
+  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+};
+
 export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer" | "workspace" }) {
   const isWorkspace = variant === "workspace";
   const [formData, setFormData] = useState<FormData>({
@@ -24,13 +97,16 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     category: "emoji",
     tags: "",
     isPremium: false,
-    format: "static",
+    format: "lottie",
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [animatedFile, setAnimatedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [animatedPreview, setAnimatedPreview] = useState<string>("");
+  
+  const [lottieData, setLottieData] = useState<any>(null);
+  const [extractingThumbnail, setExtractingThumbnail] = useState(false);
 
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string>("");
@@ -90,75 +166,56 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     });
   };
 
-  // Handle image file selection
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Lottie JSON file selection
+  const handleLottieSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.match(/^image\/(png|webp|jpeg|jpg|gif)$/)) {
-      setError("Please select a PNG, WebP, JPG, or GIF image");
-      return;
-    }
-
-    // Validate file matches the selected format
-    if (formData.format === "static" && file.type === "image/gif") {
-      setError("GIF files cannot be used with STATIC format. Please switch to GIF format or upload PNG/WebP.");
-      return;
-    }
-
-    if (formData.format === "static" && !file.type.match(/^image\/(png|webp)$/)) {
-      setError("STATIC format only accepts PNG or WebP images.");
-      return;
-    }
-
-    setImageFile(file);
-    const dataUrl = await fileToDataUrl(file);
-    setImagePreview(dataUrl);
-
-    // If GIF is uploaded for GIF format, also set it as the animation file
-    if (file.type === "image/gif" && formData.format === "gif") {
-      setAnimatedFile(file);
-      setAnimatedPreview(dataUrl);
-    }
-
-    setError("");
-  };
-
-  // Handle animated file selection
-  const handleAnimatedSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type based on format
-    if (formData.format === "gif" && !file.type.match(/^image\/gif$/)) {
-      setError("Please select a GIF file for animated stickers");
-      return;
-    }
-
-    if (formData.format === "lottie" && !file.type.match(/^application\/json$/)) {
+    // Validate type
+    if (!file.name.endsWith(".json") && file.type !== "application/json") {
       setError("Please select a JSON file for Lottie animations");
       return;
     }
 
-    setAnimatedFile(file);
-    const dataUrl = await fileToDataUrl(file);
-    setAnimatedPreview(dataUrl);
+    setExtractingThumbnail(true);
     setError("");
-  };
+    setSuccess("");
 
-  // Handle format change
-  const handleFormatChange = (format: StickerFormat) => {
-    setFormData((prev) => ({ ...prev, format }));
-    // Clear animated file if switching formats
-    setAnimatedFile(null);
-    setAnimatedPreview("");
+    try {
+      // Read JSON content
+      const text = await file.text();
+      const json = JSON.parse(text);
+      
+      // Save for live preview and upload
+      setLottieData(json);
+      setAnimatedFile(file);
+      
+      const fileDataUrl = await fileToDataUrl(file);
+      setAnimatedPreview(fileDataUrl);
+
+      // Extract thumbnail client-side
+      const thumbDataUrl = await extractLottieThumbnail(json);
+      setImagePreview(thumbDataUrl);
+      
+      // Create a File object from the thumbnail
+      const thumbFile = dataURLtoFile(thumbDataUrl, `${file.name.replace(".json", "")}-thumb.png`);
+      setImageFile(thumbFile);
+    } catch (err: any) {
+      setError(`Failed to process Lottie file: ${err.message}`);
+      setAnimatedFile(null);
+      setAnimatedPreview("");
+      setLottieData(null);
+      setImageFile(null);
+      setImagePreview("");
+    } finally {
+      setExtractingThumbnail(false);
+    }
   };
 
   // AI-powered metadata generation
   const handleGenerateMetadata = async () => {
-    if (!imageFile && !imagePreview) {
-      setError("Please upload an image first");
+    if (!imagePreview) {
+      setError("Please select a Lottie JSON file first");
       return;
     }
 
@@ -166,12 +223,10 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     setError("");
 
     try {
-      const imageDataUrl = imagePreview || (await fileToDataUrl(imageFile!));
-
       const response = await fetch(`${API_BASE_URL}/ai/sticker-metadata`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageDataUrl }),
+        body: JSON.stringify({ imageDataUrl: imagePreview }),
       });
 
       if (!response.ok) {
@@ -203,23 +258,8 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
   const validateForm = (): string | null => {
     if (!formData.name.trim()) return "Sticker name is required";
     if (!formData.id.trim()) return "Sticker ID is required";
-    if (!imageFile) return "Please select an image file";
-
-    // Validate that GIF files must use GIF format
-    if (imageFile.type === "image/gif" && formData.format === "static") {
-      return "GIF files must use GIF format, not STATIC. Please select GIF format or use PNG/WebP for static stickers.";
-    }
-
-    // Validate that static format only accepts PNG/WebP
-    if (formData.format === "static" && !imageFile.type.match(/^image\/(png|webp)$/)) {
-      return "Static stickers must be in PNG or WebP format. For GIF stickers, select GIF format.";
-    }
-
-    const isAnimated = formData.format !== "static";
-    if (isAnimated && !animatedFile) {
-      return `Please select a ${formData.format.toUpperCase()} file for animation`;
-    }
-
+    if (!animatedFile) return "Please select a Lottie JSON file";
+    if (!imageFile) return "Failed to extract thumbnail image";
     return null;
   };
 
@@ -240,48 +280,38 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     try {
       // Convert files to data URLs
       const imageDataUrl = await fileToDataUrl(imageFile!);
-      const animatedDataUrl = animatedFile ? await fileToDataUrl(animatedFile) : undefined;
+      const animatedDataUrl = await fileToDataUrl(animatedFile!);
 
-      // Prepare payload
-      const isAnimated = formData.format !== "static";
       const tags = formData.tags
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean);
 
-      const payload: StickerPublishPayload = {
-        id: formData.id,
-        category: formData.category,
-        metadata: {
+      // Construct request body expected by clypra-api upload endpoint
+      const body = {
+        sticker: {
+          id: formData.id,
           name: formData.name,
+          category: formData.category,
           tags,
-          isPremium: formData.isPremium,
-          format: formData.format,
-          isAnimated,
-          safety: {
-            status: "approved",
-            reviewedAt: new Date().toISOString(),
-          },
+          format: "lottie",
+          isAnimated: true,
+          isPremium: false,
           published: isAdmin ? publishApproved : false,
         },
-        imageFile: {
-          name: imageFile!.name,
-          dataUrl: imageDataUrl,
-        },
+        imageFileDataUrl: imageDataUrl,
+        lottieFileDataUrl: animatedDataUrl,
       };
-
-      // Publish to R2
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 
       const response = await fetch(`${API_BASE_URL}/stickers/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
+        throw new Error(errorData.message || errorData.error || `Upload failed: ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -295,12 +325,13 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
         category: "emoji",
         tags: "",
         isPremium: false,
-        format: "static",
+        format: "lottie",
       });
       setImageFile(null);
       setAnimatedFile(null);
       setImagePreview("");
       setAnimatedPreview("");
+      setLottieData(null);
     } catch (err: any) {
       setError(`Failed to publish: ${err.message}`);
     } finally {
@@ -319,7 +350,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
           <div className="flex-1">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#B9B2FF]">Sticker Library</p>
             <h3 className={`${isWorkspace ? "text-xl" : "text-sm"} font-bold`}>Publish Sticker to API</h3>
-            <p className={`${isWorkspace ? "max-w-3xl text-sm" : "text-xs"} mt-1 leading-relaxed text-[#9A9AAA]`}>Publish stickers (static, GIF, or Lottie animations) to the R2 bucket immediately.</p>
+            <p className={`${isWorkspace ? "max-w-3xl text-sm" : "text-xs"} mt-1 leading-relaxed text-[#9A9AAA]`}>Publish Lottie animated stickers to the R2 bucket immediately.</p>
           </div>
         </div>
       </div>
@@ -338,11 +369,11 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
             </label>
             <div className="flex gap-2">
               <input type="text" value={formData.name} onChange={(e) => handleNameChange(e.target.value)} placeholder="e.g., Fire Emoji" className="flex-1 px-3 py-1.5 bg-[#09090D] border border-[#2A2A38] rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-[#7C6FFF] text-xs" />
-              <button onClick={handleGenerateMetadata} disabled={generatingMetadata || !imagePreview} title="AI-generate name, tags, and category from image" className="px-3 py-1.5 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2A2A38] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-xs">
+              <button onClick={handleGenerateMetadata} disabled={generatingMetadata || !imagePreview} title="AI-generate name, tags, and category from animation thumbnail" className="px-3 py-1.5 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2A2A38] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-xs">
                 {generatingMetadata ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               </button>
             </div>
-            {!imagePreview && <p className="mt-1 text-[10px] text-gray-500">Upload an image first to use AI generation</p>}
+            {!imagePreview && <p className="mt-1 text-[10px] text-gray-500">Upload a Lottie JSON file first to use AI generation</p>}
           </div>
 
           {/* Auto-generated ID */}
@@ -365,32 +396,10 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
             </select>
           </div>
 
-          {/* Format */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-              Format <span className="text-red-400">*</span>
-            </label>
-            <div className="flex gap-2">
-              {(["static", "gif", "lottie"] as StickerFormat[]).map((format) => (
-                <button key={format} onClick={() => handleFormatChange(format)} className={`flex-1 py-1.5 rounded-lg font-semibold text-xs transition-colors ${formData.format === format ? "bg-[#7C6FFF] text-white" : "bg-[#09090D] text-gray-400 border border-[#2A2A38] hover:border-[#7C6FFF]"}`}>
-                  {format.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Tags */}
           <div>
             <label className="block text-xs font-semibold text-gray-300 mb-1.5">Tags (comma-separated)</label>
             <input type="text" value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} placeholder="e.g., fire, emoji, hot" className="w-full px-3 py-1.5 bg-[#09090D] border border-[#2A2A38] rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-[#7C6FFF] text-xs" />
-          </div>
-
-          {/* Premium Toggle */}
-          <div className="flex items-center gap-2.5">
-            <input type="checkbox" id="premium" checked={formData.isPremium} onChange={(e) => setFormData({ ...formData, isPremium: e.target.checked })} className="w-4 h-4 rounded border-[#2A2A38] bg-[#09090D] text-[#7C6FFF] focus:ring-1 focus:ring-[#7C6FFF]" />
-            <label htmlFor="premium" className="text-xs text-gray-300 cursor-pointer">
-              Premium Sticker (shows sparkle badge)
-            </label>
           </div>
 
           {/* Admin Moderation - Published toggle */}
@@ -416,57 +425,61 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
             <span>2. Media Assets</span>
           </div>
 
-          {/* Image File */}
+          {/* Lottie File Selection */}
           <div>
             <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-              Image File <span className="text-red-400">*</span>
-              {formData.format !== "static" && " (thumbnail)"}
+              Animation File <span className="text-red-400">*</span> (Lottie JSON)
             </label>
-            <div className="flex items-start gap-4">
-              <label className="flex-1 cursor-pointer">
-                <div className="border-2 border-dashed border-[#2A2A38] rounded-lg p-4 hover:border-[#7C6FFF] transition-colors bg-[#09090D]">
+            <div className="flex flex-col gap-3">
+              <label className="cursor-pointer">
+                <div className="border-2 border-dashed border-[#2A2A38] rounded-lg p-5 hover:border-[#7C6FFF] transition-colors bg-[#09090D]">
                   <div className="flex flex-col items-center justify-center text-center">
-                    <ImageIcon className="w-6 h-6 text-gray-500 mb-1.5" />
-                    <p className="text-xs text-gray-400">{imageFile ? imageFile.name : "Click to select PNG/WebP/GIF image"}</p>
-                    {!imageFile && formData.format === "static" && <p className="text-[10px] text-gray-500 mt-1">STATIC format: PNG/WebP only</p>}
-                    {!imageFile && formData.format === "gif" && <p className="text-[10px] text-gray-500 mt-1">Upload a GIF file</p>}
+                    <Film className="w-8 h-8 text-gray-500 mb-2" />
+                    <p className="text-xs text-gray-300">{animatedFile ? animatedFile.name : "Click to select Lottie JSON file"}</p>
+                    <p className="text-[10px] text-gray-500 mt-1">Accepts only JSON files representing Lottie vector animations</p>
                   </div>
                 </div>
-                <input type="file" accept="image/png,image/webp,image/jpeg,image/gif" onChange={handleImageSelect} className="hidden" />
+                <input type="file" accept="application/json" onChange={handleLottieSelect} className="hidden" />
               </label>
-              {imagePreview && (
-                <div className="w-20 h-20 rounded-lg overflow-hidden border border-[#2A2A38] shrink-0">
-                  <img src={imagePreview} alt="Preview" className="w-full h-full object-contain bg-[#09090D]" />
+
+              {extractingThumbnail && (
+                <div className="flex items-center justify-center gap-2 py-3 bg-[#09090D] rounded-lg border border-[#2A2A38]">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#7C6FFF]" />
+                  <span className="text-xs text-gray-400">Extracting thumbnail...</span>
+                </div>
+              )}
+
+              {/* Previews side by side */}
+              {(lottieData || imagePreview) && (
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  {/* Live Preview */}
+                  {lottieData && (
+                    <div className="flex flex-col items-center p-3 rounded-lg border border-[#2A2A38] bg-[#09090D]">
+                      <span className="text-[10px] font-mono text-gray-400 mb-2">Live Animation Preview</span>
+                      <div className="w-32 h-32 flex items-center justify-center">
+                        <Player
+                          autoplay
+                          loop
+                          src={lottieData}
+                          style={{ height: "100%", width: "100%" }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Thumbnail Preview */}
+                  {imagePreview && (
+                    <div className="flex flex-col items-center p-3 rounded-lg border border-[#2A2A38] bg-[#09090D]">
+                      <span className="text-[10px] font-mono text-gray-400 mb-2">Extracted Thumbnail</span>
+                      <div className="w-32 h-32 rounded-lg overflow-hidden border border-[#2A2A38] shrink-0 bg-[#06060A] flex items-center justify-center">
+                        <img src={imagePreview} alt="Extracted Thumbnail" className="w-full h-full object-contain" />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
-
-          {/* Animated File (for GIF and Lottie) */}
-          {formData.format !== "static" && (
-            <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                Animation File <span className="text-red-400">*</span>
-                {formData.format === "gif" ? " (GIF)" : " (Lottie JSON)"}
-              </label>
-              <div className="flex items-start gap-4">
-                <label className="flex-1 cursor-pointer">
-                  <div className="border-2 border-dashed border-[#2A2A38] rounded-lg p-4 hover:border-[#7C6FFF] transition-colors bg-[#09090D]">
-                    <div className="flex flex-col items-center justify-center text-center">
-                      <Film className="w-6 h-6 text-gray-500 mb-1.5" />
-                      <p className="text-xs text-gray-400">{animatedFile ? animatedFile.name : `Click to select ${formData.format === "gif" ? "GIF" : "JSON"} file`}</p>
-                    </div>
-                  </div>
-                  <input type="file" accept={formData.format === "gif" ? "image/gif" : "application/json"} onChange={handleAnimatedSelect} className="hidden" />
-                </label>
-                {animatedPreview && formData.format === "gif" && (
-                  <div className="w-20 h-20 rounded-lg overflow-hidden border border-[#2A2A38] shrink-0">
-                    <img src={animatedPreview} alt="Animation" className="w-full h-full object-contain bg-[#09090D]" />
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </section>
 
         {/* Column 3: Publish controls & instructions */}
@@ -477,7 +490,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
 
           <div className="rounded-lg border border-[#2A2A38] bg-[#09090D] p-3 text-xs text-[#9A9AAA]">
             <p className="font-bold text-white mb-1">Upload validation</p>
-            <p className="text-[11px] leading-relaxed">Ensure file coordinates are centered. Large animation sequences must use compressed SVG path vectors to guarantee fast load times on devices.</p>
+            <p className="text-[11px] leading-relaxed">Ensure Lottie coordinates are centered. Large animation sequences must use compressed SVG path vectors to guarantee fast load times on devices.</p>
           </div>
 
           {/* Error Message */}
@@ -497,7 +510,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
           )}
 
           {/* Publish Button */}
-          <button onClick={handlePublish} disabled={publishing} className="w-full py-2.5 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2A2A38] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-xs">
+          <button onClick={handlePublish} disabled={publishing || extractingThumbnail || !animatedFile} className="w-full py-2.5 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2A2A38] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-xs cursor-pointer">
             {publishing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -517,3 +530,4 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     </div>
   );
 }
+
