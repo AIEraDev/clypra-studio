@@ -146,7 +146,14 @@ export class TemplateRenderer {
     return { opacity, x, y, scale, blur, typewriterProgress };
   }
 
-  drawFrame(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, time: number, fitToContent = false): void {
+  drawFrame(
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    time: number,
+    fitToContentOrOpts: boolean | { fitToContent?: boolean; skipClear?: boolean } = false
+  ): void {
+    const fitToContent = typeof fitToContentOrOpts === "boolean" ? fitToContentOrOpts : !!fitToContentOrOpts?.fitToContent;
+    const skipClear = typeof fitToContentOrOpts === "object" ? !!fitToContentOrOpts?.skipClear : false;
+
     this.currentTime = time; // Track current time for keyframe evaluation
 
     if (fitToContent) {
@@ -158,7 +165,9 @@ export class TemplateRenderer {
 
       const bounds = this.getContentBounds();
       if (bounds && bounds.width > 0 && bounds.height > 0) {
-        ctx.clearRect(0, 0, this.template.canvasWidth, this.template.canvasHeight);
+        if (!skipClear) {
+          ctx.clearRect(0, 0, this.template.canvasWidth, this.template.canvasHeight);
+        }
         ctx.save();
 
         const padding = 0.85; // 15% margin
@@ -185,7 +194,9 @@ export class TemplateRenderer {
     }
 
     // Default normal draw
-    ctx.clearRect(0, 0, this.template.canvasWidth, this.template.canvasHeight);
+    if (!skipClear) {
+      ctx.clearRect(0, 0, this.template.canvasWidth, this.template.canvasHeight);
+    }
     this.drawLayers(ctx, time);
   }
 
