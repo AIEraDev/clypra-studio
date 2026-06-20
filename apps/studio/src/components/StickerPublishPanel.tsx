@@ -19,7 +19,7 @@ interface FormData {
 }
 
 // Helper to extract a representative frame (thumbnail) from Lottie JSON data
-const extractLottieThumbnail = (lottieJson: any): Promise<string> => {
+const extractLottieThumbnail = (lottieJson: any, targetFrame?: number): Promise<{ dataUrl: string; totalFrames: number }> => {
   return new Promise((resolve, reject) => {
     try {
       const container = document.createElement("div");
@@ -40,9 +40,11 @@ const extractLottieThumbnail = (lottieJson: any): Promise<string> => {
 
       anim.addEventListener("DOMLoaded", () => {
         const totalFrames = anim.totalFrames;
-        // Grab frame at 10% progress to avoid a blank/empty initial frame
-        const targetFrame = Math.min(Math.max(0, Math.floor(totalFrames * 0.1)), totalFrames - 1);
-        anim.goToAndStop(targetFrame, true);
+        // Grab frame at targetFrame (or 10% progress by default to avoid blank frame)
+        const frameToUse = targetFrame !== undefined
+          ? Math.min(Math.max(0, targetFrame), totalFrames - 1)
+          : Math.min(Math.max(0, Math.floor(totalFrames * 0.1)), totalFrames - 1);
+        anim.goToAndStop(frameToUse, true);
 
         // Give it a tiny moment to complete rendering to canvas
         setTimeout(() => {
@@ -52,7 +54,7 @@ const extractLottieThumbnail = (lottieJson: any): Promise<string> => {
               const dataUrl = canvas.toDataURL("image/png");
               anim.destroy();
               document.body.removeChild(container);
-              resolve(dataUrl);
+              resolve({ dataUrl, totalFrames });
             } else {
               anim.destroy();
               document.body.removeChild(container);
@@ -107,6 +109,11 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
   
   const [lottieData, setLottieData] = useState<any>(null);
   const [extractingThumbnail, setExtractingThumbnail] = useState(false);
+  const [totalFrames, setTotalFrames] = useState(0);
+  const [selectedFrame, setSelectedFrame] = useState(0);
+
+  const lottieInstanceRef = React.useRef<any>(null);
+  const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string>("");
@@ -128,6 +135,15 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
       setIsAdmin(false);
     }
   }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
 
   // Generate ID from name
   const generateId = (name: string, category: string) => {
@@ -166,12 +182,10 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     });
   };
 
-  // Handle Lottie JSON file selection
   const handleLottieSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate type
     if (!file.name.endsWith(".json") && file.type !== "application/json") {
       setError("Please select a JSON file for Lottie animations");
       return;
@@ -182,23 +196,23 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     setSuccess("");
 
     try {
-      // Read JSON content
       const text = await file.text();
       const json = JSON.parse(text);
       
-      // Save for live preview and upload
       setLottieData(json);
       setAnimatedFile(file);
       
       const fileDataUrl = await fileToDataUrl(file);
       setAnimatedPreview(fileDataUrl);
 
-      // Extract thumbnail client-side
-      const thumbDataUrl = await extractLottieThumbnail(json);
-      setImagePreview(thumbDataUrl);
+      const { dataUrl, totalFrames: extractedTotal } = await extractLottieThumbnail(json);
+      setTotalFrames(extractedTotal);
       
-      // Create a File object from the thumbnail
-      const thumbFile = dataURLtoFile(thumbDataUrl, `${file.name.replace(".json", "")}-thumb.png`);
+      const defaultFrame = Math.min(Math.max(0, Math.floor(extractedTotal * 0.1)), extractedTotal - 1);
+      setSelectedFrame(defaultFrame);
+      setImagePreview(dataUrl);
+      
+      const thumbFile = dataURLtoFile(dataUrl, `${file.name.replace(".json", "")}-thumb.png`);
       setImageFile(thumbFile);
     } catch (err: any) {
       setError(`Failed to process Lottie file: ${err.message}`);
@@ -207,12 +221,43 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
       setLottieData(null);
       setImageFile(null);
       setImagePreview("");
+      setTotalFrames(0);
+      setSelectedFrame(0);
     } finally {
       setExtractingThumbnail(false);
     }
   };
 
-  // AI-powered metadata generation
+  const handleFrameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const frame = parseInt(e.target.value, 10);
+    setSelectedFrame(frame);
+
+    const lottieInstance = lottieInstanceRef.current;
+    if (lottieInstance) {
+      lottieInstance.goToAndStop(frame, true);
+    }
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(async () => {
+      if (!lottieData) return;
+      try {
+        setExtractingThumbnail(true);
+        const { dataUrl } = await extractLottieThumbnail(lottieData, frame);
+        setImagePreview(dataUrl);
+
+        const thumbFile = dataURLtoFile(dataUrl, `${animatedFile?.name.replace(".json", "")}-thumb.png`);
+        setImageFile(thumbFile);
+      } catch (err: any) {
+        setError(`Failed to extract frame: ${err.message}`);
+      } finally {
+        setExtractingThumbnail(false);
+      }
+    }, 150);
+  };
+
   const handleGenerateMetadata = async () => {
     if (!imagePreview) {
       setError("Please select a Lottie JSON file first");
@@ -236,7 +281,6 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
 
       const result = await response.json();
 
-      // Apply AI-generated metadata
       setFormData((prev) => ({
         ...prev,
         name: result.name || prev.name,
@@ -254,7 +298,6 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     }
   };
 
-  // Validate form
   const validateForm = (): string | null => {
     if (!formData.name.trim()) return "Sticker name is required";
     if (!formData.id.trim()) return "Sticker ID is required";
@@ -263,12 +306,10 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     return null;
   };
 
-  // Handle publish
   const handlePublish = async () => {
     setError("");
     setSuccess("");
 
-    // Validate
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
@@ -278,7 +319,6 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     setPublishing(true);
 
     try {
-      // Convert files to data URLs
       const imageDataUrl = await fileToDataUrl(imageFile!);
       const animatedDataUrl = await fileToDataUrl(animatedFile!);
 
@@ -287,7 +327,6 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
         .map((tag) => tag.trim())
         .filter(Boolean);
 
-      // Construct request body expected by clypra-api upload endpoint
       const body = {
         sticker: {
           id: formData.id,
@@ -318,7 +357,6 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
 
       setSuccess(result.message || "✅ Sticker uploaded to R2 successfully!");
 
-      // Reset form
       setFormData({
         id: "",
         name: "",
@@ -332,6 +370,8 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
       setImagePreview("");
       setAnimatedPreview("");
       setLottieData(null);
+      setTotalFrames(0);
+      setSelectedFrame(0);
     } catch (err: any) {
       setError(`Failed to publish: ${err.message}`);
     } finally {
@@ -448,32 +488,73 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
                   <span className="text-xs text-gray-400">Extracting thumbnail...</span>
                 </div>
               )}
-
               {/* Previews side by side */}
               {(lottieData || imagePreview) && (
-                <div className="grid grid-cols-2 gap-4 mt-2">
-                  {/* Live Preview */}
-                  {lottieData && (
-                    <div className="flex flex-col items-center p-3 rounded-lg border border-[#2A2A38] bg-[#09090D]">
-                      <span className="text-[10px] font-mono text-gray-400 mb-2">Live Animation Preview</span>
-                      <div className="w-32 h-32 flex items-center justify-center">
-                        <Player
-                          autoplay
-                          loop
-                          src={lottieData}
-                          style={{ height: "100%", width: "100%" }}
-                        />
+                <div className="flex flex-col gap-4 mt-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Live Preview */}
+                    {lottieData && (
+                      <div className="flex flex-col items-center p-3 rounded-lg border border-[#2A2A38] bg-[#09090D]">
+                        <span className="text-[10px] font-mono text-gray-400 mb-2">Live Animation Preview</span>
+                        <div className="w-32 h-32 flex items-center justify-center">
+                          <Player
+                            lottieRef={(instance) => {
+                              lottieInstanceRef.current = instance;
+                            }}
+                            autoplay
+                            loop
+                            src={lottieData}
+                            style={{ height: "100%", width: "100%" }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const lottieInstance = lottieInstanceRef.current;
+                            if (lottieInstance) {
+                              if (lottieInstance.isPaused) {
+                                lottieInstance.play();
+                              } else {
+                                lottieInstance.pause();
+                              }
+                            }
+                          }}
+                          className="mt-2 px-2 py-1 bg-[#1A1A24] hover:bg-[#2A2A38] rounded-md text-[10px] font-semibold text-gray-300 transition-colors cursor-pointer"
+                        >
+                          Play / Pause
+                        </button>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Thumbnail Preview */}
-                  {imagePreview && (
-                    <div className="flex flex-col items-center p-3 rounded-lg border border-[#2A2A38] bg-[#09090D]">
-                      <span className="text-[10px] font-mono text-gray-400 mb-2">Extracted Thumbnail</span>
-                      <div className="w-32 h-32 rounded-lg overflow-hidden border border-[#2A2A38] shrink-0 bg-[#06060A] flex items-center justify-center">
-                        <img src={imagePreview} alt="Extracted Thumbnail" className="w-full h-full object-contain" />
+                    {/* Thumbnail Preview */}
+                    {imagePreview && (
+                      <div className="flex flex-col items-center p-3 rounded-lg border border-[#2A2A38] bg-[#09090D]">
+                        <span className="text-[10px] font-mono text-gray-400 mb-2">Extracted Thumbnail</span>
+                        <div className="w-32 h-32 rounded-lg overflow-hidden border border-[#2A2A38] shrink-0 bg-[#06060A] flex items-center justify-center">
+                          <img src={imagePreview} alt="Extracted Thumbnail" className="w-full h-full object-contain" />
+                        </div>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Frame Adjustment Slider */}
+                  {totalFrames > 0 && (
+                    <div className="p-3 bg-[#09090D] border border-[#2A2A38] rounded-lg space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-semibold text-gray-300">Thumbnail Frame</span>
+                        <span className="font-mono text-[#B9B2FF] bg-[#7C6FFF]/10 px-2 py-0.5 rounded">
+                          Frame {selectedFrame} / {totalFrames - 1}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={totalFrames - 1}
+                        value={selectedFrame}
+                        onChange={handleFrameChange}
+                        className="w-full h-1 bg-[#2A2A38] rounded-lg appearance-none cursor-pointer accent-[#7C6FFF]"
+                      />
+                      <p className="text-[10px] text-gray-500">Drag to select a different frame as the static thumbnail.</p>
                     </div>
                   )}
                 </div>
