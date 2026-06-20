@@ -715,7 +715,19 @@ export function FilterWorkspace() {
         thumbCanvas.height = canvas.height;
         const thumbCtx = thumbCanvas.getContext("2d");
         if (thumbCtx) {
-          thumbCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+          const source = isVideo ? videoRef.current : imageRef.current;
+          if (source) {
+            thumbCtx.filter = "none";
+            thumbCtx.drawImage(source as any, 0, 0, thumbCanvas.width, thumbCanvas.height);
+            thumbCtx.filter = combinedFilterString;
+            thumbCtx.drawImage(source as any, 0, 0, thumbCanvas.width, thumbCanvas.height);
+            applyColorOverlays(thumbCtx, thumbCanvas.width, thumbCanvas.height, manualAdjustments);
+            if (manualAdjustments.vignette > 0) {
+              applyVignette(thumbCtx, thumbCanvas.width, thumbCanvas.height, manualAdjustments.vignette);
+            }
+          } else {
+            thumbCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+          }
           thumbnailDataUrl = thumbCanvas.toDataURL("image/png");
         }
       } catch (e) {
