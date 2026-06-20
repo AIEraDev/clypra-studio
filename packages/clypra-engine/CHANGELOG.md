@@ -1,3 +1,20 @@
+# [1.24.0](https://github.com/AIEraDev/clypra-studio/compare/v1.23.0...v1.24.0) (2026-06-20)
+
+
+### Bug Fixes
+
+* generate filter preview thumbnail with full filtering applied (no split comparison) ([0f93bb8](https://github.com/AIEraDev/clypra-studio/commit/0f93bb861b3d4918bb25ba0042049b013d805db0))
+
+
+### Features
+
+* implement global admin-only asset publishing and filter thumbnails fallback uploads ([e3ffe32](https://github.com/AIEraDev/clypra-studio/commit/e3ffe329de69cf1218ce7de345493c558f6547f2))
+* implement R2 publishing for filters and fix workspace height overflow layout bugs ([99d20aa](https://github.com/AIEraDev/clypra-studio/commit/99d20aafbc93f6fbb553f37c4523dfc944cc7620))
+* increase captured preview frame resolution to 1080p for ultra high quality previews ([4e877c2](https://github.com/AIEraDev/clypra-studio/commit/4e877c20564c0ea4294f47402b02cb1b78b6f172))
+* split filter R2 index and asset JSON files and support creator attribution inputs ([39190fc](https://github.com/AIEraDev/clypra-studio/commit/39190fcd24d07d09d50f8daf2cbb600fa729d90f))
+* **studio:** add frame adjustment slider to select lottie sticker thumbnail ([bc33558](https://github.com/AIEraDev/clypra-studio/commit/bc335588be5d3bd57f272e3d66d21dce69a26bb2))
+* **studio:** enhance sticker upload with lottie preview and thumbnail extraction ([146a16e](https://github.com/AIEraDev/clypra-studio/commit/146a16e0c775e9b08e37f4b7e586370756924ec5))
+
 # [1.23.0](https://github.com/AIEraDev/clypra-studio/compare/v1.22.0...v1.23.0) (2026-06-20)
 
 
