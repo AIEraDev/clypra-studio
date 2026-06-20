@@ -36,6 +36,22 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
   const [generatingMetadata, setGeneratingMetadata] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [publishApproved, setPublishApproved] = useState(true);
+
+  React.useEffect(() => {
+    const token = localStorage.getItem("clypra_auth_token");
+    if (!token) {
+      setIsAdmin(false);
+      return;
+    }
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setIsAdmin(!!payload.isAdmin);
+    } catch (e) {
+      setIsAdmin(false);
+    }
+  }, []);
 
   // Generate ID from name
   const generateId = (name: string, category: string) => {
@@ -246,6 +262,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
             status: "approved",
             reviewedAt: new Date().toISOString(),
           },
+          published: isAdmin ? publishApproved : false,
         },
         imageFile: {
           name: imageFile!.name,
@@ -370,11 +387,27 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
 
           {/* Premium Toggle */}
           <div className="flex items-center gap-2.5">
-            <input type="checkbox" id="premium" checked={formData.isPremium} onChange={(e) => setFormData({ ...formData, isPremium: e.checked })} className="w-4 h-4 rounded border-[#2A2A38] bg-[#09090D] text-[#7C6FFF] focus:ring-1 focus:ring-[#7C6FFF]" />
+            <input type="checkbox" id="premium" checked={formData.isPremium} onChange={(e) => setFormData({ ...formData, isPremium: e.target.checked })} className="w-4 h-4 rounded border-[#2A2A38] bg-[#09090D] text-[#7C6FFF] focus:ring-1 focus:ring-[#7C6FFF]" />
             <label htmlFor="premium" className="text-xs text-gray-300 cursor-pointer">
               Premium Sticker (shows sparkle badge)
             </label>
           </div>
+
+          {/* Admin Moderation - Published toggle */}
+          {isAdmin && (
+            <div className="flex items-center gap-2.5 p-3 rounded-lg border border-[#2A2A38] bg-[#0E0E12] select-none">
+              <input
+                id="sticker-publish-checkbox"
+                type="checkbox"
+                checked={publishApproved}
+                onChange={(e) => setPublishApproved(e.target.checked)}
+                className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-teal-500 focus:ring-teal-500 cursor-pointer"
+              />
+              <label htmlFor="sticker-publish-checkbox" className="text-xs font-semibold text-white cursor-pointer">
+                Approve and Publish immediately
+              </label>
+            </div>
+          )}
         </section>
 
         {/* Column 2: Media Files and Previews */}

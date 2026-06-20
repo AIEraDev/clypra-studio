@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle, Loader2, Music, Zap, FileAudio, Image as ImageIcon, Sparkles } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
@@ -75,6 +75,22 @@ export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" |
   const [message, setMessage] = useState<string | null>(null);
   const [aiStatus, setAiStatus] = useState<"idle" | "generating" | "failed">("idle");
   const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [publishApproved, setPublishApproved] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("clypra_auth_token");
+    if (!token) {
+      setIsAdmin(false);
+      return;
+    }
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setIsAdmin(!!payload.isAdmin);
+    } catch (e) {
+      setIsAdmin(false);
+    }
+  }, []);
 
   const tags = useMemo(
     () =>
@@ -202,6 +218,7 @@ export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" |
             reviewedAt: new Date().toISOString(),
             notes: safetyNotes.trim() || undefined,
           },
+          published: isAdmin ? publishApproved : false,
           fileName: audioFile.name,
         },
         audioFileDataUrl: audioDataUrl,
@@ -398,6 +415,21 @@ export function AudioPublishPanel({ variant = "drawer" }: { variant?: "drawer" |
               <textarea value={safetyNotes} onChange={(event) => setSafetyNotes(event.target.value)} placeholder="Copyright confirmation, review notes, source verification..." rows={4} className={`${FIELD_INPUT_CLASS} resize-none`} />
             </Field>
           </section>
+
+          {/* Admin Moderation - Published toggle */}
+          {isAdmin && (
+            <section className="rounded-xl border border-[#2A2A38] bg-[#101018] p-4">
+              <label className="flex items-center gap-2 text-xs text-white select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={publishApproved}
+                  onChange={(e) => setPublishApproved(e.target.checked)}
+                  className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-teal-500 focus:ring-teal-500 cursor-pointer"
+                />
+                <span>Approve & Publish immediately</span>
+              </label>
+            </section>
+          )}
 
           {/* Validation Message */}
           {validationMessage && (

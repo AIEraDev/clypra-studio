@@ -39,6 +39,24 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
   const [description, setDescription] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [publishApproved, setPublishApproved] = useState(true);
+
+  React.useEffect(() => {
+    if (open) {
+      const token = localStorage.getItem("clypra_auth_token");
+      if (!token) {
+        setIsAdmin(false);
+        return;
+      }
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setIsAdmin(!!payload.isAdmin);
+      } catch (e) {
+        setIsAdmin(false);
+      }
+    }
+  }, [open]);
 
   const { uploadTextEffect, status, message, reset } = useTextEffectR2Upload();
 
@@ -152,6 +170,7 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
           category,
           description,
           tags,
+          published: isAdmin ? publishApproved : false,
           ...enhancedConfig, // Include enhanced config with explicit strength/spread
         },
         thumbnailDataUrl,
@@ -323,6 +342,22 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
                 </select>
                 <p className="mt-1.5 text-[10px] text-clypra-muted">Primary visual style category</p>
               </div>
+
+              {/* Admin Moderation - Published toggle */}
+              {isAdmin && (
+                <div className="flex items-center gap-2 p-3 rounded-lg border border-[#2A2A38] bg-[#0E0E12] select-none">
+                  <input
+                    id="effect-publish-checkbox"
+                    type="checkbox"
+                    checked={publishApproved}
+                    onChange={(e) => setPublishApproved(e.target.checked)}
+                    className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-teal-500 focus:ring-teal-500 cursor-pointer"
+                  />
+                  <label htmlFor="effect-publish-checkbox" className="text-xs font-semibold text-white cursor-pointer">
+                    Approve and Publish immediately (Make available in editor)
+                  </label>
+                </div>
+              )}
 
               {/* Thumbnail Preview */}
               {thumbnailDataUrl && (

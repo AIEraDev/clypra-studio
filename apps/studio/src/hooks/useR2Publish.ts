@@ -24,6 +24,7 @@ interface EffectPublishPayload {
     category: string;
     description?: string;
     tags?: string[];
+    published?: boolean;
     [key: string]: unknown;
   };
   thumbnailDataUrl: string;
@@ -38,6 +39,7 @@ interface TemplatePublishPayload {
     category: string;
     description?: string;
     tags?: string[];
+    published?: boolean;
     [key: string]: unknown;
   };
   lottieData: unknown;
@@ -123,6 +125,7 @@ export function useR2Publish() {
       tags: definition.tags || [],
       description: definition.description || "",
       thumbnail: getPublicUrl(config.bucketName, thumbnailKey),
+      published: definition.published,
     };
 
     await uploadR2Json(config, categoryIndexKey, upsertById(categoryIndex, summary as any));
@@ -260,6 +263,7 @@ export function useR2Publish() {
       audioUrl: definition.audioUrl,
       coverArtUrl: definition.coverArtUrl,
       safety: definition.safety,
+      published: definition.published,
     };
 
     await uploadR2Json(config, categoryIndexKey, upsertById(categoryIndex, summary as any));
@@ -325,6 +329,7 @@ export function useR2Publish() {
         status: "approved",
         reviewedAt: new Date().toISOString(),
       },
+      published: payload.metadata.published,
     };
 
     // Upload files
@@ -395,6 +400,7 @@ export function useR2Publish() {
         status: "approved",
         reviewedAt: new Date().toISOString(),
       },
+      published: payload.metadata.published,
     };
 
     // Upload files
@@ -456,6 +462,7 @@ export function useR2Publish() {
           }
         : {}),
       tags: payload.metadata.tags || [],
+      published: payload.metadata.published,
     };
 
     // Upload files
@@ -521,6 +528,7 @@ export function useR2Publish() {
             }
           : {}),
         tags: preset.metadata.tags || [],
+        published: preset.metadata.published,
       };
 
       // Upload files
@@ -573,6 +581,7 @@ export function useR2Publish() {
         step: 1,
       },
       creator: payload.definition.creator,
+      published: payload.definition.published,
     };
 
     const files = [definitionKey, categoryIndexKey, globalIndexKey];

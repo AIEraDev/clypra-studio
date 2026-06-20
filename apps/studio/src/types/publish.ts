@@ -33,6 +33,7 @@ export interface AudioPublishPayload {
       reviewedAt: string;
       notes?: string;
     };
+    published?: boolean;
   };
 }
 
@@ -60,6 +61,7 @@ export interface StickerPublishPayload {
       reviewedAt: string;
       notes?: string;
     };
+    published?: boolean;
   };
 }
 
@@ -95,6 +97,7 @@ export interface OverlayPublishPayload {
     fps: number;
     loopable: boolean;
     blendMode?: "normal" | "screen" | "multiply" | "overlay" | "add" | "soft-light" | "hard-light" | "color-dodge" | "color-burn" | "lighten" | "darken" | "difference";
+    published?: boolean;
   };
 }
 
@@ -125,6 +128,7 @@ export interface VideoEffectPresetPublishPayload {
       minConfidence?: number;
     };
     previewUrl?: string;
+    published?: boolean;
   };
 }
 
@@ -155,6 +159,7 @@ export interface FilterPublishPayload {
       name: string;
       socialLink?: string;
     };
+    published?: boolean;
   };
   thumbnailDataUrl?: string;
 }

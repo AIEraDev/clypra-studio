@@ -230,6 +230,23 @@ export function FilterWorkspace() {
   const [creatorName, setCreatorName] = useState("");
   const [creatorSocialLink, setCreatorSocialLink] = useState("");
   const [showThumbnailLightbox, setShowThumbnailLightbox] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [publishApproved, setPublishApproved] = useState(true);
+
+  // Parse JWT token to check if user is admin
+  useEffect(() => {
+    const token = localStorage.getItem("clypra_auth_token");
+    if (!token) {
+      setIsAdmin(false);
+      return;
+    }
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setIsAdmin(!!payload.isAdmin);
+    } catch (e) {
+      setIsAdmin(false);
+    }
+  }, []);
 
   // Debounced effect to capture raw preview frame when scrubbing or paused
   useEffect(() => {
@@ -688,8 +705,24 @@ export function FilterWorkspace() {
     setUploadStatus("uploading");
     setUploadMessage("");
 
-    // Check if R2 direct publishing configuration is present
-    const r2Config = getR2Config();
+    // Always generate a thumbnail from the canvas if it exists
+    let thumbnailDataUrl: string | undefined;
+    const canvas = canvasRef.current;
+    if (canvas) {
+      try {
+        const thumbCanvas = document.createElement("canvas");
+        thumbCanvas.width = canvas.width;
+        thumbCanvas.height = canvas.height;
+        const thumbCtx = thumbCanvas.getContext("2d");
+        if (thumbCtx) {
+          thumbCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+          thumbnailDataUrl = thumbCanvas.toDataURL("image/png");
+        }
+      } catch (e) {
+        console.error("Failed to generate preview thumbnail:", e);
+      }
+    }
+
     const creatorInfo = creatorName.trim()
       ? {
           name: creatorName.trim(),
@@ -697,22 +730,11 @@ export function FilterWorkspace() {
         }
       : undefined;
 
+    // Check if R2 direct publishing configuration is present
+    const r2Config = getR2Config();
+
     if (r2Config) {
       try {
-        let thumbnailDataUrl: string | undefined;
-        // Generate a thumbnail from the canvas if it exists
-        const canvas = canvasRef.current;
-        if (canvas) {
-          const thumbCanvas = document.createElement("canvas");
-          thumbCanvas.width = canvas.width;
-          thumbCanvas.height = canvas.height;
-          const thumbCtx = thumbCanvas.getContext("2d");
-          if (thumbCtx) {
-            thumbCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
-            thumbnailDataUrl = thumbCanvas.toDataURL("image/png");
-          }
-        }
-
         const result = await publishFilter({
           id: selectedFilter.id,
           category: selectedFilter.category,
@@ -724,6 +746,7 @@ export function FilterWorkspace() {
             intensity: "Medium",
             swatch: selectedFilter.cssFilter,
             creator: creatorInfo,
+            published: isAdmin ? publishApproved : false,
           },
           thumbnailDataUrl,
         });
@@ -751,7 +774,9 @@ export function FilterWorkspace() {
             intensity: "Medium",
             swatch: selectedFilter.cssFilter,
             creator: creatorInfo,
+            published: isAdmin ? publishApproved : false,
           },
+          thumbnailDataUrl,
         }),
       });
 
@@ -1473,6 +1498,20 @@ export function FilterWorkspace() {
                     className="w-full px-2.5 py-1.5 bg-[#0A0A0E] border border-[#1A1A24] focus:border-[#7C6FFF] rounded-md text-[11px] text-white placeholder-[#5B5B6E] outline-none transition-all"
                   />
                 </div>
+                {isAdmin && (
+                  <div className="flex items-center gap-2 pt-1.5 select-none">
+                    <input
+                      id="filter-publish-checkbox"
+                      type="checkbox"
+                      checked={publishApproved}
+                      onChange={(e) => setPublishApproved(e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-[#1A1A24] bg-[#0A0A0E] text-[#10B981] focus:ring-[#10B981] cursor-pointer"
+                    />
+                    <label htmlFor="filter-publish-checkbox" className="text-[10px] font-semibold text-white cursor-pointer">
+                      Approve & Publish immediately
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
 

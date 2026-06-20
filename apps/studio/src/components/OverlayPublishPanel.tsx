@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle, Loader2, Video, Sparkles, UploadCloud } from "lucide-react";
 import type { OverlayPublishPayload } from "../types/publish";
 
@@ -112,6 +112,22 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
   const [status, setStatus] = useState<"idle" | "publishing" | "published" | "failed">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [prUrl, setPrUrl] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [publishApproved, setPublishApproved] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("clypra_auth_token");
+    if (!token) {
+      setIsAdmin(false);
+      return;
+    }
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setIsAdmin(!!payload.isAdmin);
+    } catch (e) {
+      setIsAdmin(false);
+    }
+  }, []);
 
   const tags = useMemo(
     () =>
@@ -231,6 +247,7 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
           fps: 30,
           loopable,
           blendMode,
+          published: isAdmin ? publishApproved : false,
         },
       };
 
@@ -395,6 +412,22 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
             <label className="block text-xs font-semibold text-gray-300 mb-1.5">Review Notes / Copyright Confirmation</label>
             <textarea value={safetyNotes} onChange={(event) => setSafetyNotes(event.target.value)} placeholder="Review notes, copyright confirmation, source notes" rows={3} className="w-full resize-none rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
           </div>
+
+          {/* Admin Moderation - Published toggle */}
+          {isAdmin && (
+            <div className="flex items-center gap-2 p-2.5 rounded border border-[#2A2A38] bg-[#0E0E12] select-none">
+              <input
+                id="overlay-publish-checkbox"
+                type="checkbox"
+                checked={publishApproved}
+                onChange={(e) => setPublishApproved(e.target.checked)}
+                className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-violet-500 focus:ring-violet-500 cursor-pointer"
+              />
+              <label htmlFor="overlay-publish-checkbox" className="text-xs font-semibold text-white cursor-pointer">
+                Approve & Publish immediately
+              </label>
+            </div>
+          )}
 
           {validationMessage && (
             <div className="flex items-start gap-2 rounded border border-amber-500/20 bg-amber-500/10 p-2.5 text-[10px] text-amber-200">
