@@ -90,86 +90,104 @@ const dataURLtoFile = (dataurl: string, filename: string): File => {
   return new File([u8arr], filename, { type: mime });
 };
 
-// Generate .webm preview video from Lottie JSON (same as TemplateWorkspace)
+// Generate .webm preview video from Lottie JSON using lottie-web canvas rendering
 const generatePreviewVideo = async (lottieJson: any): Promise<string> => {
   return new Promise((resolve, reject) => {
     try {
-      const renderer = new TemplateRenderer(lottieJson);
-      const fps = lottieJson.fps || 30;
-      const duration = lottieJson.duration || 4;
-      const totalFrames = Math.ceil(duration * fps);
+      const fps = lottieJson.fr || 30;
+      const totalFrames = Math.ceil(lottieJson.op - lottieJson.ip) || 90;
+      const width = lottieJson.w || 512;
+      const height = lottieJson.h || 512;
 
-      // Create canvas
-      const canvas = document.createElement("canvas");
-      canvas.width = lottieJson.canvasWidth || lottieJson.width || 800;
-      canvas.height = lottieJson.canvasHeight || lottieJson.height || 600;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        reject(new Error("Failed to get canvas context"));
-        return;
-      }
+      // Create container for lottie animation
+      const container = document.createElement("div");
+      container.style.width = `${width}px`;
+      container.style.height = `${height}px`;
+      container.style.position = "absolute";
+      container.style.top = "-9999px";
+      container.style.left = "-9999px";
+      document.body.appendChild(container);
 
-      // Check requestFrame support
-      const tempStream = canvas.captureStream(0);
-      const tempTrack = tempStream.getVideoTracks()[0] as any;
-      const hasRequestFrame = tempTrack && typeof tempTrack.requestFrame === "function";
-      tempStream.getTracks().forEach((t) => t.stop());
-
-      // Create MediaRecorder stream
-      const stream = canvas.captureStream(hasRequestFrame ? 0 : fps);
-      const videoTrack = stream.getVideoTracks()[0] as any;
-      const chunks: Blob[] = [];
-
-      const mimeType = getSupportedWebMMimeType() || "video/webm";
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType,
-        videoBitsPerSecond: 2500000, // 2.5 Mbps
+      const anim = lottie.loadAnimation({
+        container: container,
+        renderer: "canvas",
+        loop: false,
+        autoplay: false,
+        animationData: lottieJson,
       });
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const baseMime = mimeType.split(";")[0] ?? "video/webm";
-        const blob = new Blob(chunks, { type: baseMime });
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve(reader.result as string);
-        };
-        reader.readAsDataURL(blob);
-      };
-
-      mediaRecorder.start();
-
-      let currentFrame = 0;
-      const startTime = performance.now();
-
-      const tick = () => {
-        if (currentFrame >= totalFrames) {
-          mediaRecorder.stop();
-          stream.getTracks().forEach((t) => t.stop());
+      anim.addEventListener("DOMLoaded", () => {
+        const canvas = container.querySelector("canvas");
+        if (!canvas) {
+          anim.destroy();
+          document.body.removeChild(container);
+          reject(new Error("Canvas element not found in Lottie container"));
           return;
         }
 
-        const now = performance.now();
-        const expectedTime = startTime + (currentFrame * 1000) / fps;
+        // Check requestFrame support
+        const tempStream = canvas.captureStream(0);
+        const tempTrack = tempStream.getVideoTracks()[0] as any;
+        const hasRequestFrame = tempTrack && typeof tempTrack.requestFrame === "function";
+        tempStream.getTracks().forEach((t) => t.stop());
 
-        if (now >= expectedTime) {
-          const currentTime = currentFrame / fps;
-          renderer.drawFrame(ctx, currentTime, false);
+        // Create MediaRecorder stream from the canvas
+        const stream = canvas.captureStream(hasRequestFrame ? 0 : fps);
+        const videoTrack = stream.getVideoTracks()[0] as any;
+        const chunks: Blob[] = [];
 
-          if (hasRequestFrame && videoTrack) {
-            videoTrack.requestFrame();
+        const mimeType = getSupportedWebMMimeType() || "video/webm";
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType,
+          videoBitsPerSecond: 2500000, // 2.5 Mbps
+        });
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const baseMime = mimeType.split(";")[0] ?? "video/webm";
+          const blob = new Blob(chunks, { type: baseMime });
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            anim.destroy();
+            document.body.removeChild(container);
+            resolve(reader.result as string);
+          };
+          reader.readAsDataURL(blob);
+        };
+
+        mediaRecorder.start();
+
+        let currentFrame = 0;
+        
+        const tick = () => {
+          if (currentFrame >= totalFrames) {
+            mediaRecorder.stop();
+            stream.getTracks().forEach((t) => t.stop());
+            return;
           }
 
-          currentFrame++;
-        }
+          anim.goToAndStop(currentFrame, true);
+
+          // Give a tiny delay for canvas rendering to update before capture
+          setTimeout(() => {
+            if (hasRequestFrame && videoTrack) {
+              videoTrack.requestFrame();
+            }
+            currentFrame++;
+            requestAnimationFrame(tick);
+          }, 1000 / fps);
+        };
 
         requestAnimationFrame(tick);
-      };
+      });
 
-      requestAnimationFrame(tick);
+      anim.addEventListener("data_failed", () => {
+        document.body.removeChild(container);
+        reject(new Error("Lottie animation data failed to load"));
+      });
     } catch (err) {
       reject(err);
     }
