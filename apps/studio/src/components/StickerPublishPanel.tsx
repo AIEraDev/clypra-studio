@@ -215,6 +215,8 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
   const [selectedFrame, setSelectedFrame] = useState(0);
   const [previewVideoDataUrl, setPreviewVideoDataUrl] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [customPreviewFile, setCustomPreviewFile] = useState<File | null>(null);
+  const [autoGeneratePreview, setAutoGeneratePreview] = useState(true);
 
   const lottieInstanceRef = React.useRef<any>(null);
   const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -285,6 +287,49 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     });
   };
 
+  const handleGifSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith(".gif") && file.type !== "image/gif") {
+      setError("Please select a .gif file");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setCustomPreviewFile(file);
+
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setPreviewVideoDataUrl(dataUrl);
+    } catch (err: any) {
+      setError(`Failed to process GIF file: ${err.message}`);
+      setCustomPreviewFile(null);
+      setPreviewVideoDataUrl(null);
+    }
+  };
+
+  React.useEffect(() => {
+    if (autoGeneratePreview && lottieData && !previewVideoDataUrl) {
+      setIsGeneratingPreview(true);
+      generatePreviewVideo(lottieData)
+        .then((videoDataUrl) => {
+          setPreviewVideoDataUrl(videoDataUrl);
+        })
+        .catch((err) => {
+          setError(`Failed to auto-generate preview video: ${err.message}`);
+        })
+        .finally(() => {
+          setIsGeneratingPreview(false);
+        });
+    } else if (!autoGeneratePreview) {
+      if (!customPreviewFile) {
+        setPreviewVideoDataUrl(null);
+      }
+    }
+  }, [autoGeneratePreview, lottieData]);
+
   const handleLottieSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -295,7 +340,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     }
 
     setExtractingThumbnail(true);
-    setIsGeneratingPreview(true);
+    setIsGeneratingPreview(autoGeneratePreview);
     setError("");
     setSuccess("");
 
@@ -320,8 +365,10 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
       setImageFile(thumbFile);
 
       // Generate .webm preview video
-      const videoDataUrl = await generatePreviewVideo(json);
-      setPreviewVideoDataUrl(videoDataUrl);
+      if (autoGeneratePreview) {
+        const videoDataUrl = await generatePreviewVideo(json);
+        setPreviewVideoDataUrl(videoDataUrl);
+      }
     } catch (err: any) {
       setError(`Failed to process Lottie file: ${err.message}`);
       setAnimatedFile(null);
@@ -482,6 +529,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
       setTotalFrames(0);
       setSelectedFrame(0);
       setPreviewVideoDataUrl(null);
+      setCustomPreviewFile(null);
     } catch (err: any) {
       setError(`Failed to publish: ${err.message}`);
     } finally {
@@ -586,6 +634,39 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
                 <input type="file" accept="application/json" onChange={handleLottieSelect} className="hidden" />
               </label>
 
+              {/* Auto-generate checkbox */}
+              <div className="flex items-center gap-2 select-none py-1">
+                <input
+                  id="auto-generate-preview-checkbox"
+                  type="checkbox"
+                  checked={autoGeneratePreview}
+                  onChange={(e) => setAutoGeneratePreview(e.target.checked)}
+                  className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-[#7C6FFF] focus:ring-[#7C6FFF] cursor-pointer"
+                />
+                <label htmlFor="auto-generate-preview-checkbox" className="text-xs font-semibold text-gray-300 cursor-pointer">
+                  Auto-generate WebM preview video
+                </label>
+              </div>
+
+              {/* Custom GIF upload input */}
+              {!autoGeneratePreview && (
+                <div className="space-y-1.5 mt-1">
+                  <label className="block text-[11px] font-semibold text-gray-400">
+                    Preview GIF (.gif)
+                  </label>
+                  <label className="cursor-pointer block">
+                    <div className="border-2 border-dashed border-[#2A2A38] rounded-lg p-4 hover:border-[#7C6FFF] transition-colors bg-[#09090D]">
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <Upload className="w-6 h-6 text-gray-500 mb-1" />
+                        <p className="text-xs text-gray-300">{customPreviewFile ? customPreviewFile.name : "Click to upload a custom .gif preview"}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Use this to provide a custom .gif preview instead of generating one</p>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/gif" onChange={handleGifSelect} className="hidden" />
+                  </label>
+                </div>
+              )}
+
               {(extractingThumbnail || isGeneratingPreview) && (
                 <div className="flex items-center justify-center gap-2 py-3 bg-[#09090D] rounded-lg border border-[#2A2A38]">
                   <Loader2 className="w-4 h-4 animate-spin text-[#7C6FFF]" />
@@ -593,9 +674,13 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
                 </div>
               )}
               {/* Previews side by side */}
-              {(lottieData || imagePreview) && (
+              {(lottieData || imagePreview || previewVideoDataUrl) && (
                 <div className="flex flex-col gap-4 mt-2">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className={`grid gap-4 ${
+                    (lottieData ? 1 : 0) + (imagePreview ? 1 : 0) + (previewVideoDataUrl ? 1 : 0) >= 3
+                      ? "grid-cols-1 sm:grid-cols-3"
+                      : "grid-cols-2"
+                  }`}>
                     {/* Live Preview */}
                     {lottieData && (
                       <div className="flex flex-col items-center p-3 rounded-lg border border-[#2A2A38] bg-[#09090D]">
@@ -636,6 +721,22 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
                         <span className="text-[10px] font-mono text-gray-400 mb-2">Extracted Thumbnail</span>
                         <div className="w-32 h-32 rounded-lg overflow-hidden border border-[#2A2A38] shrink-0 bg-[#06060A] flex items-center justify-center">
                           <img src={imagePreview} alt="Extracted Thumbnail" className="w-full h-full object-contain" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Preview Asset (WebM Video or GIF) */}
+                    {previewVideoDataUrl && (
+                      <div className="flex flex-col items-center p-3 rounded-lg border border-[#2A2A38] bg-[#09090D]">
+                        <span className="text-[10px] font-mono text-gray-400 mb-2">
+                          {previewVideoDataUrl.startsWith("data:image/") ? "Preview GIF" : "Preview WebM Video"}
+                        </span>
+                        <div className="w-32 h-32 rounded-lg overflow-hidden border border-[#2A2A38] shrink-0 bg-[#06060A] flex items-center justify-center">
+                          {previewVideoDataUrl.startsWith("data:image/") ? (
+                            <img src={previewVideoDataUrl} alt="Preview GIF" className="w-full h-full object-contain" />
+                          ) : (
+                            <video src={previewVideoDataUrl} controls autoPlay loop muted playsInline className="w-full h-full object-contain" />
+                          )}
                         </div>
                       </div>
                     )}
