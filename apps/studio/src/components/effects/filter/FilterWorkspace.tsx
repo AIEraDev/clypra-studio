@@ -229,6 +229,7 @@ export function FilterWorkspace() {
   const [previewFrameUrl, setPreviewFrameUrl] = useState<string | undefined>();
   const [creatorName, setCreatorName] = useState("");
   const [creatorSocialLink, setCreatorSocialLink] = useState("");
+  const [showThumbnailLightbox, setShowThumbnailLightbox] = useState(false);
 
   // Debounced effect to capture raw preview frame when scrubbing or paused
   useEffect(() => {
@@ -245,24 +246,26 @@ export function FilterWorkspace() {
           if (!video || video.readyState < 2) return;
           const tempCanvas = document.createElement("canvas");
           const aspect = video.videoWidth / video.videoHeight;
-          tempCanvas.height = 80;
-          tempCanvas.width = Math.round(80 * (aspect || 16 / 9));
+          const targetHeight = Math.min(video.videoHeight, 1080);
+          tempCanvas.height = targetHeight;
+          tempCanvas.width = Math.round(targetHeight * (aspect || 16 / 9));
           const tempCtx = tempCanvas.getContext("2d");
           if (tempCtx) {
             tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-            setPreviewFrameUrl(tempCanvas.toDataURL("image/jpeg", 0.7));
+            setPreviewFrameUrl(tempCanvas.toDataURL("image/jpeg", 0.9));
           }
         } else {
           const img = imageRef.current;
           if (!img) return;
           const tempCanvas = document.createElement("canvas");
           const aspect = img.width / img.height;
-          tempCanvas.height = 80;
-          tempCanvas.width = Math.round(80 * (aspect || 1));
+          const targetHeight = Math.min(img.height, 1080);
+          tempCanvas.height = targetHeight;
+          tempCanvas.width = Math.round(targetHeight * (aspect || 1));
           const tempCtx = tempCanvas.getContext("2d");
           if (tempCtx) {
             tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
-            setPreviewFrameUrl(tempCanvas.toDataURL("image/jpeg", 0.7));
+            setPreviewFrameUrl(tempCanvas.toDataURL("image/jpeg", 0.9));
           }
         }
       } catch (err) {
@@ -487,12 +490,13 @@ export function FilterWorkspace() {
         try {
           const tempCanvas = document.createElement("canvas");
           const aspect = img.width / img.height;
-          tempCanvas.height = 80;
-          tempCanvas.width = Math.round(80 * (aspect || 1));
+          const targetHeight = Math.min(img.height, 1080);
+          tempCanvas.height = targetHeight;
+          tempCanvas.width = Math.round(targetHeight * (aspect || 1));
           const tempCtx = tempCanvas.getContext("2d");
           if (tempCtx) {
             tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
-            setPreviewFrameUrl(tempCanvas.toDataURL("image/jpeg", 0.7));
+            setPreviewFrameUrl(tempCanvas.toDataURL("image/jpeg", 0.9));
           }
         } catch (err) {
           console.error("Failed to capture initial image preview:", err);
@@ -700,11 +704,11 @@ export function FilterWorkspace() {
         const canvas = canvasRef.current;
         if (canvas) {
           const thumbCanvas = document.createElement("canvas");
-          thumbCanvas.width = 320;
-          thumbCanvas.height = 180;
+          thumbCanvas.width = canvas.width;
+          thumbCanvas.height = canvas.height;
           const thumbCtx = thumbCanvas.getContext("2d");
           if (thumbCtx) {
-            thumbCtx.drawImage(canvas, 0, 0, 320, 180);
+            thumbCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
             thumbnailDataUrl = thumbCanvas.toDataURL("image/png");
           }
         }
@@ -1423,6 +1427,23 @@ export function FilterWorkspace() {
                 <Zap size={11} className="text-teal-400" />
                 Look Deployment
               </span>
+              {previewFrameUrl && (
+                <div
+                  onClick={() => setShowThumbnailLightbox(true)}
+                  className="relative aspect-video w-full rounded border border-[#1A1A24] overflow-hidden bg-black/45 shadow-inner cursor-zoom-in hover:border-[#7C6FFF]/50 transition-colors group"
+                  title="Click to zoom preview"
+                >
+                  <img
+                    src={previewFrameUrl}
+                    alt="Current Thumbnail Frame"
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                    style={{ filter: selectedFilter.cssFilter }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent flex items-end p-1.5 pointer-events-none">
+                    <span className="text-[8px] text-gray-300 uppercase tracking-widest font-mono">Thumbnail Frame</span>
+                  </div>
+                </div>
+              )}
               <div className="p-2 bg-[#0A0A0E] rounded border border-[#1A1A24] space-y-1 text-[10px] leading-normal font-mono">
                 <div className="flex justify-between text-[#8A8A99]">
                   <span className="truncate">NAME:</span> <span className="text-white font-sans font-semibold truncate max-w-[140px]">{selectedFilter.name}</span>
@@ -1473,6 +1494,42 @@ export function FilterWorkspace() {
           </div>
         )}
       </div>
+      {showThumbnailLightbox && previewFrameUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-8 cursor-zoom-out"
+          onClick={() => setShowThumbnailLightbox(false)}
+        >
+          <div
+            className="relative max-w-4xl max-h-full rounded-2xl border border-white/10 overflow-hidden bg-[#0A0A0F] shadow-2xl flex flex-col cursor-default animate-in fade-in zoom-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-[#22222F] flex justify-between items-center bg-[#0F0F15]/80">
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Thumbnail Frame Preview</h4>
+                <p className="text-[9px] text-gray-400 font-mono mt-0.5">
+                  Graded Resolution: {mediaMetadata?.width || "Original"} x {mediaMetadata?.height || "Original"}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowThumbnailLightbox(false)}
+                className="text-gray-400 hover:text-white text-xs bg-[#1E1E2A] hover:bg-[#2A2A3A] px-2 py-1 rounded border border-[#2E2E3E] cursor-pointer transition-colors"
+              >
+                Close
+              </button>
+            </div>
+            {/* Graded Image */}
+            <div className="p-4 flex items-center justify-center bg-[radial-gradient(circle_at_center,#1A1A24_0%,#0A0A0E_100%)] overflow-hidden">
+              <img
+                src={previewFrameUrl}
+                alt="Grades Preview Frame"
+                className="max-w-full max-h-[70vh] rounded-lg object-contain shadow-2xl border border-[#1A1A26]"
+                style={{ filter: selectedFilter?.cssFilter }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
