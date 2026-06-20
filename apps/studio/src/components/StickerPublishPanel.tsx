@@ -3,6 +3,7 @@ import type { StickerCategory } from "../types/publish";
 import { AlertCircle, CheckCircle, Loader2, Upload, Film, Sparkles } from "lucide-react";
 import lottie from "lottie-web";
 import { Player } from "@lottiefiles/react-lottie-player";
+import { TemplateRenderer, getSupportedWebMMimeType } from "@clypra/engine";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 const STICKER_CATEGORIES: StickerCategory[] = ["emoji", "text", "gaming", "sports", "animals", "love", "mood", "food", "travel", "birthday", "frames", "shapes", "fashion", "retro", "illustration"];
@@ -41,9 +42,7 @@ const extractLottieThumbnail = (lottieJson: any, targetFrame?: number): Promise<
       anim.addEventListener("DOMLoaded", () => {
         const totalFrames = anim.totalFrames;
         // Grab frame at targetFrame (or 10% progress by default to avoid blank frame)
-        const frameToUse = targetFrame !== undefined
-          ? Math.min(Math.max(0, targetFrame), totalFrames - 1)
-          : Math.min(Math.max(0, Math.floor(totalFrames * 0.1)), totalFrames - 1);
+        const frameToUse = targetFrame !== undefined ? Math.min(Math.max(0, targetFrame), totalFrames - 1) : Math.min(Math.max(0, Math.floor(totalFrames * 0.1)), totalFrames - 1);
         anim.goToAndStop(frameToUse, true);
 
         // Give it a tiny moment to complete rendering to canvas
@@ -91,6 +90,92 @@ const dataURLtoFile = (dataurl: string, filename: string): File => {
   return new File([u8arr], filename, { type: mime });
 };
 
+// Generate .webm preview video from Lottie JSON (same as TemplateWorkspace)
+const generatePreviewVideo = async (lottieJson: any): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const renderer = new TemplateRenderer(lottieJson);
+      const fps = lottieJson.fps || 30;
+      const duration = lottieJson.duration || 4;
+      const totalFrames = Math.ceil(duration * fps);
+
+      // Create canvas
+      const canvas = document.createElement("canvas");
+      canvas.width = lottieJson.canvasWidth || lottieJson.width || 800;
+      canvas.height = lottieJson.canvasHeight || lottieJson.height || 600;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Failed to get canvas context"));
+        return;
+      }
+
+      // Check requestFrame support
+      const tempStream = canvas.captureStream(0);
+      const tempTrack = tempStream.getVideoTracks()[0] as any;
+      const hasRequestFrame = tempTrack && typeof tempTrack.requestFrame === "function";
+      tempStream.getTracks().forEach((t) => t.stop());
+
+      // Create MediaRecorder stream
+      const stream = canvas.captureStream(hasRequestFrame ? 0 : fps);
+      const videoTrack = stream.getVideoTracks()[0] as any;
+      const chunks: Blob[] = [];
+
+      const mimeType = getSupportedWebMMimeType() || "video/webm";
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType,
+        videoBitsPerSecond: 2500000, // 2.5 Mbps
+      });
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const baseMime = mimeType.split(";")[0] ?? "video/webm";
+        const blob = new Blob(chunks, { type: baseMime });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      };
+
+      mediaRecorder.start();
+
+      let currentFrame = 0;
+      const startTime = performance.now();
+
+      const tick = () => {
+        if (currentFrame >= totalFrames) {
+          mediaRecorder.stop();
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        const now = performance.now();
+        const expectedTime = startTime + (currentFrame * 1000) / fps;
+
+        if (now >= expectedTime) {
+          const currentTime = currentFrame / fps;
+          renderer.drawFrame(ctx, currentTime, false);
+
+          if (hasRequestFrame && videoTrack) {
+            videoTrack.requestFrame();
+          }
+
+          currentFrame++;
+        }
+
+        requestAnimationFrame(tick);
+      };
+
+      requestAnimationFrame(tick);
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
 export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer" | "workspace" }) {
   const isWorkspace = variant === "workspace";
   const [formData, setFormData] = useState<FormData>({
@@ -106,11 +191,13 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
   const [animatedFile, setAnimatedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [animatedPreview, setAnimatedPreview] = useState<string>("");
-  
+
   const [lottieData, setLottieData] = useState<any>(null);
   const [extractingThumbnail, setExtractingThumbnail] = useState(false);
   const [totalFrames, setTotalFrames] = useState(0);
   const [selectedFrame, setSelectedFrame] = useState(0);
+  const [previewVideoDataUrl, setPreviewVideoDataUrl] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
   const lottieInstanceRef = React.useRef<any>(null);
   const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -143,7 +230,6 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
       }
     };
   }, []);
-
 
   // Generate ID from name
   const generateId = (name: string, category: string) => {
@@ -192,28 +278,33 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     }
 
     setExtractingThumbnail(true);
+    setIsGeneratingPreview(true);
     setError("");
     setSuccess("");
 
     try {
       const text = await file.text();
       const json = JSON.parse(text);
-      
+
       setLottieData(json);
       setAnimatedFile(file);
-      
+
       const fileDataUrl = await fileToDataUrl(file);
       setAnimatedPreview(fileDataUrl);
 
       const { dataUrl, totalFrames: extractedTotal } = await extractLottieThumbnail(json);
       setTotalFrames(extractedTotal);
-      
+
       const defaultFrame = Math.min(Math.max(0, Math.floor(extractedTotal * 0.1)), extractedTotal - 1);
       setSelectedFrame(defaultFrame);
       setImagePreview(dataUrl);
-      
+
       const thumbFile = dataURLtoFile(dataUrl, `${file.name.replace(".json", "")}-thumb.png`);
       setImageFile(thumbFile);
+
+      // Generate .webm preview video
+      const videoDataUrl = await generatePreviewVideo(json);
+      setPreviewVideoDataUrl(videoDataUrl);
     } catch (err: any) {
       setError(`Failed to process Lottie file: ${err.message}`);
       setAnimatedFile(null);
@@ -223,8 +314,10 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
       setImagePreview("");
       setTotalFrames(0);
       setSelectedFrame(0);
+      setPreviewVideoDataUrl(null);
     } finally {
       setExtractingThumbnail(false);
+      setIsGeneratingPreview(false);
     }
   };
 
@@ -333,13 +426,12 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
           name: formData.name,
           category: formData.category,
           tags,
-          format: "lottie",
-          isAnimated: true,
           isPremium: false,
           published: isAdmin ? publishApproved : false,
         },
         imageFileDataUrl: imageDataUrl,
         lottieFileDataUrl: animatedDataUrl,
+        previewVideoDataUrl: previewVideoDataUrl || undefined,
       };
 
       const response = await fetch(`${API_BASE_URL}/stickers/upload`, {
@@ -372,6 +464,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
       setLottieData(null);
       setTotalFrames(0);
       setSelectedFrame(0);
+      setPreviewVideoDataUrl(null);
     } catch (err: any) {
       setError(`Failed to publish: ${err.message}`);
     } finally {
@@ -445,13 +538,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
           {/* Admin Moderation - Published toggle */}
           {isAdmin && (
             <div className="flex items-center gap-2.5 p-3 rounded-lg border border-[#2A2A38] bg-[#0E0E12] select-none">
-              <input
-                id="sticker-publish-checkbox"
-                type="checkbox"
-                checked={publishApproved}
-                onChange={(e) => setPublishApproved(e.target.checked)}
-                className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-teal-500 focus:ring-teal-500 cursor-pointer"
-              />
+              <input id="sticker-publish-checkbox" type="checkbox" checked={publishApproved} onChange={(e) => setPublishApproved(e.target.checked)} className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-teal-500 focus:ring-teal-500 cursor-pointer" />
               <label htmlFor="sticker-publish-checkbox" className="text-xs font-semibold text-white cursor-pointer">
                 Approve and Publish immediately
               </label>
@@ -485,7 +572,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
               {extractingThumbnail && (
                 <div className="flex items-center justify-center gap-2 py-3 bg-[#09090D] rounded-lg border border-[#2A2A38]">
                   <Loader2 className="w-4 h-4 animate-spin text-[#7C6FFF]" />
-                  <span className="text-xs text-gray-400">Extracting thumbnail...</span>
+                  <span className="text-xs text-gray-400">{isGeneratingPreview ? "Generating preview video..." : "Extracting thumbnail..."}</span>
                 </div>
               )}
               {/* Previews side by side */}
@@ -546,14 +633,7 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
                           Frame {selectedFrame} / {totalFrames - 1}
                         </span>
                       </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={totalFrames - 1}
-                        value={selectedFrame}
-                        onChange={handleFrameChange}
-                        className="w-full h-1 bg-[#2A2A38] rounded-lg appearance-none cursor-pointer accent-[#7C6FFF]"
-                      />
+                      <input type="range" min={0} max={totalFrames - 1} value={selectedFrame} onChange={handleFrameChange} className="w-full h-1 bg-[#2A2A38] rounded-lg appearance-none cursor-pointer accent-[#7C6FFF]" />
                       <p className="text-[10px] text-gray-500">Drag to select a different frame as the static thumbnail.</p>
                     </div>
                   )}
@@ -611,4 +691,3 @@ export function StickerPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     </div>
   );
 }
-
