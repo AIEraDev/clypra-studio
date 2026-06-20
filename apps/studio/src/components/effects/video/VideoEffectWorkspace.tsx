@@ -246,7 +246,7 @@ export function VideoEffectWorkspace() {
   }, [imageUrl, selectedEffect, parameters, intensity]);
 
   return (
-    <div className="flex h-screen bg-[#0E0E12]">
+    <div className="flex h-full bg-[#0E0E12]">
       {/* Left Sidebar */}
       <div className="w-64 bg-[#1E1E26] border-r border-[#2A2A38] overflow-y-auto shrink-0">
         <div className="p-4 border-b border-[#2A2A38]">

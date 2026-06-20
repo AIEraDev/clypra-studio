@@ -7,7 +7,7 @@
 
 import { type R2UploadConfig, getR2Config, saveR2Config, uploadFileFromDataUrl, uploadR2Json, getR2Json, upsertById, getPublicUrl, uploadBatch } from "../services/r2Service";
 
-import type { AudioPublishPayload, StickerPublishPayload, OverlayPublishPayload, VideoEffectPresetPublishPayload, VideoEffectPresetBatchPublishPayload } from "../types/publish";
+import type { AudioPublishPayload, StickerPublishPayload, OverlayPublishPayload, VideoEffectPresetPublishPayload, VideoEffectPresetBatchPublishPayload, FilterPublishPayload } from "../types/publish";
 
 export interface R2PublishResult {
   files: string[];
@@ -543,6 +543,54 @@ export function useR2Publish() {
     };
   };
 
+  /**
+   * Publish Filter to R2
+   */
+  const publishFilter = async (payload: FilterPublishPayload): Promise<R2PublishResult> => {
+    const config = getR2Config();
+    if (!config) throw new Error("R2 publishing is not configured.");
+
+    const category = payload.category.toLowerCase();
+    const definition = {
+      id: payload.id,
+      name: payload.definition.name,
+      category,
+      description: payload.definition.description || "",
+      intensity: payload.definition.intensity || "Medium",
+      swatch: payload.definition.swatch,
+    };
+
+    const categoryIndexKey = `filters/${category}/index.json`;
+    const thumbnailKey = `filters/${category}/${payload.id}.png`;
+
+    const files = [categoryIndexKey];
+    const urls: Record<string, string> = {
+      index: getPublicUrl(config.bucketName, categoryIndexKey),
+    };
+
+    // Upload thumbnail if provided
+    if (payload.thumbnailDataUrl) {
+      await uploadFileFromDataUrl(config, thumbnailKey, payload.thumbnailDataUrl, "image/png");
+      files.push(thumbnailKey);
+      urls.thumbnail = getPublicUrl(config.bucketName, thumbnailKey);
+    }
+
+    // Load existing category index
+    const categoryIndex = await getR2Json<any[]>(config, categoryIndexKey, []);
+
+    // Update or append filter by ID
+    const nextCategoryIndex = upsertById(categoryIndex, definition as any);
+
+    // Save back to R2
+    await uploadR2Json(config, categoryIndexKey, nextCategoryIndex);
+
+    return {
+      files,
+      urls,
+      message: `Published filter: ${definition.name}`,
+    };
+  };
+
   return {
     publishEffect,
     publishTemplate,
@@ -551,6 +599,7 @@ export function useR2Publish() {
     publishOverlay,
     publishVideoEffectPreset,
     publishVideoEffectPresetBatch,
+    publishFilter,
     getR2Config,
     saveR2Config,
   };

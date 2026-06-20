@@ -4,31 +4,9 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { 
-  Download, 
-  Upload, 
-  Sparkles, 
-  Zap, 
-  Image as ImageIcon, 
-  Film, 
-  Loader2, 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  Search, 
-  Sliders, 
-  BarChart4, 
-  Sun, 
-  Palette, 
-  Eye, 
-  EyeOff, 
-  ChevronRight, 
-  ChevronDown, 
-  Check, 
-  Undo,
-  SlidersHorizontal,
-  Compass
-} from "lucide-react";
+import { getR2Config } from "../../../services/r2Service";
+import { useR2Publish } from "../../../hooks/useR2Publish";
+import { Download, Upload, Sparkles, Zap, Image as ImageIcon, Film, Loader2, Play, Pause, RotateCcw, Search, Sliders, BarChart4, Sun, Palette, Eye, EyeOff, ChevronRight, ChevronDown, Check, Undo, SlidersHorizontal, Compass } from "lucide-react";
 
 // Types
 interface FilterPreset {
@@ -41,7 +19,7 @@ interface FilterPreset {
 }
 
 const FILTER_CATEGORIES = ["all", "essentials", "cinematic", "vintage", "vibrant", "mono", "aesthetic"] as const;
-type CategoryType = typeof FILTER_CATEGORIES[number];
+type CategoryType = (typeof FILTER_CATEGORIES)[number];
 
 const API_BASE_URL = "https://clypra-worker-api.abdulkabirmusa.com";
 
@@ -75,7 +53,7 @@ const PRESET_FILTERS: FilterPreset[] = [
   { id: "cyberpunk", name: "Cyberpunk Neon", category: "aesthetic", description: "Vibrant neon purples and electric turquoise glow", cssFilter: "contrast(125%) saturate(155%) hue-rotate(15deg) brightness(96%)", intensity: 85 },
   { id: "vaporwave", name: "Vaporwave", category: "aesthetic", description: "Psychedelic pastel pinks and dreamy violet shadows", cssFilter: "hue-rotate(135deg) saturate(135%) contrast(108%) brightness(103%)", intensity: 85 },
   { id: "duotone-violet", name: "Duotone Purple", category: "aesthetic", description: "Deep purple shadows and glowing warm highlights", cssFilter: "contrast(112%) saturate(125%) sepia(18%) hue-rotate(245deg) brightness(96%)", intensity: 90 },
-  { id: "acid-green", name: "Acid Glow", category: "aesthetic", description: "High-saturation radioactive neon look", cssFilter: "hue-rotate(55deg) saturate(155%) contrast(122%) brightness(96%)", intensity: 80 }
+  { id: "acid-green", name: "Acid Glow", category: "aesthetic", description: "High-saturation radioactive neon look", cssFilter: "hue-rotate(55deg) saturate(155%) contrast(122%) brightness(96%)", intensity: 80 },
 ];
 
 const PROMPT_SUGGESTIONS = [
@@ -84,22 +62,22 @@ const PROMPT_SUGGESTIONS = [
   { label: "Cyberpunk Glow", prompt: "futuristic neon cyberpunk style with deep blue shadows and pink highlights", category: "aesthetic" },
   { label: "Moody Noir", prompt: "highly dramatic high contrast black and white with deep crushed shadows", category: "mono" },
   { label: "Washed Indie", prompt: "retro indie film aesthetic with flat blacks and desaturated soft colors", category: "vintage" },
-  { label: "Golden Hour", prompt: "dreamy sunlit golden hour glow with warm amber highlights", category: "vibrant" }
+  { label: "Golden Hour", prompt: "dreamy sunlit golden hour glow with warm amber highlights", category: "vibrant" },
 ];
 
 const INITIAL_MANUAL_ADJUSTMENTS = {
-  exposure: 0,      // -100 to 100
-  brightness: 0,    // -100 to 100
-  contrast: 0,      // -100 to 100
-  saturation: 0,    // -100 to 100
-  temperature: 0,   // -100 to 100 (blue to orange)
-  tint: 0,          // -100 to 100 (green to magenta)
-  sepia: 0,         // 0 to 100
-  grayscale: 0,     // 0 to 100
-  hueRotate: 0,     // 0 to 360
-  blur: 0,          // 0 to 15
-  vignette: 0,      // 0 to 100
-  invert: 0         // 0 to 100
+  exposure: 0, // -100 to 100
+  brightness: 0, // -100 to 100
+  contrast: 0, // -100 to 100
+  saturation: 0, // -100 to 100
+  temperature: 0, // -100 to 100 (blue to orange)
+  tint: 0, // -100 to 100 (green to magenta)
+  sepia: 0, // 0 to 100
+  grayscale: 0, // 0 to 100
+  hueRotate: 0, // 0 to 360
+  blur: 0, // 0 to 15
+  vignette: 0, // 0 to 100
+  invert: 0, // 0 to 100
 };
 
 // Helper: Interpolate CSS filter strength
@@ -107,7 +85,7 @@ const interpolateFilter = (filterStr: string, factor: number): string => {
   return filterStr.replace(/(\d+\.?\d*)(%|deg|px)?/g, (match, value, unit) => {
     const num = parseFloat(value);
     let adjusted = num * factor;
-    if (["contrast", "saturate", "brightness"].some(n => filterStr.includes(n))) {
+    if (["contrast", "saturate", "brightness"].some((n) => filterStr.includes(n))) {
       adjusted = 100 + (num - 100) * factor;
     }
     return `${adjusted}${unit || ""}`;
@@ -161,15 +139,15 @@ const applyVignette = (ctx: CanvasRenderingContext2D, width: number, height: num
   const cx = width / 2;
   const cy = height / 2;
   const maxRadius = Math.sqrt(cx * cx + cy * cy);
-  
+
   const gradient = ctx.createRadialGradient(cx, cy, maxRadius * 0.45, cx, cy, maxRadius * 1.0);
   const maxOpacity = value / 100;
-  
+
   gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
   gradient.addColorStop(0.5, `rgba(0, 0, 0, ${maxOpacity * 0.15})`);
   gradient.addColorStop(0.8, `rgba(0, 0, 0, ${maxOpacity * 0.55})`);
   gradient.addColorStop(1, `rgba(0, 0, 0, ${maxOpacity * 0.9})`);
-  
+
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
   ctx.restore();
@@ -207,6 +185,8 @@ export function FilterWorkspace() {
   const imageRef = useRef<HTMLImageElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const histogramCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const { publishFilter } = useR2Publish();
 
   // Media States
   const [mediaUrl, setMediaUrl] = useState<string | undefined>();
@@ -249,49 +229,49 @@ export function FilterWorkspace() {
   const [expandedSections, setExpandedSections] = useState({
     light: true,
     color: true,
-    effects: true
+    effects: true,
   });
 
   // Calculate histogram from canvas (using fast offscreen downsampling)
   const calculateHistogram = useCallback((sourceCanvas: HTMLCanvasElement) => {
     if (!sourceCanvas) return;
-    
+
     if (!histogramCanvasRef.current) {
       histogramCanvasRef.current = document.createElement("canvas");
     }
-    
+
     const helper = histogramCanvasRef.current;
     const w = 150;
     const h = 90;
     helper.width = w;
     helper.height = h;
-    
+
     const helperCtx = helper.getContext("2d");
     if (!helperCtx) return;
-    
+
     helperCtx.drawImage(sourceCanvas, 0, 0, w, h);
-    
+
     const imgData = helperCtx.getImageData(0, 0, w, h);
     const data = imgData.data;
-    
+
     const rHist = new Array(256).fill(0);
     const gHist = new Array(256).fill(0);
     const bHist = new Array(256).fill(0);
     const lHist = new Array(256).fill(0);
-    
+
     const len = data.length;
     for (let i = 0; i < len; i += 4) {
       const r = data[i];
-      const g = data[i+1];
-      const b = data[i+2];
+      const g = data[i + 1];
+      const b = data[i + 2];
       const l = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-      
+
       rHist[r]++;
       gHist[g]++;
       bHist[b]++;
       lHist[l]++;
     }
-    
+
     setHistogramData({ r: rHist, g: gHist, b: bHist, l: lHist });
   }, []);
 
@@ -318,28 +298,28 @@ export function FilterWorkspace() {
 
       if (showSplitComparison) {
         const splitX = (splitPosition / 100) * canvas.width;
-        
+
         ctx.save();
         ctx.beginPath();
         ctx.rect(splitX, 0, canvas.width - splitX, canvas.height);
         ctx.clip();
-        
+
         ctx.filter = combinedFilterString;
         ctx.drawImage(img, 0, 0);
-        
+
         applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
-        
+
         if (manualAdjustments.vignette > 0) {
           applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
         }
-        
+
         ctx.restore();
       } else {
         ctx.filter = combinedFilterString;
         ctx.drawImage(img, 0, 0);
-        
+
         applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
-        
+
         if (manualAdjustments.vignette > 0) {
           applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
         }
@@ -347,7 +327,7 @@ export function FilterWorkspace() {
 
       calculateHistogram(canvas);
     },
-    [combinedFilterString, manualAdjustments, showSplitComparison, splitPosition, calculateHistogram]
+    [combinedFilterString, manualAdjustments, showSplitComparison, splitPosition, calculateHistogram],
   );
 
   // Render filter on video frame
@@ -365,28 +345,28 @@ export function FilterWorkspace() {
 
       if (showSplitComparison) {
         const splitX = (splitPosition / 100) * canvas.width;
-        
+
         ctx.save();
         ctx.beginPath();
         ctx.rect(splitX, 0, canvas.width - splitX, canvas.height);
         ctx.clip();
-        
+
         ctx.filter = combinedFilterString;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
+
         applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
-        
+
         if (manualAdjustments.vignette > 0) {
           applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
         }
-        
+
         ctx.restore();
       } else {
         ctx.filter = combinedFilterString;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
+
         applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
-        
+
         if (manualAdjustments.vignette > 0) {
           applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
         }
@@ -394,7 +374,7 @@ export function FilterWorkspace() {
 
       calculateHistogram(canvas);
     },
-    [combinedFilterString, manualAdjustments, showSplitComparison, splitPosition, calculateHistogram]
+    [combinedFilterString, manualAdjustments, showSplitComparison, splitPosition, calculateHistogram],
   );
 
   // Re-render when filters or intensity changes
@@ -440,22 +420,25 @@ export function FilterWorkspace() {
   }, [mediaUrl]);
 
   // Handle image upload
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImageUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    const url = URL.createObjectURL(file);
-    setMediaUrl(url);
-    setIsVideo(false);
+      const url = URL.createObjectURL(file);
+      setMediaUrl(url);
+      setIsVideo(false);
 
-    const img = new Image();
-    img.onload = () => {
-      setMediaMetadata({ width: img.width, height: img.height });
-      imageRef.current = img;
-      renderFilterOnImage(img);
-    };
-    img.src = url;
-  }, [renderFilterOnImage]);
+      const img = new Image();
+      img.onload = () => {
+        setMediaMetadata({ width: img.width, height: img.height });
+        imageRef.current = img;
+        renderFilterOnImage(img);
+      };
+      img.src = url;
+    },
+    [renderFilterOnImage],
+  );
 
   // Handle video upload
   const handleVideoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -483,10 +466,13 @@ export function FilterWorkspace() {
     video.currentTime = 0;
   }, []);
 
-  const handleVideoSeeked = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
-    const video = e.currentTarget;
-    renderFilterOnVideo(video);
-  }, [renderFilterOnVideo]);
+  const handleVideoSeeked = useCallback(
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      const video = e.currentTarget;
+      renderFilterOnVideo(video);
+    },
+    [renderFilterOnVideo],
+  );
 
   // Video Controls
   const handlePlayPause = useCallback(() => {
@@ -497,23 +483,23 @@ export function FilterWorkspace() {
       video.pause();
       setIsPlaying(false);
     } else {
-      video.play().then(() => {
-        setIsPlaying(true);
-      }).catch(err => {
-        console.error("Playback failed:", err);
-      });
+      video
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch((err) => {
+          console.error("Playback failed:", err);
+        });
     }
   }, [isPlaying]);
 
-  const handleSeek = useCallback(
-    (time: number) => {
-      const video = videoRef.current;
-      if (!video) return;
-      video.currentTime = time;
-      setCurrentTime(time);
-    },
-    []
-  );
+  const handleSeek = useCallback((time: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = time;
+    setCurrentTime(time);
+  }, []);
 
   // Split-screen drag handlers
   const handleMouseDown = useCallback(() => {
@@ -524,22 +510,28 @@ export function FilterWorkspace() {
     setIsDraggingSplit(false);
   }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDraggingSplit || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    setSplitPosition(pct);
-  }, [isDraggingSplit]);
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDraggingSplit || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      setSplitPosition(pct);
+    },
+    [isDraggingSplit],
+  );
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDraggingSplit || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    setSplitPosition(pct);
-  }, [isDraggingSplit]);
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isDraggingSplit || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = touch.clientX - rect.left;
+      const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      setSplitPosition(pct);
+    },
+    [isDraggingSplit],
+  );
 
   // Reset all adjustments
   const handleResetAll = useCallback(() => {
@@ -550,25 +542,25 @@ export function FilterWorkspace() {
 
   // Reset a single slider adjustment
   const handleResetSlider = useCallback((key: keyof typeof INITIAL_MANUAL_ADJUSTMENTS) => {
-    setManualAdjustments(prev => ({
+    setManualAdjustments((prev) => ({
       ...prev,
-      [key]: INITIAL_MANUAL_ADJUSTMENTS[key]
+      [key]: INITIAL_MANUAL_ADJUSTMENTS[key],
     }));
   }, []);
 
   // Update a slider adjustment
   const handleAdjustmentChange = useCallback((key: keyof typeof INITIAL_MANUAL_ADJUSTMENTS, val: number) => {
-    setManualAdjustments(prev => ({
+    setManualAdjustments((prev) => ({
       ...prev,
-      [key]: val
+      [key]: val,
     }));
   }, []);
 
   // Toggle sections
   const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [section]: !prev[section]
+      [section]: !prev[section],
     }));
   };
 
@@ -629,6 +621,48 @@ export function FilterWorkspace() {
     setUploadStatus("uploading");
     setUploadMessage("");
 
+    // Check if R2 direct publishing configuration is present
+    const r2Config = getR2Config();
+    if (r2Config) {
+      try {
+        let thumbnailDataUrl: string | undefined;
+        // Generate a thumbnail from the canvas if it exists
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const thumbCanvas = document.createElement("canvas");
+          thumbCanvas.width = 320;
+          thumbCanvas.height = 180;
+          const thumbCtx = thumbCanvas.getContext("2d");
+          if (thumbCtx) {
+            thumbCtx.drawImage(canvas, 0, 0, 320, 180);
+            thumbnailDataUrl = thumbCanvas.toDataURL("image/png");
+          }
+        }
+
+        const result = await publishFilter({
+          id: selectedFilter.id,
+          category: selectedFilter.category,
+          definition: {
+            id: selectedFilter.id,
+            name: selectedFilter.name,
+            category: selectedFilter.category,
+            description: selectedFilter.description || "",
+            intensity: "Medium",
+            swatch: selectedFilter.cssFilter,
+          },
+          thumbnailDataUrl,
+        });
+
+        setUploadStatus("success");
+        setUploadMessage(result.message || `Filter "${selectedFilter.name}" published directly to R2 bucket!`);
+      } catch (error) {
+        setUploadStatus("error");
+        setUploadMessage(error instanceof Error ? error.message : "Failed to publish filter to R2");
+      }
+      return;
+    }
+
+    // Fallback to worker-based API upload
     try {
       const response = await fetch(`${API_BASE_URL}/filters/upload`, {
         method: "POST",
@@ -676,11 +710,9 @@ export function FilterWorkspace() {
 
   // Filtered presets listing
   const filteredPresets = useMemo(() => {
-    return PRESET_FILTERS.filter(p => {
+    return PRESET_FILTERS.filter((p) => {
       const matchCat = selectedCategory === "all" || p.category === selectedCategory;
-      const matchSearch = presetSearch === "" || 
-        p.name.toLowerCase().includes(presetSearch.toLowerCase()) || 
-        p.description.toLowerCase().includes(presetSearch.toLowerCase());
+      const matchSearch = presetSearch === "" || p.name.toLowerCase().includes(presetSearch.toLowerCase()) || p.description.toLowerCase().includes(presetSearch.toLowerCase());
       return matchCat && matchSearch;
     });
   }, [selectedCategory, presetSearch]);
@@ -692,13 +724,7 @@ export function FilterWorkspace() {
     const width = 260;
     const height = 110;
 
-    const maxVal = Math.max(
-      ...histogramData.r,
-      ...histogramData.g,
-      ...histogramData.b,
-      ...histogramData.l,
-      1
-    );
+    const maxVal = Math.max(...histogramData.r, ...histogramData.g, ...histogramData.b, ...histogramData.l, 1);
 
     const getPathData = (bins: number[]) => {
       let points = `M 0 ${height} `;
@@ -716,18 +742,16 @@ export function FilterWorkspace() {
       gPath: getPathData(histogramData.g),
       bPath: getPathData(histogramData.b),
       lPath: getPathData(histogramData.l),
-      maxVal
+      maxVal,
     };
   }, [histogramData]);
 
   return (
-    <div className="flex h-screen bg-[#07070A] text-[#F4F4F7] font-sans overflow-hidden select-none">
-      
+    <div className="flex h-full bg-[#07070A] text-[#F4F4F7] font-sans overflow-hidden select-none">
       {/* ================= LEFT SIDEBAR ================= */}
       <div className="w-[340px] bg-[#111117] border-r border-[#22222F] flex flex-col shrink-0 overflow-hidden">
-        
         {/* Header Tab Switcher */}
-        <div className="p-4 border-b border-[#22222F] space-y-3">
+        <div className="p-2 border-b border-[#22222F] space-y-2">
           <div className="flex items-center gap-2">
             <span className="p-1.5 bg-[#7C6FFF]/10 rounded-lg text-[#7C6FFF]">
               <Palette size={18} />
@@ -737,27 +761,13 @@ export function FilterWorkspace() {
               <p className="text-[10px] text-[#8A8A99]">Color grading and look development</p>
             </div>
           </div>
-          
+
           {/* Glassmorphic Tabs */}
           <div className="flex p-0.5 bg-[#0F0F15] rounded-lg border border-[#22222F]/40">
-            <button
-              onClick={() => setLeftTab("presets")}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 cursor-pointer ${
-                leftTab === "presets" 
-                  ? "bg-[#1E1E2A] text-white shadow-md border border-[#33334A]/50" 
-                  : "text-[#8A8A99] hover:text-white"
-              }`}
-            >
+            <button onClick={() => setLeftTab("presets")} className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 cursor-pointer ${leftTab === "presets" ? "bg-[#1E1E2A] text-white shadow-md border border-[#33334A]/50" : "text-[#8A8A99] hover:text-white"}`}>
               Preset Library
             </button>
-            <button
-              onClick={() => setLeftTab("ai")}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-                leftTab === "ai" 
-                  ? "bg-[#1E1E2A] text-white shadow-md border border-[#33334A]/50" 
-                  : "text-[#8A8A99] hover:text-white"
-              }`}
-            >
+            <button onClick={() => setLeftTab("ai")} className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${leftTab === "ai" ? "bg-[#1E1E2A] text-white shadow-md border border-[#33334A]/50" : "text-[#8A8A99] hover:text-white"}`}>
               <Sparkles size={12} className={leftTab === "ai" ? "text-purple-400" : ""} />
               AI Generator
             </button>
@@ -768,30 +778,16 @@ export function FilterWorkspace() {
         {leftTab === "presets" && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* Search and Category filters */}
-            <div className="p-3 space-y-2.5 border-b border-[#22222F]/50">
+            <div className="p-2 space-y-2.5 border-b border-[#22222F]/50">
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8A99]" />
-                <input
-                  type="text"
-                  placeholder="Search color presets..."
-                  value={presetSearch}
-                  onChange={(e) => setPresetSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 bg-[#0F0F15] border border-[#22222F] rounded-md text-xs text-white placeholder-[#5B5B6E] focus:border-[#7C6FFF] focus:ring-1 focus:ring-[#7C6FFF]/30 outline-none transition-all"
-                />
+                <input type="text" placeholder="Search color presets..." value={presetSearch} onChange={(e) => setPresetSearch(e.target.value)} className="w-full pl-9 pr-3 py-1.5 bg-[#0F0F15] border border-[#22222F] rounded-md text-xs text-white placeholder-[#5B5B6E] focus:border-[#7C6FFF] focus:ring-1 focus:ring-[#7C6FFF]/30 outline-none transition-all" />
               </div>
-              
+
               {/* Category selector chips */}
               <div className="flex flex-wrap gap-1 items-center max-h-[75px] overflow-y-auto pr-1">
-                {FILTER_CATEGORIES.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-2.5 py-0.5 text-[10px] font-medium rounded-full transition-all border cursor-pointer ${
-                      selectedCategory === cat 
-                        ? "bg-[#7C6FFF]/15 border-[#7C6FFF]/50 text-white" 
-                        : "bg-[#1C1C26]/40 border-[#22222F] text-[#8A8A99] hover:text-white hover:bg-[#1E1E2A]"
-                    }`}
-                  >
+                {FILTER_CATEGORIES.map((cat) => (
+                  <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-2.5 py-0.5 text-[10px] font-medium rounded-full transition-all border cursor-pointer ${selectedCategory === cat ? "bg-[#7C6FFF]/15 border-[#7C6FFF]/50 text-white" : "bg-[#1C1C26]/40 border-[#22222F] text-[#8A8A99] hover:text-white hover:bg-[#1E1E2A]"}`}>
                     {cat.charAt(0).toUpperCase() + cat.slice(1)}
                   </button>
                 ))}
@@ -799,9 +795,9 @@ export function FilterWorkspace() {
             </div>
 
             {/* Presets Cards Grid */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            <div className="flex-1 overflow-y-auto p-2 space-y-2">
               {filteredPresets.length > 0 ? (
-                filteredPresets.map(preset => {
+                filteredPresets.map((preset) => {
                   const isSelected = selectedFilter?.id === preset.id;
                   return (
                     <button
@@ -810,18 +806,11 @@ export function FilterWorkspace() {
                         setSelectedFilter(preset);
                         setIntensity(100);
                       }}
-                      className={`w-full p-2.5 rounded-lg border text-left flex items-start gap-3 transition-all cursor-pointer group ${
-                        isSelected 
-                          ? "bg-[#1E1E2A] border-[#7C6FFF] shadow-md shadow-[#7C6FFF]/5" 
-                          : "bg-[#13131B] border-[#22222F] hover:bg-[#181824] hover:border-[#2C2C3F]"
-                      }`}
+                      className={`w-full p-2.5 rounded-lg border text-left flex items-start gap-3 transition-all cursor-pointer group ${isSelected ? "bg-[#1E1E2A] border-[#7C6FFF] shadow-md shadow-[#7C6FFF]/5" : "bg-[#13131B] border-[#22222F] hover:bg-[#181824] hover:border-[#2C2C3F]"}`}
                     >
                       {/* Mini Preview Square */}
                       <div className="relative w-12 h-12 rounded bg-gradient-to-tr from-[#3A3270] to-[#7C6FFF] overflow-hidden shrink-0 border border-[#22222F] group-hover:scale-105 transition-transform duration-300">
-                        <div 
-                          className="w-full h-full bg-cover bg-center bg-[url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=100&auto=format&fit=crop')]"
-                          style={{ filter: preset.cssFilter }}
-                        />
+                        <div className="w-full h-full bg-cover bg-center bg-[url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=100&auto=format&fit=crop')]" style={{ filter: preset.cssFilter }} />
                         {isSelected && (
                           <div className="absolute inset-0 bg-[#7C6FFF]/20 flex items-center justify-center text-white">
                             <Check size={14} className="drop-shadow-md" />
@@ -835,17 +824,13 @@ export function FilterWorkspace() {
                           <span className="text-xs font-semibold text-white truncate">{preset.name}</span>
                           <span className="text-[9px] uppercase tracking-wider text-[#8A8A99] font-mono shrink-0 scale-90">{preset.category}</span>
                         </div>
-                        <p className="text-[10px] text-[#8A8A99] line-clamp-2 mt-1 leading-normal">
-                          {preset.description}
-                        </p>
+                        <p className="text-[10px] text-[#8A8A99] line-clamp-2 mt-1 leading-normal">{preset.description}</p>
                       </div>
                     </button>
                   );
                 })
               ) : (
-                <div className="text-center py-8 text-[#8A8A99] text-xs">
-                  No presets match your search
-                </div>
+                <div className="text-center py-8 text-[#8A8A99] text-xs">No presets match your search</div>
               )}
             </div>
           </div>
@@ -859,9 +844,7 @@ export function FilterWorkspace() {
                 <Sparkles size={14} className="animate-pulse" />
                 Prompt-to-Filter Engine
               </span>
-              <p className="text-[10px] text-[#8A8A99] leading-relaxed">
-                Describe a color grading style or movie atmosphere. Our engine will generate a custom color look for you.
-              </p>
+              <p className="text-[10px] text-[#8A8A99] leading-relaxed">Describe a color grading style or movie atmosphere. Our engine will generate a custom color look for you.</p>
             </div>
 
             {/* AI Prompts Suggestions */}
@@ -889,24 +872,14 @@ export function FilterWorkspace() {
                 <span>Prompt Description</span>
                 <span className="text-[#8A8A99]">{aiPrompt.length} chars</span>
               </label>
-              <textarea
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="e.g. vintage warm sunset with golden tones and faded shadows..."
-                rows={4}
-                className="w-full px-3 py-2 bg-[#0F0F15] border border-[#22222F] focus:border-[#7C6FFF] rounded-md text-xs text-white placeholder-[#5B5B6E] resize-none outline-none focus:ring-1 focus:ring-[#7C6FFF]/30 transition-all leading-normal"
-              />
+              <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="e.g. vintage warm sunset with golden tones and faded shadows..." rows={4} className="w-full px-3 py-2 bg-[#0F0F15] border border-[#22222F] focus:border-[#7C6FFF] rounded-md text-xs text-white placeholder-[#5B5B6E] resize-none outline-none focus:ring-1 focus:ring-[#7C6FFF]/30 transition-all leading-normal" />
             </div>
 
             {/* AI Category Select */}
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase tracking-wider text-[#8A8A99] font-semibold">Target Style Category</label>
-              <select
-                value={aiCategory}
-                onChange={(e) => setAiCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0F0F15] border border-[#22222F] focus:border-[#7C6FFF] rounded-md text-xs text-white focus:ring-1 focus:ring-[#7C6FFF]/30 outline-none transition-all"
-              >
-                {FILTER_CATEGORIES.filter(c => c !== "all").map((cat) => (
+              <select value={aiCategory} onChange={(e) => setAiCategory(e.target.value)} className="w-full px-3 py-2 bg-[#0F0F15] border border-[#22222F] focus:border-[#7C6FFF] rounded-md text-xs text-white focus:ring-1 focus:ring-[#7C6FFF]/30 outline-none transition-all">
+                {FILTER_CATEGORIES.filter((c) => c !== "all").map((cat) => (
                   <option key={cat} value={cat}>
                     {cat.charAt(0).toUpperCase() + cat.slice(1)}
                   </option>
@@ -915,11 +888,7 @@ export function FilterWorkspace() {
             </div>
 
             {/* Action button */}
-            <button
-              onClick={handleGenerateFilter}
-              disabled={aiStatus === "generating"}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#7C6FFF] hover:bg-[#685BEA] disabled:bg-[#7C6FFF]/50 text-white font-semibold text-xs rounded-lg shadow-lg shadow-[#7C6FFF]/10 transition-colors disabled:cursor-not-allowed cursor-pointer"
-            >
+            <button onClick={handleGenerateFilter} disabled={aiStatus === "generating"} className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#7C6FFF] hover:bg-[#685BEA] disabled:bg-[#7C6FFF]/50 text-white font-semibold text-xs rounded-lg shadow-lg shadow-[#7C6FFF]/10 transition-colors disabled:cursor-not-allowed cursor-pointer">
               {aiStatus === "generating" ? (
                 <>
                   <Loader2 size={14} className="animate-spin" />
@@ -935,11 +904,7 @@ export function FilterWorkspace() {
 
             {/* Status alerts */}
             {aiMessage && (
-              <div className={`p-2.5 rounded-lg border text-xs leading-normal flex gap-2 items-start ${
-                aiStatus === "error" 
-                  ? "bg-red-500/10 border-red-500/30 text-red-400" 
-                  : "bg-green-500/10 border-green-500/30 text-green-400"
-              }`}>
+              <div className={`p-2.5 rounded-lg border text-xs leading-normal flex gap-2 items-start ${aiStatus === "error" ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-green-500/10 border-green-500/30 text-green-400"}`}>
                 <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-current" />
                 <div>{aiMessage}</div>
               </div>
@@ -955,7 +920,7 @@ export function FilterWorkspace() {
               <span>Import Video</span>
               <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />
             </label>
-            
+
             <label className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-[#1C1C26] hover:bg-[#252533] border border-[#2E2E3E] hover:border-[#3A3A4E] text-[#C5C5D2] hover:text-white text-[11px] font-semibold rounded-md cursor-pointer transition-colors">
               <ImageIcon size={13} className="text-[#8A8A99]" />
               <span>Import Image</span>
@@ -965,10 +930,10 @@ export function FilterWorkspace() {
 
           {mediaMetadata && (
             <div className="p-2 bg-[#0A0A0E] rounded border border-[#1A1A24] text-[9px] font-mono text-[#8A8A99] flex justify-between items-center">
-              <span>{isVideo ? "VIDEO" : "IMAGE"} &bull; {mediaMetadata.width}x{mediaMetadata.height}</span>
-              {isVideo && mediaMetadata.duration && (
-                <span>{mediaMetadata.duration.toFixed(1)}s</span>
-              )}
+              <span>
+                {isVideo ? "VIDEO" : "IMAGE"} &bull; {mediaMetadata.width}x{mediaMetadata.height}
+              </span>
+              {isVideo && mediaMetadata.duration && <span>{mediaMetadata.duration.toFixed(1)}s</span>}
             </div>
           )}
         </div>
@@ -976,7 +941,6 @@ export function FilterWorkspace() {
 
       {/* ================= CENTER WORKSPACE / CANVAS VIEWPORT ================= */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#0B0B0F] overflow-hidden">
-        
         {/* Main Toolbar */}
         <div className="h-14 border-b border-[#1A1A24] px-4 flex items-center justify-between shrink-0 bg-[#0E0E14]/70 backdrop-blur">
           <div className="flex items-center gap-2">
@@ -989,32 +953,19 @@ export function FilterWorkspace() {
             {mediaUrl && (
               <>
                 {/* Draggable Split Switch */}
-                <button
-                  onClick={() => setShowSplitComparison(prev => !prev)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border transition-all cursor-pointer ${
-                    showSplitComparison 
-                      ? "bg-[#7C6FFF]/15 border-[#7C6FFF]/40 text-[#A49BFF]" 
-                      : "bg-[#181824] border-[#22222F] text-[#8A8A99] hover:text-white"
-                  }`}
-                >
+                <button onClick={() => setShowSplitComparison((prev) => !prev)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border transition-all cursor-pointer ${showSplitComparison ? "bg-[#7C6FFF]/15 border-[#7C6FFF]/40 text-[#A49BFF]" : "bg-[#181824] border-[#22222F] text-[#8A8A99] hover:text-white"}`}>
                   {showSplitComparison ? <Eye size={13} /> : <EyeOff size={13} />}
                   <span>Split Comparison</span>
                 </button>
 
                 {/* Reset button */}
-                <button
-                  onClick={handleResetAll}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#181824] hover:bg-[#1E1E2D] border border-[#22222F] hover:border-[#323247] rounded-md text-[11px] font-medium text-[#8A8A99] hover:text-white transition-colors cursor-pointer"
-                >
+                <button onClick={handleResetAll} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#181824] hover:bg-[#1E1E2D] border border-[#22222F] hover:border-[#323247] rounded-md text-[11px] font-medium text-[#8A8A99] hover:text-white transition-colors cursor-pointer">
                   <Undo size={13} />
                   <span>Reset All</span>
                 </button>
 
                 {/* Export button */}
-                <button
-                  onClick={exportFrame}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#181824] hover:bg-[#1E1E2D] border border-[#22222F] hover:border-[#323247] rounded-md text-[11px] font-medium text-[#8A8A99] hover:text-white transition-colors cursor-pointer"
-                >
+                <button onClick={exportFrame} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#181824] hover:bg-[#1E1E2D] border border-[#22222F] hover:border-[#323247] rounded-md text-[11px] font-medium text-[#8A8A99] hover:text-white transition-colors cursor-pointer">
                   <Download size={13} />
                   <span>Export Frame</span>
                 </button>
@@ -1026,15 +977,7 @@ export function FilterWorkspace() {
         {/* Canvas Workspace Viewport Area */}
         <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(28,26,45,0.4)_0%,transparent_70%)]">
           {mediaUrl ? (
-            <div 
-              ref={containerRef}
-              className="relative inline-block max-h-full max-w-full rounded-xl overflow-hidden shadow-2xl border border-[#22222F] checkerboard"
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleMouseUp}
-            >
+            <div ref={containerRef} className="relative inline-block max-h-full max-w-full rounded-xl overflow-hidden shadow-2xl border border-[#22222F] checkerboard" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleTouchMove} onTouchEnd={handleMouseUp}>
               <canvas
                 ref={canvasRef}
                 style={{
@@ -1047,42 +990,20 @@ export function FilterWorkspace() {
                 className="select-none pointer-events-none"
               />
 
-              {mediaUrl && isVideo && (
-                <video
-                  ref={videoRef}
-                  src={mediaUrl}
-                  className="hidden"
-                  preload="auto"
-                  playsInline
-                  muted
-                  onLoadedMetadata={handleVideoMetadataLoaded}
-                  onSeeked={handleVideoSeeked}
-                />
-              )}
+              {mediaUrl && isVideo && <video ref={videoRef} src={mediaUrl} className="hidden" preload="auto" playsInline muted onLoadedMetadata={handleVideoMetadataLoaded} onSeeked={handleVideoSeeked} />}
 
               {/* Slider Drag Overlay */}
               {showSplitComparison && (
                 <>
                   {/* Draggable Divider line */}
-                  <div
-                    className="absolute top-0 bottom-0 w-[2px] bg-white cursor-ew-resize select-none pointer-events-auto"
-                    style={{ left: `${splitPosition}%` }}
-                    onMouseDown={handleMouseDown}
-                    onTouchStart={handleMouseDown}
-                  >
+                  <div className="absolute top-0 bottom-0 w-[2px] bg-white cursor-ew-resize select-none pointer-events-auto" style={{ left: `${splitPosition}%` }} onMouseDown={handleMouseDown} onTouchStart={handleMouseDown}>
                     {/* Glowing circular handle */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white text-black shadow-2xl border border-gray-400/30 flex items-center justify-center font-bold text-xs select-none hover:scale-110 active:scale-95 transition-all cursor-ew-resize">
-                      ↔
-                    </div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white text-black shadow-2xl border border-gray-400/30 flex items-center justify-center font-bold text-xs select-none hover:scale-110 active:scale-95 transition-all cursor-ew-resize">↔</div>
                   </div>
 
                   {/* Before / After labels */}
-                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded border border-white/5 pointer-events-none select-none">
-                    Before
-                  </div>
-                  <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded border border-white/5 pointer-events-none select-none">
-                    After
-                  </div>
+                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded border border-white/5 pointer-events-none select-none">Before</div>
+                  <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded border border-white/5 pointer-events-none select-none">After</div>
                 </>
               )}
 
@@ -1102,9 +1023,7 @@ export function FilterWorkspace() {
               </div>
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-white">Clypra Studio Canvas</h3>
-                <p className="text-xs text-[#8A8A99] max-w-xs mx-auto leading-relaxed">
-                  Import a video or image file to start grading. You can apply stunning cinematic presets, adjust specific tones, or generate custom looks using AI.
-                </p>
+                <p className="text-xs text-[#8A8A99] max-w-xs mx-auto leading-relaxed">Import a video or image file to start grading. You can apply stunning cinematic presets, adjust specific tones, or generate custom looks using AI.</p>
               </div>
               <div className="flex justify-center gap-3 pt-2">
                 <label className="flex items-center gap-2 py-2 px-4 bg-[#7C6FFF] hover:bg-[#685BEA] text-white text-xs font-semibold rounded-lg shadow-lg shadow-[#7C6FFF]/10 cursor-pointer transition-colors">
@@ -1125,24 +1044,13 @@ export function FilterWorkspace() {
         {/* Video Scrubber Timeline */}
         {isVideo && mediaUrl && (
           <div className="h-16 border-t border-[#1A1A24] bg-[#0E0E14] px-4 flex items-center gap-4 shrink-0">
-            <button
-              onClick={handlePlayPause}
-              className="w-8 h-8 rounded-full bg-[#7C6FFF] hover:bg-[#685BEA] flex items-center justify-center text-white shrink-0 shadow transition-colors cursor-pointer"
-            >
+            <button onClick={handlePlayPause} className="w-8 h-8 rounded-full bg-[#7C6FFF] hover:bg-[#685BEA] flex items-center justify-center text-white shrink-0 shadow transition-colors cursor-pointer">
               {isPlaying ? <Pause size={14} fill="white" /> : <Play size={14} fill="white" className="ml-0.5" />}
             </button>
 
             {/* Scrubber slider track */}
             <div className="flex-1 relative group py-2">
-              <input
-                type="range"
-                min="0"
-                max={mediaMetadata?.duration || 0}
-                step="0.05"
-                value={currentTime}
-                onChange={(e) => handleSeek(parseFloat(e.target.value))}
-                className="w-full h-1 bg-[#1E1E2A] rounded-lg appearance-none cursor-pointer outline-none focus:outline-none accent-[#7C6FFF]"
-              />
+              <input type="range" min="0" max={mediaMetadata?.duration || 0} step="0.05" value={currentTime} onChange={(e) => handleSeek(parseFloat(e.target.value))} className="w-full h-1 bg-[#1E1E2A] rounded-lg appearance-none cursor-pointer outline-none focus:outline-none accent-[#7C6FFF]" />
             </div>
 
             {/* Time counters */}
@@ -1157,29 +1065,14 @@ export function FilterWorkspace() {
 
       {/* ================= RIGHT SIDEBAR ================= */}
       <div className="w-[300px] bg-[#111117] border-l border-[#22222F] flex flex-col shrink-0 overflow-hidden">
-        
         {/* Header Tab switches */}
         <div className="flex border-b border-[#22222F] shrink-0 bg-[#0F0F15]/40">
-          <button
-            onClick={() => setRightTab("adjust")}
-            className={`flex-1 py-3 text-[11px] uppercase tracking-wider font-bold border-b-2 flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-              rightTab === "adjust" 
-                ? "border-[#7C6FFF] text-white" 
-                : "border-transparent text-[#8A8A99] hover:text-white"
-            }`}
-          >
+          <button onClick={() => setRightTab("adjust")} className={`flex-1 py-3 text-[11px] uppercase tracking-wider font-bold border-b-2 flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${rightTab === "adjust" ? "border-[#7C6FFF] text-white" : "border-transparent text-[#8A8A99] hover:text-white"}`}>
             <SlidersHorizontal size={13} />
             <span>Grading Controls</span>
           </button>
-          
-          <button
-            onClick={() => setRightTab("histogram")}
-            className={`flex-1 py-3 text-[11px] uppercase tracking-wider font-bold border-b-2 flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-              rightTab === "histogram" 
-                ? "border-[#7C6FFF] text-white" 
-                : "border-transparent text-[#8A8A99] hover:text-white"
-            }`}
-          >
+
+          <button onClick={() => setRightTab("histogram")} className={`flex-1 py-3 text-[11px] uppercase tracking-wider font-bold border-b-2 flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${rightTab === "histogram" ? "border-[#7C6FFF] text-white" : "border-transparent text-[#8A8A99] hover:text-white"}`}>
             <BarChart4 size={13} />
             <span>Histogram</span>
           </button>
@@ -1187,21 +1080,19 @@ export function FilterWorkspace() {
 
         {/* Tab content area */}
         <div className="flex-1 overflow-y-auto">
-          
           {/* Tab 1: Grading Controls */}
           {rightTab === "adjust" && (
-            <div className="p-4 space-y-5">
-              
+            <div className="p-2 space-y-2">
               {/* Preset Intensity Slider */}
               {selectedFilter ? (
                 <div className="p-3 bg-[#171720] rounded-xl border border-[#252535] space-y-2.5">
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-semibold text-white">Preset: {selectedFilter.name}</span>
-                    <button 
+                    <button
                       onClick={() => {
                         setSelectedFilter(null);
                         setIntensity(100);
-                      }} 
+                      }}
                       className="text-[10px] text-[#A49BFF] hover:text-white transition-colors cursor-pointer"
                     >
                       Clear
@@ -1212,31 +1103,18 @@ export function FilterWorkspace() {
                       <span>Look Mix</span>
                       <span className="font-mono text-[#7C6FFF] font-semibold">{intensity}%</span>
                     </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="1"
-                      value={intensity}
-                      onChange={(e) => setIntensity(parseInt(e.target.value))}
-                      className="w-full h-1 bg-[#0F0F15] rounded-md appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
-                    />
+                    <input type="range" min="0" max="100" step="1" value={intensity} onChange={(e) => setIntensity(parseInt(e.target.value))} className="w-full h-1 bg-[#0F0F15] rounded-md appearance-none accent-[#7C6FFF] outline-none cursor-pointer" />
                   </div>
                 </div>
               ) : (
                 <div className="p-3 bg-[#12121A] rounded-xl border border-[#1A1A26] text-center">
-                  <p className="text-[11px] text-[#8A8A99]">
-                    Select a preset filter on the left sidebar to mix and adjust its intensity
-                  </p>
+                  <p className="text-[11px] text-[#8A8A99]">Select a preset filter on the left sidebar to mix and adjust its intensity</p>
                 </div>
               )}
 
               {/* SECTION: LIGHT */}
               <div className="border border-[#22222F] rounded-lg overflow-hidden bg-[#13131B]">
-                <button
-                  onClick={() => toggleSection("light")}
-                  className="w-full px-3 py-2 bg-[#171723] hover:bg-[#1B1B2C] border-b border-[#22222F] flex justify-between items-center text-xs font-bold text-white transition-colors cursor-pointer"
-                >
+                <button onClick={() => toggleSection("light")} className="w-full px-3 py-2 bg-[#171723] hover:bg-[#1B1B2C] border-b border-[#22222F] flex justify-between items-center text-xs font-bold text-white transition-colors cursor-pointer">
                   <span className="flex items-center gap-1.5">
                     <Sun size={13} className="text-amber-400" />
                     <span>Light Adjustments</span>
@@ -1251,68 +1129,34 @@ export function FilterWorkspace() {
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Exposure</span>
                         <div className="flex gap-2">
-                          <button 
-                            onDoubleClick={() => handleResetSlider("exposure")}
-                            className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                            title="Double-click to reset"
-                          >
+                          <button onDoubleClick={() => handleResetSlider("exposure")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer" title="Double-click to reset">
                             {manualAdjustments.exposure > 0 ? `+${manualAdjustments.exposure}` : manualAdjustments.exposure}%
                           </button>
                         </div>
                       </div>
-                      <input
-                        type="range"
-                        min="-100"
-                        max="100"
-                        step="1"
-                        value={manualAdjustments.exposure}
-                        onChange={(e) => handleAdjustmentChange("exposure", parseInt(e.target.value))}
-                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="-100" max="100" step="1" value={manualAdjustments.exposure} onChange={(e) => handleAdjustmentChange("exposure", parseInt(e.target.value))} className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
 
                     {/* Brightness */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Brightness</span>
-                        <button 
-                          onDoubleClick={() => handleResetSlider("brightness")}
-                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                        >
+                        <button onDoubleClick={() => handleResetSlider("brightness")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer">
                           {manualAdjustments.brightness > 0 ? `+${manualAdjustments.brightness}` : manualAdjustments.brightness}%
                         </button>
                       </div>
-                      <input
-                        type="range"
-                        min="-100"
-                        max="100"
-                        step="1"
-                        value={manualAdjustments.brightness}
-                        onChange={(e) => handleAdjustmentChange("brightness", parseInt(e.target.value))}
-                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="-100" max="100" step="1" value={manualAdjustments.brightness} onChange={(e) => handleAdjustmentChange("brightness", parseInt(e.target.value))} className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
 
                     {/* Contrast */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Contrast</span>
-                        <button 
-                          onDoubleClick={() => handleResetSlider("contrast")}
-                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                        >
+                        <button onDoubleClick={() => handleResetSlider("contrast")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer">
                           {manualAdjustments.contrast > 0 ? `+${manualAdjustments.contrast}` : manualAdjustments.contrast}%
                         </button>
                       </div>
-                      <input
-                        type="range"
-                        min="-100"
-                        max="100"
-                        step="1"
-                        value={manualAdjustments.contrast}
-                        onChange={(e) => handleAdjustmentChange("contrast", parseInt(e.target.value))}
-                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="-100" max="100" step="1" value={manualAdjustments.contrast} onChange={(e) => handleAdjustmentChange("contrast", parseInt(e.target.value))} className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
                   </div>
                 )}
@@ -1320,10 +1164,7 @@ export function FilterWorkspace() {
 
               {/* SECTION: COLOR */}
               <div className="border border-[#22222F] rounded-lg overflow-hidden bg-[#13131B]">
-                <button
-                  onClick={() => toggleSection("color")}
-                  className="w-full px-3 py-2 bg-[#171723] hover:bg-[#1B1B2C] border-b border-[#22222F] flex justify-between items-center text-xs font-bold text-white transition-colors cursor-pointer"
-                >
+                <button onClick={() => toggleSection("color")} className="w-full px-3 py-2 bg-[#171723] hover:bg-[#1B1B2C] border-b border-[#22222F] flex justify-between items-center text-xs font-bold text-white transition-colors cursor-pointer">
                   <span className="flex items-center gap-1.5">
                     <Palette size={13} className="text-sky-400" />
                     <span>Color & Tone</span>
@@ -1337,66 +1178,33 @@ export function FilterWorkspace() {
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Temperature (Warmth)</span>
-                        <button 
-                          onDoubleClick={() => handleResetSlider("temperature")}
-                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                        >
+                        <button onDoubleClick={() => handleResetSlider("temperature")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer">
                           {manualAdjustments.temperature > 0 ? `Warm (${manualAdjustments.temperature})` : manualAdjustments.temperature < 0 ? `Cool (${manualAdjustments.temperature})` : "Neutral"}
                         </button>
                       </div>
-                      <input
-                        type="range"
-                        min="-100"
-                        max="100"
-                        step="1"
-                        value={manualAdjustments.temperature}
-                        onChange={(e) => handleAdjustmentChange("temperature", parseInt(e.target.value))}
-                        className="w-full h-1 rounded appearance-none bg-gradient-to-r from-blue-500 via-[#0F0F15] to-amber-500 accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="-100" max="100" step="1" value={manualAdjustments.temperature} onChange={(e) => handleAdjustmentChange("temperature", parseInt(e.target.value))} className="w-full h-1 rounded appearance-none bg-gradient-to-r from-blue-500 via-[#0F0F15] to-amber-500 accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
 
                     {/* Tint */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Tint (Magenta/Green)</span>
-                        <button 
-                          onDoubleClick={() => handleResetSlider("tint")}
-                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                        >
+                        <button onDoubleClick={() => handleResetSlider("tint")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer">
                           {manualAdjustments.tint > 0 ? `Magenta (${manualAdjustments.tint})` : manualAdjustments.tint < 0 ? `Green (${manualAdjustments.tint})` : "Neutral"}
                         </button>
                       </div>
-                      <input
-                        type="range"
-                        min="-100"
-                        max="100"
-                        step="1"
-                        value={manualAdjustments.tint}
-                        onChange={(e) => handleAdjustmentChange("tint", parseInt(e.target.value))}
-                        className="w-full h-1 rounded appearance-none bg-gradient-to-r from-emerald-500 via-[#0F0F15] to-pink-500 accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="-100" max="100" step="1" value={manualAdjustments.tint} onChange={(e) => handleAdjustmentChange("tint", parseInt(e.target.value))} className="w-full h-1 rounded appearance-none bg-gradient-to-r from-emerald-500 via-[#0F0F15] to-pink-500 accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
 
                     {/* Saturation */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Saturation</span>
-                        <button 
-                          onDoubleClick={() => handleResetSlider("saturation")}
-                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                        >
+                        <button onDoubleClick={() => handleResetSlider("saturation")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer">
                           {manualAdjustments.saturation > 0 ? `+${manualAdjustments.saturation}` : manualAdjustments.saturation}%
                         </button>
                       </div>
-                      <input
-                        type="range"
-                        min="-100"
-                        max="100"
-                        step="1"
-                        value={manualAdjustments.saturation}
-                        onChange={(e) => handleAdjustmentChange("saturation", parseInt(e.target.value))}
-                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="-100" max="100" step="1" value={manualAdjustments.saturation} onChange={(e) => handleAdjustmentChange("saturation", parseInt(e.target.value))} className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
                   </div>
                 )}
@@ -1404,10 +1212,7 @@ export function FilterWorkspace() {
 
               {/* SECTION: EFFECTS */}
               <div className="border border-[#22222F] rounded-lg overflow-hidden bg-[#13131B]">
-                <button
-                  onClick={() => toggleSection("effects")}
-                  className="w-full px-3 py-2 bg-[#171723] hover:bg-[#1B1B2C] border-b border-[#22222F] flex justify-between items-center text-xs font-bold text-white transition-colors cursor-pointer"
-                >
+                <button onClick={() => toggleSection("effects")} className="w-full px-3 py-2 bg-[#171723] hover:bg-[#1B1B2C] border-b border-[#22222F] flex justify-between items-center text-xs font-bold text-white transition-colors cursor-pointer">
                   <span className="flex items-center gap-1.5">
                     <Sliders size={13} className="text-purple-400" />
                     <span>Stylized Effects</span>
@@ -1421,127 +1226,68 @@ export function FilterWorkspace() {
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Vignette (Dark Corners)</span>
-                        <button 
-                          onDoubleClick={() => handleResetSlider("vignette")}
-                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                        >
+                        <button onDoubleClick={() => handleResetSlider("vignette")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer">
                           {manualAdjustments.vignette}%
                         </button>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={manualAdjustments.vignette}
-                        onChange={(e) => handleAdjustmentChange("vignette", parseInt(e.target.value))}
-                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="0" max="100" step="1" value={manualAdjustments.vignette} onChange={(e) => handleAdjustmentChange("vignette", parseInt(e.target.value))} className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
 
                     {/* Sepia */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Vintage Sepia</span>
-                        <button 
-                          onDoubleClick={() => handleResetSlider("sepia")}
-                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                        >
+                        <button onDoubleClick={() => handleResetSlider("sepia")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer">
                           {manualAdjustments.sepia}%
                         </button>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={manualAdjustments.sepia}
-                        onChange={(e) => handleAdjustmentChange("sepia", parseInt(e.target.value))}
-                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="0" max="100" step="1" value={manualAdjustments.sepia} onChange={(e) => handleAdjustmentChange("sepia", parseInt(e.target.value))} className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
 
                     {/* Grayscale */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Grayscale Mix</span>
-                        <button 
-                          onDoubleClick={() => handleResetSlider("grayscale")}
-                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                        >
+                        <button onDoubleClick={() => handleResetSlider("grayscale")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer">
                           {manualAdjustments.grayscale}%
                         </button>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={manualAdjustments.grayscale}
-                        onChange={(e) => handleAdjustmentChange("grayscale", parseInt(e.target.value))}
-                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="0" max="100" step="1" value={manualAdjustments.grayscale} onChange={(e) => handleAdjustmentChange("grayscale", parseInt(e.target.value))} className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
 
                     {/* Blur */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Lens Defocus (Blur)</span>
-                        <button 
-                          onDoubleClick={() => handleResetSlider("blur")}
-                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                        >
+                        <button onDoubleClick={() => handleResetSlider("blur")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer">
                           {manualAdjustments.blur}px
                         </button>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="15"
-                        step="0.5"
-                        value={manualAdjustments.blur}
-                        onChange={(e) => handleAdjustmentChange("blur", parseFloat(e.target.value))}
-                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="0" max="15" step="0.5" value={manualAdjustments.blur} onChange={(e) => handleAdjustmentChange("blur", parseFloat(e.target.value))} className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
 
                     {/* Invert */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px]">
                         <span className="text-[#8A8A99] font-medium">Invert Phase</span>
-                        <button 
-                          onDoubleClick={() => handleResetSlider("invert")}
-                          className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer"
-                        >
+                        <button onDoubleClick={() => handleResetSlider("invert")} className="text-[9px] font-mono text-[#7C6FFF] hover:text-white cursor-pointer">
                           {manualAdjustments.invert}%
                         </button>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="5"
-                        value={manualAdjustments.invert}
-                        onChange={(e) => handleAdjustmentChange("invert", parseInt(e.target.value))}
-                        className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer"
-                      />
+                      <input type="range" min="0" max="100" step="5" value={manualAdjustments.invert} onChange={(e) => handleAdjustmentChange("invert", parseInt(e.target.value))} className="w-full h-1 bg-[#0F0F15] rounded appearance-none accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
                   </div>
                 )}
               </div>
-
             </div>
           )}
 
           {/* Tab 2: Histogram Visualization */}
           {rightTab === "histogram" && (
             <div className="p-4 space-y-5">
-              
               <div className="space-y-1.5">
                 <span className="text-xs font-semibold text-white">Live Signal Analysis</span>
-                <p className="text-[10px] text-[#8A8A99] leading-relaxed">
-                  Calculated dynamically from the viewport composite. Double check color clipping in shadows or highlights.
-                </p>
+                <p className="text-[10px] text-[#8A8A99] leading-relaxed">Calculated dynamically from the viewport composite. Double check color clipping in shadows or highlights.</p>
               </div>
 
               {/* Histogram Display Box */}
@@ -1551,48 +1297,17 @@ export function FilterWorkspace() {
                     {/* SVG Curve */}
                     <svg className="w-full h-[110px]" viewBox="0 0 260 110">
                       <g className="mix-blend-screen opacity-75">
-                        
                         {/* Red Channel */}
-                        {(histogramChannel === "all" || histogramChannel === "r") && (
-                          <path
-                            d={histogramSVGData.rPath}
-                            fill="rgba(239, 68, 68, 0.2)"
-                            stroke="rgb(239, 68, 68)"
-                            strokeWidth="1"
-                          />
-                        )}
+                        {(histogramChannel === "all" || histogramChannel === "r") && <path d={histogramSVGData.rPath} fill="rgba(239, 68, 68, 0.2)" stroke="rgb(239, 68, 68)" strokeWidth="1" />}
 
                         {/* Green Channel */}
-                        {(histogramChannel === "all" || histogramChannel === "g") && (
-                          <path
-                            d={histogramSVGData.gPath}
-                            fill="rgba(34, 197, 94, 0.18)"
-                            stroke="rgb(34, 197, 94)"
-                            strokeWidth="1"
-                          />
-                        )}
+                        {(histogramChannel === "all" || histogramChannel === "g") && <path d={histogramSVGData.gPath} fill="rgba(34, 197, 94, 0.18)" stroke="rgb(34, 197, 94)" strokeWidth="1" />}
 
                         {/* Blue Channel */}
-                        {(histogramChannel === "all" || histogramChannel === "b") && (
-                          <path
-                            d={histogramSVGData.bPath}
-                            fill="rgba(59, 130, 246, 0.25)"
-                            stroke="rgb(59, 130, 246)"
-                            strokeWidth="1"
-                          />
-                        )}
+                        {(histogramChannel === "all" || histogramChannel === "b") && <path d={histogramSVGData.bPath} fill="rgba(59, 130, 246, 0.25)" stroke="rgb(59, 130, 246)" strokeWidth="1" />}
 
                         {/* Luminance Channel */}
-                        {(histogramChannel === "all" || histogramChannel === "l") && (
-                          <path
-                            d={histogramSVGData.lPath}
-                            fill="none"
-                            stroke="rgba(255, 255, 255, 0.6)"
-                            strokeWidth="1.2"
-                            strokeDasharray="2,2"
-                          />
-                        )}
-
+                        {(histogramChannel === "all" || histogramChannel === "l") && <path d={histogramSVGData.lPath} fill="none" stroke="rgba(255, 255, 255, 0.6)" strokeWidth="1.2" strokeDasharray="2,2" />}
                       </g>
                     </svg>
 
@@ -1604,32 +1319,20 @@ export function FilterWorkspace() {
                     </div>
                   </div>
                 ) : (
-                  <div className="h-[120px] flex items-center justify-center text-[#5B5B6E] text-xs">
-                    No signal detected
-                  </div>
+                  <div className="h-[120px] flex items-center justify-center text-[#5B5B6E] text-xs">No signal detected</div>
                 )}
               </div>
 
               {/* Histogram channel filter tabs */}
               <div className="flex flex-wrap gap-1 p-0.5 bg-[#0F0F15] border border-[#22222F]/50 rounded-lg">
-                {(["all", "r", "g", "b", "l"] as const).map(ch => (
-                  <button
-                    key={ch}
-                    onClick={() => setHistogramChannel(ch)}
-                    className={`flex-1 py-1 text-[9px] font-semibold uppercase tracking-wider rounded transition-all cursor-pointer ${
-                      histogramChannel === ch 
-                        ? "bg-[#1E1E2A] text-white" 
-                        : "text-[#8A8A99] hover:text-white"
-                    }`}
-                  >
+                {(["all", "r", "g", "b", "l"] as const).map((ch) => (
+                  <button key={ch} onClick={() => setHistogramChannel(ch)} className={`flex-1 py-1 text-[9px] font-semibold uppercase tracking-wider rounded transition-all cursor-pointer ${histogramChannel === ch ? "bg-[#1E1E2A] text-white" : "text-[#8A8A99] hover:text-white"}`}>
                     {ch === "all" ? "RGB" : ch}
                   </button>
                 ))}
               </div>
-
             </div>
           )}
-
         </div>
 
         {/* Upload lookup to R2 footer */}
@@ -1641,16 +1344,16 @@ export function FilterWorkspace() {
                 Look Deployment
               </span>
               <div className="p-2 bg-[#0A0A0E] rounded border border-[#1A1A24] space-y-1 text-[10px] leading-normal font-mono">
-                <div className="flex justify-between text-[#8A8A99]"><span className="truncate">NAME:</span> <span className="text-white font-sans font-semibold truncate max-w-[140px]">{selectedFilter.name}</span></div>
-                <div className="flex justify-between text-[#8A8A99]"><span className="truncate">CAT:</span> <span className="text-white font-sans">{selectedFilter.category}</span></div>
+                <div className="flex justify-between text-[#8A8A99]">
+                  <span className="truncate">NAME:</span> <span className="text-white font-sans font-semibold truncate max-w-[140px]">{selectedFilter.name}</span>
+                </div>
+                <div className="flex justify-between text-[#8A8A99]">
+                  <span className="truncate">CAT:</span> <span className="text-white font-sans">{selectedFilter.category}</span>
+                </div>
               </div>
             </div>
 
-            <button
-              onClick={handleUploadFilter}
-              disabled={uploadStatus === "uploading"}
-              className="w-full flex items-center justify-center gap-2 py-2 bg-[#10B981] hover:bg-[#059669] disabled:bg-[#10B981]/50 text-white font-semibold text-xs rounded-lg shadow-lg shadow-[#10B981]/5 transition-colors disabled:cursor-not-allowed cursor-pointer"
-            >
+            <button onClick={handleUploadFilter} disabled={uploadStatus === "uploading"} className="w-full flex items-center justify-center gap-2 py-2 bg-[#10B981] hover:bg-[#059669] disabled:bg-[#10B981]/50 text-white font-semibold text-xs rounded-lg shadow-lg shadow-[#10B981]/5 transition-colors disabled:cursor-not-allowed cursor-pointer">
               {uploadStatus === "uploading" ? (
                 <>
                   <Loader2 size={13} className="animate-spin" />
@@ -1664,20 +1367,10 @@ export function FilterWorkspace() {
               )}
             </button>
 
-            {uploadMessage && (
-              <div className={`p-2 rounded text-[10px] leading-normal border ${
-                uploadStatus === "error" 
-                  ? "bg-red-500/10 border-red-500/30 text-red-400" 
-                  : "bg-green-500/10 border-green-500/30 text-green-400"
-              }`}>
-                {uploadMessage}
-              </div>
-            )}
+            {uploadMessage && <div className={`p-2 rounded text-[10px] leading-normal border ${uploadStatus === "error" ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-green-500/10 border-green-500/30 text-green-400"}`}>{uploadMessage}</div>}
           </div>
         )}
-
       </div>
-
     </div>
   );
 }

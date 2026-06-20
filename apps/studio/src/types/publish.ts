@@ -140,3 +140,17 @@ export interface VideoEffectPresetBatchPublishPayload {
     };
   }>;
 }
+
+export interface FilterPublishPayload {
+  id: string;
+  category: string;
+  definition: {
+    id: string;
+    name: string;
+    category: string;
+    description: string;
+    intensity: string;
+    swatch: string;
+  };
+  thumbnailDataUrl?: string;
+}
