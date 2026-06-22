@@ -7,7 +7,9 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { EffectRenderer, type EffectRendererType, type EffectParameters } from "@clypra/engine";
 import { VideoPlayer, EffectParameterEditor } from "../common";
 import { exportStaticImageWithEffect } from "./EffectVideoExporter";
-import { Download, Upload, Info, Image as ImageIcon, Film } from "lucide-react";
+import { Download, Upload, Info, Image as ImageIcon, Film, Sparkles, Loader2, Send, CloudUpload } from "lucide-react";
+import { useR2Publish } from "../../../hooks/useR2Publish";
+import { generateVideoOrBodyEffectPresetSuggestion } from "../../../services/geminiService";
 
 export function VideoEffectWorkspace() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -22,6 +24,72 @@ export function VideoEffectWorkspace() {
   const [parameters, setParameters] = useState<EffectParameters>({ intensity: 50, frequency: 10 });
   const [currentTime, setCurrentTime] = useState(0);
   const [videoMetadata, setVideoMetadata] = useState<{ duration: number; width: number; height: number } | null>(null);
+
+
+  // R2 Publishing State
+  const { publishVideoEffectPreset } = useR2Publish();
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishName, setPublishName] = useState("");
+  const [publishDescription, setPublishDescription] = useState("");
+  const [publishTags, setPublishTags] = useState("");
+
+  const handlePublish = async () => {
+    if (!publishName.trim() || !selectedEffect) return;
+    setIsPublishing(true);
+    try {
+      const result = await publishVideoEffectPreset({
+        id: publishName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        kind: "video",
+        metadata: {
+          name: publishName,
+          description: publishDescription,
+          renderer: selectedEffect,
+          params: parameters,
+          intensity: {
+            min: 0,
+            max: 100,
+            default: intensity * 100,
+            step: 1
+          },
+          tags: publishTags.split(",").map(t => t.trim()).filter(Boolean),
+          published: true, // Assuming auto-publish for now
+        }
+      });
+      alert(result.message);
+      setShowPublishModal(false);
+    } catch (error) {
+      console.error("Publishing failed:", error);
+      alert(error instanceof Error ? error.message : "Failed to publish effect");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  // AI Generation State
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerateEffect = async () => {
+    if (!aiPrompt.trim()) return;
+    setIsGenerating(true);
+    try {
+      const suggestion = await generateVideoOrBodyEffectPresetSuggestion({
+        kind: "video",
+        prompt: aiPrompt,
+      });
+      setSelectedEffect(suggestion.renderer as EffectRendererType);
+      setParameters(suggestion.params);
+      setIntensity(suggestion.defaultIntensity / 100);
+      setAiPrompt("");
+    } catch (error) {
+      console.error("AI Generation failed:", error);
+      alert(error instanceof Error ? error.message : "Failed to generate effect");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -290,6 +358,36 @@ export function VideoEffectWorkspace() {
           )}
         </div>
 
+
+        {/* AI Generation */}
+        <div className="p-4 border-b border-[#2A2A38]">
+          <h3 className="text-xs font-semibold text-gray-300 mb-2 flex items-center gap-2">
+            <Sparkles size={14} className="text-[#7C6FFF]" />
+            Generate Effect
+          </h3>
+          <div className="flex flex-col gap-2">
+            <textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="Describe an effect (e.g. glowing neon red outline with particles)..."
+              className="w-full h-20 bg-[#0E0E12] border border-[#2A2A38] rounded p-2 text-sm text-white resize-none"
+              disabled={isGenerating}
+            />
+            <button
+              onClick={handleGenerateEffect}
+              disabled={isGenerating || !aiPrompt.trim()}
+              className={`flex items-center justify-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isGenerating || !aiPrompt.trim()
+                  ? "bg-[#2A2A38] text-gray-500 cursor-not-allowed"
+                  : "bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white"
+              }`}
+            >
+              {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              {isGenerating ? "Generating..." : "Generate"}
+            </button>
+          </div>
+        </div>
+
         {/* Effect Categories */}
         <div className="p-4 space-y-4">
           {Object.keys(effectCategories).length === 0 ? (
@@ -342,6 +440,12 @@ export function VideoEffectWorkspace() {
               )}
 
               <div className="absolute top-4 right-4 flex gap-2">
+
+                <button onClick={() => setShowPublishModal(true)} disabled={!selectedEffect} className="flex items-center gap-2 px-3 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded-lg text-sm backdrop-blur transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <CloudUpload size={16} />
+                  Publish
+                </button>
+
                 <button onClick={exportFrame} className="flex items-center gap-2 px-3 py-2 bg-black/70 hover:bg-black/80 text-white rounded-lg text-sm backdrop-blur transition-colors">
                   <Download size={16} />
                   Export Frame
@@ -436,6 +540,39 @@ export function VideoEffectWorkspace() {
           </div>
         )}
       </div>
+
+      {/* Publish Modal */}
+      {showPublishModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-[#1E1E26] rounded-xl border border-[#2A2A38] w-[400px] overflow-hidden">
+            <div className="p-4 border-b border-[#2A2A38] flex justify-between items-center">
+              <h2 className="text-white font-bold">Publish Video Effect</h2>
+              <button onClick={() => setShowPublishModal(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">Effect Name</label>
+                <input type="text" value={publishName} onChange={e => setPublishName(e.target.value)} placeholder="e.g. Neon Cyberpunk" className="w-full bg-[#0E0E12] border border-[#2A2A38] rounded px-3 py-2 text-sm text-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">Description</label>
+                <textarea value={publishDescription} onChange={e => setPublishDescription(e.target.value)} placeholder="Describe this effect..." className="w-full h-20 bg-[#0E0E12] border border-[#2A2A38] rounded px-3 py-2 text-sm text-white resize-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">Tags (comma separated)</label>
+                <input type="text" value={publishTags} onChange={e => setPublishTags(e.target.value)} placeholder="neon, glow, cyberpunk" className="w-full bg-[#0E0E12] border border-[#2A2A38] rounded px-3 py-2 text-sm text-white" />
+              </div>
+            </div>
+            <div className="p-4 border-t border-[#2A2A38] flex justify-end gap-2">
+              <button onClick={() => setShowPublishModal(false)} className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">Cancel</button>
+              <button onClick={handlePublish} disabled={isPublishing || !publishName.trim()} className="flex items-center gap-2 px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                {isPublishing ? <Loader2 size={16} className="animate-spin" /> : <CloudUpload size={16} />}
+                {isPublishing ? "Publishing..." : "Publish to R2"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
