@@ -607,12 +607,6 @@ export function TransitionWorkspace() {
             </div>
           )}
 
-          {isAdmin && (
-            <div className="mb-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3">
-              <div className="text-xs text-amber-400">ℹ️ Transitions are unpublished by default. Use Admin Settings to publish.</div>
-            </div>
-          )}
-
           {uploadMessage && (
             <div className={`mb-3 flex items-start gap-2 rounded-lg border p-3 text-sm ${uploadStatus === "success" ? "border-green-500/50 bg-green-500/10 text-green-400" : "border-red-500/50 bg-red-500/10 text-red-400"}`}>
               {uploadStatus === "success" ? <CheckCircle className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
