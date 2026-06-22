@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Upload, Play, Pause, RotateCcw, Search, Eye, EyeOff, Sliders, Download, Loader2, CheckCircle, AlertTriangle, Sparkles, Film, Image as ImageIcon } from "lucide-react";
+import { Upload, Play, Pause, RotateCcw, Search, Eye, EyeOff, Sliders, Download, Loader2, CheckCircle, AlertTriangle, Sparkles, Film, Image as ImageIcon, Video, X } from "lucide-react";
 import { PRESET_TRANSITIONS, getTransitionsByCategory, searchTransitions, type TransitionPreset, type TransitionCategoryType, TRANSITION_CATEGORIES } from "./transitionPresets";
 import { renderTransition } from "./transitionRenderer";
+import { generateTransitionPreview, generateThumbnail, downloadBlob, formatFileSize, type PreviewResult } from "./transitionPreviewGenerator";
 
 const API_BASE_URL = "https://clypra-worker-api.abdulkabirmusa.com";
 
@@ -57,6 +58,12 @@ export function TransitionWorkspace() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [publishApproved, setPublishApproved] = useState(true);
+
+  // Preview generation states
+  const [generatingPreview, setGeneratingPreview] = useState(false);
+  const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null);
+  const [thumbnailDataUrl, setThumbnailDataUrl] = useState<string | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -277,9 +284,43 @@ export function TransitionWorkspace() {
   }, [selectedCategory, searchQuery]);
 
   // Handle upload
+  const handleGeneratePreview = async () => {
+    if (!selectedTransition || !clipARef.current || !clipBRef.current) {
+      setUploadMessage("Please select a transition and ensure media is loaded");
+      setUploadStatus("error");
+      return;
+    }
+
+    setGeneratingPreview(true);
+    setUploadMessage("");
+
+    try {
+      // Generate WebM preview
+      const preview = await generateTransitionPreview(clipARef.current, clipBRef.current, selectedTransition, {
+        width: 640,
+        height: 360,
+        fps: 30,
+        duration: duration,
+      });
+
+      // Generate thumbnail
+      const thumbnail = await generateThumbnail(clipARef.current, clipBRef.current, selectedTransition, 0.5, 640, 360);
+
+      setPreviewResult(preview);
+      setThumbnailDataUrl(thumbnail.dataUrl);
+      setShowPreviewModal(true);
+    } catch (error) {
+      setUploadStatus("error");
+      setUploadMessage(error instanceof Error ? error.message : "Failed to generate preview");
+      console.error("Preview generation error:", error);
+    } finally {
+      setGeneratingPreview(false);
+    }
+  };
+
   const handleUpload = async () => {
-    if (!selectedTransition) {
-      setUploadMessage("Please select a transition first");
+    if (!selectedTransition || !previewResult || !thumbnailDataUrl) {
+      setUploadMessage("Please generate a preview first");
       setUploadStatus("error");
       return;
     }
@@ -288,18 +329,8 @@ export function TransitionWorkspace() {
     setUploadMessage("Publishing transition...");
 
     try {
-      // Capture thumbnail from canvas
-      const canvas = canvasRef.current;
-      let thumbnailDataUrl: string | undefined;
-
-      if (canvas) {
-        // Render at 50% progress for thumbnail
-        const ctx = canvas.getContext("2d");
-        if (ctx && clipARef.current && clipBRef.current) {
-          renderTransition(ctx, clipARef.current, clipBRef.current, selectedTransition, 0.5, duration);
-          thumbnailDataUrl = canvas.toDataURL("image/png");
-        }
-      }
+      // Convert preview blob to base64
+      const previewBase64 = await blobToBase64(previewResult.blob);
 
       const response = await fetch(`${API_BASE_URL}/transitions/upload`, {
         method: "POST",
@@ -320,6 +351,7 @@ export function TransitionWorkspace() {
             published: isAdmin ? publishApproved : false,
           },
           thumbnailDataUrl,
+          previewDataUrl: previewBase64,
         }),
       });
 
@@ -330,10 +362,33 @@ export function TransitionWorkspace() {
       const data = await response.json();
       setUploadStatus("success");
       setUploadMessage(data.message || `Transition "${selectedTransition.name}" published successfully!`);
+      setShowPreviewModal(false);
     } catch (error) {
       setUploadStatus("error");
       setUploadMessage(error instanceof Error ? error.message : "Failed to publish transition");
     }
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const handleDownloadPreview = () => {
+    if (!previewResult || !selectedTransition) return;
+    downloadBlob(previewResult.blob, `${selectedTransition.id}-preview.webm`);
+  };
+
+  const handleDownloadThumbnail = () => {
+    if (!thumbnailDataUrl || !selectedTransition) return;
+    const link = document.createElement("a");
+    link.href = thumbnailDataUrl;
+    link.download = `${selectedTransition.id}-thumbnail.png`;
+    link.click();
   };
 
   return (
@@ -534,28 +589,122 @@ export function TransitionWorkspace() {
             </label>
           )}
 
-          <button onClick={handleUpload} disabled={!selectedTransition || uploadStatus === "uploading"} className="flex w-full items-center justify-center gap-2 rounded-lg bg-violet-500 px-4 py-3 font-medium text-white hover:bg-violet-600 disabled:opacity-50">
-            {uploadStatus === "uploading" ? (
+          <button onClick={handleGeneratePreview} disabled={!selectedTransition || !mediaLoaded || generatingPreview} className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-violet-500 px-4 py-3 font-medium text-white hover:bg-violet-600 disabled:opacity-50">
+            {generatingPreview ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Publishing...
+                Generating Preview...
               </>
             ) : (
               <>
-                <Upload className="h-4 w-4" />
-                Publish to API
+                <Video className="h-4 w-4" />
+                Generate Preview
               </>
             )}
           </button>
 
+          {previewResult && (
+            <div className="mb-3 rounded-lg border border-green-500/50 bg-green-500/10 p-3">
+              <div className="flex items-center gap-2 text-green-400 text-sm">
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                <span>Preview ready ({formatFileSize(previewResult.size)})</span>
+              </div>
+              <button onClick={() => setShowPreviewModal(true)} className="mt-2 text-xs text-green-400 hover:underline">
+                View Preview
+              </button>
+            </div>
+          )}
+
           {uploadMessage && (
-            <div className={`mt-3 flex items-start gap-2 rounded-lg border p-3 text-sm ${uploadStatus === "success" ? "border-green-500/50 bg-green-500/10 text-green-400" : "border-red-500/50 bg-red-500/10 text-red-400"}`}>
+            <div className={`mb-3 flex items-start gap-2 rounded-lg border p-3 text-sm ${uploadStatus === "success" ? "border-green-500/50 bg-green-500/10 text-green-400" : "border-red-500/50 bg-red-500/10 text-red-400"}`}>
               {uploadStatus === "success" ? <CheckCircle className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
               <span>{uploadMessage}</span>
             </div>
           )}
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {showPreviewModal && previewResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-8" onClick={() => setShowPreviewModal(false)}>
+          <div className="relative max-w-4xl w-full rounded-xl bg-[#0F0F16] border border-[#1A1A24] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-[#1A1A24] p-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Preview & Upload</h3>
+                <p className="text-xs text-[#9A9AAA] mt-1">{selectedTransition?.name}</p>
+              </div>
+              <button onClick={() => setShowPreviewModal(false)} className="text-[#9A9AAA] hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Preview Content */}
+            <div className="p-6 space-y-4">
+              {/* Video Preview */}
+              <div className="rounded-lg overflow-hidden bg-black">
+                <video src={previewResult.dataUrl} controls loop autoPlay className="w-full" />
+              </div>
+
+              {/* Thumbnail Preview */}
+              {thumbnailDataUrl && (
+                <div>
+                  <h4 className="text-sm font-medium text-white mb-2">Thumbnail</h4>
+                  <div className="rounded-lg overflow-hidden bg-black border border-[#2A2A38]">
+                    <img src={thumbnailDataUrl} alt="Thumbnail" className="w-full" />
+                  </div>
+                </div>
+              )}
+
+              {/* File Info */}
+              <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-[#1A1A24] border border-[#2A2A38]">
+                <div>
+                  <div className="text-xs text-[#9A9AAA]">Video Size</div>
+                  <div className="text-sm text-white font-medium">{formatFileSize(previewResult.size)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-[#9A9AAA]">Duration</div>
+                  <div className="text-sm text-white font-medium">{previewResult.duration.toFixed(2)}s</div>
+                </div>
+                <div>
+                  <div className="text-xs text-[#9A9AAA]">Resolution</div>
+                  <div className="text-sm text-white font-medium">640 × 360</div>
+                </div>
+                <div>
+                  <div className="text-xs text-[#9A9AAA]">Format</div>
+                  <div className="text-sm text-white font-medium">WebM (VP8)</div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button onClick={handleDownloadPreview} className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-4 py-3 text-sm font-medium text-white hover:bg-[#2A2A38]">
+                  <Download className="h-4 w-4" />
+                  Download Preview
+                </button>
+                <button onClick={handleDownloadThumbnail} className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-4 py-3 text-sm font-medium text-white hover:bg-[#2A2A38]">
+                  <Download className="h-4 w-4" />
+                  Download Thumbnail
+                </button>
+              </div>
+
+              <button onClick={handleUpload} disabled={uploadStatus === "uploading"} className="w-full flex items-center justify-center gap-2 rounded-lg bg-violet-500 px-4 py-3 font-medium text-white hover:bg-violet-600 disabled:opacity-50">
+                {uploadStatus === "uploading" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    Publish to API
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
