@@ -15,6 +15,7 @@ import { StickerPublishPanel } from "./components/StickerPublishPanel";
 import { OverlayPublishPanel } from "./components/OverlayPublishPanel";
 import { VideoEffectWorkspace, FilterWorkspace, BodyEffectWorkspace, TransitionWorkspace } from "./components/effects";
 import { AdminPurgeSettings } from "./components/settings/AdminPurgeSettings";
+import { AdminTransitionsSettings } from "./components/settings/AdminTransitionsSettings";
 import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra/engine";
 import { getPresetScene } from "@clypra/engine";
 import { COMPOSITION_PRESETS } from "@clypra/engine";
@@ -70,6 +71,32 @@ if (typeof window !== "undefined" && !(window as any).__clypra_fetch_intercepted
 }
 
 const CREATOR_SESSION_KEY = "clypra_studio_creator_session";
+
+// Admin Settings Tabs Component
+function AdminSettingsTabs() {
+  const [activeTab, setActiveTab] = useState<"cache" | "transitions">("cache");
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Tabs Header */}
+      <div className="border-b border-(--studio-border) bg-(--studio-panel) px-6">
+        <div className="flex gap-6">
+          <button onClick={() => setActiveTab("cache")} className={`relative px-1 py-4 text-sm font-medium transition-colors ${activeTab === "cache" ? "text-white" : "text-(--studio-muted) hover:text-white"}`}>
+            Cache Control
+            {activeTab === "cache" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--studio-accent)" />}
+          </button>
+          <button onClick={() => setActiveTab("transitions")} className={`relative px-1 py-4 text-sm font-medium transition-colors ${activeTab === "transitions" ? "text-white" : "text-(--studio-muted) hover:text-white"}`}>
+            Transitions
+            {activeTab === "transitions" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--studio-accent)" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto">{activeTab === "cache" ? <AdminPurgeSettings /> : <AdminTransitionsSettings />}</div>
+    </div>
+  );
+}
 
 export default function App() {
   // Primary state configuration
@@ -1497,13 +1524,13 @@ export default function App() {
         ) : activeRailItem === "admin" ? (
           <div className="min-w-0 flex-1 overflow-y-auto bg-[#0B0B10]">
             {isAdmin ? (
-              <AdminPurgeSettings />
+              <AdminSettingsTabs />
             ) : (
               <div className="flex h-full items-center justify-center text-center p-6 text-(--studio-muted)">
                 <div className="max-w-md space-y-3">
                   <Shield size={48} className="mx-auto text-red-500/50" />
                   <h3 className="text-sm font-semibold text-white">Unauthorized Access</h3>
-                  <p className="text-xs text-(--studio-muted)">Only logged-in administrators are allowed to access the server cache control panel.</p>
+                  <p className="text-xs text-(--studio-muted)">Only logged-in administrators are allowed to access the admin panel.</p>
                 </div>
               </div>
             )}
