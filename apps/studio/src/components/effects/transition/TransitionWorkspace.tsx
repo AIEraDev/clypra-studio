@@ -626,81 +626,106 @@ export function TransitionWorkspace() {
 
       {/* Preview Modal */}
       {showPreviewModal && previewResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-8" onClick={() => setShowPreviewModal(false)}>
-          <div className="relative max-w-4xl w-full rounded-xl bg-[#0F0F16] border border-[#1A1A24] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={() => setShowPreviewModal(false)}>
+          <div className="relative max-w-5xl w-full max-h-[90vh] overflow-y-auto rounded-2xl bg-[#0F0F16] border border-[#2A2A38] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[#1A1A24] p-4">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#1A1A24] bg-[#0F0F16] px-6 py-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">Preview & Upload</h3>
-                <p className="text-xs text-[#9A9AAA] mt-1">{selectedTransition?.name}</p>
+                <h3 className="text-xl font-bold text-white">Preview & Upload</h3>
+                <p className="text-sm text-[#9A9AAA] mt-0.5">{selectedTransition?.name}</p>
               </div>
-              <button onClick={() => setShowPreviewModal(false)} className="text-[#9A9AAA] hover:text-white">
+              <button onClick={() => setShowPreviewModal(false)} className="flex items-center justify-center h-8 w-8 rounded-lg bg-[#1A1A24] text-[#9A9AAA] hover:text-white hover:bg-[#2A2A38] transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Preview Content */}
-            <div className="p-6 space-y-4">
-              {/* Video Preview */}
-              <div className="rounded-lg overflow-hidden bg-black">
-                <video src={previewResult.dataUrl} controls loop autoPlay className="w-full" />
-              </div>
+            <div className="p-6">
+              <div className="grid grid-cols-3 gap-6">
+                {/* Left Column - Video Preview */}
+                <div className="col-span-2 space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                      <Video className="h-4 w-4 text-violet-400" />
+                      Video Preview
+                    </h4>
+                    <div className="rounded-xl overflow-hidden bg-black border border-[#2A2A38] shadow-xl">
+                      <video src={previewResult.dataUrl} controls loop autoPlay className="w-full aspect-video" />
+                    </div>
+                  </div>
 
-              {/* Thumbnail Preview */}
-              {thumbnailDataUrl && (
-                <div>
-                  <h4 className="text-sm font-medium text-white mb-2">Thumbnail</h4>
-                  <div className="rounded-lg overflow-hidden bg-black border border-[#2A2A38]">
-                    <img src={thumbnailDataUrl} alt="Thumbnail" className="w-full" />
+                  {/* Thumbnail Preview */}
+                  {thumbnailDataUrl && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-violet-400" />
+                        Thumbnail
+                      </h4>
+                      <div className="rounded-xl overflow-hidden bg-black border border-[#2A2A38]">
+                        <img src={thumbnailDataUrl} alt="Thumbnail" className="w-full" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column - Info & Actions */}
+                <div className="space-y-4">
+                  {/* File Info */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-3">File Information</h4>
+                    <div className="space-y-3">
+                      <div className="rounded-lg bg-[#1A1A24] border border-[#2A2A38] p-3">
+                        <div className="text-xs text-[#9A9AAA] mb-1">Video Size</div>
+                        <div className="text-base text-white font-semibold">{formatFileSize(previewResult.size)}</div>
+                      </div>
+                      <div className="rounded-lg bg-[#1A1A24] border border-[#2A2A38] p-3">
+                        <div className="text-xs text-[#9A9AAA] mb-1">Duration</div>
+                        <div className="text-base text-white font-semibold">{previewResult.duration.toFixed(2)}s</div>
+                      </div>
+                      <div className="rounded-lg bg-[#1A1A24] border border-[#2A2A38] p-3">
+                        <div className="text-xs text-[#9A9AAA] mb-1">Resolution</div>
+                        <div className="text-base text-white font-semibold">640 × 360</div>
+                      </div>
+                      <div className="rounded-lg bg-[#1A1A24] border border-[#2A2A38] p-3">
+                        <div className="text-xs text-[#9A9AAA] mb-1">Format</div>
+                        <div className="text-base text-white font-semibold">WebM (VP8)</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Download Actions */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-3">Download</h4>
+                    <div className="space-y-2">
+                      <button onClick={handleDownloadPreview} className="w-full flex items-center justify-center gap-2 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#2A2A38] hover:border-violet-500/50 transition-all">
+                        <Download className="h-4 w-4" />
+                        Download Video
+                      </button>
+                      <button onClick={handleDownloadThumbnail} className="w-full flex items-center justify-center gap-2 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#2A2A38] hover:border-violet-500/50 transition-all">
+                        <Download className="h-4 w-4" />
+                        Download Thumbnail
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Upload Action */}
+                  <div className="pt-4 border-t border-[#1A1A24]">
+                    <button onClick={handleUpload} disabled={uploadStatus === "uploading"} className="w-full flex items-center justify-center gap-2 rounded-lg bg-violet-500 px-4 py-3 font-semibold text-white hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/20">
+                      {uploadStatus === "uploading" ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Publishing...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          Publish to API
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
-              )}
-
-              {/* File Info */}
-              <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-[#1A1A24] border border-[#2A2A38]">
-                <div>
-                  <div className="text-xs text-[#9A9AAA]">Video Size</div>
-                  <div className="text-sm text-white font-medium">{formatFileSize(previewResult.size)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#9A9AAA]">Duration</div>
-                  <div className="text-sm text-white font-medium">{previewResult.duration.toFixed(2)}s</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#9A9AAA]">Resolution</div>
-                  <div className="text-sm text-white font-medium">640 × 360</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#9A9AAA]">Format</div>
-                  <div className="text-sm text-white font-medium">WebM (VP8)</div>
-                </div>
               </div>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button onClick={handleDownloadPreview} className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-4 py-3 text-sm font-medium text-white hover:bg-[#2A2A38]">
-                  <Download className="h-4 w-4" />
-                  Download Preview
-                </button>
-                <button onClick={handleDownloadThumbnail} className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-[#2A2A38] bg-[#1A1A24] px-4 py-3 text-sm font-medium text-white hover:bg-[#2A2A38]">
-                  <Download className="h-4 w-4" />
-                  Download Thumbnail
-                </button>
-              </div>
-
-              <button onClick={handleUpload} disabled={uploadStatus === "uploading"} className="w-full flex items-center justify-center gap-2 rounded-lg bg-violet-500 px-4 py-3 font-medium text-white hover:bg-violet-600 disabled:opacity-50">
-                {uploadStatus === "uploading" ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Publishing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4" />
-                    Publish to API
-                  </>
-                )}
-              </button>
             </div>
           </div>
         </div>
