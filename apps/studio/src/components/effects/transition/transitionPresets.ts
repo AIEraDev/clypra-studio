@@ -17,7 +17,7 @@ export interface TransitionPreset {
   params: Record<string, any>;
 }
 
-export const TRANSITION_CATEGORIES = ["all", "fade", "slide", "wipe", "zoom", "dissolve", "creative"] as const;
+export const TRANSITION_CATEGORIES = ["fade", "slide", "wipe", "zoom", "dissolve", "creative"] as const;
 export type TransitionCategoryType = (typeof TRANSITION_CATEGORIES)[number];
 
 /**
@@ -359,9 +359,6 @@ export const PRESET_TRANSITIONS: TransitionPreset[] = [
  * Get transitions by category
  */
 export function getTransitionsByCategory(category: TransitionCategoryType): TransitionPreset[] {
-  if (category === "all") {
-    return PRESET_TRANSITIONS;
-  }
   return PRESET_TRANSITIONS.filter((t) => t.category === category);
 }
 

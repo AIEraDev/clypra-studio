@@ -49,7 +49,7 @@ export function TransitionWorkspace() {
 
   // UI states
   const [leftTab, setLeftTab] = useState<"presets" | "ai">("presets");
-  const [selectedCategory, setSelectedCategory] = useState<TransitionCategoryType>("all");
+  const [selectedCategory, setSelectedCategory] = useState<TransitionCategoryType>("fade");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSplitComparison, setShowSplitComparison] = useState(false);
 
