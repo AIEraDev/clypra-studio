@@ -57,7 +57,6 @@ export function TransitionWorkspace() {
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [uploadMessage, setUploadMessage] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
-  const [publishApproved, setPublishApproved] = useState(true);
 
   // Preview generation states
   const [generatingPreview, setGeneratingPreview] = useState(false);
@@ -348,7 +347,7 @@ export function TransitionWorkspace() {
             defaultEasing: selectedTransition.defaultEasing,
             renderer: selectedTransition.renderer,
             params: selectedTransition.params,
-            published: isAdmin ? publishApproved : false,
+            published: false,
           },
           thumbnailDataUrl,
           previewDataUrl: previewBase64,
@@ -582,13 +581,6 @@ export function TransitionWorkspace() {
 
         {/* Upload Section */}
         <div className="border-t border-[#1A1A24] p-4">
-          {isAdmin && (
-            <label className="mb-3 flex items-center gap-2 text-sm text-white">
-              <input type="checkbox" checked={publishApproved} onChange={(e) => setPublishApproved(e.target.checked)} className="rounded" />
-              Publish as approved
-            </label>
-          )}
-
           <button onClick={handleGeneratePreview} disabled={!selectedTransition || !mediaLoaded || generatingPreview} className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-violet-500 px-4 py-3 font-medium text-white hover:bg-violet-600 disabled:opacity-50">
             {generatingPreview ? (
               <>
@@ -612,6 +604,12 @@ export function TransitionWorkspace() {
               <button onClick={() => setShowPreviewModal(true)} className="mt-2 text-xs text-green-400 hover:underline">
                 View Preview
               </button>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="mb-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3">
+              <div className="text-xs text-amber-400">ℹ️ Transitions are unpublished by default. Use Admin Settings to publish.</div>
             </div>
           )}
 
