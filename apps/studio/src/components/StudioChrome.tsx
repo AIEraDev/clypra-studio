@@ -1,7 +1,7 @@
 import React from "react";
-import { Download, FileCode, Filter, Grid2X2, Layers, Music, Palette, Shield, Sparkles, Sticker, Type, Video, Wand2 } from "lucide-react";
+import { Download, FileCode, Filter, Grid2X2, Layers, Music, Palette, Shield, Sparkles, Sticker, Type, Video, Wand2, Shuffle } from "lucide-react";
 
-export type RailItem = "text-effects" | "audio" | "stickers" | "overlays" | "video-effects" | "body-effects" | "filters" | "admin";
+export type RailItem = "text-effects" | "audio" | "stickers" | "overlays" | "video-effects" | "body-effects" | "filters" | "transitions" | "admin";
 
 const RAIL_ITEMS: Array<{
   id: RailItem;
@@ -16,6 +16,7 @@ const RAIL_ITEMS: Array<{
   { id: "video-effects", label: "Video Effects", icon: Wand2 },
   { id: "body-effects", label: "Body Effects", icon: Sparkles },
   { id: "filters", label: "Filters", icon: Filter },
+  { id: "transitions", label: "Transitions", icon: Shuffle },
   { id: "admin", label: "Admin Settings", icon: Shield, adminOnly: true },
 ];
 
@@ -27,7 +28,7 @@ interface LeftRailProps {
 
 export function LeftRail({ activeItem, onSelectItem, isAdmin = false }: LeftRailProps) {
   const visibleItems = RAIL_ITEMS.filter((item) => !item.adminOnly || isAdmin);
-  
+
   return (
     <nav className="studio-left-rail flex w-14 shrink-0 flex-col items-center gap-1 border-r border-(--studio-border) bg-(--studio-shell) py-2" aria-label="Creation library">
       {visibleItems.map(({ id, label, icon: Icon }) => (

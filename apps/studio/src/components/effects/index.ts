@@ -14,3 +14,6 @@ export * from "./filter";
 
 // Body effects
 export * from "./body";
+
+// Transition effects
+export * from "./transition";

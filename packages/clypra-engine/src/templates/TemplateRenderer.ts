@@ -147,11 +147,7 @@ export class TemplateRenderer {
     return { opacity, x, y, scale, blur, typewriterProgress };
   }
 
-  drawFrame(
-    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    time: number,
-    fitToContentOrOpts: boolean | { fitToContent?: boolean; skipClear?: boolean } = false
-  ): void {
+  drawFrame(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, time: number, fitToContentOrOpts: boolean | { fitToContent?: boolean; skipClear?: boolean } = false): void {
     const fitToContent = typeof fitToContentOrOpts === "boolean" ? fitToContentOrOpts : !!fitToContentOrOpts?.fitToContent;
     const skipClear = typeof fitToContentOrOpts === "object" ? !!fitToContentOrOpts?.skipClear : false;
 
@@ -172,10 +168,7 @@ export class TemplateRenderer {
         ctx.save();
 
         const padding = 0.85; // 15% margin
-        const scale = Math.min(
-          this.template.canvasWidth / bounds.width,
-          this.template.canvasHeight / bounds.height
-        ) * padding;
+        const scale = Math.min(this.template.canvasWidth / bounds.width, this.template.canvasHeight / bounds.height) * padding;
 
         // Limit maximum scale to 3.0 to prevent pixelation of very small text
         const finalScale = Math.min(3.0, scale);
@@ -208,14 +201,36 @@ export class TemplateRenderer {
     let maxX = -Infinity;
     let maxY = -Infinity;
 
-    for (const layout of this.lastLayerLayouts.values()) {
-      minX = Math.min(minX, layout.x);
-      minY = Math.min(minY, layout.y);
-      maxX = Math.max(maxX, layout.x + layout.width);
-      maxY = Math.max(maxY, layout.y + layout.height);
+    // Only include visible text layers for content bounds calculation
+    // Shape and image layers are often decorative backgrounds that inflate the bounds
+    let hasTextLayers = false;
+
+    for (const [layerId, layout] of this.lastLayerLayouts.entries()) {
+      // Find the layer to check its kind
+      const layer = this.template?.layers?.find((l) => l.id === layerId);
+
+      // Only include text layers in content bounds
+      if (layer && layer.kind === "text") {
+        hasTextLayers = true;
+        minX = Math.min(minX, layout.x);
+        minY = Math.min(minY, layout.y);
+        maxX = Math.max(maxX, layout.x + layout.width);
+        maxY = Math.max(maxY, layout.y + layout.height);
+      }
+    }
+
+    // Fallback: if no text layers, include all layers
+    if (!hasTextLayers) {
+      for (const layout of this.lastLayerLayouts.values()) {
+        minX = Math.min(minX, layout.x);
+        minY = Math.min(minY, layout.y);
+        maxX = Math.max(maxX, layout.x + layout.width);
+        maxY = Math.max(maxY, layout.y + layout.height);
+      }
     }
 
     if (minX === Infinity || minY === Infinity) return null;
+
     return {
       x: minX,
       y: minY,
@@ -257,9 +272,9 @@ export class TemplateRenderer {
         cx = rawW === "auto" ? x : x + (rawW as number) / 2;
         cy = rawH === "auto" ? y : y + (rawH as number) / 2;
       } else {
-        const width  = evaluateAnimatable((resolved as any).width,  this.currentTime, this.template.duration) as number;
+        const width = evaluateAnimatable((resolved as any).width, this.currentTime, this.template.duration) as number;
         const height = evaluateAnimatable((resolved as any).height, this.currentTime, this.template.duration) as number;
-        cx = x + width  / 2;
+        cx = x + width / 2;
         cy = y + height / 2;
       }
 
@@ -300,7 +315,7 @@ export class TemplateRenderer {
     const y = evaluateAnimatable(resolved.y, this.currentTime, this.template.duration);
 
     // width / height may be "auto" — defer resolution until after ctx.font is set.
-    const rawWidth  = this.evaluateTextDimension(resolved, "width");
+    const rawWidth = this.evaluateTextDimension(resolved, "width");
     const rawHeight = this.evaluateTextDimension(resolved, "height");
 
     // Evaluate background properties if present
@@ -312,10 +327,10 @@ export class TemplateRenderer {
 
     // Resolve per-side padding — individual sides take priority; fall back to legacy `padding`
     const legacyPadding = resolved.padding !== undefined ? evaluateAnimatable(resolved.padding, this.currentTime, this.template.duration) : 0;
-    const pt = resolved.paddingTop    !== undefined ? evaluateAnimatable(resolved.paddingTop,    this.currentTime, this.template.duration) : legacyPadding;
-    const pr = resolved.paddingRight  !== undefined ? evaluateAnimatable(resolved.paddingRight,  this.currentTime, this.template.duration) : legacyPadding;
+    const pt = resolved.paddingTop !== undefined ? evaluateAnimatable(resolved.paddingTop, this.currentTime, this.template.duration) : legacyPadding;
+    const pr = resolved.paddingRight !== undefined ? evaluateAnimatable(resolved.paddingRight, this.currentTime, this.template.duration) : legacyPadding;
     const pb = resolved.paddingBottom !== undefined ? evaluateAnimatable(resolved.paddingBottom, this.currentTime, this.template.duration) : legacyPadding;
-    const pl = resolved.paddingLeft   !== undefined ? evaluateAnimatable(resolved.paddingLeft,   this.currentTime, this.template.duration) : legacyPadding;
+    const pl = resolved.paddingLeft !== undefined ? evaluateAnimatable(resolved.paddingLeft, this.currentTime, this.template.duration) : legacyPadding;
 
     const overflow = resolved.overflow;
     const verticalAlign = resolved.verticalAlign || "middle";
@@ -364,9 +379,7 @@ export class TemplateRenderer {
       // Shrink font to fit inside the content area in BOTH dimensions.
       // 1. Fit to width first.
       const measuredWidth = ctx.measureText(textToDraw).width;
-      let scale = (measuredWidth > contentW && contentW > 0)
-        ? contentW / measuredWidth
-        : 1;
+      let scale = measuredWidth > contentW && contentW > 0 ? contentW / measuredWidth : 1;
       // 2. Also fit to height (single-line: inkLineH ≈ fontSize).
       // If height is auto, shrink is a no-op in the vertical axis.
       if (rawHeight !== "auto") {
@@ -395,13 +408,11 @@ export class TemplateRenderer {
     if (rawHeight === "auto") {
       // Measure real font metrics if available, otherwise approximate.
       const sampleMetrics = ctx.measureText(lines[0] || "Ag");
-      const ascent  = sampleMetrics.actualBoundingBoxAscent  ?? adjustedFontSize * 0.8;
+      const ascent = sampleMetrics.actualBoundingBoxAscent ?? adjustedFontSize * 0.8;
       const descent = sampleMetrics.actualBoundingBoxDescent ?? adjustedFontSize * 0.2;
-      const inkLineH    = ascent + descent;
+      const inkLineH = ascent + descent;
       const lineAdvance = adjustedFontSize * 1.2;
-      const totalInkH   = lines.length === 1
-        ? inkLineH
-        : inkLineH + (lines.length - 1) * lineAdvance;
+      const totalInkH = lines.length === 1 ? inkLineH : inkLineH + (lines.length - 1) * lineAdvance;
       resolvedHeight = totalInkH + pt + pb;
     } else {
       resolvedHeight = rawHeight as number;
@@ -412,7 +423,7 @@ export class TemplateRenderer {
     // Exception: expand-panel (and auto width) grows the panel itself to fit the text.
     let bgX = x;
     let bgY = y;
-    let bgWidth  = resolvedWidth;
+    let bgWidth = resolvedWidth;
     let bgHeight = resolvedHeight;
 
     // For expand-panel / auto-width with centered/right alignment, anchor the panel
@@ -421,9 +432,9 @@ export class TemplateRenderer {
       if (align === "center") {
         // x is treated as the horizontal centre of the declared slot.
         // For auto, x is just the left origin, so anchor on x directly.
-        bgX = rawWidth === "auto" ? x : (x + (rawWidth as number) / 2) - bgWidth / 2;
+        bgX = rawWidth === "auto" ? x : x + (rawWidth as number) / 2 - bgWidth / 2;
       } else if (align === "right") {
-        bgX = rawWidth === "auto" ? x : (x + (rawWidth as number)) - bgWidth;
+        bgX = rawWidth === "auto" ? x : x + (rawWidth as number) - bgWidth;
       } else {
         bgX = x;
       }
@@ -527,7 +538,8 @@ export class TemplateRenderer {
         firstBaselineY = contentY + ascent;
       } else if (verticalAlign === "bottom") {
         firstBaselineY = contentY + contentH - totalInkHeight + ascent;
-      } else { // middle
+      } else {
+        // middle
         firstBaselineY = contentY + (contentH - totalInkHeight) / 2 + ascent;
       }
       lines.forEach((line, index) => {
@@ -539,7 +551,8 @@ export class TemplateRenderer {
         drawY = contentY + ascent;
       } else if (verticalAlign === "bottom") {
         drawY = contentY + contentH - descent;
-      } else { // middle
+      } else {
+        // middle
         drawY = contentY + (contentH - inkLineH) / 2 + ascent;
       }
       ctx.fillText(lines[0], drawX, drawY);
@@ -550,7 +563,6 @@ export class TemplateRenderer {
 
     ctx.restore();
   }
-
 
   private drawShapeLayer(ctx: CanvasRenderingContext2D, layer: TemplateShapeLayer): void {
     const resolved = layer;

@@ -13,7 +13,7 @@ import { DrawerIntro, LeftRail } from "./components/StudioChrome";
 import { AudioPublishPanel } from "./components/AudioPublishPanel";
 import { StickerPublishPanel } from "./components/StickerPublishPanel";
 import { OverlayPublishPanel } from "./components/OverlayPublishPanel";
-import { VideoEffectWorkspace, FilterWorkspace, BodyEffectWorkspace } from "./components/effects";
+import { VideoEffectWorkspace, FilterWorkspace, BodyEffectWorkspace, TransitionWorkspace } from "./components/effects";
 import { AdminPurgeSettings } from "./components/settings/AdminPurgeSettings";
 import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra/engine";
 import { getPresetScene } from "@clypra/engine";
@@ -1490,6 +1490,10 @@ export default function App() {
           <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
             <FilterWorkspace />
           </div>
+        ) : activeRailItem === "transitions" ? (
+          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
+            <TransitionWorkspace />
+          </div>
         ) : activeRailItem === "admin" ? (
           <div className="min-w-0 flex-1 overflow-y-auto bg-[#0B0B10]">
             {isAdmin ? (
@@ -1499,9 +1503,7 @@ export default function App() {
                 <div className="max-w-md space-y-3">
                   <Shield size={48} className="mx-auto text-red-500/50" />
                   <h3 className="text-sm font-semibold text-white">Unauthorized Access</h3>
-                  <p className="text-xs text-(--studio-muted)">
-                    Only logged-in administrators are allowed to access the server cache control panel.
-                  </p>
+                  <p className="text-xs text-(--studio-muted)">Only logged-in administrators are allowed to access the server cache control panel.</p>
                 </div>
               </div>
             )}
