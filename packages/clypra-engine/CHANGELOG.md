@@ -1,3 +1,21 @@
+# [1.25.0](https://github.com/AIEraDev/clypra-studio/compare/v1.24.0...v1.25.0) (2026-06-22)
+
+
+### Bug Fixes
+
+* **stickers:** check isGeneratingPreview in publish button disabled state ([c17c0a2](https://github.com/AIEraDev/clypra-studio/commit/c17c0a252cc7cad6261325bcb57ce2e4d5a30b3d))
+* **stickers:** execute preview recording loop sequentially to prevent cpu lock ([d0e1529](https://github.com/AIEraDev/clypra-studio/commit/d0e1529da0406b8074911f99bb07c12825f12b8b))
+* **stickers:** render preview video using lottie-web canvas ([b5af843](https://github.com/AIEraDev/clypra-studio/commit/b5af843f28c43deaac43cd44808b835d56a678d5))
+
+
+### Features
+
+* add .webm preview video generation for stickers ([00dbc0a](https://github.com/AIEraDev/clypra-studio/commit/00dbc0a94472be76ac915a5451f9e5d3be245411))
+* add Transition Lab workspace ([d429a41](https://github.com/AIEraDev/clypra-studio/commit/d429a41c5a8e4a8746754441b1246fa3cfec48cc))
+* completely remove WebM preview generation and layout, restricting to GIF only ([bb7e1e1](https://github.com/AIEraDev/clypra-studio/commit/bb7e1e1abe15e6bb9fba9d34ee9758c07d649eb2))
+* **studio:** add AI generation and R2 publishing to Body and Video workspaces ([980374f](https://github.com/AIEraDev/clypra-studio/commit/980374ffb86ad0ced1bd488f05df579468584b53))
+* support manual GIF preview uploading in StickerPublishPanel ([96968fc](https://github.com/AIEraDev/clypra-studio/commit/96968fc5cbf1fcf3d8ccdee4ede2659123349a1e))
+
 # [1.24.0](https://github.com/AIEraDev/clypra-studio/compare/v1.23.0...v1.24.0) (2026-06-20)
 
 
