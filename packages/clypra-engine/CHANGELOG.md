@@ -1,3 +1,10 @@
+# [1.27.0](https://github.com/AIEraDev/clypra-studio/compare/v1.26.0...v1.27.0) (2026-06-23)
+
+
+### Features
+
+* **engine:** add subpath exports for transitions, videoEffects, and textEffects modules ([7c53489](https://github.com/AIEraDev/clypra-studio/commit/7c534899fd96be71a64c59bd28770aebe6bcb9ea))
+
 # [1.26.0](https://github.com/AIEraDev/clypra-studio/compare/v1.25.0...v1.26.0) (2026-06-23)
 
 
