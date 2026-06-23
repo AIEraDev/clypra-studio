@@ -1,12 +1,13 @@
 /**
  * Video Effects Module
  *
- * Exports effect renderers, transition renderers, and types for video effects.
+ * Exports effect renderers and types for video/body effects.
  * Shared between main app and Studio for consistent effect rendering.
+ *
+ * NOTE: Transitions have been moved to their own module @clypra/engine/transitions
  */
 
 export { EffectRenderer } from "./EffectRenderer";
-export { TransitionRenderer } from "./TransitionRenderer";
 
 // Export registry, utilities, and API integration
 export * from "./effectsRegistry";
@@ -24,11 +25,6 @@ export type {
   EffectPreset,
   EffectParameters,
 
-  // Transition types
-  TransitionRenderer as TransitionRendererType,
-  TransitionPreset,
-  TransitionParameters,
-
   // Overlay types
   OverlayAsset,
 
@@ -38,11 +34,9 @@ export type {
   // Applied effect types
   AppliedOverlay,
   AppliedEffect,
-  AppliedTransition,
 
   // Shared types
   BlendMode,
-  EasingFunction,
   VideoEffectItem,
   VideoEffectCategory,
   VideoEffectManifest,

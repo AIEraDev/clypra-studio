@@ -8,6 +8,8 @@
  * - fade: Crossfade opacity
  * - zoom_in: Scale up during fade
  * - wipe_left: Reveal next frame from left
+ *
+ * Part of @clypra/engine - shared between clypra-studio and clypra app
  */
 
 import type { TransitionRenderer as TransitionRendererType, TransitionParameters, EasingFunction } from "./types";
@@ -45,6 +47,7 @@ export class TransitionRenderer {
       fade: this.renderFade,
       dissolve: this.renderDissolve,
       cut: this.renderCut,
+      canvas: this.renderFade, // Legacy fallback for clypra app
 
       // Zoom
       zoom_in: this.renderZoomIn,

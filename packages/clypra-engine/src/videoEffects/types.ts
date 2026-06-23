@@ -4,10 +4,11 @@
  * Distinguishes between:
  * - Overlay Assets: Actual video files (smoke.mov, fire.mov)
  * - Effect Presets: JSON behavior definitions (shake, blur)
- * - Transitions: JSON animation definitions (zoom, dissolve)
+ *
+ * NOTE: Transitions have been moved to @clypra/engine/transitions
  */
 
-export type EffectCategory = "overlay" | "effect" | "transition" | "filter";
+export type EffectCategory = "overlay" | "effect" | "filter";
 
 // ============================================================================
 // OVERLAY ASSETS (Data-driven: actual video/image files)
@@ -137,83 +138,6 @@ export interface EffectPreset {
 }
 
 // ============================================================================
-// TRANSITIONS (Behavior-driven: JSON definitions)
-// ============================================================================
-
-export type TransitionRenderer =
-  // Basic
-  | "fade"
-  | "dissolve"
-  | "cut"
-
-  // Zoom/Scale
-  | "zoom_in"
-  | "zoom_out"
-  | "zoom_blur"
-
-  // Slide
-  | "slide_left"
-  | "slide_right"
-  | "slide_up"
-  | "slide_down"
-
-  // Wipe
-  | "wipe_left"
-  | "wipe_right"
-  | "wipe_up"
-  | "wipe_down"
-  | "wipe_clockwise"
-  | "wipe_center"
-
-  // Shape
-  | "circle_expand"
-  | "circle_collapse"
-  | "diamond_expand"
-  | "rectangle_expand"
-
-  // Blur
-  | "blur_fade"
-  | "directional_blur"
-
-  // Creative
-  | "glitch"
-  | "rgb_split"
-  | "chromatic"
-  | "film_burn"
-  | "light_leak"
-  | "whip_pan";
-
-export interface TransitionPreset {
-  id: string;
-  name: string;
-  type: "transition";
-  category: string; // "basic", "slide", "zoom", "wipe", "creative", etc.
-  description: string;
-  thumbnail: string;
-
-  // The renderer that generates this transition
-  renderer: TransitionRenderer;
-
-  // Parameters for the renderer
-  params: TransitionParameters;
-
-  // Metadata
-  tags: string[];
-  isPremium?: boolean;
-
-  // Duration constraints
-  duration: {
-    min: number; // minimum duration in seconds
-    max: number; // maximum duration in seconds
-    default: number;
-    step: number;
-  };
-
-  // Transition behavior
-  easing: EasingFunction;
-}
-
-// ============================================================================
 // SHARED TYPES
 // ============================================================================
 
@@ -273,32 +197,6 @@ export interface EffectParameters {
   [key: string]: any;
 }
 
-export interface TransitionParameters {
-  // Common
-  easing?: EasingFunction;
-
-  // Directional
-  direction?: "left" | "right" | "up" | "down";
-  angle?: number; // degrees
-
-  // Scale/Zoom
-  scale?: number;
-  centerX?: number; // 0-1
-  centerY?: number; // 0-1
-
-  // Blur
-  blurAmount?: number;
-
-  // Wipe
-  feather?: number; // edge softness
-
-  // Color
-  color?: string;
-
-  // Generic
-  [key: string]: any;
-}
-
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
@@ -324,7 +222,7 @@ export interface FilterAsset {
   };
 }
 
-export type VideoEffectItem = OverlayAsset | EffectPreset | TransitionPreset | FilterAsset;
+export type VideoEffectItem = OverlayAsset | EffectPreset | FilterAsset;
 
 export interface VideoEffectCategory {
   id: string;
@@ -386,22 +284,6 @@ export interface AppliedEffect {
     intensity: number;
     easing: EasingFunction;
   }>;
-}
-
-export interface AppliedTransition {
-  id: string;
-  transitionId: string;
-  type: "transition";
-  renderer: TransitionRenderer;
-  params: TransitionParameters;
-
-  // Timing
-  duration: number;
-
-  // Placement
-  fromClipId: string;
-  toClipId: string;
-  alignment: "center" | "start" | "end";
 }
 
 // ============================================================================

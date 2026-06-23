@@ -41,6 +41,9 @@ export { InkBrushEngine } from "./engine/procedural/InkBrushEngine.js";
 export * from "./videoEffects";
 export * from "./bodyEffects";
 
+// Transitions (NEW - separated from videoEffects for clarity)
+export * from "./transitions";
+
 // Declarative Canvas Templates (NEW)
 export * from "./templates/TemplateRenderer.js";
 export * from "./templates/presets.js";
