@@ -1,6 +1,6 @@
 {
   "name": "@clypra/engine",
-  "version": "1.26.0",
+  "version": "1.27.0",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -10,6 +10,21 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./transitions": {
+      "types": "./dist/transitions/index.d.ts",
+      "import": "./dist/transitions/index.js",
+      "require": "./dist/transitions/index.cjs"
+    },
+    "./videoEffects": {
+      "types": "./dist/videoEffects/index.d.ts",
+      "import": "./dist/videoEffects/index.js",
+      "require": "./dist/videoEffects/index.cjs"
+    },
+    "./textEffects": {
+      "types": "./dist/textEffects/index.d.ts",
+      "import": "./dist/textEffects/index.js",
+      "require": "./dist/textEffects/index.cjs"
     }
   },
   "files": [

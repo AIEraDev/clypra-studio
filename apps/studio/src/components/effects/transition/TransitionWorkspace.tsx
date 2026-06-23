@@ -5,8 +5,15 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Upload, Play, Pause, RotateCcw, Search, Eye, EyeOff, Sliders, Download, Loader2, CheckCircle, AlertTriangle, Sparkles, Film, Image as ImageIcon, Video, X } from "lucide-react";
-import { PRESET_TRANSITIONS, getTransitionsByCategory, searchTransitions, type TransitionPreset, type TransitionCategoryType, TRANSITION_CATEGORIES } from "./transitionPresets";
+import { presets, helpers, type TransitionPreset, type TransitionCategory } from "@clypra/engine/transitions";
 import { renderTransition } from "./transitionRenderer";
+
+// Re-export from engine for convenience
+const PRESET_TRANSITIONS = presets.PRESET_TRANSITIONS;
+const getTransitionsByCategory = helpers.getTransitionsByCategory;
+const searchTransitions = helpers.searchTransitions;
+const TRANSITION_CATEGORIES = presets.TRANSITION_CATEGORIES;
+type TransitionCategoryType = TransitionCategory;
 import { generateTransitionPreview, generateThumbnail, downloadBlob, formatFileSize, type PreviewResult } from "./transitionPreviewGenerator";
 
 const API_BASE_URL = "https://clypra-worker-api.abdulkabirmusa.com";
