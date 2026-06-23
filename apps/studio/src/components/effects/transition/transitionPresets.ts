@@ -7,20 +7,17 @@
  * as the single source of truth shared between clypra app and clypra-studio.
  *
  * Migration guide:
- * - Import presets from: @clypra/engine/transitions (presets.PRESET_TRANSITIONS)
- * - Import helpers from: @clypra/engine/transitions (helpers.getTransitionsByCategory, helpers.searchTransitions)
+ * - Import presets from: @clypra/engine/transitions (TRANSITION_PRESETS)
+ * - Import helpers from: @clypra/engine/transitions (getTransitionsByCategory, searchTransitions)
  * - Import types from: @clypra/engine/transitions
  *
  * @deprecated Use @clypra/engine/transitions instead
  */
 
 // Re-export from engine for backwards compatibility
-import { presets, helpers, type TransitionPreset, type TransitionCategory } from "@clypra/engine/transitions";
+import { TRANSITION_PRESETS, TRANSITION_CATEGORIES, getTransitionsByCategory, searchTransitions, type TransitionPreset, type TransitionCategory } from "@clypra/engine/transitions";
 
-export const PRESET_TRANSITIONS = presets.PRESET_TRANSITIONS;
-export const TRANSITION_CATEGORIES = presets.TRANSITION_CATEGORIES;
-export const getTransitionsByCategory = helpers.getTransitionsByCategory;
-export const searchTransitions = helpers.searchTransitions;
-
+export const PRESET_TRANSITIONS = TRANSITION_PRESETS;
+export { TRANSITION_CATEGORIES, getTransitionsByCategory, searchTransitions };
 export type { TransitionPreset, TransitionCategory };
 export type TransitionCategoryType = TransitionCategory;
