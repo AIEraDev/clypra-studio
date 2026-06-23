@@ -1,3 +1,18 @@
+# [1.26.0](https://github.com/AIEraDev/clypra-studio/compare/v1.25.0...v1.26.0) (2026-06-23)
+
+
+### Bug Fixes
+
+* remove not needed message ([6c40970](https://github.com/AIEraDev/clypra-studio/commit/6c4097042e330580cea6ffc713fb4ad887f68dc6))
+* set published to false by default in transition upload ([4245538](https://github.com/AIEraDev/clypra-studio/commit/4245538a56b6b31537593248f39ab00ea1c2a836))
+
+
+### Features
+
+* add admin transitions management UI with publish/unpublish controls ([433719d](https://github.com/AIEraDev/clypra-studio/commit/433719dc1705c48b373a3875a26797dd2fbd92c4))
+* add WebM preview generation for transitions ([d9fb501](https://github.com/AIEraDev/clypra-studio/commit/d9fb501aed290cb9eb2fb19e9f8018cca91810c0))
+* **engine:** separate transitions module with preset library ([5796690](https://github.com/AIEraDev/clypra-studio/commit/5796690be9ff69b290c05fcb61d0ab8d14025062))
+
 # [1.25.0](https://github.com/AIEraDev/clypra-studio/compare/v1.24.0...v1.25.0) (2026-06-22)
 
 
