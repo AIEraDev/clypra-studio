@@ -709,27 +709,11 @@ export function FilterWorkspace() {
       console.log("[FilterWorkspace] ✅ Filter applied to sprite");
       console.log("[FilterWorkspace] Sprite.filters:", filteredSprite.filters);
 
-      // Split compare mask - filtered sprite fills entire screen
-      // Base sprite is masked to show only the unfiltered portion
-      const maskGraphics = new Graphics();
-
-      // Add filtered sprite first (bottom layer - shows filtered version)
-      stage.addChild(filteredSprite);
-
-      // Add base sprite on top with mask (shows unfiltered portion only)
-      stage.addChild(baseSprite);
-      stage.addChild(maskGraphics);
-      baseSprite.mask = maskGraphics; // Mask applied to BASE sprite, not filtered!
-
-      console.log("[FilterWorkspace] ✅ Sprites added to stage");
-      console.log("[FilterWorkspace] Stage children count:", stage.children.length);
-      console.log("[FilterWorkspace] Mask applied to: baseSprite");
-
-      maskGraphicsRef.current = maskGraphics;
+      // Store refs early so syncAdjustmentsUniforms can access them
       filteredSpriteRef.current = filteredSprite;
       baseSpriteRef.current = baseSprite;
 
-      // Set source textures
+      // Set source textures BEFORE adding to stage
       console.log("[FilterWorkspace] Loading textures... isVideo:", isVideo);
 
       if (isVideo && videoRef.current) {
@@ -749,7 +733,29 @@ export function FilterWorkspace() {
         }
       }
 
-      // Sync uniforms
+      // Split compare mask - filtered sprite fills entire screen
+      // Base sprite is masked to show only the unfiltered portion
+      const maskGraphics = new Graphics();
+
+      // Initialize mask with default split position (50%)
+      const initialSplitX = app.screen.width / 2;
+      maskGraphics.rect(0, 0, initialSplitX, app.screen.height).fill(0xffffff);
+      maskGraphicsRef.current = maskGraphics;
+
+      // Add sprites to stage WITH textures already loaded
+      // Add filtered sprite first (bottom layer - shows filtered version)
+      stage.addChild(filteredSprite);
+
+      // Add base sprite on top with mask (shows unfiltered portion only)
+      stage.addChild(baseSprite);
+      stage.addChild(maskGraphics);
+      baseSprite.mask = maskGraphics; // Mask applied to BASE sprite, not filtered!
+
+      console.log("[FilterWorkspace] ✅ Sprites added to stage WITH textures");
+      console.log("[FilterWorkspace] Stage children count:", stage.children.length);
+      console.log("[FilterWorkspace] Mask applied to: baseSprite, initial split at", initialSplitX);
+
+      // Sync uniforms and update mask based on current state
       syncAdjustmentsUniforms();
 
       // Render loop tick to draw histogram
