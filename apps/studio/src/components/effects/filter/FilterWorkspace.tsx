@@ -698,11 +698,8 @@ export function FilterWorkspace() {
       console.log("[FilterWorkspace] ✅ Adjustments filter compiled");
       console.log("[FilterWorkspace] Filter object:", adjustmentsFilter);
 
-      filteredSprite.filters = [adjustmentsFilter];
+      // Store filter ref but DON'T apply to sprite yet (wait until texture is loaded)
       adjustmentsFilterRef.current = adjustmentsFilter;
-
-      console.log("[FilterWorkspace] ✅ Filter applied to sprite");
-      console.log("[FilterWorkspace] Sprite.filters:", filteredSprite.filters);
 
       // Store refs early so syncAdjustmentsUniforms can access them
       filteredSpriteRef.current = filteredSprite;
@@ -752,6 +749,11 @@ export function FilterWorkspace() {
         // Force initial frame render - this uploads the video frame to GPU
         source.update();
         console.log("[FilterWorkspace] Initial frame update triggered");
+
+        // NOW apply the filter AFTER texture is loaded and assigned
+        filteredSprite.filters = [adjustmentsFilterRef.current];
+        console.log("[FilterWorkspace] ✅ Filter applied to sprite AFTER texture assignment");
+        console.log("[FilterWorkspace] Sprite.filters:", filteredSprite.filters);
       } else if (!isVideo) {
         const { Texture } = await import("pixi.js");
         const tex = await Texture.from(mediaUrl);
