@@ -745,9 +745,11 @@ export function FilterWorkspace() {
         console.log("[FilterWorkspace] ✅ Video texture loaded and assigned to both sprites");
         console.log("[FilterWorkspace] Video source ready:", source.resource.readyState);
         console.log("[FilterWorkspace] Created separate texture instances for base and filtered sprites");
+        console.log("[FilterWorkspace] baseTex === filteredTex:", baseTex === filteredTex);
+        console.log("[FilterWorkspace] baseTex.source === filteredTex.source:", baseTex.source === filteredTex.source);
 
         // CRITICAL FIX: For paused videos, we need to manually update the texture
-        // Force initial frame render
+        // Force initial frame render - this uploads the video frame to GPU
         source.update();
         console.log("[FilterWorkspace] Initial frame update triggered");
       } else if (!isVideo) {
@@ -811,6 +813,10 @@ export function FilterWorkspace() {
       console.log("[FilterWorkspace] Filtered sprite - x:", filteredSprite.x, "y:", filteredSprite.y, "width:", filteredSprite.width, "height:", filteredSprite.height);
       console.log("[FilterWorkspace] Filtered sprite - visible:", filteredSprite.visible, "alpha:", filteredSprite.alpha);
       console.log("[FilterWorkspace] Base sprite - x:", baseSprite.x, "y:", baseSprite.y, "width:", baseSprite.width, "height:", baseSprite.height);
+
+      // Force an initial render to ensure everything is drawn
+      app.renderer.render(app.stage);
+      console.log("[FilterWorkspace] Initial render forced after adding sprites");
 
       // Sync uniforms and update mask based on current state
       syncAdjustmentsUniforms();
