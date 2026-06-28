@@ -589,15 +589,21 @@ export function FilterWorkspace() {
     }
 
     // Update split compare mask bounding box
+    // The mask is applied to the BASE sprite (unfiltered)
+    // When split is enabled, show base sprite on LEFT, filtered sprite on RIGHT
     const mask = maskGraphicsRef.current;
     if (mask && pixiAppRef.current) {
       const app = pixiAppRef.current;
       mask.clear();
       if (showSplitComparison) {
         const splitX = (splitPosition / 100) * app.screen.width;
-        mask.rect(splitX, 0, app.screen.width - splitX, app.screen.height).fill(0xffffff);
+        // Mask shows LEFT portion (unfiltered base sprite)
+        mask.rect(0, 0, splitX, app.screen.height).fill(0xffffff);
+        console.log("[FilterWorkspace] Split mask updated - base visible from 0 to", splitX);
       } else {
-        mask.rect(0, 0, app.screen.width, app.screen.height).fill(0xffffff);
+        // When split is off, hide base sprite completely (show only filtered)
+        mask.rect(0, 0, 0, 0).fill(0xffffff);
+        console.log("[FilterWorkspace] Split disabled - base sprite hidden");
       }
     }
   }, [selectedFilter, intensity, manualAdjustments, showSplitComparison, splitPosition]);
@@ -703,14 +709,21 @@ export function FilterWorkspace() {
       console.log("[FilterWorkspace] ✅ Filter applied to sprite");
       console.log("[FilterWorkspace] Sprite.filters:", filteredSprite.filters);
 
-      // Split compare mask
+      // Split compare mask - filtered sprite fills entire screen
+      // Base sprite is masked to show only the unfiltered portion
       const maskGraphics = new Graphics();
+
+      // Add filtered sprite first (bottom layer - shows filtered version)
       stage.addChild(filteredSprite);
+
+      // Add base sprite on top with mask (shows unfiltered portion only)
+      stage.addChild(baseSprite);
       stage.addChild(maskGraphics);
-      filteredSprite.mask = maskGraphics;
+      baseSprite.mask = maskGraphics; // Mask applied to BASE sprite, not filtered!
 
       console.log("[FilterWorkspace] ✅ Sprites added to stage");
       console.log("[FilterWorkspace] Stage children count:", stage.children.length);
+      console.log("[FilterWorkspace] Mask applied to: baseSprite");
 
       maskGraphicsRef.current = maskGraphics;
       filteredSpriteRef.current = filteredSprite;
