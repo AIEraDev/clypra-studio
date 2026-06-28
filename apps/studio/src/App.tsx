@@ -1465,6 +1465,14 @@ export default function App() {
             </button>
           )}
 
+          {/* Moderator Link */}
+          {isAdmin && (
+            <a href="/admin/effects" className="h-8 rounded border border-blue-500/20 bg-blue-500/10 px-2.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/15 flex items-center gap-1.5 cursor-pointer font-sans no-underline" title="AI Effects Moderator Portal">
+              <Sparkles size={13} />
+              <span className="hidden md:inline">Moderate AI Effects</span>
+            </a>
+          )}
+
           {/* Text Templates Workspace Link */}
           <a href="/lottie" className="h-8 rounded border border-purple-500/20 bg-purple-500/10 px-2.5 text-xs font-semibold text-purple-300 hover:bg-purple-500/15 flex items-center gap-1.5 cursor-pointer font-sans no-underline" title="Go to Text Templates">
             <Video size={13} />
