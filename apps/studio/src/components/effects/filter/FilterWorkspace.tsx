@@ -661,19 +661,13 @@ export function FilterWorkspace() {
 
       console.log("[FilterWorkspace] Creating sprites...");
 
-      // Base Sprite
+      // Base Sprite (unfiltered)
       const baseSprite = new Sprite();
-      baseSprite.width = app.screen.width;
-      baseSprite.height = app.screen.height;
-      stage.addChild(baseSprite);
-      baseSpriteRef.current = baseSprite;
 
       console.log("[FilterWorkspace] Base sprite created");
 
       // Filtered Sprite
       const filteredSprite = new Sprite();
-      filteredSprite.width = app.screen.width;
-      filteredSprite.height = app.screen.height;
 
       console.log("[FilterWorkspace] Filtered sprite created");
 
@@ -722,14 +716,29 @@ export function FilterWorkspace() {
         const tex = new Texture({ source });
         baseSprite.texture = tex;
         filteredSprite.texture = tex;
-        console.log("[FilterWorkspace] ✅ Video texture loaded");
+
+        // Set sprite dimensions to match screen
+        baseSprite.width = app.screen.width;
+        baseSprite.height = app.screen.height;
+        filteredSprite.width = app.screen.width;
+        filteredSprite.height = app.screen.height;
+
+        console.log("[FilterWorkspace] ✅ Video texture loaded and assigned to both sprites");
       } else if (!isVideo) {
         const { Texture } = await import("pixi.js");
         const tex = await Texture.from(mediaUrl);
         if (active) {
           baseSprite.texture = tex;
           filteredSprite.texture = tex;
+
+          // Set sprite dimensions to match screen
+          baseSprite.width = app.screen.width;
+          baseSprite.height = app.screen.height;
+          filteredSprite.width = app.screen.width;
+          filteredSprite.height = app.screen.height;
+
           console.log("[FilterWorkspace] ✅ Image texture loaded:", tex.width, "x", tex.height);
+          console.log("[FilterWorkspace] Both sprites sized to:", app.screen.width, "x", app.screen.height);
         }
       }
 
@@ -741,6 +750,13 @@ export function FilterWorkspace() {
       const initialSplitX = app.screen.width / 2;
       maskGraphics.rect(0, 0, initialSplitX, app.screen.height).fill(0xffffff);
       maskGraphicsRef.current = maskGraphics;
+
+      // Verify textures before adding to stage
+      console.log("[FilterWorkspace] Pre-stage verification:");
+      console.log("[FilterWorkspace] - baseSprite has texture:", !!baseSprite.texture);
+      console.log("[FilterWorkspace] - filteredSprite has texture:", !!filteredSprite.texture);
+      console.log("[FilterWorkspace] - baseSprite texture valid:", baseSprite.texture?.valid);
+      console.log("[FilterWorkspace] - filteredSprite texture valid:", filteredSprite.texture?.valid);
 
       // Add sprites to stage WITH textures already loaded
       // Add filtered sprite first (bottom layer - shows filtered version)
