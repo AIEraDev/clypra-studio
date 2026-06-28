@@ -728,9 +728,13 @@ export function FilterWorkspace() {
         // Store video source reference for later updates
         videoSourceRef.current = source;
 
-        const tex = new Texture({ source });
-        baseSprite.texture = tex;
-        filteredSprite.texture = tex;
+        // CRITICAL: Create separate texture instances for each sprite
+        // Both use the same source, but filters need separate texture instances
+        const baseTex = new Texture({ source });
+        const filteredTex = new Texture({ source });
+
+        baseSprite.texture = baseTex;
+        filteredSprite.texture = filteredTex;
 
         // Set sprite dimensions to match screen
         baseSprite.width = app.screen.width;
@@ -740,6 +744,7 @@ export function FilterWorkspace() {
 
         console.log("[FilterWorkspace] ✅ Video texture loaded and assigned to both sprites");
         console.log("[FilterWorkspace] Video source ready:", source.resource.readyState);
+        console.log("[FilterWorkspace] Created separate texture instances for base and filtered sprites");
 
         // CRITICAL FIX: For paused videos, we need to manually update the texture
         // Force initial frame render
@@ -749,8 +754,13 @@ export function FilterWorkspace() {
         const { Texture } = await import("pixi.js");
         const tex = await Texture.from(mediaUrl);
         if (active) {
-          baseSprite.texture = tex;
-          filteredSprite.texture = tex;
+          // CRITICAL: Create separate texture instances for each sprite
+          // Clone texture for filtered sprite so filters work correctly
+          const baseTex = tex;
+          const filteredTex = tex.clone();
+
+          baseSprite.texture = baseTex;
+          filteredSprite.texture = filteredTex;
 
           // Set sprite dimensions to match screen
           baseSprite.width = app.screen.width;
@@ -760,6 +770,7 @@ export function FilterWorkspace() {
 
           console.log("[FilterWorkspace] ✅ Image texture loaded:", tex.width, "x", tex.height);
           console.log("[FilterWorkspace] Both sprites sized to:", app.screen.width, "x", app.screen.height);
+          console.log("[FilterWorkspace] Created separate texture instances for base and filtered sprites");
         }
       }
 
