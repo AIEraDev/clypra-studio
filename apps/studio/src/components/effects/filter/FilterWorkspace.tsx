@@ -808,6 +808,9 @@ export function FilterWorkspace() {
       console.log("[FilterWorkspace] ✅ Sprites added to stage WITH textures");
       console.log("[FilterWorkspace] Stage children count:", stage.children.length);
       console.log("[FilterWorkspace] Mask applied to: baseSprite, initial split at", initialSplitX);
+      console.log("[FilterWorkspace] Filtered sprite - x:", filteredSprite.x, "y:", filteredSprite.y, "width:", filteredSprite.width, "height:", filteredSprite.height);
+      console.log("[FilterWorkspace] Filtered sprite - visible:", filteredSprite.visible, "alpha:", filteredSprite.alpha);
+      console.log("[FilterWorkspace] Base sprite - x:", baseSprite.x, "y:", baseSprite.y, "width:", baseSprite.width, "height:", baseSprite.height);
 
       // Sync uniforms and update mask based on current state
       syncAdjustmentsUniforms();
