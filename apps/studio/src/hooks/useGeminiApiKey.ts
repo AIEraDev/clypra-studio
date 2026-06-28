@@ -2,9 +2,9 @@ const GEMINI_KEY_STORAGE_KEY = "clypra_studio_gemini_api_key";
 
 export function getGeminiApiKey(): string {
   try {
-    return localStorage.getItem(GEMINI_KEY_STORAGE_KEY)?.trim() || "";
+    return localStorage.getItem(GEMINI_KEY_STORAGE_KEY)?.trim() || (import.meta.env.VITE_GEMINI_API_KEY || "").trim();
   } catch {
-    return "";
+    return (import.meta.env.VITE_GEMINI_API_KEY || "").trim();
   }
 }
 
