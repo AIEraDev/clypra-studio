@@ -712,7 +712,17 @@ export function FilterWorkspace() {
 
       if (isVideo && videoRef.current) {
         const { VideoSource, Texture } = await import("pixi.js");
-        const source = new VideoSource({ resource: videoRef.current, autoPlay: false });
+
+        // Create video source with autoPlay to ensure it initializes
+        const source = new VideoSource({
+          resource: videoRef.current,
+          autoPlay: false,
+          autoLoad: true,
+        });
+
+        // Wait for video source to be ready
+        await source.load();
+
         const tex = new Texture({ source });
         baseSprite.texture = tex;
         filteredSprite.texture = tex;
@@ -724,6 +734,7 @@ export function FilterWorkspace() {
         filteredSprite.height = app.screen.height;
 
         console.log("[FilterWorkspace] ✅ Video texture loaded and assigned to both sprites");
+        console.log("[FilterWorkspace] Video source ready:", source.resource.readyState);
       } else if (!isVideo) {
         const { Texture } = await import("pixi.js");
         const tex = await Texture.from(mediaUrl);
@@ -755,8 +766,14 @@ export function FilterWorkspace() {
       console.log("[FilterWorkspace] Pre-stage verification:");
       console.log("[FilterWorkspace] - baseSprite has texture:", !!baseSprite.texture);
       console.log("[FilterWorkspace] - filteredSprite has texture:", !!filteredSprite.texture);
-      console.log("[FilterWorkspace] - baseSprite texture valid:", baseSprite.texture?.valid);
-      console.log("[FilterWorkspace] - filteredSprite texture valid:", filteredSprite.texture?.valid);
+      console.log("[FilterWorkspace] - baseSprite texture:", baseSprite.texture);
+      console.log("[FilterWorkspace] - filteredSprite texture:", filteredSprite.texture);
+      if (baseSprite.texture?.source) {
+        console.log("[FilterWorkspace] - baseSprite texture source ready:", baseSprite.texture.source);
+      }
+      if (filteredSprite.texture?.source) {
+        console.log("[FilterWorkspace] - filteredSprite texture source ready:", filteredSprite.texture.source);
+      }
 
       // Add sprites to stage WITH textures already loaded
       // Add filtered sprite first (bottom layer - shows filtered version)
