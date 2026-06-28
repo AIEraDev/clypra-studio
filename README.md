@@ -21,12 +21,26 @@
 - **Preset Library** - 20+ built-in professional presets
 - **Custom Presets** - Save and manage your own effect templates
 
+### 🎥 **GPU-Accelerated Video Effects** ⚡ NEW!
+
+- **37 Professional Effects** - PixiJS-powered WebGL rendering
+- **5 Effect Categories**:
+  - 💡 **Light Effects (10)** - Neon glow, lens flare, light leak, vignette, color grading
+  - 🌀 **Glitch Effects (5)** - RGB split, VHS, CRT, glitch bands, static noise
+  - 🎬 **Cinematic Effects (10)** - Motion blur, film grain, tilt shift, drop shadow, LUT
+  - 🌊 **Distortion Effects (5)** - Bulge/pinch, twist, shockwave, reflection, displacement
+  - 🎨 **Stylization Effects (7)** - ASCII art, pixelate, outline, emboss, cross-hatch
+- **Real-time Parameter Control** - Live preview with hardware acceleration
+- **Effect Composition** - Chain multiple effects for unique visuals
+- **Dual Rendering** - Seamless Canvas2D and PixiJS integration
+
 ### 🤖 **AI-Powered Tools**
 
 - **Prompt-to-Style** - Generate text effects from natural language descriptions
 - **Image Style Scanner** - Analyze and replicate text effects from images
 - **AI Name Generator** - Smart naming for your custom effects
 - **Deep Design Research** - Historical and thematic style exploration
+- **Custom Effect Generator** ⚡ NEW! - AI-generated PixiJS effects with GLSL shaders
 
 ### 🎬 **Animation Engine**
 
@@ -41,6 +55,13 @@
 - **Standalone HTML** - Self-contained interactive demos
 - **JSON Definitions** - Portable effect configurations
 - **Copy & Download** - Quick integration into your projects
+
+### 🛠️ **Developer Tools** ⚡ NEW!
+
+- **Effect Graph Sandbox** - Visual effect composition testing
+- **Admin Effects Panel** - Effect library management
+- **Parameter Editor** - Dynamic form generation from schemas
+- **Performance Metrics** - Real-time FPS and render stats
 
 ---
 
@@ -113,13 +134,15 @@ vercel deploy
 
 ## 🛠️ Tech Stack
 
-- **Frontend Framework** - React 18 + TypeScript
-- **Build Tool** - Vite
-- **Styling** - Tailwind CSS + Custom CSS Variables
+- **Frontend Framework** - React 19 + TypeScript
+- **Build Tool** - Vite 6
+- **Styling** - Tailwind CSS 4 + Custom CSS Variables
 - **Canvas Rendering** - HTML5 Canvas 2D API
+- **GPU Rendering** ⚡ - PixiJS 8 + WebGL (37 effects)
+- **Effect Filters** - pixi-filters library (40+ GPU filters)
 - **AI Integration** - Google Gemini API
 - **Animation** - Custom keyframe engine
-- **Export** - Canvas-to-PNG, WebM encoding
+- **Export** - Canvas-to-PNG, WebM encoding, effect code generation
 - **Routing** - Client-side routing with route-based metadata
 - **Testing** - Vitest
 
@@ -164,6 +187,23 @@ clypra-studio/
 4. **Animate** (optional) - Add keyframes and transitions
 5. **Export** - Download as code, image, or video
 
+### Creating GPU-Accelerated Video Effects ⚡ NEW!
+
+1. **Navigate to Effects** - Go to `/effects/video`
+2. **Choose Effect Category** - Light, Glitch, Cinematic, Distortion, or Style
+3. **Select an Effect** - Browse 37 professional PixiJS effects
+4. **Adjust Parameters** - Real-time preview with sliders and color pickers
+5. **Chain Effects** - Combine multiple effects for unique results
+6. **Export** - Download as image, video, or effect code
+
+#### Example Effects:
+
+- **Neon Glow**: Premium neon outline with customizable color and intensity
+- **VHS**: Vintage tape artifacts with scanlines and tracking noise
+- **Motion Blur**: Directional blur with velocity vectors
+- **RGB Split**: Chromatic aberration with independent channel offsets
+- **ASCII Art**: Convert video to ASCII characters in real-time
+
 ### Using AI Features
 
 #### Prompt-to-Style
@@ -171,6 +211,19 @@ clypra-studio/
 ```
 "Create a retro 80s neon effect with pink and cyan colors"
 ```
+
+#### AI Custom Effect Generator ⚡ NEW!
+
+```
+"Create a holographic rainbow shimmer effect that shifts colors over time"
+```
+
+The AI generates:
+
+- Complete PixiJS effect implementation
+- GLSL fragment shader code
+- Parameter definitions with ranges
+- Real-time preview for testing
 
 #### Image Scanner
 
@@ -183,6 +236,7 @@ The studio generates production-ready code:
 - **TypeScript Class** - Reusable effect engine
 - **HTML Sandbox** - Standalone interactive demo
 - **JSON Config** - Portable effect definition
+- **PixiJS Effect Code** ⚡ - GPU-accelerated effect implementation
 
 ---
 
@@ -210,6 +264,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **React Team** - Amazing frontend framework
 - **Vite** - Lightning-fast build tool
 - **Tailwind CSS** - Utility-first CSS framework
+- **PixiJS Team** - GPU-accelerated 2D WebGL rendering
+- **pixi-filters** - Professional-grade filter library
 
 ---
 

@@ -1,12 +1,14 @@
 # @clypra/engine
 
-The rendering and animation engine powering [Clypra Studio](https://github.com/AIEraDev/clypra-studio) — a high-performance Canvas 2D text effects system with full Lottie JSON tooling, keyframe animation, and CapCut-style template support.
+The rendering and animation engine powering [Clypra Studio](https://github.com/AIEraDev/clypra-studio) — a high-performance Canvas 2D text effects system with GPU-accelerated PixiJS video effects, full Lottie JSON tooling, keyframe animation, and CapCut-style template support.
 
 ## Installation
 
 ```bash
 npm install @clypra/engine
 ```
+
+**New in v1.27+**: GPU-accelerated video effects via PixiJS 8! See [PixiJS Video Effects](#pixijs-video-effects) below.
 
 ## Quick Start
 
@@ -43,6 +45,288 @@ const fontSpec = `${scene.text.fontWeight} ${scene.text.fontSize}px "${scene.tex
 await document.fonts.load(fontSpec);
 evaluateScene(scene, 0, ctx);
 ```
+
+---
+
+## PixiJS Video Effects
+
+**v1.27+** introduces 37 GPU-accelerated video effects powered by PixiJS 8 and WebGL.
+
+### Quick Start
+
+```ts
+import { PixiRenderer, EffectEngine, EffectGraph, NeonGlowEffect, RGBSplitEffect, MotionBlurEffect } from "@clypra/engine";
+
+// Create renderer
+const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+const renderer = new PixiRenderer(canvas);
+
+// Create effect engine
+const engine = new EffectEngine();
+
+// Build effect graph
+let graph = new EffectGraph();
+graph = graph.addNode("glow", NeonGlowEffect, {
+  distance: 20,
+  innerStrength: 1.5,
+  outerStrength: 3.0,
+  color: "#7C6FFF",
+  quality: 0.3,
+  knockout: false,
+});
+
+// Apply to video element
+const video = document.getElementById("video") as HTMLVideoElement;
+renderer.mount(graph, video);
+
+// Animate (60fps)
+function animate() {
+  renderer.render();
+  requestAnimationFrame(animate);
+}
+animate();
+
+// Update parameters in real-time
+graph = graph.updateNode("glow", { color: "#FF00FF", distance: 30 });
+renderer.mount(graph, video);
+```
+
+### Effect Categories (37 Total)
+
+#### 💡 Light Effects (10)
+
+- `NeonGlowEffect` - Premium neon outline glow
+- `GlowEffect` - Standard glow with inner/outer strength
+- `LightLeakEffect` - Cinematic light sweep
+- `LensFlareEffect` - Dual-stage godray + starburst
+- `VignetteEffect` - Edge darkening with falloff
+- `ColorGradientEffect` - Gradient overlays
+- `ColorOverlayEffect` - Blend color layers
+- `ColorMatrixEffect` - Advanced color transformation
+- `HslAdjustmentEffect` - Hue/saturation/lightness
+- `AlphaEffect` - Transparency control
+
+```ts
+import { NeonGlowEffect } from "@clypra/engine";
+
+const params = {
+  distance: 15,
+  innerStrength: 1.0,
+  outerStrength: 2.0,
+  color: "#7C6FFF",
+  quality: 0.1,
+  knockout: false,
+};
+```
+
+#### 🌀 Glitch Effects (5)
+
+- `RGBSplitEffect` - Chromatic aberration
+- `VHSEffect` - Vintage tape artifacts
+- `CRTEffect` - Cathode ray tube simulation
+- `GlitchBandEffect` - Horizontal displacement
+- `StaticNoiseEffect` - Film grain and TV static
+
+```ts
+import { RGBSplitEffect } from "@clypra/engine";
+
+const params = {
+  redX: 4,
+  redY: 0,
+  blueX: -4,
+  blueY: 0,
+  greenX: 0,
+  greenY: 0,
+  speed: 1.5,
+  animated: true,
+};
+```
+
+#### 🎬 Cinematic Effects (10)
+
+- `GaussianBlurEffect` - Classic Gaussian blur
+- `KawaseBlurEffect` - Efficient iterative blur
+- `MotionBlurEffect` - Directional motion blur
+- `RadialBlurEffect` - Zoom-style blur
+- `ZoomBlurEffect` - Perspective zoom
+- `TiltShiftEffect` - Miniature/DoF simulation
+- `FilmGrainEffect` - Organic film grain
+- `OldFilmEffect` - Vintage aging
+- `CinematicLUTEffect` - Color grading
+- `DropShadowEffect` - Soft shadow projection
+
+```ts
+import { MotionBlurEffect } from "@clypra/engine";
+
+const params = {
+  velocity: [10, 0], // [x, y] direction
+  kernelSize: 5,
+  offset: 0,
+};
+```
+
+#### 🌊 Distortion Effects (5)
+
+- `BulgePinchEffect` - Lens distortion
+- `TwistEffect` - Rotational twist
+- `ShockwaveEffect` - Animated ripple wave
+- `ReflectionEffect` - Water reflection
+- `DisplacementEffect` - Texture-based displacement
+
+```ts
+import { BulgePinchEffect } from "@clypra/engine";
+
+const params = {
+  center: [0.5, 0.5], // normalized coordinates
+  radius: 200,
+  strength: 0.5, // -1 to 1 (negative = pinch)
+};
+```
+
+#### 🎨 Stylization Effects (7)
+
+- `AsciiEffect` - ASCII art conversion
+- `PixelateEffect` - Retro pixel art
+- `DotEffect` - Halftone dot pattern
+- `OutlineEffect` - Edge detection
+- `EmbossEffect` - 3D embossed relief
+- `CrossHatchEffect` - Pen-and-ink style
+- `GrayscaleEffect` - Monochrome conversion
+
+```ts
+import { PixelateEffect } from "@clypra/engine";
+
+const params = {
+  size: 10, // pixel block size (1-50)
+};
+```
+
+### Effect Graph Composition
+
+Chain multiple effects for complex visuals:
+
+```ts
+import { EffectGraph, GlowEffect, RGBSplitEffect, VHSEffect } from "@clypra/engine";
+
+let graph = new EffectGraph();
+
+// Add effects in order
+graph = graph.addNode("glow", GlowEffect, { distance: 20, color: "#FF00FF" });
+graph = graph.addNode("rgb", RGBSplitEffect, { redX: 5, blueX: -5 });
+graph = graph.addNode("vhs", VHSEffect, { noise: 0.1, scanlines: true });
+
+// Update individual effect parameters
+graph = graph.updateNode("glow", { distance: 30 });
+
+// Remove an effect
+graph = graph.removeNode("rgb");
+
+// Get execution order (respects dependencies)
+const order = graph.getExecutionOrder(); // ["glow", "vhs"]
+```
+
+### PixiRenderer Lifecycle
+
+```ts
+import { PixiRenderer } from "@clypra/engine";
+
+const renderer = new PixiRenderer(canvas);
+
+// Mount effect graph to video/image source
+renderer.mount(effectGraph, videoElement);
+
+// Render frame (call in animation loop)
+renderer.render();
+
+// Update graph without remounting
+renderer.updateGraph(newGraph);
+
+// Cleanup
+renderer.unmount();
+renderer.destroy();
+```
+
+### Effect Definition Schema
+
+Create custom PixiJS effects:
+
+```ts
+import type { PixiEffectDefinition } from "@clypra/engine";
+import { GlowFilter } from "pixi-filters";
+
+export const CustomGlowEffect: PixiEffectDefinition = {
+  backend: "pixi",
+  subtype: "filter", // "filter" | "motion" | "composite"
+  id: "custom-glow",
+  name: "Custom Glow",
+  category: "light",
+  description: "My custom glow effect",
+  tags: ["light", "glow"],
+  thumbnail: "",
+  params: [
+    { key: "distance", label: "Distance", type: "range", value: 10, min: 0, max: 50, step: 1 },
+    { key: "color", label: "Color", type: "color", value: "#FFFFFF" },
+    { key: "enabled", label: "Enabled", type: "toggle", value: true },
+  ],
+  filterSpec: {
+    create(params) {
+      return new GlowFilter({
+        distance: params.distance as number,
+        color: parseInt((params.color as string).replace("#", "0x"), 16),
+      });
+    },
+    updateUniforms(filter, params) {
+      filter.distance = params.distance as number;
+      filter.color = parseInt((params.color as string).replace("#", "0x"), 16);
+    },
+  },
+};
+```
+
+### Example Presets
+
+```ts
+import { ExamplePixiEffects } from "@clypra/engine";
+
+// NeonGlowEffect - Purple neon with preset parameters
+const neonGlow = ExamplePixiEffects.NeonGlowEffect;
+
+// VHSCompositeEffect - Multi-effect vintage tape
+const vhs = ExamplePixiEffects.VHSCompositeEffect;
+
+// ParticleBurstEffect - Motion + filter composite
+const particles = ExamplePixiEffects.ParticleBurstEffect;
+```
+
+### Effect Registry
+
+Access metadata for all effects:
+
+```ts
+import { getEffectMetadata, EFFECTS_REGISTRY } from "@clypra/engine";
+
+// Get single effect metadata
+const metadata = getEffectMetadata("neon-glow");
+console.log(metadata.name); // "Neon Glow"
+console.log(metadata.category); // "light"
+console.log(metadata.defaultParams); // { distance: 15, color: "#7C6FFF", ... }
+
+// Browse all effects
+Object.keys(EFFECTS_REGISTRY).forEach((id) => {
+  const meta = EFFECTS_REGISTRY[id];
+  console.log(`${meta.name} (${meta.category}): ${meta.description}`);
+});
+
+// Filter by category
+const glitchEffects = Object.values(EFFECTS_REGISTRY).filter((e) => e.category === "glitch");
+```
+
+### Browser Compatibility
+
+- Requires WebGL 1.0+ support
+- Tested on Chrome 90+, Firefox 88+, Safari 15+
+- Falls back to Canvas2D on WebGL failure
+- Mobile support via hardware acceleration
 
 ---
 
