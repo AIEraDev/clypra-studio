@@ -7,8 +7,9 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { getR2Config } from "../../../services/r2Service";
 import { useR2Publish } from "../../../hooks/useR2Publish";
 import { Download, Upload, Sparkles, Zap, Image as ImageIcon, Film, Loader2, Play, Pause, RotateCcw, Search, Sliders, BarChart4, Sun, Palette, Eye, EyeOff, ChevronRight, ChevronDown, Check, Undo, SlidersHorizontal, Compass } from "lucide-react";
-import { PixiRenderer, EffectGraph } from "@clypra/engine";
-import { Filter, RendererType } from "pixi.js";
+import { PixiRenderer, EffectGraph } from "@clypra/engine/videoEffects";
+import { GrayscaleEffect } from "@clypra/engine/effects";
+import { GrayscaleFilter } from "pixi-filters";
 
 // Types
 interface FilterPreset {
@@ -347,13 +348,8 @@ export function FilterWorkspace() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const histogramCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // PixiJS references
-  const pixiAppRef = useRef<any>(null);
-  const adjustmentsFilterRef = useRef<any>(null);
-  const maskGraphicsRef = useRef<any>(null);
-  const filteredSpriteRef = useRef<any>(null);
-  const baseSpriteRef = useRef<any>(null);
-  const videoSourceRef = useRef<any>(null); // Store VideoSource to update frames
+  // PixiJS references - using PixiRenderer from @clypra/engine
+  const pixiRendererRef = useRef<PixiRenderer | null>(null);
 
   const { publishFilter } = useR2Publish();
 
@@ -517,340 +513,101 @@ export function FilterWorkspace() {
     return getCombinedFilterString(selectedFilter, intensity, manualAdjustments);
   }, [selectedFilter, intensity, manualAdjustments]);
 
-  // Sync adjustments to PixiJS WebGL shader uniforms
+  // Note: With PixiRenderer, filter management is handled by the package
+  // This function is kept for CSS filter fallback only
   const syncAdjustmentsUniforms = useCallback(() => {
-    const filter = adjustmentsFilterRef.current;
+    // No-op when using PixiRenderer - filter updates are handled by EffectGraph
+    console.log("[FilterWorkspace] syncAdjustmentsUniforms called (PixiRenderer handles updates)");
+  }, []);
 
-    console.log("[FilterWorkspace] syncAdjustmentsUniforms called");
-    console.log("[FilterWorkspace] - filter exists:", !!filter);
-    console.log("[FilterWorkspace] - selectedFilter:", selectedFilter?.id, selectedFilter?.name);
-    console.log("[FilterWorkspace] - intensity:", intensity);
-    console.log("[FilterWorkspace] - usePixi:", selectedFilter?.usePixi);
-
-    if (!filter) {
-      console.warn("[FilterWorkspace] No adjustmentsFilter found - cannot sync uniforms");
-      return;
-    }
-
-    // Parse presets
-    const presetAdjust = selectedFilter && selectedFilter.cssFilter ? parseCSSFilter(selectedFilter.cssFilter) : { brightness: 1.0, contrast: 1.0, saturation: 1.0, sepia: 0.0, grayscale: 0.0, hueRotate: 0.0, invert: 0.0 };
-
-    console.log("[FilterWorkspace] - presetAdjust parsed:", presetAdjust);
-
-    const f = intensity / 100;
-
-    // Combine preset & manual
-    const finalBrightness = 1.0 + (presetAdjust.brightness - 1.0) * f + manualAdjustments.brightness / 100;
-    const finalContrast = 1.0 + (presetAdjust.contrast - 1.0) * f + manualAdjustments.contrast / 100;
-    const finalSaturation = 1.0 + (presetAdjust.saturation - 1.0) * f + manualAdjustments.saturation / 100;
-    const finalSepia = presetAdjust.sepia * f + manualAdjustments.sepia / 100;
-    const finalGrayscale = presetAdjust.grayscale * f + manualAdjustments.grayscale / 100;
-    const finalHueRotate = presetAdjust.hueRotate * f + (manualAdjustments.hueRotate * Math.PI) / 180;
-    const finalInvert = presetAdjust.invert * f + manualAdjustments.invert / 100;
-
-    console.log("[FilterWorkspace] - finalGrayscale:", finalGrayscale);
-    console.log("[FilterWorkspace] - finalContrast:", finalContrast);
-
-    const tempWeight = Math.abs(manualAdjustments.temperature) / 400;
-    const tempColor = manualAdjustments.temperature > 0 ? [1.0, 0.55, 0.16] : [0.16, 0.47, 1.0];
-
-    const tintWeight = Math.abs(manualAdjustments.tint) / 450;
-    const tintColor = manualAdjustments.tint > 0 ? [1.0, 0.16, 0.71] : [0.16, 1.0, 0.39];
-
-    // Update filter uniforms
-    const u = filter.resources.uniforms.uniforms;
-    u.uExposure = manualAdjustments.exposure / 100;
-    u.uBrightness = finalBrightness - 1.0;
-    u.uContrast = finalContrast - 1.0;
-    u.uSaturation = finalSaturation - 1.0;
-    u.uSepia = finalSepia;
-    u.uGrayscale = finalGrayscale;
-    u.uHueRotate = finalHueRotate;
-    u.uInvert = finalInvert;
-    u.uVignette = manualAdjustments.vignette / 100;
-    u.uTemperatureColor = tempColor;
-    u.uTemperatureWeight = tempWeight;
-    u.uTintColor = tintColor;
-    u.uTintWeight = tintWeight;
-
-    console.log("[FilterWorkspace] ✅ Uniforms updated:");
-    console.log("[FilterWorkspace]    - uGrayscale:", u.uGrayscale);
-    console.log("[FilterWorkspace]    - uContrast:", u.uContrast);
-    console.log("[FilterWorkspace]    - uBrightness:", u.uBrightness);
-    console.log("[FilterWorkspace]    - uSaturation:", u.uSaturation);
-
-    // Check if filter is actually applied to sprite
-    const sprite = filteredSpriteRef.current;
-    if (sprite) {
-      console.log("[FilterWorkspace] Sprite filters:", sprite.filters);
-      console.log("[FilterWorkspace] Sprite visible:", sprite.visible);
-      console.log("[FilterWorkspace] Sprite has texture:", !!sprite.texture);
-    } else {
-      console.warn("[FilterWorkspace] ⚠️ No filteredSprite found!");
-    }
-
-    // Update split compare mask bounding box
-    // The mask is applied to the BASE sprite (unfiltered)
-    // When split is enabled, show base sprite on LEFT, filtered sprite on RIGHT
-    const mask = maskGraphicsRef.current;
-    if (mask && pixiAppRef.current) {
-      const app = pixiAppRef.current;
-      mask.clear();
-      if (showSplitComparison) {
-        const splitX = (splitPosition / 100) * app.screen.width;
-        // Mask shows LEFT portion (unfiltered base sprite)
-        mask.rect(0, 0, splitX, app.screen.height).fill(0xffffff);
-        console.log("[FilterWorkspace] Split mask updated - base visible from 0 to", splitX);
-      } else {
-        // When split is off, hide base sprite completely (show only filtered)
-        mask.rect(0, 0, 0, 0).fill(0xffffff);
-        console.log("[FilterWorkspace] Split disabled - base sprite hidden");
-      }
-    }
-  }, [selectedFilter, intensity, manualAdjustments, showSplitComparison, splitPosition]);
-
-  // Initialize Pixi Application for Filter Workspace
+  // Initialize PixiRenderer from @clypra/engine for proper filter management
   useEffect(() => {
     const canvas = pixiCanvasRef.current;
-    if (!canvas || !mediaUrl || !mediaMetadata) {
-      console.log("[FilterWorkspace] PixiJS init skipped - missing requirements:", {
+    const video = videoRef.current;
+
+    if (!canvas || !mediaMetadata || !video) {
+      console.log("[FilterWorkspace] PixiRenderer init skipped - missing requirements:", {
         canvas: !!canvas,
-        mediaUrl: !!mediaUrl,
         mediaMetadata: !!mediaMetadata,
+        video: !!video,
       });
       return;
     }
 
-    console.log("[FilterWorkspace] 🚀 Initializing PixiJS...");
-    console.log("[FilterWorkspace] Canvas size:", mediaMetadata?.width, "x", mediaMetadata?.height);
+    console.log("[FilterWorkspace] 🚀 Initializing PixiRenderer from @clypra/engine");
+    console.log("[FilterWorkspace] Canvas size:", mediaMetadata.width, "x", mediaMetadata.height);
 
     let active = true;
 
-    const initPixi = async () => {
-      console.log("[FilterWorkspace] Importing PixiJS modules...");
-      const { Application, Sprite, Graphics } = await import("pixi.js");
+    const initRenderer = async () => {
+      try {
+        // Create PixiRenderer instance
+        const renderer = new PixiRenderer();
+        await renderer.init(canvas, mediaMetadata.width, mediaMetadata.height);
 
-      console.log("[FilterWorkspace] Creating Application...");
-      const app = new Application();
-      await app.init({
-        canvas,
-        width: mediaMetadata?.width || 1280,
-        height: mediaMetadata?.height || 720,
-        backgroundAlpha: 0,
-        antialias: true,
-        preference: "webgl",
-        preserveDrawingBuffer: true, // Allow frame readbacks for histogram
-      });
+        console.log("[FilterWorkspace] ✅ PixiRenderer initialized");
 
-      console.log("[FilterWorkspace] ✅ PixiJS Application initialized");
-      console.log("[FilterWorkspace] Renderer type:", app.renderer.type);
-      console.log("[FilterWorkspace] WebGL active:", app.renderer.type === RendererType.WEBGL);
-
-      if (app.renderer.type !== RendererType.WEBGL) {
-        console.warn("[FilterWorkspace] ⚠️ WebGL not available! Filters may not work. Renderer type:", app.renderer.type);
-      }
-
-      if (!active) {
-        console.log("[FilterWorkspace] Component unmounted, destroying app");
-        app.destroy(true);
-        return;
-      }
-
-      pixiAppRef.current = app;
-      const stage = app.stage;
-      stage.removeChildren();
-
-      console.log("[FilterWorkspace] Creating sprites...");
-
-      // Base Sprite (unfiltered)
-      const baseSprite = new Sprite();
-
-      console.log("[FilterWorkspace] Base sprite created");
-
-      // Filtered Sprite
-      const filteredSprite = new Sprite();
-
-      console.log("[FilterWorkspace] Filtered sprite created");
-
-      // Compile the Adjustments filter
-      console.log("[FilterWorkspace] Compiling adjustments filter...");
-      const adjustmentsFilter = Filter.from({
-        gl: { vertex: ADJUSTMENTS_VERTEX_SHADER, fragment: ADJUSTMENTS_FRAGMENT_SHADER },
-        resources: {
-          uniforms: {
-            uExposure: { value: 0.0, type: "f32" },
-            uBrightness: { value: 0.0, type: "f32" },
-            uContrast: { value: 0.0, type: "f32" },
-            uSaturation: { value: 0.0, type: "f32" },
-            uTemperatureColor: { value: [1.0, 0.55, 0.16], type: "vec3<f32>" },
-            uTemperatureWeight: { value: 0.0, type: "f32" },
-            uTintColor: { value: [1.0, 0.16, 0.71], type: "vec3<f32>" },
-            uTintWeight: { value: 0.0, type: "f32" },
-            uSepia: { value: 0.0, type: "f32" },
-            uGrayscale: { value: 0.0, type: "f32" },
-            uHueRotate: { value: 0.0, type: "f32" },
-            uVignette: { value: 0.0, type: "f32" },
-            uInvert: { value: 0.0, type: "f32" },
-          },
-        },
-      });
-
-      console.log("[FilterWorkspace] ✅ Adjustments filter compiled");
-      console.log("[FilterWorkspace] Filter object:", adjustmentsFilter);
-
-      // Store filter ref but DON'T apply to sprite yet (wait until texture is loaded)
-      adjustmentsFilterRef.current = adjustmentsFilter;
-
-      // Store refs early so syncAdjustmentsUniforms can access them
-      filteredSpriteRef.current = filteredSprite;
-      baseSpriteRef.current = baseSprite;
-
-      // Set source textures BEFORE adding to stage
-      console.log("[FilterWorkspace] Loading textures... isVideo:", isVideo);
-
-      if (isVideo && videoRef.current) {
-        const { VideoSource, Texture } = await import("pixi.js");
-
-        // Create video source with autoUpdate enabled
-        const source = new VideoSource({
-          resource: videoRef.current,
-          autoPlay: false, // Don't autoplay the actual video
-          autoLoad: true,
-          updateFPS: 0, // Update every frame when video changes
-        });
-
-        // Wait for video source to be ready
-        await source.load();
-
-        // Store video source reference for later updates
-        videoSourceRef.current = source;
-
-        // CRITICAL: Create separate texture instances for each sprite
-        // Both use the same source, but filters need separate texture instances
-        const baseTex = new Texture({ source });
-        const filteredTex = new Texture({ source });
-
-        baseSprite.texture = baseTex;
-        filteredSprite.texture = filteredTex;
-
-        // Set sprite dimensions to match screen
-        baseSprite.width = app.screen.width;
-        baseSprite.height = app.screen.height;
-        filteredSprite.width = app.screen.width;
-        filteredSprite.height = app.screen.height;
-
-        console.log("[FilterWorkspace] ✅ Video texture loaded and assigned to both sprites");
-        console.log("[FilterWorkspace] Video source ready:", source.resource.readyState);
-        console.log("[FilterWorkspace] Created separate texture instances for base and filtered sprites");
-        console.log("[FilterWorkspace] baseTex === filteredTex:", baseTex === filteredTex);
-        console.log("[FilterWorkspace] baseTex.source === filteredTex.source:", baseTex.source === filteredTex.source);
-
-        // CRITICAL FIX: For paused videos, we need to manually update the texture
-        // Force initial frame render - this uploads the video frame to GPU
-        source.update();
-        console.log("[FilterWorkspace] Initial frame update triggered");
-
-        // NOW apply the filter AFTER texture is loaded and assigned
-        filteredSprite.filters = [adjustmentsFilterRef.current];
-        console.log("[FilterWorkspace] ✅ Filter applied to sprite AFTER texture assignment");
-        console.log("[FilterWorkspace] Sprite.filters:", filteredSprite.filters);
-      } else if (!isVideo) {
-        const { Texture } = await import("pixi.js");
-        const tex = await Texture.from(mediaUrl);
-        if (active) {
-          // CRITICAL: Create separate texture instances for each sprite
-          // Clone texture for filtered sprite so filters work correctly
-          const baseTex = tex;
-          const filteredTex = tex.clone();
-
-          baseSprite.texture = baseTex;
-          filteredSprite.texture = filteredTex;
-
-          // Set sprite dimensions to match screen
-          baseSprite.width = app.screen.width;
-          baseSprite.height = app.screen.height;
-          filteredSprite.width = app.screen.width;
-          filteredSprite.height = app.screen.height;
-
-          console.log("[FilterWorkspace] ✅ Image texture loaded:", tex.width, "x", tex.height);
-          console.log("[FilterWorkspace] Both sprites sized to:", app.screen.width, "x", app.screen.height);
-          console.log("[FilterWorkspace] Created separate texture instances for base and filtered sprites");
+        if (!active) {
+          renderer.destroy();
+          return;
         }
-      }
 
-      // Split compare mask - filtered sprite fills entire screen
-      // Base sprite is masked to show only the unfiltered portion
-      const maskGraphics = new Graphics();
+        pixiRendererRef.current = renderer;
 
-      // Initialize mask with default split position (50%)
-      const initialSplitX = app.screen.width / 2;
-      maskGraphics.rect(0, 0, initialSplitX, app.screen.height).fill(0xffffff);
-      maskGraphicsRef.current = maskGraphics;
-
-      // Verify textures before adding to stage
-      console.log("[FilterWorkspace] Pre-stage verification:");
-      console.log("[FilterWorkspace] - baseSprite has texture:", !!baseSprite.texture);
-      console.log("[FilterWorkspace] - filteredSprite has texture:", !!filteredSprite.texture);
-      console.log("[FilterWorkspace] - baseSprite texture:", baseSprite.texture);
-      console.log("[FilterWorkspace] - filteredSprite texture:", filteredSprite.texture);
-      if (baseSprite.texture?.source) {
-        console.log("[FilterWorkspace] - baseSprite texture source ready:", baseSprite.texture.source);
-      }
-      if (filteredSprite.texture?.source) {
-        console.log("[FilterWorkspace] - filteredSprite texture source ready:", filteredSprite.texture.source);
-      }
-
-      // Add sprites to stage WITH textures already loaded
-      // Add filtered sprite first (bottom layer - shows filtered version)
-      stage.addChild(filteredSprite);
-
-      // Add base sprite on top with mask (shows unfiltered portion only)
-      stage.addChild(baseSprite);
-      stage.addChild(maskGraphics);
-      baseSprite.mask = maskGraphics; // Mask applied to BASE sprite, not filtered!
-
-      console.log("[FilterWorkspace] ✅ Sprites added to stage WITH textures");
-      console.log("[FilterWorkspace] Stage children count:", stage.children.length);
-      console.log("[FilterWorkspace] Mask applied to: baseSprite, initial split at", initialSplitX);
-      console.log("[FilterWorkspace] Filtered sprite - x:", filteredSprite.x, "y:", filteredSprite.y, "width:", filteredSprite.width, "height:", filteredSprite.height);
-      console.log("[FilterWorkspace] Filtered sprite - visible:", filteredSprite.visible, "alpha:", filteredSprite.alpha);
-      console.log("[FilterWorkspace] Base sprite - x:", baseSprite.x, "y:", baseSprite.y, "width:", baseSprite.width, "height:", baseSprite.height);
-
-      // Force an initial render to ensure everything is drawn
-      app.renderer.render(app.stage);
-      console.log("[FilterWorkspace] Initial render forced after adding sprites");
-
-      // Sync uniforms and update mask based on current state
-      syncAdjustmentsUniforms();
-
-      // Render loop tick to draw histogram
-      app.ticker.add(() => {
-        if (active) {
-          calculateHistogram(canvas);
+        // Set video source for the renderer
+        if (isVideo && video) {
+          renderer.setVideoSource(video);
+          console.log("[FilterWorkspace] ✅ Video source set");
         }
-      });
+
+        // Apply the grayscale filter using the proper effect definition
+        if (selectedFilter?.usePixi && selectedFilter?.pixiFilterType === "grayscale") {
+          console.log("[FilterWorkspace] Applying GrayscaleEffect from package");
+
+          // Create effect graph with GrayscaleEffect
+          const graph = new EffectGraph();
+          const node = graph.addNode(GrayscaleEffect);
+          graph.resolve();
+
+          // Apply to renderer
+          renderer.applyNodes(graph.nodes);
+          console.log("[FilterWorkspace] ✅ GrayscaleEffect applied via PixiRenderer");
+        }
+      } catch (error) {
+        console.error("[FilterWorkspace] PixiRenderer initialization failed:", error);
+      }
     };
 
-    initPixi();
+    initRenderer();
 
     return () => {
       active = false;
-      if (pixiAppRef.current) {
-        pixiAppRef.current.destroy(true);
-        pixiAppRef.current = null;
+      if (pixiRendererRef.current) {
+        pixiRendererRef.current.destroy();
+        pixiRendererRef.current = null;
       }
-      adjustmentsFilterRef.current = null;
-      videoSourceRef.current = null;
-      maskGraphicsRef.current = null;
-      filteredSpriteRef.current = null;
-      baseSpriteRef.current = null;
     };
-  }, [mediaUrl, isVideo, mediaMetadata]);
+  }, [mediaUrl, isVideo, mediaMetadata, selectedFilter]);
 
-  // Keep uniforms sync'ed when parameters change
+  // Update effects when filter selection changes
   useEffect(() => {
-    syncAdjustmentsUniforms();
-  }, [syncAdjustmentsUniforms]);
+    const renderer = pixiRendererRef.current;
+    if (!renderer || !renderer.isReady) return;
+
+    console.log("[FilterWorkspace] Updating effects for filter:", selectedFilter?.id);
+
+    if (selectedFilter?.usePixi && selectedFilter?.pixiFilterType === "grayscale") {
+      const graph = new EffectGraph();
+      graph.addNode(GrayscaleEffect);
+      graph.resolve();
+      renderer.applyNodes(graph.nodes);
+      console.log("[FilterWorkspace] ✅ Effects updated");
+    } else {
+      // No PixiJS filter selected, clear effects
+      renderer.applyNodes([]);
+      console.log("[FilterWorkspace] ✅ Effects cleared");
+    }
+  }, [selectedFilter]);
 
   // Sync histogram when scrubbing / paused
   useEffect(() => {
