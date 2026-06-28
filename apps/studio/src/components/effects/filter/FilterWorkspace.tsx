@@ -18,6 +18,8 @@ interface FilterPreset {
   description: string;
   cssFilter: string;
   intensity: number; // default strength 0-100
+  usePixi?: boolean; // Flag for WebGL-based filters
+  pixiFilterType?: "grayscale" | "cyberpunk" | "custom"; // PixiJS filter types
 }
 
 const FILTER_CATEGORIES = ["all", "essentials", "cinematic", "vintage", "vibrant", "mono", "aesthetic"] as const;
@@ -27,9 +29,27 @@ const API_BASE_URL = "https://clypra-worker-api.abdulkabirmusa.com";
 
 // 18 Stunning Professional Presets
 const PRESET_FILTERS: FilterPreset[] = [
-  // Essentials
-  { id: "pixi-test-grayscale", name: "Pixi Test Grayscale", category: "essentials", description: "[WebGL] Deep black & white with high contrast", cssFilter: "grayscale(100%) contrast(120%)", intensity: 100 },
-  { id: "pixi-test-cyberpunk", name: "Pixi Test Cyberpunk", category: "essentials", description: "[WebGL] Intense futuristic purple/teal grade", cssFilter: "hue-rotate(45deg) saturate(180%) contrast(110%)", intensity: 100 },
+  // Essentials (WebGL-powered)
+  {
+    id: "pixi-test-grayscale",
+    name: "Pixi Test Grayscale",
+    category: "essentials",
+    description: "[WebGL] Deep black & white with high contrast",
+    cssFilter: "grayscale(100%) contrast(120%)",
+    intensity: 100,
+    usePixi: true,
+    pixiFilterType: "grayscale",
+  },
+  {
+    id: "pixi-test-cyberpunk",
+    name: "Pixi Test Cyberpunk",
+    category: "essentials",
+    description: "[WebGL] Intense futuristic purple/teal grade",
+    cssFilter: "hue-rotate(45deg) saturate(180%) contrast(110%)",
+    intensity: 100,
+    usePixi: true,
+    pixiFilterType: "cyberpunk",
+  },
   { id: "clean-bright", name: "Clean & Bright", category: "essentials", description: "Luminous highlights and crisp clean whites", cssFilter: "brightness(107%) contrast(103%) saturate(106%)", intensity: 90 },
   { id: "matte-contrast", name: "Matte Contrast", category: "essentials", description: "Deep faded matte blacks and clinical details", cssFilter: "contrast(116%) brightness(96%) saturate(94%) sepia(4%)", intensity: 80 },
   { id: "cold-minimalist", name: "Cold Minimalist", category: "essentials", description: "Chilly blue hues and minimal saturation", cssFilter: "hue-rotate(12deg) saturate(78%) contrast(104%) brightness(99%)", intensity: 75 },
@@ -499,23 +519,36 @@ export function FilterWorkspace() {
   // Sync adjustments to PixiJS WebGL shader uniforms
   const syncAdjustmentsUniforms = useCallback(() => {
     const filter = adjustmentsFilterRef.current;
-    if (!filter) return;
+
+    console.log("[FilterWorkspace] syncAdjustmentsUniforms called");
+    console.log("[FilterWorkspace] - filter exists:", !!filter);
+    console.log("[FilterWorkspace] - selectedFilter:", selectedFilter?.id, selectedFilter?.name);
+    console.log("[FilterWorkspace] - intensity:", intensity);
+    console.log("[FilterWorkspace] - usePixi:", selectedFilter?.usePixi);
+
+    if (!filter) {
+      console.warn("[FilterWorkspace] No adjustmentsFilter found - cannot sync uniforms");
+      return;
+    }
 
     // Parse presets
-    const presetAdjust = selectedFilter && selectedFilter.cssFilter 
-      ? parseCSSFilter(selectedFilter.cssFilter) 
-      : { brightness: 1.0, contrast: 1.0, saturation: 1.0, sepia: 0.0, grayscale: 0.0, hueRotate: 0.0, invert: 0.0 };
+    const presetAdjust = selectedFilter && selectedFilter.cssFilter ? parseCSSFilter(selectedFilter.cssFilter) : { brightness: 1.0, contrast: 1.0, saturation: 1.0, sepia: 0.0, grayscale: 0.0, hueRotate: 0.0, invert: 0.0 };
+
+    console.log("[FilterWorkspace] - presetAdjust parsed:", presetAdjust);
 
     const f = intensity / 100;
-    
+
     // Combine preset & manual
-    const finalBrightness = (1.0 + (presetAdjust.brightness - 1.0) * f) + (manualAdjustments.brightness / 100);
-    const finalContrast = (1.0 + (presetAdjust.contrast - 1.0) * f) + (manualAdjustments.contrast / 100);
-    const finalSaturation = (1.0 + (presetAdjust.saturation - 1.0) * f) + (manualAdjustments.saturation / 100);
-    const finalSepia = (presetAdjust.sepia * f) + (manualAdjustments.sepia / 100);
-    const finalGrayscale = (presetAdjust.grayscale * f) + (manualAdjustments.grayscale / 100);
-    const finalHueRotate = (presetAdjust.hueRotate * f) + ((manualAdjustments.hueRotate * Math.PI) / 180);
-    const finalInvert = (presetAdjust.invert * f) + (manualAdjustments.invert / 100);
+    const finalBrightness = 1.0 + (presetAdjust.brightness - 1.0) * f + manualAdjustments.brightness / 100;
+    const finalContrast = 1.0 + (presetAdjust.contrast - 1.0) * f + manualAdjustments.contrast / 100;
+    const finalSaturation = 1.0 + (presetAdjust.saturation - 1.0) * f + manualAdjustments.saturation / 100;
+    const finalSepia = presetAdjust.sepia * f + manualAdjustments.sepia / 100;
+    const finalGrayscale = presetAdjust.grayscale * f + manualAdjustments.grayscale / 100;
+    const finalHueRotate = presetAdjust.hueRotate * f + (manualAdjustments.hueRotate * Math.PI) / 180;
+    const finalInvert = presetAdjust.invert * f + manualAdjustments.invert / 100;
+
+    console.log("[FilterWorkspace] - finalGrayscale:", finalGrayscale);
+    console.log("[FilterWorkspace] - finalContrast:", finalContrast);
 
     const tempWeight = Math.abs(manualAdjustments.temperature) / 400;
     const tempColor = manualAdjustments.temperature > 0 ? [1.0, 0.55, 0.16] : [0.16, 0.47, 1.0];
@@ -539,6 +572,22 @@ export function FilterWorkspace() {
     u.uTintColor = tintColor;
     u.uTintWeight = tintWeight;
 
+    console.log("[FilterWorkspace] ✅ Uniforms updated:");
+    console.log("[FilterWorkspace]    - uGrayscale:", u.uGrayscale);
+    console.log("[FilterWorkspace]    - uContrast:", u.uContrast);
+    console.log("[FilterWorkspace]    - uBrightness:", u.uBrightness);
+    console.log("[FilterWorkspace]    - uSaturation:", u.uSaturation);
+
+    // Check if filter is actually applied to sprite
+    const sprite = filteredSpriteRef.current;
+    if (sprite) {
+      console.log("[FilterWorkspace] Sprite filters:", sprite.filters);
+      console.log("[FilterWorkspace] Sprite visible:", sprite.visible);
+      console.log("[FilterWorkspace] Sprite has texture:", !!sprite.texture);
+    } else {
+      console.warn("[FilterWorkspace] ⚠️ No filteredSprite found!");
+    }
+
     // Update split compare mask bounding box
     const mask = maskGraphicsRef.current;
     if (mask && pixiAppRef.current) {
@@ -556,12 +605,25 @@ export function FilterWorkspace() {
   // Initialize Pixi Application for Filter Workspace
   useEffect(() => {
     const canvas = pixiCanvasRef.current;
-    if (!canvas || !mediaUrl || !mediaMetadata) return;
+    if (!canvas || !mediaUrl || !mediaMetadata) {
+      console.log("[FilterWorkspace] PixiJS init skipped - missing requirements:", {
+        canvas: !!canvas,
+        mediaUrl: !!mediaUrl,
+        mediaMetadata: !!mediaMetadata,
+      });
+      return;
+    }
+
+    console.log("[FilterWorkspace] 🚀 Initializing PixiJS...");
+    console.log("[FilterWorkspace] Canvas size:", mediaMetadata?.width, "x", mediaMetadata?.height);
 
     let active = true;
 
     const initPixi = async () => {
+      console.log("[FilterWorkspace] Importing PixiJS modules...");
       const { Application, Sprite, Graphics } = await import("pixi.js");
+
+      console.log("[FilterWorkspace] Creating Application...");
       const app = new Application();
       await app.init({
         canvas,
@@ -573,7 +635,12 @@ export function FilterWorkspace() {
         preserveDrawingBuffer: true, // Allow frame readbacks for histogram
       });
 
+      console.log("[FilterWorkspace] ✅ PixiJS Application initialized");
+      console.log("[FilterWorkspace] Renderer type:", app.renderer.type);
+      console.log("[FilterWorkspace] WebGL support:", app.renderer.type === "webgl");
+
       if (!active) {
+        console.log("[FilterWorkspace] Component unmounted, destroying app");
         app.destroy(true);
         return;
       }
@@ -582,6 +649,8 @@ export function FilterWorkspace() {
       const stage = app.stage;
       stage.removeChildren();
 
+      console.log("[FilterWorkspace] Creating sprites...");
+
       // Base Sprite
       const baseSprite = new Sprite();
       baseSprite.width = app.screen.width;
@@ -589,58 +658,77 @@ export function FilterWorkspace() {
       stage.addChild(baseSprite);
       baseSpriteRef.current = baseSprite;
 
+      console.log("[FilterWorkspace] Base sprite created");
+
       // Filtered Sprite
       const filteredSprite = new Sprite();
       filteredSprite.width = app.screen.width;
       filteredSprite.height = app.screen.height;
 
+      console.log("[FilterWorkspace] Filtered sprite created");
+
       // Compile the Adjustments filter
+      console.log("[FilterWorkspace] Compiling adjustments filter...");
       const adjustmentsFilter = Filter.from({
         gl: { vertex: ADJUSTMENTS_VERTEX_SHADER, fragment: ADJUSTMENTS_FRAGMENT_SHADER },
         resources: {
           uniforms: {
-            uExposure: { value: 0.0, type: 'f32' },
-            uBrightness: { value: 0.0, type: 'f32' },
-            uContrast: { value: 0.0, type: 'f32' },
-            uSaturation: { value: 0.0, type: 'f32' },
-            uTemperatureColor: { value: [1.0, 0.55, 0.16], type: 'vec3<f32>' },
-            uTemperatureWeight: { value: 0.0, type: 'f32' },
-            uTintColor: { value: [1.0, 0.16, 0.71], type: 'vec3<f32>' },
-            uTintWeight: { value: 0.0, type: 'f32' },
-            uSepia: { value: 0.0, type: 'f32' },
-            uGrayscale: { value: 0.0, type: 'f32' },
-            uHueRotate: { value: 0.0, type: 'f32' },
-            uVignette: { value: 0.0, type: 'f32' },
-            uInvert: { value: 0.0, type: 'f32' },
-          }
-        }
+            uExposure: { value: 0.0, type: "f32" },
+            uBrightness: { value: 0.0, type: "f32" },
+            uContrast: { value: 0.0, type: "f32" },
+            uSaturation: { value: 0.0, type: "f32" },
+            uTemperatureColor: { value: [1.0, 0.55, 0.16], type: "vec3<f32>" },
+            uTemperatureWeight: { value: 0.0, type: "f32" },
+            uTintColor: { value: [1.0, 0.16, 0.71], type: "vec3<f32>" },
+            uTintWeight: { value: 0.0, type: "f32" },
+            uSepia: { value: 0.0, type: "f32" },
+            uGrayscale: { value: 0.0, type: "f32" },
+            uHueRotate: { value: 0.0, type: "f32" },
+            uVignette: { value: 0.0, type: "f32" },
+            uInvert: { value: 0.0, type: "f32" },
+          },
+        },
       });
+
+      console.log("[FilterWorkspace] ✅ Adjustments filter compiled");
+      console.log("[FilterWorkspace] Filter object:", adjustmentsFilter);
+
       filteredSprite.filters = [adjustmentsFilter];
       adjustmentsFilterRef.current = adjustmentsFilter;
+
+      console.log("[FilterWorkspace] ✅ Filter applied to sprite");
+      console.log("[FilterWorkspace] Sprite.filters:", filteredSprite.filters);
 
       // Split compare mask
       const maskGraphics = new Graphics();
       stage.addChild(filteredSprite);
       stage.addChild(maskGraphics);
       filteredSprite.mask = maskGraphics;
-      
+
+      console.log("[FilterWorkspace] ✅ Sprites added to stage");
+      console.log("[FilterWorkspace] Stage children count:", stage.children.length);
+
       maskGraphicsRef.current = maskGraphics;
       filteredSpriteRef.current = filteredSprite;
       baseSpriteRef.current = baseSprite;
 
       // Set source textures
+      console.log("[FilterWorkspace] Loading textures... isVideo:", isVideo);
+
       if (isVideo && videoRef.current) {
         const { VideoSource, Texture } = await import("pixi.js");
         const source = new VideoSource({ resource: videoRef.current, autoPlay: false });
         const tex = new Texture({ source });
         baseSprite.texture = tex;
         filteredSprite.texture = tex;
+        console.log("[FilterWorkspace] ✅ Video texture loaded");
       } else if (!isVideo) {
         const { Texture } = await import("pixi.js");
         const tex = await Texture.from(mediaUrl);
         if (active) {
           baseSprite.texture = tex;
           filteredSprite.texture = tex;
+          console.log("[FilterWorkspace] ✅ Image texture loaded:", tex.width, "x", tex.height);
         }
       }
 
@@ -1263,9 +1351,7 @@ export function FilterWorkspace() {
                         <div
                           className="w-full h-full bg-cover bg-center"
                           style={{
-                            backgroundImage: previewFrameUrl
-                              ? `url(${previewFrameUrl})`
-                              : "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=100&auto=format&fit=crop')",
+                            backgroundImage: previewFrameUrl ? `url(${previewFrameUrl})` : "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=100&auto=format&fit=crop')",
                             filter: preset.cssFilter,
                           }}
                         />
@@ -1808,17 +1894,8 @@ export function FilterWorkspace() {
                 Look Deployment
               </span>
               {previewFrameUrl && (
-                <div
-                  onClick={() => setShowThumbnailLightbox(true)}
-                  className="relative aspect-video w-full rounded border border-[#1A1A24] overflow-hidden bg-black/45 shadow-inner cursor-zoom-in hover:border-[#7C6FFF]/50 transition-colors group"
-                  title="Click to zoom preview"
-                >
-                  <img
-                    src={previewFrameUrl}
-                    alt="Current Thumbnail Frame"
-                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                    style={{ filter: selectedFilter.cssFilter }}
-                  />
+                <div onClick={() => setShowThumbnailLightbox(true)} className="relative aspect-video w-full rounded border border-[#1A1A24] overflow-hidden bg-black/45 shadow-inner cursor-zoom-in hover:border-[#7C6FFF]/50 transition-colors group" title="Click to zoom preview">
+                  <img src={previewFrameUrl} alt="Current Thumbnail Frame" className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300" style={{ filter: selectedFilter.cssFilter }} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent flex items-end p-1.5 pointer-events-none">
                     <span className="text-[8px] text-gray-300 uppercase tracking-widest font-mono">Thumbnail Frame</span>
                   </div>
@@ -1835,33 +1912,15 @@ export function FilterWorkspace() {
               <div className="space-y-2 pt-1">
                 <div className="space-y-1">
                   <label className="text-[9px] uppercase tracking-wider text-[#8A8A99] font-bold">Creator Name</label>
-                  <input
-                    type="text"
-                    value={creatorName}
-                    onChange={(e) => setCreatorName(e.target.value)}
-                    placeholder="Your Name / Handle"
-                    className="w-full px-2.5 py-1.5 bg-[#0A0A0E] border border-[#1A1A24] focus:border-[#7C6FFF] rounded-md text-[11px] text-white placeholder-[#5B5B6E] outline-none transition-all"
-                  />
+                  <input type="text" value={creatorName} onChange={(e) => setCreatorName(e.target.value)} placeholder="Your Name / Handle" className="w-full px-2.5 py-1.5 bg-[#0A0A0E] border border-[#1A1A24] focus:border-[#7C6FFF] rounded-md text-[11px] text-white placeholder-[#5B5B6E] outline-none transition-all" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[9px] uppercase tracking-wider text-[#8A8A99] font-bold">Social Link</label>
-                  <input
-                    type="url"
-                    value={creatorSocialLink}
-                    onChange={(e) => setCreatorSocialLink(e.target.value)}
-                    placeholder="e.g. instagram.com/handle"
-                    className="w-full px-2.5 py-1.5 bg-[#0A0A0E] border border-[#1A1A24] focus:border-[#7C6FFF] rounded-md text-[11px] text-white placeholder-[#5B5B6E] outline-none transition-all"
-                  />
+                  <input type="url" value={creatorSocialLink} onChange={(e) => setCreatorSocialLink(e.target.value)} placeholder="e.g. instagram.com/handle" className="w-full px-2.5 py-1.5 bg-[#0A0A0E] border border-[#1A1A24] focus:border-[#7C6FFF] rounded-md text-[11px] text-white placeholder-[#5B5B6E] outline-none transition-all" />
                 </div>
                 {isAdmin && (
                   <div className="flex items-center gap-2 pt-1.5 select-none">
-                    <input
-                      id="filter-publish-checkbox"
-                      type="checkbox"
-                      checked={publishApproved}
-                      onChange={(e) => setPublishApproved(e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-[#1A1A24] bg-[#0A0A0E] text-[#10B981] focus:ring-[#10B981] cursor-pointer"
-                    />
+                    <input id="filter-publish-checkbox" type="checkbox" checked={publishApproved} onChange={(e) => setPublishApproved(e.target.checked)} className="h-3.5 w-3.5 rounded border-[#1A1A24] bg-[#0A0A0E] text-[#10B981] focus:ring-[#10B981] cursor-pointer" />
                     <label htmlFor="filter-publish-checkbox" className="text-[10px] font-semibold text-white cursor-pointer">
                       Approve & Publish immediately
                     </label>
@@ -1889,14 +1948,8 @@ export function FilterWorkspace() {
         )}
       </div>
       {showThumbnailLightbox && previewFrameUrl && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-8 cursor-zoom-out"
-          onClick={() => setShowThumbnailLightbox(false)}
-        >
-          <div
-            className="relative max-w-4xl max-h-full rounded-2xl border border-white/10 overflow-hidden bg-[#0A0A0F] shadow-2xl flex flex-col cursor-default animate-in fade-in zoom-in duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-8 cursor-zoom-out" onClick={() => setShowThumbnailLightbox(false)}>
+          <div className="relative max-w-4xl max-h-full rounded-2xl border border-white/10 overflow-hidden bg-[#0A0A0F] shadow-2xl flex flex-col cursor-default animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="px-4 py-3 border-b border-[#22222F] flex justify-between items-center bg-[#0F0F15]/80">
               <div>
@@ -1905,21 +1958,13 @@ export function FilterWorkspace() {
                   Graded Resolution: {mediaMetadata?.width || "Original"} x {mediaMetadata?.height || "Original"}
                 </p>
               </div>
-              <button
-                onClick={() => setShowThumbnailLightbox(false)}
-                className="text-gray-400 hover:text-white text-xs bg-[#1E1E2A] hover:bg-[#2A2A3A] px-2 py-1 rounded border border-[#2E2E3E] cursor-pointer transition-colors"
-              >
+              <button onClick={() => setShowThumbnailLightbox(false)} className="text-gray-400 hover:text-white text-xs bg-[#1E1E2A] hover:bg-[#2A2A3A] px-2 py-1 rounded border border-[#2E2E3E] cursor-pointer transition-colors">
                 Close
               </button>
             </div>
             {/* Graded Image */}
             <div className="p-4 flex items-center justify-center bg-[radial-gradient(circle_at_center,#1A1A24_0%,#0A0A0E_100%)] overflow-hidden">
-              <img
-                src={previewFrameUrl}
-                alt="Grades Preview Frame"
-                className="max-w-full max-h-[70vh] rounded-lg object-contain shadow-2xl border border-[#1A1A26]"
-                style={{ filter: selectedFilter?.cssFilter }}
-              />
+              <img src={previewFrameUrl} alt="Grades Preview Frame" className="max-w-full max-h-[70vh] rounded-lg object-contain shadow-2xl border border-[#1A1A26]" style={{ filter: selectedFilter?.cssFilter }} />
             </div>
           </div>
         </div>
