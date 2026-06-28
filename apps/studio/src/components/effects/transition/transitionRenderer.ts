@@ -18,13 +18,13 @@ export function renderTransition(
   duration: number,
 ): void {
   // Map transition preset to renderer type
-  const rendererType = transition.renderer === "canvas" ? transition.type : transition.renderer;
+  const rendererType = transition.renderer === "canvas" ? (transition as any).type || (transition as any).id : transition.renderer;
 
   // Use engine's TransitionRenderer with preset parameters
   TransitionRenderer.render(
     ctx,
-    clipA,
-    clipB,
+    clipA as any,
+    clipB as any,
     rendererType as any, // Type assertion since studio presets may have custom types
     transition.params || {},
     rawProgress,

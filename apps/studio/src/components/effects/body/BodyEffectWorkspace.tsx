@@ -8,11 +8,134 @@ import { generateVideoOrBodyEffectPresetSuggestion } from "../../../services/gem
 import { segmentBodyMask, makeBodyMaskCacheKey } from "../../../services/bodySegmentation/bodySegmentationWorkerClient";
 import { bodyMaskCache } from "../../../services/bodySegmentation/maskCache";
 import type { BodySegmentationOptions } from "@clypra/engine";
+import { Filter } from "pixi.js";
+
+const imageDataToCanvas = (imgData: ImageData): HTMLCanvasElement => {
+  const canvas = document.createElement("canvas");
+  canvas.width = imgData.width;
+  canvas.height = imgData.height;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.putImageData(imgData, 0, 0);
+  }
+  return canvas;
+};
+
+const BODY_EFFECT_VERTEX_SHADER = `
+  in vec2 aPosition;
+  out vec2 vTextureCoord;
+  uniform vec4 uInputSize;
+  uniform vec4 uOutputFrame;
+  vec4 filterVertexPosition(void) {
+    vec2 position = aPosition * uOutputFrame.zw + uOutputFrame.xy;
+    return vec4(position * uInputSize.zw * 2.0 - 1.0, 0.0, 1.0);
+  }
+  vec2 filterTextureCoord(void) {
+    return aPosition * (uOutputFrame.zw * uInputSize.xy);
+  }
+  void main(void) {
+    gl_Position = filterVertexPosition();
+    vTextureCoord = filterTextureCoord();
+  }
+`;
+
+const BODY_EFFECT_FRAGMENT_SHADER = `
+  in vec2 vTextureCoord;
+  out vec4 finalColor;
+
+  uniform sampler2D uSampler;       // Base video texture
+  uniform sampler2D uMaskTexture;   // Segmentation body mask
+  uniform int uEffectType;          // 0: Glow, 1: Outline, 2: Particles, 3: SegGlow
+  uniform vec3 uColor;              // Glowing color
+  uniform float uRadius;            // Blur/thickness radius
+  uniform float uIntensity;         // Strength
+  uniform float uTime;              // Ticker time
+
+  float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+  }
+
+  // Generate animated floaters on GPU
+  float drawGPUParticles(vec2 uv, float time) {
+      vec2 p = uv;
+      p.y += time * 0.15; // float up
+      vec2 grid = floor(p * 60.0);
+      vec2 subUv = fract(p * 60.0) - 0.5;
+      float h = hash(grid);
+      float size = 0.04 + 0.14 * h;
+      float dist = length(subUv);
+      float alpha = smoothstep(size, size - 0.03, dist);
+      // Flickering overlay
+      float flicker = 0.3 + 0.7 * sin(time * 5.0 + h * 12.0);
+      return alpha * step(0.72, h) * flicker;
+  }
+
+  void main() {
+      vec4 baseColor = texture(uSampler, vTextureCoord);
+      
+      // Sample mask alpha channel (binary body shape)
+      float maskVal = texture(uMaskTexture, vTextureCoord).a;
+      
+      vec3 resultRgb = baseColor.rgb;
+      
+      if (uEffectType == 0 || uEffectType == 3) {
+          // Glow / Segmentation Glow
+          // Edge transition expansion to draw neon shadow
+          vec2 texelSize = vec2(uRadius) / vec2(textureSize(uMaskTexture, 0));
+          float totalMask = 0.0;
+          
+          // simple 9-tap blur box to blur mask
+          for (int x = -2; x <= 2; x++) {
+              for (int y = -2; y <= 2; y++) {
+                  vec2 offset = vec2(float(x), float(y)) * texelSize;
+                  totalMask += texture(uMaskTexture, vTextureCoord + offset).a;
+              }
+          }
+          float blurredMask = totalMask / 25.0;
+          
+          // Add neon halo around the mask edges (blur minus core mask)
+          float glowAmount = max(0.0, blurredMask - maskVal) * uIntensity;
+          resultRgb = mix(resultRgb, uColor, glowAmount);
+          
+          // If type 3 (segmentation glow overlay), add soft inner tint
+          if (uEffectType == 3) {
+              resultRgb = mix(resultRgb, uColor, maskVal * 0.18 * uIntensity);
+          }
+          
+      } else if (uEffectType == 1) {
+          // Outline
+          vec2 offset = vec2(uRadius) / vec2(textureSize(uMaskTexture, 0));
+          float mLeft  = texture(uMaskTexture, vTextureCoord - vec2(offset.x, 0.0)).a;
+          float mRight = texture(uMaskTexture, vTextureCoord + vec2(offset.x, 0.0)).a;
+          float mUp    = texture(uMaskTexture, vTextureCoord - vec2(0.0, offset.y)).a;
+          float mDown  = texture(uMaskTexture, vTextureCoord + vec2(0.0, offset.y)).a;
+          
+          float border = max(max(mLeft, mRight), max(mUp, mDown)) - maskVal;
+          resultRgb = mix(resultRgb, uColor, border * uIntensity);
+          
+      } else if (uEffectType == 2) {
+          // Particles
+          float particles = drawGPUParticles(vTextureCoord, uTime);
+          // Mask particles to the body silhouette
+          float activeParticles = particles * maskVal * uIntensity;
+          resultRgb = mix(resultRgb, uColor, activeParticles);
+      }
+      
+      finalColor = vec4(resultRgb, baseColor.a);
+  }
+`;
 
 export function BodyEffectWorkspace() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pixiCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+
+  // PixiJS references
+  const pixiAppRef = useRef<any>(null);
+  const bodyEffectFilterRef = useRef<any>(null);
+  const baseSpriteRef = useRef<any>(null);
+  const filteredSpriteRef = useRef<any>(null);
 
   const [videoUrl, setVideoUrl] = useState<string | undefined>();
   const [imageUrl, setImageUrl] = useState<string | undefined>();
@@ -122,6 +245,9 @@ export function BodyEffectWorkspace() {
     setVideoUrl(url);
     setImageUrl(undefined);
     setIsImage(false);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setImageMask(null);
   }, []);
 
   // Handle image upload
@@ -133,21 +259,13 @@ export function BodyEffectWorkspace() {
     setImageUrl(url);
     setVideoUrl(undefined);
     setIsImage(true);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setImageMask(null);
 
     // Load image and render to canvas
     const img = new Image();
     img.onload = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      canvas.width = img.width;
-      canvas.height = img.height;
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-
-      ctx.drawImage(img, 0, 0);
-
       setVideoMetadata({
         duration: 3, // Default duration for effect
         width: img.width,
@@ -155,6 +273,20 @@ export function BodyEffectWorkspace() {
       });
     };
     img.src = url;
+  }, []);
+
+  // Reset workspace
+  const handleReset = useCallback(() => {
+    setVideoUrl(undefined);
+    setImageUrl(undefined);
+    setIsImage(false);
+    setSelectedEffect(null);
+    setIntensity(0.8);
+    setParameters({ intensity: 50, frequency: 10 });
+    setCurrentTime(0);
+    setVideoMetadata(null);
+    setIsPlaying(false);
+    setImageMask(null);
   }, []);
 
   // Segment static image once when image or selectedEffect changes
@@ -184,51 +316,195 @@ export function BodyEffectWorkspace() {
     img.src = imageUrl;
   }, [isImage, imageUrl, selectedEffect]);
 
-  // Render effect on canvas (optimized)
-  const renderEffect = useCallback(
-    (video: HTMLVideoElement) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+  // Sync parameters to PixiJS WebGL body shader uniforms
+  const syncBodyEffectUniforms = useCallback((timeVal: number, maskCanvas: HTMLCanvasElement | null) => {
+    const filter = bodyEffectFilterRef.current;
+    if (!filter) return;
 
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
+    let typeVal = 0;
+    if (selectedEffect === "body_glow") typeVal = 0;
+    else if (selectedEffect === "body_outline") typeVal = 1;
+    else if (selectedEffect === "body_particles") typeVal = 2;
+    else if (selectedEffect === "body-segmentation-glow") typeVal = 3;
 
-      // Clear and draw video
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Resolve color
+    let colorHex = "#7C6FFF";
+    if (selectedEffect === "body_glow" || selectedEffect === "body-segmentation-glow") {
+      colorHex = parameters.glowColor as string || "#7C6FFF";
+    } else if (selectedEffect === "body_outline") {
+      colorHex = parameters.outlineColor as string || "#00E5FF";
+    } else if (selectedEffect === "body_particles") {
+      colorHex = parameters.particleColor as string || "#FF2A85";
+    }
 
-      // Apply effect if selected
-      if (selectedEffect) {
-        try {
-          const options: BodySegmentationOptions = {
-            effectId: selectedEffect,
-            renderer: selectedEffect,
-            time: video.currentTime,
-            width: canvas.width,
-            height: canvas.height,
-            minConfidence: 0.7,
-          };
-          const cacheKey = makeBodyMaskCacheKey(options);
-          const cachedMask = bodyMaskCache.get(cacheKey);
+    const hex = colorHex.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
 
-          if (cachedMask) {
-            EffectRenderer.apply(ctx, selectedEffect, parameters, intensity, video.currentTime, cachedMask);
-          } else {
-            // Trigger async segmentation in the background
-            segmentBodyMask(video, options).catch((err) => {
-              console.warn("[BodySegmentation] Background segmentation error:", err);
-            });
+    let radiusVal = 20.0;
+    if (selectedEffect === "body_glow" || selectedEffect === "body-segmentation-glow") {
+      radiusVal = typeof parameters.glowRadius === "number" ? parameters.glowRadius : 20.0;
+    } else if (selectedEffect === "body_outline") {
+      radiusVal = typeof parameters.outlineWidth === "number" ? parameters.outlineWidth : 6.0;
+    }
 
-            // Fallback: draw effect with static silhouette
-            EffectRenderer.apply(ctx, selectedEffect, parameters, intensity, video.currentTime);
+    const u = filter.resources.uniforms.uniforms;
+    u.uEffectType = typeVal;
+    u.uColor = [r, g, b];
+    u.uRadius = radiusVal;
+    u.uIntensity = intensity;
+    u.uTime = timeVal;
+
+    if (maskCanvas && pixiAppRef.current) {
+      const { Texture } = require("pixi.js");
+      const maskTex = Texture.from(maskCanvas);
+      u.uMaskTexture = maskTex;
+    }
+  }, [selectedEffect, parameters, intensity]);
+
+  // Initialize Pixi Application for Body Effect Workspace
+  useEffect(() => {
+    const canvas = pixiCanvasRef.current;
+    if (!canvas || (!videoUrl && !imageUrl) || !videoMetadata) return;
+
+    let active = true;
+
+    const initPixi = async () => {
+      const { Application, Sprite } = await import("pixi.js");
+      const app = new Application();
+      await app.init({
+        canvas,
+        width: videoMetadata?.width || 1280,
+        height: videoMetadata?.height || 720,
+        backgroundAlpha: 0,
+        antialias: true,
+        preference: "webgl",
+        preserveDrawingBuffer: true,
+      });
+
+      if (!active) {
+        app.destroy(true);
+        return;
+      }
+
+      pixiAppRef.current = app;
+      const stage = app.stage;
+      stage.removeChildren();
+
+      // Base Sprite
+      const baseSprite = new Sprite();
+      baseSprite.width = app.screen.width;
+      baseSprite.height = app.screen.height;
+      stage.addChild(baseSprite);
+      baseSpriteRef.current = baseSprite;
+
+      // Filtered Sprite
+      const filteredSprite = new Sprite();
+      filteredSprite.width = app.screen.width;
+      filteredSprite.height = app.screen.height;
+      stage.addChild(filteredSprite);
+      filteredSpriteRef.current = filteredSprite;
+
+      // Compile the Custom Body Effect filter
+      const bodyFilter = Filter.from({
+        gl: { vertex: BODY_EFFECT_VERTEX_SHADER, fragment: BODY_EFFECT_FRAGMENT_SHADER },
+        resources: {
+          uniforms: {
+            uEffectType: { value: 0, type: 'i32' },
+            uColor: { value: [0.49, 0.43, 1.0], type: 'vec3<f32>' },
+            uRadius: { value: 20.0, type: 'f32' },
+            uIntensity: { value: 0.8, type: 'f32' },
+            uTime: { value: 0.0, type: 'f32' },
+            uMaskTexture: { value: null, type: 'sampler2D' }
           }
-        } catch (error) {
-          console.error("Effect error:", error);
+        }
+      });
+      filteredSprite.filters = [bodyFilter];
+      bodyEffectFilterRef.current = bodyFilter;
+
+      // Setup textures
+      if (!isImage && videoElementRef.current) {
+        const { VideoSource, Texture } = await import("pixi.js");
+        const source = new VideoSource({ resource: videoElementRef.current, autoPlay: false });
+        const tex = new Texture({ source });
+        baseSprite.texture = tex;
+        filteredSprite.texture = tex;
+      } else if (isImage && imageUrl) {
+        const { Texture } = await import("pixi.js");
+        const tex = await Texture.from(imageUrl);
+        if (active) {
+          baseSprite.texture = tex;
+          filteredSprite.texture = tex;
         }
       }
-    },
-    [selectedEffect, parameters, intensity],
-  );
+
+      // Sync uniforms
+      syncBodyEffectUniforms(0, null);
+
+      // Ticker loop
+      let startTime = performance.now();
+      app.ticker.add(() => {
+        if (!active) return;
+
+        const timeVal = isImage 
+          ? ((performance.now() - startTime) / 1000) % 3 
+          : (videoElementRef.current?.currentTime || 0);
+
+        if (isImage) {
+          if (imageMask) {
+            const maskCanvas = imageDataToCanvas(imageMask);
+            syncBodyEffectUniforms(timeVal, maskCanvas);
+          } else {
+            syncBodyEffectUniforms(timeVal, null);
+          }
+        } else {
+          const video = videoElementRef.current;
+          if (video && selectedEffect) {
+            const options: BodySegmentationOptions = {
+              effectId: selectedEffect,
+              renderer: selectedEffect,
+              time: video.currentTime,
+              width: app.screen.width,
+              height: app.screen.height,
+              minConfidence: 0.7,
+            };
+            const cacheKey = makeBodyMaskCacheKey(options);
+            const cachedMask = bodyMaskCache.get(cacheKey);
+
+            if (cachedMask) {
+              const maskCanvas = imageDataToCanvas(cachedMask);
+              syncBodyEffectUniforms(timeVal, maskCanvas);
+            } else {
+              segmentBodyMask(video, options).catch(() => {});
+              syncBodyEffectUniforms(timeVal, null);
+            }
+          }
+        }
+      });
+    };
+
+    initPixi();
+
+    return () => {
+      active = false;
+      if (pixiAppRef.current) {
+        pixiAppRef.current.destroy(true);
+        pixiAppRef.current = null;
+      }
+      bodyEffectFilterRef.current = null;
+      baseSpriteRef.current = null;
+      filteredSpriteRef.current = null;
+    };
+  }, [videoUrl, imageUrl, isImage, selectedEffect, imageMask, videoMetadata]);
+
+  // Keep uniforms sync'ed when parameters change
+  useEffect(() => {
+    syncBodyEffectUniforms(currentTime, null);
+  }, [syncBodyEffectUniforms, currentTime]);
+
+  // Traditional canvas rendering fallback placeholder
+  const renderEffect = useCallback((video: HTMLVideoElement) => {}, []);
 
   // Smooth animation loop using requestAnimationFrame
   useEffect(() => {
@@ -239,7 +515,6 @@ export function BodyEffectWorkspace() {
 
     const animate = () => {
       if (video && !video.paused && !video.ended) {
-        renderEffect(video);
         setCurrentTime(video.currentTime);
         rafId = requestAnimationFrame(animate);
       }
@@ -250,67 +525,25 @@ export function BodyEffectWorkspace() {
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [isPlaying, renderEffect]);
-
-  // Animation loop for static images
-  useEffect(() => {
-    if (!isImage || !imageUrl || !selectedEffect) return;
-
-    let rafId: number;
-    let startTime = performance.now();
-
-    const animateImage = (timestamp: number) => {
-      const elapsed = (timestamp - startTime) / 1000; // Convert to seconds
-      const time = elapsed % 3; // Loop every 3 seconds
-
-      setCurrentTime(time);
-
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-
-      // Load and draw image
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        // Apply effect (using pre-segmented imageMask if available)
-        try {
-          EffectRenderer.apply(ctx, selectedEffect, parameters, intensity, time, imageMask || undefined);
-        } catch (error) {
-          console.error("Effect error:", error);
-        }
-      };
-      img.src = imageUrl;
-
-      rafId = requestAnimationFrame(animateImage);
-    };
-
-    rafId = requestAnimationFrame(animateImage);
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, [isImage, imageUrl, selectedEffect, parameters, intensity, imageMask]);
+  }, [isPlaying]);
 
   // Update canvas dimensions when metadata loads
   useEffect(() => {
     if (videoMetadata && canvasRef.current && videoElementRef.current) {
       const canvas = canvasRef.current;
-      const video = videoElementRef.current;
-
       canvas.width = videoMetadata.width;
       canvas.height = videoMetadata.height;
-      renderEffect(video);
     }
-  }, [videoMetadata, renderEffect]);
+    if (videoMetadata && pixiCanvasRef.current) {
+      const canvas = pixiCanvasRef.current;
+      canvas.width = videoMetadata.width;
+      canvas.height = videoMetadata.height;
+    }
+  }, [videoMetadata]);
 
   // Export frame
   const exportFrame = useCallback(() => {
-    const canvas = canvasRef.current;
+    const canvas = pixiCanvasRef.current || canvasRef.current;
     if (!canvas) return;
 
     canvas.toBlob((blob) => {
@@ -464,6 +697,14 @@ export function BodyEffectWorkspace() {
             <div className="relative h-full flex items-center justify-center">
               <canvas
                 ref={canvasRef}
+                width={videoMetadata?.width || 1280}
+                height={videoMetadata?.height || 720}
+                style={{
+                  display: "none",
+                }}
+              />
+              <canvas
+                ref={pixiCanvasRef}
                 width={videoMetadata?.width || 1280}
                 height={videoMetadata?.height || 720}
                 style={{

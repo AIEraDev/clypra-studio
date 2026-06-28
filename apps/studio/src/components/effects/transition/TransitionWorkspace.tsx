@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Upload, Play, Pause, RotateCcw, Search, Eye, EyeOff, Sliders, Download, Loader2, CheckCircle, AlertTriangle, Sparkles, Film, Image as ImageIcon, Video, X } from "lucide-react";
 import { TRANSITION_PRESETS, TRANSITION_CATEGORIES, getTransitionsByCategory, searchTransitions, type TransitionPreset, type TransitionCategory } from "@clypra/engine/transitions";
 import { renderTransition } from "./transitionRenderer";
+import { Filter } from "pixi.js";
 
 // Use constants from engine
 const PRESET_TRANSITIONS = TRANSITION_PRESETS;
@@ -29,12 +30,100 @@ function toKebabId(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+const TRANSITION_VERTEX_SHADER = `
+  in vec2 aPosition;
+  out vec2 vTextureCoord;
+  uniform vec4 uInputSize;
+  uniform vec4 uOutputFrame;
+  vec4 filterVertexPosition(void) {
+    vec2 position = aPosition * uOutputFrame.zw + uOutputFrame.xy;
+    return vec4(position * uInputSize.zw * 2.0 - 1.0, 0.0, 1.0);
+  }
+  vec2 filterTextureCoord(void) {
+    return aPosition * (uOutputFrame.zw * uInputSize.xy);
+  }
+  void main(void) {
+    gl_Position = filterVertexPosition();
+    vTextureCoord = filterTextureCoord();
+  }
+`;
+
+const TRANSITION_FRAGMENT_SHADER = `
+  in vec2 vTextureCoord;
+  out vec4 finalColor;
+
+  uniform sampler2D uTexture;       // Texture A
+  uniform sampler2D uTextureB;      // Texture B
+  uniform float uProgress;          // 0.0 to 1.0
+  uniform int uTransitionType;      // 0: Crossfade, 1: Ripple, 2: Pixelate, 3: Slide, 4: Wipe, 5: Zoom
+
+  vec4 ripple(vec2 uv, float progress) {
+      vec2 dir = uv - 0.5;
+      float dist = length(dir);
+      vec2 offset = dir * (sin(dist * 40.0 - progress * 15.0) * 0.04 * (1.0 - progress));
+      return mix(texture(uTexture, uv + offset), texture(uTextureB, uv), progress);
+  }
+
+  vec4 pixelate(vec2 uv, float progress) {
+      float strength = sin(progress * 3.14159);
+      float size = mix(1.0, 45.0, strength);
+      vec2 p = floor(uv * size) / size;
+      return mix(texture(uTexture, p), texture(uTextureB, p), progress);
+  }
+
+  vec4 crossZoom(vec2 uv, float progress) {
+      vec2 center = vec2(0.5);
+      float scaleA = 1.0 + progress * 0.5;
+      float scaleB = 1.5 - progress * 0.5;
+      vec2 uvA = (uv - center) / scaleA + center;
+      vec2 uvB = (uv - center) / scaleB + center;
+      
+      vec4 colA = texture(uTexture, uvA);
+      vec4 colB = texture(uTextureB, uvB);
+      return mix(colA, colB, progress);
+  }
+
+  void main() {
+      vec2 p = vTextureCoord;
+      
+      if (uTransitionType == 0) {
+          vec4 colA = texture(uTexture, p);
+          vec4 colB = texture(uTextureB, p);
+          finalColor = mix(colA, colB, uProgress);
+      } else if (uTransitionType == 1) {
+          finalColor = ripple(p, uProgress);
+      } else if (uTransitionType == 2) {
+          finalColor = pixelate(p, uProgress);
+      } else if (uTransitionType == 3) {
+          if (p.x < uProgress) {
+              finalColor = texture(uTextureB, vec2(p.x + (1.0 - uProgress), p.y));
+          } else {
+              finalColor = texture(uTexture, vec2(p.x - uProgress, p.y));
+          }
+      } else if (uTransitionType == 4) {
+          float alpha = step(p.x, uProgress);
+          finalColor = mix(texture(uTexture, p), texture(uTextureB, p), alpha);
+      } else if (uTransitionType == 5) {
+          finalColor = crossZoom(p, uProgress);
+      } else {
+          finalColor = mix(texture(uTexture, p), texture(uTextureB, p), uProgress);
+      }
+  }
+`;
+
 export function TransitionWorkspace() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pixiCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const clipARef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
   const clipBRef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
   const rafIdRef = useRef<number | null>(null);
+
+  // PixiJS references
+  const pixiAppRef = useRef<any>(null);
+  const transitionFilterRef = useRef<any>(null);
+  const baseSpriteRef = useRef<any>(null);
+  const filteredSpriteRef = useRef<any>(null);
 
   // Media states
   const [clipAUrl, setClipAUrl] = useState<string>(SAMPLE_CLIPS.clipA);
@@ -109,6 +198,112 @@ export function TransitionWorkspace() {
     loadImage(clipBUrl, false);
   }, [clipAUrl, clipBUrl]);
 
+  // Sync transition parameters to PixiJS WebGL shader uniforms
+  const syncTransitionUniforms = useCallback((progressVal: number) => {
+    const filter = transitionFilterRef.current;
+    if (!filter) return;
+
+    let typeVal = 0;
+    const tId = selectedTransition?.id || "";
+    if (tId.includes("fade")) typeVal = 0;
+    else if (tId.includes("ripple")) typeVal = 1;
+    else if (tId.includes("pixel")) typeVal = 2;
+    else if (tId.includes("slide")) typeVal = 3;
+    else if (tId.includes("wipe")) typeVal = 4;
+    else if (tId.includes("zoom")) typeVal = 5;
+
+    const u = filter.resources.uniforms.uniforms;
+    u.uProgress = progressVal;
+    u.uTransitionType = typeVal;
+  }, [selectedTransition]);
+
+  // Initialize Pixi Application for Transition Workspace
+  useEffect(() => {
+    const canvas = pixiCanvasRef.current;
+    if (!canvas || !mediaLoaded) return;
+
+    let active = true;
+
+    const initPixi = async () => {
+      const { Application, Sprite } = await import("pixi.js");
+      const app = new Application();
+      await app.init({
+        canvas,
+        width: 1280,
+        height: 720,
+        backgroundAlpha: 0,
+        antialias: true,
+        preference: "webgl",
+        preserveDrawingBuffer: true,
+      });
+
+      if (!active) {
+        app.destroy(true);
+        return;
+      }
+
+      pixiAppRef.current = app;
+      const stage = app.stage;
+      stage.removeChildren();
+
+      // Base Sprite
+      const baseSprite = new Sprite();
+      baseSprite.width = app.screen.width;
+      baseSprite.height = app.screen.height;
+      stage.addChild(baseSprite);
+      baseSpriteRef.current = baseSprite;
+
+      // Filtered Sprite
+      const filteredSprite = new Sprite();
+      filteredSprite.width = app.screen.width;
+      filteredSprite.height = app.screen.height;
+      stage.addChild(filteredSprite);
+      filteredSpriteRef.current = filteredSprite;
+
+      // Compile Custom Transition filter
+      const transitionFilter = Filter.from({
+        gl: { vertex: TRANSITION_VERTEX_SHADER, fragment: TRANSITION_FRAGMENT_SHADER },
+        resources: {
+          uniforms: {
+            uProgress: { value: 0.0, type: 'f32' },
+            uTransitionType: { value: 0, type: 'i32' },
+            uTextureB: { value: null, type: 'sampler2D' }
+          }
+        }
+      });
+      filteredSprite.filters = [transitionFilter];
+      transitionFilterRef.current = transitionFilter;
+
+      // Load textures
+      const { Texture } = await import("pixi.js");
+      const texA = await Texture.from(clipAUrl);
+      const texB = await Texture.from(clipBUrl);
+
+      if (active) {
+        baseSprite.texture = texA;
+        filteredSprite.texture = texA;
+        
+        transitionFilter.resources.uniforms.uniforms.uTextureB = texB;
+        
+        const progress = duration > 0 ? Math.min(1, currentTime / duration) : 0;
+        syncTransitionUniforms(progress);
+      }
+    };
+
+    initPixi();
+
+    return () => {
+      active = false;
+      if (pixiAppRef.current) {
+        pixiAppRef.current.destroy(true);
+        pixiAppRef.current = null;
+      }
+      transitionFilterRef.current = null;
+      baseSpriteRef.current = null;
+      filteredSpriteRef.current = null;
+    };
+  }, [clipAUrl, clipBUrl, mediaLoaded]);
+
   // Render current frame
   const renderCurrentFrame = useCallback(() => {
     const canvas = canvasRef.current;
@@ -120,11 +315,11 @@ export function TransitionWorkspace() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Calculate progress (0-1)
     const progress = duration > 0 ? Math.min(1, currentTime / duration) : 0;
 
     renderTransition(ctx, clipA, clipB, selectedTransition, progress, duration);
-  }, [currentTime, duration, selectedTransition]);
+    syncTransitionUniforms(progress);
+  }, [currentTime, duration, selectedTransition, syncTransitionUniforms]);
 
   // Animation loop
   useEffect(() => {
@@ -487,7 +682,8 @@ export function TransitionWorkspace() {
 
         {/* Canvas Container */}
         <div ref={containerRef} className="relative flex flex-1 items-center justify-center bg-[#000000] p-8">
-          <canvas ref={canvasRef} width={1920} height={1080} className="max-h-full max-w-full rounded-lg shadow-2xl" style={{ imageRendering: "auto" }} />
+          <canvas ref={canvasRef} width={1920} height={1080} style={{ display: "none" }} />
+          <canvas ref={pixiCanvasRef} width={1920} height={1080} className="max-h-full max-w-full rounded-lg shadow-2xl" style={{ imageRendering: "auto", display: "block" }} />
 
           {!mediaLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">

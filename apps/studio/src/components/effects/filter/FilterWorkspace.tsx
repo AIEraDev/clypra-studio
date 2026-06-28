@@ -7,6 +7,8 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { getR2Config } from "../../../services/r2Service";
 import { useR2Publish } from "../../../hooks/useR2Publish";
 import { Download, Upload, Sparkles, Zap, Image as ImageIcon, Film, Loader2, Play, Pause, RotateCcw, Search, Sliders, BarChart4, Sun, Palette, Eye, EyeOff, ChevronRight, ChevronDown, Check, Undo, SlidersHorizontal, Compass } from "lucide-react";
+import { PixiRenderer, EffectGraph } from "@clypra/engine";
+import { Filter } from "pixi.js";
 
 // Types
 interface FilterPreset {
@@ -26,6 +28,8 @@ const API_BASE_URL = "https://clypra-worker-api.abdulkabirmusa.com";
 // 18 Stunning Professional Presets
 const PRESET_FILTERS: FilterPreset[] = [
   // Essentials
+  { id: "pixi-test-grayscale", name: "Pixi Test Grayscale", category: "essentials", description: "[WebGL] Deep black & white with high contrast", cssFilter: "grayscale(100%) contrast(120%)", intensity: 100 },
+  { id: "pixi-test-cyberpunk", name: "Pixi Test Cyberpunk", category: "essentials", description: "[WebGL] Intense futuristic purple/teal grade", cssFilter: "hue-rotate(45deg) saturate(180%) contrast(110%)", intensity: 100 },
   { id: "clean-bright", name: "Clean & Bright", category: "essentials", description: "Luminous highlights and crisp clean whites", cssFilter: "brightness(107%) contrast(103%) saturate(106%)", intensity: 90 },
   { id: "matte-contrast", name: "Matte Contrast", category: "essentials", description: "Deep faded matte blacks and clinical details", cssFilter: "contrast(116%) brightness(96%) saturate(94%) sepia(4%)", intensity: 80 },
   { id: "cold-minimalist", name: "Cold Minimalist", category: "essentials", description: "Chilly blue hues and minimal saturation", cssFilter: "hue-rotate(12deg) saturate(78%) contrast(104%) brightness(99%)", intensity: 75 },
@@ -132,6 +136,142 @@ const getCombinedFilterString = (preset: FilterPreset | null, presetIntensity: n
   return parts.join(" ") || "none";
 };
 
+const parseCSSFilter = (filterStr: string) => {
+  const adjustments = {
+    brightness: 1.0,
+    contrast: 1.0,
+    saturation: 1.0,
+    sepia: 0.0,
+    grayscale: 0.0,
+    hueRotate: 0.0,
+    invert: 0.0,
+  };
+
+  const matches = filterStr.match(/(\w+-?\w+)\(([^)]+)\)/g) || [];
+  for (const match of matches) {
+    const parts = match.split("(");
+    const name = parts[0].trim();
+    const value = parts[1].replace(")", "").trim();
+
+    if (name === "brightness") {
+      adjustments.brightness = parseFloat(value) / 100;
+    } else if (name === "contrast") {
+      adjustments.contrast = parseFloat(value) / 100;
+    } else if (name === "saturate") {
+      adjustments.saturation = parseFloat(value) / 100;
+    } else if (name === "sepia") {
+      adjustments.sepia = parseFloat(value) / 100;
+    } else if (name === "grayscale") {
+      adjustments.grayscale = parseFloat(value) / 100;
+    } else if (name === "hue-rotate") {
+      adjustments.hueRotate = parseFloat(value) * (Math.PI / 180);
+    } else if (name === "invert") {
+      adjustments.invert = parseFloat(value) / 100;
+    }
+  }
+
+  return adjustments;
+};
+
+const ADJUSTMENTS_VERTEX_SHADER = `
+  in vec2 aPosition;
+  out vec2 vTextureCoord;
+  uniform vec4 uInputSize;
+  uniform vec4 uOutputFrame;
+  vec4 filterVertexPosition(void) {
+    vec2 position = aPosition * uOutputFrame.zw + uOutputFrame.xy;
+    return vec4(position * uInputSize.zw * 2.0 - 1.0, 0.0, 1.0);
+  }
+  vec2 filterTextureCoord(void) {
+    return aPosition * (uOutputFrame.zw * uInputSize.xy);
+  }
+  void main(void) {
+    gl_Position = filterVertexPosition();
+    vTextureCoord = filterTextureCoord();
+  }
+`;
+
+const ADJUSTMENTS_FRAGMENT_SHADER = `
+  in vec2 vTextureCoord;
+  out vec4 finalColor;
+
+  uniform sampler2D uTexture;
+  uniform float uExposure;          // -1.0 to 1.0
+  uniform float uBrightness;        // -1.0 to 1.0
+  uniform float uContrast;          // -1.0 to 1.0
+  uniform float uSaturation;        // -1.0 to 1.0
+  uniform vec3 uTemperatureColor;   // HSL temperature color
+  uniform float uTemperatureWeight; // 0.0 to 1.0
+  uniform vec3 uTintColor;          // tint color
+  uniform float uTintWeight;        // 0.0 to 1.0
+  uniform float uSepia;             // 0.0 to 1.0
+  uniform float uGrayscale;         // 0.0 to 1.0
+  uniform float uHueRotate;         // Radians (0.0 to 2*PI)
+  uniform float uVignette;          // 0.0 to 1.0
+  uniform float uInvert;            // 0.0 to 1.0
+
+  vec3 hueRotate(vec3 color, float angle) {
+      vec3 k = vec3(0.57735, 0.57735, 0.57735);
+      float cosAngle = cos(angle);
+      return color * cosAngle + cross(k, color) * sin(angle) + k * dot(k, color) * (1.0 - cosAngle);
+  }
+
+  void main() {
+      vec4 texColor = texture(uTexture, vTextureCoord);
+      vec3 rgb = texColor.rgb;
+
+      // Invert
+      rgb = mix(rgb, 1.0 - rgb, uInvert);
+
+      // Exposure
+      rgb = rgb * pow(2.0, uExposure);
+
+      // Brightness
+      rgb = rgb + uBrightness;
+
+      // Contrast
+      rgb = (rgb - 0.5) * (1.0 + uContrast) + 0.5;
+
+      // Saturation
+      float luma = dot(rgb, vec3(0.2126, 0.7152, 0.0722));
+      rgb = mix(vec3(luma), rgb, 1.0 + uSaturation);
+      rgb = mix(rgb, vec3(luma), uGrayscale);
+
+      // Sepia
+      vec3 sepiaColor = vec3(
+          dot(rgb, vec3(0.393, 0.769, 0.189)),
+          dot(rgb, vec3(0.349, 0.686, 0.168)),
+          dot(rgb, vec3(0.272, 0.534, 0.131))
+      );
+      rgb = mix(rgb, sepiaColor, uSepia);
+
+      // Hue Rotate
+      if (uHueRotate != 0.0) {
+          rgb = hueRotate(rgb, uHueRotate);
+      }
+
+      // Temperature soft-light blend
+      if (uTemperatureWeight > 0.0) {
+          vec3 t = uTemperatureColor;
+          rgb = mix(rgb, (1.0 - 2.0 * t) * rgb * rgb + 2.0 * t * rgb, uTemperatureWeight);
+      }
+
+      // Tint soft-light blend
+      if (uTintWeight > 0.0) {
+          vec3 t = uTintColor;
+          rgb = mix(rgb, (1.0 - 2.0 * t) * rgb * rgb + 2.0 * t * rgb, uTintWeight);
+      }
+
+      // Vignette
+      vec2 uv = vTextureCoord - 0.5;
+      float dist = length(uv);
+      float vignetteVal = smoothstep(0.45, 1.0, dist);
+      rgb = mix(rgb, rgb * 0.0, vignetteVal * uVignette);
+
+      finalColor = vec4(rgb, texColor.a);
+  }
+`;
+
 // Helper: Apply vignette overlay on canvas
 const applyVignette = (ctx: CanvasRenderingContext2D, width: number, height: number, value: number) => {
   ctx.save();
@@ -181,10 +321,18 @@ const applyColorOverlays = (ctx: CanvasRenderingContext2D, width: number, height
 
 export function FilterWorkspace() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pixiCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const histogramCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // PixiJS references
+  const pixiAppRef = useRef<any>(null);
+  const adjustmentsFilterRef = useRef<any>(null);
+  const maskGraphicsRef = useRef<any>(null);
+  const filteredSpriteRef = useRef<any>(null);
+  const baseSpriteRef = useRef<any>(null);
 
   const { publishFilter } = useR2Publish();
 
@@ -348,6 +496,192 @@ export function FilterWorkspace() {
     return getCombinedFilterString(selectedFilter, intensity, manualAdjustments);
   }, [selectedFilter, intensity, manualAdjustments]);
 
+  // Sync adjustments to PixiJS WebGL shader uniforms
+  const syncAdjustmentsUniforms = useCallback(() => {
+    const filter = adjustmentsFilterRef.current;
+    if (!filter) return;
+
+    // Parse presets
+    const presetAdjust = selectedFilter && selectedFilter.cssFilter 
+      ? parseCSSFilter(selectedFilter.cssFilter) 
+      : { brightness: 1.0, contrast: 1.0, saturation: 1.0, sepia: 0.0, grayscale: 0.0, hueRotate: 0.0, invert: 0.0 };
+
+    const f = intensity / 100;
+    
+    // Combine preset & manual
+    const finalBrightness = (1.0 + (presetAdjust.brightness - 1.0) * f) + (manualAdjustments.brightness / 100);
+    const finalContrast = (1.0 + (presetAdjust.contrast - 1.0) * f) + (manualAdjustments.contrast / 100);
+    const finalSaturation = (1.0 + (presetAdjust.saturation - 1.0) * f) + (manualAdjustments.saturation / 100);
+    const finalSepia = (presetAdjust.sepia * f) + (manualAdjustments.sepia / 100);
+    const finalGrayscale = (presetAdjust.grayscale * f) + (manualAdjustments.grayscale / 100);
+    const finalHueRotate = (presetAdjust.hueRotate * f) + ((manualAdjustments.hueRotate * Math.PI) / 180);
+    const finalInvert = (presetAdjust.invert * f) + (manualAdjustments.invert / 100);
+
+    const tempWeight = Math.abs(manualAdjustments.temperature) / 400;
+    const tempColor = manualAdjustments.temperature > 0 ? [1.0, 0.55, 0.16] : [0.16, 0.47, 1.0];
+
+    const tintWeight = Math.abs(manualAdjustments.tint) / 450;
+    const tintColor = manualAdjustments.tint > 0 ? [1.0, 0.16, 0.71] : [0.16, 1.0, 0.39];
+
+    // Update filter uniforms
+    const u = filter.resources.uniforms.uniforms;
+    u.uExposure = manualAdjustments.exposure / 100;
+    u.uBrightness = finalBrightness - 1.0;
+    u.uContrast = finalContrast - 1.0;
+    u.uSaturation = finalSaturation - 1.0;
+    u.uSepia = finalSepia;
+    u.uGrayscale = finalGrayscale;
+    u.uHueRotate = finalHueRotate;
+    u.uInvert = finalInvert;
+    u.uVignette = manualAdjustments.vignette / 100;
+    u.uTemperatureColor = tempColor;
+    u.uTemperatureWeight = tempWeight;
+    u.uTintColor = tintColor;
+    u.uTintWeight = tintWeight;
+
+    // Update split compare mask bounding box
+    const mask = maskGraphicsRef.current;
+    if (mask && pixiAppRef.current) {
+      const app = pixiAppRef.current;
+      mask.clear();
+      if (showSplitComparison) {
+        const splitX = (splitPosition / 100) * app.screen.width;
+        mask.rect(splitX, 0, app.screen.width - splitX, app.screen.height).fill(0xffffff);
+      } else {
+        mask.rect(0, 0, app.screen.width, app.screen.height).fill(0xffffff);
+      }
+    }
+  }, [selectedFilter, intensity, manualAdjustments, showSplitComparison, splitPosition]);
+
+  // Initialize Pixi Application for Filter Workspace
+  useEffect(() => {
+    const canvas = pixiCanvasRef.current;
+    if (!canvas || !mediaUrl || !mediaMetadata) return;
+
+    let active = true;
+
+    const initPixi = async () => {
+      const { Application, Sprite, Graphics } = await import("pixi.js");
+      const app = new Application();
+      await app.init({
+        canvas,
+        width: mediaMetadata?.width || 1280,
+        height: mediaMetadata?.height || 720,
+        backgroundAlpha: 0,
+        antialias: true,
+        preference: "webgl",
+        preserveDrawingBuffer: true, // Allow frame readbacks for histogram
+      });
+
+      if (!active) {
+        app.destroy(true);
+        return;
+      }
+
+      pixiAppRef.current = app;
+      const stage = app.stage;
+      stage.removeChildren();
+
+      // Base Sprite
+      const baseSprite = new Sprite();
+      baseSprite.width = app.screen.width;
+      baseSprite.height = app.screen.height;
+      stage.addChild(baseSprite);
+      baseSpriteRef.current = baseSprite;
+
+      // Filtered Sprite
+      const filteredSprite = new Sprite();
+      filteredSprite.width = app.screen.width;
+      filteredSprite.height = app.screen.height;
+
+      // Compile the Adjustments filter
+      const adjustmentsFilter = Filter.from({
+        gl: { vertex: ADJUSTMENTS_VERTEX_SHADER, fragment: ADJUSTMENTS_FRAGMENT_SHADER },
+        resources: {
+          uniforms: {
+            uExposure: { value: 0.0, type: 'f32' },
+            uBrightness: { value: 0.0, type: 'f32' },
+            uContrast: { value: 0.0, type: 'f32' },
+            uSaturation: { value: 0.0, type: 'f32' },
+            uTemperatureColor: { value: [1.0, 0.55, 0.16], type: 'vec3<f32>' },
+            uTemperatureWeight: { value: 0.0, type: 'f32' },
+            uTintColor: { value: [1.0, 0.16, 0.71], type: 'vec3<f32>' },
+            uTintWeight: { value: 0.0, type: 'f32' },
+            uSepia: { value: 0.0, type: 'f32' },
+            uGrayscale: { value: 0.0, type: 'f32' },
+            uHueRotate: { value: 0.0, type: 'f32' },
+            uVignette: { value: 0.0, type: 'f32' },
+            uInvert: { value: 0.0, type: 'f32' },
+          }
+        }
+      });
+      filteredSprite.filters = [adjustmentsFilter];
+      adjustmentsFilterRef.current = adjustmentsFilter;
+
+      // Split compare mask
+      const maskGraphics = new Graphics();
+      stage.addChild(filteredSprite);
+      stage.addChild(maskGraphics);
+      filteredSprite.mask = maskGraphics;
+      
+      maskGraphicsRef.current = maskGraphics;
+      filteredSpriteRef.current = filteredSprite;
+      baseSpriteRef.current = baseSprite;
+
+      // Set source textures
+      if (isVideo && videoRef.current) {
+        const { VideoSource, Texture } = await import("pixi.js");
+        const source = new VideoSource({ resource: videoRef.current, autoPlay: false });
+        const tex = new Texture({ source });
+        baseSprite.texture = tex;
+        filteredSprite.texture = tex;
+      } else if (!isVideo) {
+        const { Texture } = await import("pixi.js");
+        const tex = await Texture.from(mediaUrl);
+        if (active) {
+          baseSprite.texture = tex;
+          filteredSprite.texture = tex;
+        }
+      }
+
+      // Sync uniforms
+      syncAdjustmentsUniforms();
+
+      // Render loop tick to draw histogram
+      app.ticker.add(() => {
+        if (active) {
+          calculateHistogram(canvas);
+        }
+      });
+    };
+
+    initPixi();
+
+    return () => {
+      active = false;
+      if (pixiAppRef.current) {
+        pixiAppRef.current.destroy(true);
+        pixiAppRef.current = null;
+      }
+      adjustmentsFilterRef.current = null;
+      maskGraphicsRef.current = null;
+      filteredSpriteRef.current = null;
+      baseSpriteRef.current = null;
+    };
+  }, [mediaUrl, isVideo, mediaMetadata]);
+
+  // Keep uniforms sync'ed when parameters change
+  useEffect(() => {
+    syncAdjustmentsUniforms();
+  }, [syncAdjustmentsUniforms]);
+
+  // Sync histogram when scrubbing / paused
+  useEffect(() => {
+    if (!isPlaying && pixiCanvasRef.current) {
+      calculateHistogram(pixiCanvasRef.current);
+    }
+  }, [currentTime, isPlaying, calculateHistogram]);
+
   // Render filter on image
   const renderFilterOnImage = useCallback(
     (img: HTMLImageElement) => {
@@ -398,7 +732,7 @@ export function FilterWorkspace() {
     [combinedFilterString, manualAdjustments, showSplitComparison, splitPosition, calculateHistogram],
   );
 
-  // Render filter on video frame
+  // Render filter on video frame (traditional canvas rendering fallback)
   const renderFilterOnVideo = useCallback(
     (video: HTMLVideoElement) => {
       const canvas = canvasRef.current;
@@ -445,7 +779,7 @@ export function FilterWorkspace() {
     [combinedFilterString, manualAdjustments, showSplitComparison, splitPosition, calculateHistogram],
   );
 
-  // Re-render when filters or intensity changes
+  // Re-render Canvas 2D fallback when filters or intensity changes (only when Pixi is not mounted)
   useEffect(() => {
     if (!isVideo && imageRef.current) {
       renderFilterOnImage(imageRef.current);
@@ -454,7 +788,7 @@ export function FilterWorkspace() {
     }
   }, [isVideo, selectedFilter, intensity, manualAdjustments, showSplitComparison, splitPosition, isPlaying, renderFilterOnImage, renderFilterOnVideo]);
 
-  // Video playback loop
+  // Video playback loop (simply updates currentTime - Pixi handles frame ticks automatically)
   useEffect(() => {
     if (!isVideo || !videoRef.current || !isPlaying) return;
 
@@ -463,7 +797,6 @@ export function FilterWorkspace() {
 
     const animate = () => {
       if (video && !video.paused && !video.ended) {
-        renderFilterOnVideo(video);
         setCurrentTime(video.currentTime);
         rafId = requestAnimationFrame(animate);
       } else {
@@ -476,7 +809,7 @@ export function FilterWorkspace() {
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [isVideo, isPlaying, renderFilterOnVideo]);
+  }, [isVideo, isPlaying]);
 
   // Clean up object URLs to prevent leaks
   useEffect(() => {
@@ -546,6 +879,10 @@ export function FilterWorkspace() {
     if (canvasRef.current) {
       canvasRef.current.width = video.videoWidth;
       canvasRef.current.height = video.videoHeight;
+    }
+    if (pixiCanvasRef.current) {
+      pixiCanvasRef.current.width = video.videoWidth;
+      pixiCanvasRef.current.height = video.videoHeight;
     }
     video.currentTime = 0;
   }, []);
@@ -707,7 +1044,7 @@ export function FilterWorkspace() {
 
     // Always generate a thumbnail from the canvas if it exists
     let thumbnailDataUrl: string | undefined;
-    const canvas = canvasRef.current;
+    const canvas = pixiCanvasRef.current || canvasRef.current;
     if (canvas) {
       try {
         const thumbCanvas = document.createElement("canvas");
@@ -807,7 +1144,7 @@ export function FilterWorkspace() {
 
   // Export frame
   const exportFrame = useCallback(() => {
-    const canvas = canvasRef.current;
+    const canvas = pixiCanvasRef.current || canvasRef.current;
     if (!canvas) return;
 
     canvas.toBlob((blob) => {
@@ -1101,6 +1438,12 @@ export function FilterWorkspace() {
             <div ref={containerRef} className="relative inline-block max-h-full max-w-full rounded-xl overflow-hidden shadow-2xl border border-[#22222F] checkerboard" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleTouchMove} onTouchEnd={handleMouseUp}>
               <canvas
                 ref={canvasRef}
+                style={{
+                  display: "none",
+                }}
+              />
+              <canvas
+                ref={pixiCanvasRef}
                 style={{
                   display: "block",
                   maxWidth: "100%",
