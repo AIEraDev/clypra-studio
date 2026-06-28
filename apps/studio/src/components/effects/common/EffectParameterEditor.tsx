@@ -9,12 +9,13 @@ import React from "react";
 import type { EffectRendererType, EffectParameters } from "@clypra/engine";
 
 interface EffectParameterEditorProps {
-  effectType: EffectRendererType;
+  effectType: EffectRendererType | "custom";
   parameters: EffectParameters;
   onChange: (parameters: EffectParameters) => void;
+  customParamsSchema?: Record<string, { type: string; label: string; value: any; min?: number; max?: number; step?: number }>;
 }
 
-export function EffectParameterEditor({ effectType, parameters, onChange }: EffectParameterEditorProps) {
+export function EffectParameterEditor({ effectType, parameters, onChange, customParamsSchema }: EffectParameterEditorProps) {
   const updateParam = (key: string, value: any) => {
     onChange({ ...parameters, [key]: value });
   };
@@ -22,6 +23,53 @@ export function EffectParameterEditor({ effectType, parameters, onChange }: Effe
   // Render controls based on effect type
   const renderControls = () => {
     switch (effectType) {
+      case "custom" as any:
+        if (customParamsSchema) {
+          return (
+            <>
+              {Object.entries(customParamsSchema).map(([key, def]: [string, any]) => {
+                if (def.type === "range") {
+                  return (
+                    <ParameterSlider
+                      key={key}
+                      label={def.label || key}
+                      value={parameters[key] !== undefined ? (parameters[key] as number) : (def.value as number)}
+                      min={def.min ?? 0}
+                      max={def.max ?? 100}
+                      step={def.step ?? 1}
+                      onChange={(v) => updateParam(key, v)}
+                    />
+                  );
+                } else if (def.type === "color") {
+                  return (
+                    <ColorPicker
+                      key={key}
+                      label={def.label || key}
+                      value={(parameters[key] as string) || (def.value as string) || "#ffffff"}
+                      onChange={(v) => updateParam(key, v)}
+                    />
+                  );
+                } else if (def.type === "toggle") {
+                  const val = parameters[key] !== undefined ? !!parameters[key] : !!def.value;
+                  return (
+                    <div key={key} className="param-row toggle-row">
+                      <span className="param-label" style={{ marginBottom: 0 }}>{def.label || key}</span>
+                      <button
+                        type="button"
+                        onClick={() => updateParam(key, !val)}
+                        className={`toggle ${val ? "on" : ""}`}
+                        aria-label={def.label || key}
+                      />
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </>
+          );
+        }
+        return <div className="text-sm text-gray-500 italic">No adjustable parameters for this effect</div>;
+
       case "shake":
         return (
           <>
@@ -108,7 +156,6 @@ export function EffectParameterEditor({ effectType, parameters, onChange }: Effe
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-gray-700">Effect Parameters</h3>
       {renderControls()}
     </div>
   );
@@ -117,6 +164,7 @@ export function EffectParameterEditor({ effectType, parameters, onChange }: Effe
 // Helper Components
 
 interface ParameterSliderProps {
+  key?: string;
   label: string;
   value: number;
   min: number;
@@ -127,17 +175,25 @@ interface ParameterSliderProps {
 
 function ParameterSlider({ label, value, min, max, step, onChange }: ParameterSliderProps) {
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
-        <span className="text-sm text-gray-600">{value.toFixed(2)}</span>
+    <div className="param-row">
+      <div className="param-label">
+        <span>{label}</span>
+        <span className="val">{value.toFixed(2)}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(parseFloat(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" />
+      <input 
+        type="range" 
+        min={min} 
+        max={max} 
+        step={step} 
+        value={value} 
+        onChange={(e) => onChange(parseFloat(e.target.value))} 
+      />
     </div>
   );
 }
 
 interface ColorPickerProps {
+  key?: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -145,11 +201,15 @@ interface ColorPickerProps {
 
 function ColorPicker({ label, value, onChange }: ColorPickerProps) {
   return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-      <div className="flex items-center gap-2">
-        <input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="w-12 h-8 rounded cursor-pointer" />
-        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded" placeholder="#ffffff" />
+    <div className="param-row">
+      <div className="param-label">{label}</div>
+      <div className="color-row">
+        <input 
+          type="color" 
+          value={value} 
+          onChange={(e) => onChange(e.target.value)} 
+        />
+        <span className="color-hex">{value}</span>
       </div>
     </div>
   );
