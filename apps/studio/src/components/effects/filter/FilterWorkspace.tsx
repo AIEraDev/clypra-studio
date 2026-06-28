@@ -353,6 +353,7 @@ export function FilterWorkspace() {
   const maskGraphicsRef = useRef<any>(null);
   const filteredSpriteRef = useRef<any>(null);
   const baseSpriteRef = useRef<any>(null);
+  const videoSourceRef = useRef<any>(null); // Store VideoSource to update frames
 
   const { publishFilter } = useR2Publish();
 
@@ -713,15 +714,19 @@ export function FilterWorkspace() {
       if (isVideo && videoRef.current) {
         const { VideoSource, Texture } = await import("pixi.js");
 
-        // Create video source with autoPlay to ensure it initializes
+        // Create video source with autoUpdate enabled
         const source = new VideoSource({
           resource: videoRef.current,
-          autoPlay: false,
+          autoPlay: false, // Don't autoplay the actual video
           autoLoad: true,
+          updateFPS: 0, // Update every frame when video changes
         });
 
         // Wait for video source to be ready
         await source.load();
+
+        // Store video source reference for later updates
+        videoSourceRef.current = source;
 
         const tex = new Texture({ source });
         baseSprite.texture = tex;
@@ -735,6 +740,11 @@ export function FilterWorkspace() {
 
         console.log("[FilterWorkspace] ✅ Video texture loaded and assigned to both sprites");
         console.log("[FilterWorkspace] Video source ready:", source.resource.readyState);
+
+        // CRITICAL FIX: For paused videos, we need to manually update the texture
+        // Force initial frame render
+        source.update();
+        console.log("[FilterWorkspace] Initial frame update triggered");
       } else if (!isVideo) {
         const { Texture } = await import("pixi.js");
         const tex = await Texture.from(mediaUrl);
@@ -808,6 +818,7 @@ export function FilterWorkspace() {
         pixiAppRef.current = null;
       }
       adjustmentsFilterRef.current = null;
+      videoSourceRef.current = null;
       maskGraphicsRef.current = null;
       filteredSpriteRef.current = null;
       baseSpriteRef.current = null;
