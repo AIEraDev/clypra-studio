@@ -8,7 +8,7 @@ import { getR2Config } from "../../../services/r2Service";
 import { useR2Publish } from "../../../hooks/useR2Publish";
 import { Download, Upload, Sparkles, Zap, Image as ImageIcon, Film, Loader2, Play, Pause, RotateCcw, Search, Sliders, BarChart4, Sun, Palette, Eye, EyeOff, ChevronRight, ChevronDown, Check, Undo, SlidersHorizontal, Compass } from "lucide-react";
 import { PixiRenderer, EffectGraph } from "@clypra/engine";
-import { Filter } from "pixi.js";
+import { Filter, RendererType } from "pixi.js";
 
 // Types
 interface FilterPreset {
@@ -637,7 +637,11 @@ export function FilterWorkspace() {
 
       console.log("[FilterWorkspace] ✅ PixiJS Application initialized");
       console.log("[FilterWorkspace] Renderer type:", app.renderer.type);
-      console.log("[FilterWorkspace] WebGL support:", app.renderer.type === "webgl");
+      console.log("[FilterWorkspace] WebGL active:", app.renderer.type === RendererType.WEBGL);
+
+      if (app.renderer.type !== RendererType.WEBGL) {
+        console.warn("[FilterWorkspace] ⚠️ WebGL not available! Filters may not work. Renderer type:", app.renderer.type);
+      }
 
       if (!active) {
         console.log("[FilterWorkspace] Component unmounted, destroying app");
