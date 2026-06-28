@@ -1,3 +1,25 @@
+# [1.28.0](https://github.com/AIEraDev/clypra-studio/compare/v1.27.0...v1.28.0) (2026-06-28)
+
+
+### Features
+
+* **engine:** add cinematic effects library ([e923832](https://github.com/AIEraDev/clypra-studio/commit/e9238328995152aa566eb36c6f2c9166a7108180))
+* **engine:** add distortion effects library ([5032a90](https://github.com/AIEraDev/clypra-studio/commit/5032a90f142cf0c452631574eaa48a4324a4d8dc))
+* **engine:** add glitch effects library ([f3130a8](https://github.com/AIEraDev/clypra-studio/commit/f3130a8c30d7ec568a2e7653fd5722605e8c5515))
+* **engine:** add light effects library ([995703f](https://github.com/AIEraDev/clypra-studio/commit/995703fc9c0d1f20799d1136ee148c7708f45199))
+* **engine:** add PixiJS rendering architecture ([451dc16](https://github.com/AIEraDev/clypra-studio/commit/451dc16d6c47eefb588fe6fafb88219a5a3af19a))
+* **engine:** add stylization effects library ([2a5fc93](https://github.com/AIEraDev/clypra-studio/commit/2a5fc93e756fc0c2b1455ebb484ab9bdd2a280aa))
+* **engine:** expand effects registry with 37 new PixiJS effects ([0a45e86](https://github.com/AIEraDev/clypra-studio/commit/0a45e862f4271ae0f491976eec34d446ef0b3d40))
+* **engine:** update video effects API and type definitions ([8de269e](https://github.com/AIEraDev/clypra-studio/commit/8de269eea79a32d636cbe92c3eb584742cc8a171))
+* **studio:** add AdminEffectsPanel for effect library management ([95f3b7f](https://github.com/AIEraDev/clypra-studio/commit/95f3b7f36170040129c7fd13d1d5d58caa093576))
+* **studio:** add AI-powered custom effect generator ([d732ff9](https://github.com/AIEraDev/clypra-studio/commit/d732ff95cba58f9e810195f758f109399b5e99e6))
+* **studio:** add EffectGraphSandbox for testing effect compositions ([c2dfe56](https://github.com/AIEraDev/clypra-studio/commit/c2dfe5616d42993819462dfc5e206a1db9533988))
+* **studio:** enhance body, filter, and transition workspaces with PixiJS support ([ef2637b](https://github.com/AIEraDev/clypra-studio/commit/ef2637b233d12dae18d8bb9d563fbdf9ea49ede7))
+* **studio:** enhance EffectParameterEditor with advanced controls ([f536798](https://github.com/AIEraDev/clypra-studio/commit/f536798920b7bc9c9390fef07480050956c6cc3a))
+* **studio:** major overhaul of VideoEffectWorkspace with PixiJS integration ([2d9de05](https://github.com/AIEraDev/clypra-studio/commit/2d9de056d39811d4aa67931e30adcfd24a8d75eb))
+* **studio:** update routing and navigation for new effect features ([c25b488](https://github.com/AIEraDev/clypra-studio/commit/c25b488601746bfb2c59bc957dee7525c3d590d0))
+* update to use @clypra/engine@1.27.0 with subpath exports ([90b1c01](https://github.com/AIEraDev/clypra-studio/commit/90b1c012816673716c38cafde59e1eeee2ac0c4c))
+
 # [1.27.0](https://github.com/AIEraDev/clypra-studio/compare/v1.26.0...v1.27.0) (2026-06-23)
 
 
