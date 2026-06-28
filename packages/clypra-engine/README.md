@@ -667,4 +667,11 @@ const { scene: prevScene } = parseHistorySnapshot(undoStack.pop()!);
 
 ## License
 
-Proprietary — [Clypra](https://github.com/AIEraDev/clypra-studio)
+MIT License - [Clypra Studio](https://github.com/AIEraDev/clypra-studio)
+
+---
+
+**Package Version:** 1.28.0  
+**Last Updated:** June 2026  
+**Repository:** [github.com/AIEraDev/clypra-studio](https://github.com/AIEraDev/clypra-studio)  
+**NPM:** [@clypra/engine](https://www.npmjs.com/package/@clypra/engine)
