@@ -39,6 +39,7 @@ export { InkBrushEngine } from "./engine/procedural/InkBrushEngine.js";
 
 // Video & Body Effects (NEW)
 export * from "./videoEffects";
+export * from "./effects/index.js";
 export * from "./bodyEffects";
 
 // Transitions (NEW - separated from videoEffects for clarity)

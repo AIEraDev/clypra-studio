@@ -64,6 +64,12 @@ export type EffectRenderer =
   | "motion_blur"
   | "radial_blur"
   | "zoom_blur"
+  | "motion-blur" // PixiJS variant
+  | "gaussian-blur"
+  | "kawase-blur"
+  | "zoom-blur"
+  | "radial-blur"
+  | "drop-shadow"
 
   // Color/Style effects
   | "vhs"
@@ -74,6 +80,24 @@ export type EffectRenderer =
   | "scanlines"
   | "crt"
   | "pixelate"
+  | "rgb-split"    // PixiJS variant
+  | "film-grain"   // PixiJS variant
+  | "glitch-band"  // PixiJS variant
+  | "color-gradient"
+  | "color-overlay"
+  | "hsl-adjustment"
+  | "alpha"
+  | "color-matrix"
+  | "neon-glow"
+  | "static-noise"
+  | "old-film"
+  | "displacement"
+  | "outline"
+  | "grayscale"
+  | "dot"
+  | "emboss"
+  | "cross-hatch"
+  | "ascii"
 
   // Distortion effects
   | "wave"
@@ -81,6 +105,9 @@ export type EffectRenderer =
   | "bulge"
   | "twist"
   | "fisheye"
+  | "shockwave"    // PixiJS variant
+  | "bulge-pinch"  // PixiJS variant
+  | "reflection"   // PixiJS variant
 
   // Light effects
   | "flash"
@@ -92,6 +119,12 @@ export type EffectRenderer =
   | "fire"
   | "particles"
   | "dust_particles"
+  | "light-leak"   // PixiJS variant
+  | "lens-flare"   // PixiJS variant
+
+  // Cinematic / other new variants
+  | "tilt-shift"
+  | "cinematic-lut"
 
   // Time effects
   | "speed_ramp"

@@ -7,12 +7,19 @@
  * NOTE: Transitions have been moved to their own module @clypra/engine/transitions
  */
 
-export { EffectRenderer } from "./EffectRenderer";
+export { EffectRenderer } from "./EffectRenderer.js";
+export { EffectGraph, type GraphDefinition } from "./EffectGraph.js";
+export { EffectEngine } from "./EffectEngine.js";
 
 // Export registry, utilities, and API integration
 export * from "./effectsRegistry";
 export * from "./utils";
 export * from "./api";
+
+// Export PixiJS integration systems
+export * from "./EffectDefinition.js";
+export { PixiRenderer } from "./PixiRenderer.js";
+export * as ExamplePixiEffects from "./example.js";
 
 // Re-export renderer functions for direct use
 export * as CameraEffects from "./renderers/camera";

@@ -14,7 +14,7 @@ export interface VideoEffectApiDefinition {
   id: string;
   name: string;
   type: "effect" | "video-effect";
-  category: "essentials" | "glitch" | "retro" | "light" | "motion" | "color" | "body";
+  category: "essentials" | "glitch" | "retro" | "light" | "motion" | "color" | "body" | "cinematic" | "distortion";
   description: string;
   thumbnail: string;
 
