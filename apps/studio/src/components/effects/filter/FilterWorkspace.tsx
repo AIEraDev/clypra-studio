@@ -450,7 +450,14 @@ export function FilterWorkspace() {
         if (isVideo && video) {
           renderer.setVideoSource(video);
         } else if (!isVideo && imageRef.current) {
-          renderer.setImageSource(imageRef.current);
+          // For images, manually set the texture since setImageSource isn't in v1.28.2 yet
+          const videoSprite = (renderer as any).videoSprite;
+          if (videoSprite) {
+            import("pixi.js").then(({ Texture }) => {
+              const texture = Texture.from(imageRef.current!);
+              videoSprite.texture = texture;
+            });
+          }
         }
 
         // Build the EffectGraph containing only our ColorAdjustmentsEffect
