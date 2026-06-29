@@ -903,7 +903,7 @@ export function FilterWorkspace() {
 
   // Export frame
   const exportFrame = useCallback(() => {
-    const canvas = pixiCanvasRef.current || canvasRef.current;
+    const canvas = pixiCanvasRef.current;
     if (!canvas) return;
 
     canvas.toBlob((blob) => {
