@@ -1,3 +1,15 @@
+# [2.0.0](https://github.com/AIEraDev/clypra-studio/compare/v1.29.0...v2.0.0) (2026-06-29)
+
+
+### Features
+
+* **engine:** implement V2 pipeline infrastructure with NodeRegistry, GraphValidator, and NullBackend ([7bd235c](https://github.com/AIEraDev/clypra-studio/commit/7bd235c9cc9a0972b80db0fb1bd81d1c25127b82))
+
+
+### BREAKING CHANGES
+
+* **engine:** ProjectCompiler.compile() now accepts optional NodeRegistry parameter
+
 # [1.29.0](https://github.com/AIEraDev/clypra-studio/compare/v1.28.2...v1.29.0) (2026-06-29)
 
 
