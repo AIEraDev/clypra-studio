@@ -28,10 +28,49 @@ export const PRESET_FILTERS: FilterPreset[] = [
   { id: "warm-sepia", name: "Sepia Ink", category: "mono", description: "Aesthetic warm sepia paper tint with lower contrast", cssFilter: "grayscale(100%) sepia(68%) contrast(96%) brightness(97%)", intensity: 90 },
 
   // Aesthetic
-  { id: "cyberpunk", name: "Cyberpunk Neon", category: "aesthetic", description: "Vibrant neon purples and electric turquoise glow", cssFilter: "contrast(125%) saturate(155%) hue-rotate(15deg) brightness(96%)", intensity: 85 },
-  { id: "vaporwave", name: "Vaporwave", category: "aesthetic", description: "Psychedelic pastel pinks and dreamy violet shadows", cssFilter: "hue-rotate(135deg) saturate(135%) contrast(108%) brightness(103%)", intensity: 85 },
-  { id: "duotone-violet", name: "Duotone Purple", category: "aesthetic", description: "Deep purple shadows and glowing warm highlights", cssFilter: "contrast(112%) saturate(125%) sepia(18%) hue-rotate(245deg) brightness(96%)", intensity: 90 },
-  { id: "acid-green", name: "Acid Glow", category: "aesthetic", description: "High-saturation radioactive neon look", cssFilter: "hue-rotate(55deg) saturate(155%) contrast(122%) brightness(96%)", intensity: 80 },
+  {
+    id: "cyberpunk",
+    name: "Cyberpunk Neon",
+    category: "aesthetic",
+    description: "Vibrant neon purples and electric turquoise glow",
+    cssFilter: "contrast(125%) saturate(155%) hue-rotate(15deg) brightness(96%)",
+    gradingParams: { contrast: 0.25, saturation: 0.55, hueRotate: 0.262, brightness: -0.04 },
+    intensity: 85,
+  },
+  {
+    id: "vaporwave",
+    name: "Vaporwave",
+    category: "aesthetic",
+    description: "Psychedelic pastel pinks and dreamy violet shadows",
+    cssFilter: "hue-rotate(135deg) saturate(135%) contrast(108%) brightness(103%)",
+    gradingParams: {
+      hueRotate: 2.356, // 135 degrees in radians
+      saturation: 0.35,
+      contrast: 0.08,
+      brightness: 0.03,
+      temperature: -0.3, // Cool cyan push
+      tint: 0.2, // Magenta/pink tint
+    },
+    intensity: 85,
+  },
+  {
+    id: "duotone-violet",
+    name: "Duotone Purple",
+    category: "aesthetic",
+    description: "Deep purple shadows and glowing warm highlights",
+    cssFilter: "contrast(112%) saturate(125%) sepia(18%) hue-rotate(245deg) brightness(96%)",
+    gradingParams: { contrast: 0.12, saturation: 0.25, sepia: 0.18, hueRotate: 4.276, brightness: -0.04 },
+    intensity: 90,
+  },
+  {
+    id: "acid-green",
+    name: "Acid Glow",
+    category: "aesthetic",
+    description: "High-saturation radioactive neon look",
+    cssFilter: "hue-rotate(55deg) saturate(155%) contrast(122%) brightness(96%)",
+    gradingParams: { hueRotate: 0.96, saturation: 0.55, contrast: 0.22, brightness: -0.04 },
+    intensity: 80,
+  },
 ];
 
 export const PROMPT_SUGGESTIONS = [

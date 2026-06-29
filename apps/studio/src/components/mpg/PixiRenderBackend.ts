@@ -116,11 +116,39 @@ export class PixiRenderBackend implements RenderBackend {
       case "copy":
       case "blit-source":
         // No-op filter, just passes through
-        filter = new PIXI.Filter();
+        filter = new PIXI.Filter({
+          glProgram: PIXI.GlProgram.from({
+            vertex: `
+              attribute vec2 aPosition;
+              void main() {
+                gl_Position = vec4(aPosition, 0.0, 1.0);
+              }
+            `,
+            fragment: `
+              void main() {
+                gl_FragColor = texture2D(uTexture, vTextureCoord);
+              }
+            `,
+          }),
+        });
         break;
       default:
         console.warn(`Unknown shader ID: ${shaderId}, using no-op filter`);
-        filter = new PIXI.Filter();
+        filter = new PIXI.Filter({
+          glProgram: PIXI.GlProgram.from({
+            vertex: `
+              attribute vec2 aPosition;
+              void main() {
+                gl_Position = vec4(aPosition, 0.0, 1.0);
+              }
+            `,
+            fragment: `
+              void main() {
+                gl_FragColor = texture2D(uTexture, vTextureCoord);
+              }
+            `,
+          }),
+        });
     }
 
     this.filters.set(shaderId, filter);
@@ -194,7 +222,7 @@ export class PixiRenderBackend implements RenderBackend {
 
     // Extract pixels from texture
     const pixels = this.app.renderer.extract.pixels(texture);
-    return pixels.pixels;
+    return new Uint8Array(pixels.pixels);
   }
 
   /**

@@ -172,32 +172,57 @@ export function FilterWorkspace() {
       const renderer = pixiRendererRef.current;
       if (!renderer || !renderer.isReady) return;
 
-      // Parse presets
-      const presetAdjust = filter && filter.cssFilter ? parseCSSFilter(filter.cssFilter) : { brightness: 1.0, contrast: 1.0, saturation: 1.0, sepia: 0.0, grayscale: 0.0, hueRotate: 0.0, invert: 0.0 };
-
       const f = inst / 100;
 
-      // Combine preset & manual
-      const finalBrightness = 1.0 + (presetAdjust.brightness - 1.0) * f + adjusts.brightness / 100;
-      const finalContrast = 1.0 + (presetAdjust.contrast - 1.0) * f + adjusts.contrast / 100;
-      const finalSaturation = 1.0 + (presetAdjust.saturation - 1.0) * f + adjusts.saturation / 100;
-      const finalSepia = presetAdjust.sepia * f + adjusts.sepia / 100;
-      const finalGrayscale = presetAdjust.grayscale * f + adjusts.grayscale / 100;
-      const finalHueRotate = presetAdjust.hueRotate * f + (adjusts.hueRotate * Math.PI) / 180;
-      const finalInvert = presetAdjust.invert * f + adjusts.invert / 100;
+      // ─────────────────────────────────────────────────────────────────────────
+      // FIX: Prioritize gradingParams (GLSL) over cssFilter (CSS) parsing
+      // This fixes the Vaporwave bug where temperature/tint were ignored
+      // ─────────────────────────────────────────────────────────────────────────
+      let presetAdjust = {
+        exposure: 0.0,
+        brightness: 0.0, // Note: stored as delta, not multiplier
+        contrast: 0.0,
+        saturation: 0.0,
+        temperature: 0.0,
+        tint: 0.0,
+        sepia: 0.0,
+        grayscale: 0.0,
+        hueRotate: 0.0,
+        invert: 0.0,
+        vignette: 0.0,
+      };
 
+      if (filter) {
+        if (filter.gradingParams) {
+          // Use GLSL params directly (already in -1.0 to 1.0 range)
+          presetAdjust = { ...presetAdjust, ...filter.gradingParams };
+        } else if (filter.cssFilter) {
+          // Fallback: parse CSS string (legacy path)
+          const parsed = parseCSSFilter(filter.cssFilter);
+          // Convert CSS multipliers to GLSL delta values
+          presetAdjust.brightness = parsed.brightness - 1.0;
+          presetAdjust.contrast = parsed.contrast - 1.0;
+          presetAdjust.saturation = parsed.saturation - 1.0;
+          presetAdjust.sepia = parsed.sepia;
+          presetAdjust.grayscale = parsed.grayscale;
+          presetAdjust.hueRotate = parsed.hueRotate;
+          presetAdjust.invert = parsed.invert;
+        }
+      }
+
+      // Combine preset & manual adjustments
       const finalParams = {
-        exposure: adjusts.exposure / 100,
-        brightness: finalBrightness - 1.0,
-        contrast: finalContrast - 1.0,
-        saturation: finalSaturation - 1.0,
-        sepia: finalSepia,
-        grayscale: finalGrayscale,
-        hueRotate: finalHueRotate,
-        vignette: adjusts.vignette / 100,
-        invert: finalInvert,
-        temperature: adjusts.temperature / 400,
-        tint: adjusts.tint / 450,
+        exposure: presetAdjust.exposure * f + adjusts.exposure / 100,
+        brightness: presetAdjust.brightness * f + adjusts.brightness / 100,
+        contrast: presetAdjust.contrast * f + adjusts.contrast / 100,
+        saturation: presetAdjust.saturation * f + adjusts.saturation / 100,
+        temperature: presetAdjust.temperature * f + adjusts.temperature / 400,
+        tint: presetAdjust.tint * f + adjusts.tint / 450,
+        sepia: presetAdjust.sepia * f + adjusts.sepia / 100,
+        grayscale: presetAdjust.grayscale * f + adjusts.grayscale / 100,
+        hueRotate: presetAdjust.hueRotate * f + (adjusts.hueRotate * Math.PI) / 180,
+        vignette: presetAdjust.vignette * f + adjusts.vignette / 100,
+        invert: presetAdjust.invert * f + adjusts.invert / 100,
       };
 
       // Update each parameter individually in the active node of PixiRenderer

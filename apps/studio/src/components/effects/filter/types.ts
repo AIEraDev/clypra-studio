@@ -3,7 +3,26 @@ export interface FilterPreset {
   name: string;
   category: "essentials" | "cinematic" | "vintage" | "vibrant" | "mono" | "aesthetic";
   description: string;
+
+  // Legacy CSS path
   cssFilter: string;
+
+  // GLSL parameters (used by PixiJS ColorAdjustmentsEffect)
+  gradingParams?: {
+    exposure?: number; // -1.0 to 1.0
+    brightness?: number; // -1.0 to 1.0
+    contrast?: number; // -1.0 to 1.0
+    saturation?: number; // -1.0 to 1.0
+    temperature?: number; // -1.0 to 1.0
+    tint?: number; // -1.0 to 1.0
+    sepia?: number; // 0.0 to 1.0
+    grayscale?: number; // 0.0 to 1.0
+    hueRotate?: number; // radians
+    invert?: number; // 0.0 to 1.0
+    vignette?: number; // 0.0 to 1.0
+    blur?: number; // pixels
+  };
+
   intensity: number; // default strength 0-100
 }
 
