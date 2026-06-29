@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/AIEraDev/clypra-studio/compare/v2.0.0...v2.0.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* **studio:** resolve TypeScript errors in PixiRenderBackend ([1b83443](https://github.com/AIEraDev/clypra-studio/commit/1b8344380ca79dcd0aea3b427ddd850b55452ce0))
+
 # [2.0.0](https://github.com/AIEraDev/clypra-studio/compare/v1.29.0...v2.0.0) (2026-06-29)
 
 
