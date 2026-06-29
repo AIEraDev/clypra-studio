@@ -75,6 +75,7 @@ export const MPGPlayground: React.FC = () => {
   const [renderTime, setRenderTime] = useState<number>(0);
   const [isRendering, setIsRendering] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [backendReady, setBackendReady] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const backendRef = useRef<PixiRenderBackend | null>(null);
@@ -188,20 +189,23 @@ export const MPGPlayground: React.FC = () => {
       .init(canvasRef.current)
       .then(() => {
         console.log("PixiRenderBackend initialized");
+        setBackendReady(true);
       })
       .catch((error) => {
         console.error("Backend initialization error:", error);
+        setBackendReady(false);
       });
 
     return () => {
       backend.destroy();
       backendRef.current = null;
+      setBackendReady(false);
     };
   }, []);
 
   // Render frame when everything is ready
   const renderFrame = useCallback(async () => {
-    if (!frameGraph || !backendRef.current || !sourceImageRef.current || !imageLoaded || isRendering) {
+    if (!frameGraph || !backendRef.current || !sourceImageRef.current || !imageLoaded || !backendReady || isRendering) {
       return;
     }
 
@@ -217,7 +221,7 @@ export const MPGPlayground: React.FC = () => {
     } finally {
       setIsRendering(false);
     }
-  }, [frameGraph, imageLoaded, isRendering]);
+  }, [frameGraph, imageLoaded, backendReady, isRendering]);
 
   // Trigger render when dependencies change
   useEffect(() => {
