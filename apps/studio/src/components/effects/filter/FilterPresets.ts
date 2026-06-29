@@ -1,6 +1,7 @@
 import { FilterPreset } from "./types";
+import { FILTER_CATEGORY_IDS } from "../../../constants/filterCategories";
 
-export const FILTER_CATEGORIES = ["all", "essentials", "cinematic", "vintage", "vibrant", "mono", "aesthetic"] as const;
+export const FILTER_CATEGORIES = ["all", ...FILTER_CATEGORY_IDS] as const;
 
 export const PRESET_FILTERS: FilterPreset[] = [
   // Essentials
