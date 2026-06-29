@@ -7,9 +7,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { getR2Config } from "../../../services/r2Service";
 import { useR2Publish } from "../../../hooks/useR2Publish";
 import { Download, Upload, Sparkles, Zap, Image as ImageIcon, Film, Loader2, Play, Pause, RotateCcw, Search, Sliders, BarChart4, Sun, Palette, Eye, EyeOff, ChevronRight, ChevronDown, Check, Undo, SlidersHorizontal, Compass } from "lucide-react";
-import { PixiRenderer, EffectGraph } from "@clypra/engine/videoEffects";
-import { GrayscaleEffect } from "@clypra/engine/effects";
-import { GrayscaleFilter } from "pixi-filters";
+import { ColorAdjustmentsEffect, PixiRenderer, EffectGraph } from "@clypra/engine";
 
 // Types
 interface FilterPreset {
@@ -19,8 +17,6 @@ interface FilterPreset {
   description: string;
   cssFilter: string;
   intensity: number; // default strength 0-100
-  usePixi?: boolean; // Flag for WebGL-based filters
-  pixiFilterType?: "grayscale" | "cyberpunk" | "custom"; // PixiJS filter types
 }
 
 const FILTER_CATEGORIES = ["all", "essentials", "cinematic", "vintage", "vibrant", "mono", "aesthetic"] as const;
@@ -30,27 +26,7 @@ const API_BASE_URL = "https://clypra-worker-api.abdulkabirmusa.com";
 
 // 18 Stunning Professional Presets
 const PRESET_FILTERS: FilterPreset[] = [
-  // Essentials (WebGL-powered)
-  {
-    id: "pixi-test-grayscale",
-    name: "Pixi Test Grayscale",
-    category: "essentials",
-    description: "[WebGL] Deep black & white with high contrast",
-    cssFilter: "grayscale(100%) contrast(120%)",
-    intensity: 100,
-    usePixi: true,
-    pixiFilterType: "grayscale",
-  },
-  {
-    id: "pixi-test-cyberpunk",
-    name: "Pixi Test Cyberpunk",
-    category: "essentials",
-    description: "[WebGL] Intense futuristic purple/teal grade",
-    cssFilter: "hue-rotate(45deg) saturate(180%) contrast(110%)",
-    intensity: 100,
-    usePixi: true,
-    pixiFilterType: "cyberpunk",
-  },
+  // Essentials
   { id: "clean-bright", name: "Clean & Bright", category: "essentials", description: "Luminous highlights and crisp clean whites", cssFilter: "brightness(107%) contrast(103%) saturate(106%)", intensity: 90 },
   { id: "matte-contrast", name: "Matte Contrast", category: "essentials", description: "Deep faded matte blacks and clinical details", cssFilter: "contrast(116%) brightness(96%) saturate(94%) sepia(4%)", intensity: 80 },
   { id: "cold-minimalist", name: "Cold Minimalist", category: "essentials", description: "Chilly blue hues and minimal saturation", cssFilter: "hue-rotate(12deg) saturate(78%) contrast(104%) brightness(99%)", intensity: 75 },
@@ -106,56 +82,7 @@ const INITIAL_MANUAL_ADJUSTMENTS = {
 };
 
 // Helper: Interpolate CSS filter strength
-const interpolateFilter = (filterStr: string, factor: number): string => {
-  return filterStr.replace(/(\d+\.?\d*)(%|deg|px)?/g, (match, value, unit) => {
-    const num = parseFloat(value);
-    let adjusted = num * factor;
-    if (["contrast", "saturate", "brightness"].some((n) => filterStr.includes(n))) {
-      adjusted = 100 + (num - 100) * factor;
-    }
-    return `${adjusted}${unit || ""}`;
-  });
-};
 
-// Helper: Combine preset & manual filters
-const getCombinedFilterString = (preset: FilterPreset | null, presetIntensity: number, manual: typeof INITIAL_MANUAL_ADJUSTMENTS) => {
-  let parts: string[] = [];
-
-  if (preset && preset.cssFilter) {
-    const factor = presetIntensity / 100;
-    parts.push(interpolateFilter(preset.cssFilter, factor));
-  }
-
-  if (manual.exposure !== 0) {
-    parts.push(`brightness(${100 + manual.exposure}%)`);
-  }
-  if (manual.brightness !== 0) {
-    parts.push(`brightness(${100 + manual.brightness}%)`);
-  }
-  if (manual.contrast !== 0) {
-    parts.push(`contrast(${100 + manual.contrast}%)`);
-  }
-  if (manual.saturation !== 0) {
-    parts.push(`saturate(${100 + manual.saturation}%)`);
-  }
-  if (manual.sepia !== 0) {
-    parts.push(`sepia(${manual.sepia}%)`);
-  }
-  if (manual.grayscale !== 0) {
-    parts.push(`grayscale(${manual.grayscale}%)`);
-  }
-  if (manual.hueRotate !== 0) {
-    parts.push(`hue-rotate(${manual.hueRotate}deg)`);
-  }
-  if (manual.blur !== 0) {
-    parts.push(`blur(${manual.blur}px)`);
-  }
-  if (manual.invert !== 0) {
-    parts.push(`invert(${manual.invert}%)`);
-  }
-
-  return parts.join(" ") || "none";
-};
 
 const parseCSSFilter = (filterStr: string) => {
   const adjustments = {
@@ -194,104 +121,7 @@ const parseCSSFilter = (filterStr: string) => {
   return adjustments;
 };
 
-const ADJUSTMENTS_VERTEX_SHADER = `
-  in vec2 aPosition;
-  out vec2 vTextureCoord;
-  uniform vec4 uInputSize;
-  uniform vec4 uOutputFrame;
-  vec4 filterVertexPosition(void) {
-    vec2 position = aPosition * uOutputFrame.zw + uOutputFrame.xy;
-    return vec4(position * uInputSize.zw * 2.0 - 1.0, 0.0, 1.0);
-  }
-  vec2 filterTextureCoord(void) {
-    return aPosition * (uOutputFrame.zw * uInputSize.xy);
-  }
-  void main(void) {
-    gl_Position = filterVertexPosition();
-    vTextureCoord = filterTextureCoord();
-  }
-`;
-
-const ADJUSTMENTS_FRAGMENT_SHADER = `
-  in vec2 vTextureCoord;
-  out vec4 finalColor;
-
-  uniform sampler2D uTexture;
-  uniform float uExposure;          // -1.0 to 1.0
-  uniform float uBrightness;        // -1.0 to 1.0
-  uniform float uContrast;          // -1.0 to 1.0
-  uniform float uSaturation;        // -1.0 to 1.0
-  uniform vec3 uTemperatureColor;   // HSL temperature color
-  uniform float uTemperatureWeight; // 0.0 to 1.0
-  uniform vec3 uTintColor;          // tint color
-  uniform float uTintWeight;        // 0.0 to 1.0
-  uniform float uSepia;             // 0.0 to 1.0
-  uniform float uGrayscale;         // 0.0 to 1.0
-  uniform float uHueRotate;         // Radians (0.0 to 2*PI)
-  uniform float uVignette;          // 0.0 to 1.0
-  uniform float uInvert;            // 0.0 to 1.0
-
-  vec3 hueRotate(vec3 color, float angle) {
-      vec3 k = vec3(0.57735, 0.57735, 0.57735);
-      float cosAngle = cos(angle);
-      return color * cosAngle + cross(k, color) * sin(angle) + k * dot(k, color) * (1.0 - cosAngle);
-  }
-
-  void main() {
-      vec4 texColor = texture(uTexture, vTextureCoord);
-      vec3 rgb = texColor.rgb;
-
-      // Invert
-      rgb = mix(rgb, 1.0 - rgb, uInvert);
-
-      // Exposure
-      rgb = rgb * pow(2.0, uExposure);
-
-      // Brightness
-      rgb = rgb + uBrightness;
-
-      // Contrast
-      rgb = (rgb - 0.5) * (1.0 + uContrast) + 0.5;
-
-      // Saturation
-      float luma = dot(rgb, vec3(0.2126, 0.7152, 0.0722));
-      rgb = mix(vec3(luma), rgb, 1.0 + uSaturation);
-      rgb = mix(rgb, vec3(luma), uGrayscale);
-
-      // Sepia
-      vec3 sepiaColor = vec3(
-          dot(rgb, vec3(0.393, 0.769, 0.189)),
-          dot(rgb, vec3(0.349, 0.686, 0.168)),
-          dot(rgb, vec3(0.272, 0.534, 0.131))
-      );
-      rgb = mix(rgb, sepiaColor, uSepia);
-
-      // Hue Rotate
-      if (uHueRotate != 0.0) {
-          rgb = hueRotate(rgb, uHueRotate);
-      }
-
-      // Temperature soft-light blend
-      if (uTemperatureWeight > 0.0) {
-          vec3 t = uTemperatureColor;
-          rgb = mix(rgb, (1.0 - 2.0 * t) * rgb * rgb + 2.0 * t * rgb, uTemperatureWeight);
-      }
-
-      // Tint soft-light blend
-      if (uTintWeight > 0.0) {
-          vec3 t = uTintColor;
-          rgb = mix(rgb, (1.0 - 2.0 * t) * rgb * rgb + 2.0 * t * rgb, uTintWeight);
-      }
-
-      // Vignette
-      vec2 uv = vTextureCoord - 0.5;
-      float dist = length(uv);
-      float vignetteVal = smoothstep(0.45, 1.0, dist);
-      rgb = mix(rgb, rgb * 0.0, vignetteVal * uVignette);
-
-      finalColor = vec4(rgb, texColor.a);
-  }
-`;
+// Shaders are loaded from ColorAdjustmentsEffect in @clypra/engine
 
 // Helper: Apply vignette overlay on canvas
 const applyVignette = (ctx: CanvasRenderingContext2D, width: number, height: number, value: number) => {
@@ -508,44 +338,66 @@ export function FilterWorkspace() {
     setHistogramData({ r: rHist, g: gHist, b: bHist, l: lHist });
   }, []);
 
-  // Combined filter calculations
-  const combinedFilterString = useMemo(() => {
-    return getCombinedFilterString(selectedFilter, intensity, manualAdjustments);
-  }, [selectedFilter, intensity, manualAdjustments]);
 
   // Note: With PixiRenderer, filter management is handled by the package
   // This function is kept for CSS filter fallback only
+  // Synchronize adjustments uniforms to the PixiRenderer
   const syncAdjustmentsUniforms = useCallback(() => {
-    // No-op when using PixiRenderer - filter updates are handled by EffectGraph
-    console.log("[FilterWorkspace] syncAdjustmentsUniforms called (PixiRenderer handles updates)");
-  }, []);
+    const renderer = pixiRendererRef.current;
+    if (!renderer || !renderer.isReady) return;
 
-  // Initialize PixiRenderer from @clypra/engine for proper filter management
+    // Parse presets
+    const presetAdjust = selectedFilter && selectedFilter.cssFilter ? parseCSSFilter(selectedFilter.cssFilter) : { brightness: 1.0, contrast: 1.0, saturation: 1.0, sepia: 0.0, grayscale: 0.0, hueRotate: 0.0, invert: 0.0 };
+
+    const f = intensity / 100;
+
+    // Combine preset & manual
+    const finalBrightness = 1.0 + (presetAdjust.brightness - 1.0) * f + manualAdjustments.brightness / 100;
+    const finalContrast = 1.0 + (presetAdjust.contrast - 1.0) * f + manualAdjustments.contrast / 100;
+    const finalSaturation = 1.0 + (presetAdjust.saturation - 1.0) * f + manualAdjustments.saturation / 100;
+    const finalSepia = presetAdjust.sepia * f + manualAdjustments.sepia / 100;
+    const finalGrayscale = presetAdjust.grayscale * f + manualAdjustments.grayscale / 100;
+    const finalHueRotate = presetAdjust.hueRotate * f + (manualAdjustments.hueRotate * Math.PI) / 180;
+    const finalInvert = presetAdjust.invert * f + manualAdjustments.invert / 100;
+
+    const finalParams = {
+      exposure: manualAdjustments.exposure / 100,
+      brightness: finalBrightness - 1.0,
+      contrast: finalContrast - 1.0,
+      saturation: finalSaturation - 1.0,
+      sepia: finalSepia,
+      grayscale: finalGrayscale,
+      hueRotate: finalHueRotate,
+      vignette: manualAdjustments.vignette / 100,
+      invert: finalInvert,
+      temperature: manualAdjustments.temperature / 400,
+      tint: manualAdjustments.tint / 450,
+    };
+
+    console.log("[FilterWorkspace] syncAdjustmentsUniforms - updating parameters:", finalParams);
+
+    // Update each parameter individually in the active node of PixiRenderer
+    Object.entries(finalParams).forEach(([key, val]) => {
+      renderer.updateParam("color-adjustments-node", key, val);
+    });
+  }, [selectedFilter, intensity, manualAdjustments]);
+
+  // Initialize PixiRenderer from @clypra/engine and apply the ColorAdjustmentsEffect
   useEffect(() => {
     const canvas = pixiCanvasRef.current;
     const video = videoRef.current;
 
-    if (!canvas || !mediaMetadata || !video) {
-      console.log("[FilterWorkspace] PixiRenderer init skipped - missing requirements:", {
-        canvas: !!canvas,
-        mediaMetadata: !!mediaMetadata,
-        video: !!video,
-      });
+    if (!canvas || !mediaMetadata) {
       return;
     }
 
     console.log("[FilterWorkspace] 🚀 Initializing PixiRenderer from @clypra/engine");
-    console.log("[FilterWorkspace] Canvas size:", mediaMetadata.width, "x", mediaMetadata.height);
-
     let active = true;
 
     const initRenderer = async () => {
       try {
-        // Create PixiRenderer instance
         const renderer = new PixiRenderer();
         await renderer.init(canvas, mediaMetadata.width, mediaMetadata.height);
-
-        console.log("[FilterWorkspace] ✅ PixiRenderer initialized");
 
         if (!active) {
           renderer.destroy();
@@ -554,25 +406,35 @@ export function FilterWorkspace() {
 
         pixiRendererRef.current = renderer;
 
-        // Set video source for the renderer
+        // Set video source for the renderer if isVideo
         if (isVideo && video) {
           renderer.setVideoSource(video);
-          console.log("[FilterWorkspace] ✅ Video source set");
         }
 
-        // Apply the grayscale filter using the proper effect definition
-        if (selectedFilter?.usePixi && selectedFilter?.pixiFilterType === "grayscale") {
-          console.log("[FilterWorkspace] Applying GrayscaleEffect from package");
+        // Build the EffectGraph containing only our ColorAdjustmentsEffect
+        const graph = new EffectGraph();
+        graph.addNode({
+          id: "color-adjustments-node",
+          effect: ColorAdjustmentsEffect,
+          params: {
+            exposure: 0.0,
+            brightness: 0.0,
+            contrast: 0.0,
+            saturation: 0.0,
+            temperature: 0.0,
+            tint: 0.0,
+            sepia: 0.0,
+            grayscale: 0.0,
+            hueRotate: 0.0,
+            vignette: 0.0,
+            invert: 0.0
+          }
+        });
+        const resolvedNodes = graph.resolve();
+        renderer.applyNodes(resolvedNodes);
 
-          // Create effect graph with GrayscaleEffect
-          const graph = new EffectGraph();
-          const node = graph.addNode(GrayscaleEffect);
-          graph.resolve();
-
-          // Apply to renderer
-          renderer.applyNodes(graph.nodes);
-          console.log("[FilterWorkspace] ✅ GrayscaleEffect applied via PixiRenderer");
-        }
+        // Sync initial uniforms
+        syncAdjustmentsUniforms();
       } catch (error) {
         console.error("[FilterWorkspace] PixiRenderer initialization failed:", error);
       }
@@ -587,142 +449,92 @@ export function FilterWorkspace() {
         pixiRendererRef.current = null;
       }
     };
-  }, [mediaUrl, isVideo, mediaMetadata, selectedFilter]);
+  }, [mediaUrl, isVideo, mediaMetadata]);
 
-  // Update effects when filter selection changes
+  // Sync uniforms whenever selection, intensity, or manual settings change
   useEffect(() => {
-    const renderer = pixiRendererRef.current;
-    if (!renderer || !renderer.isReady) return;
+    syncAdjustmentsUniforms();
+  }, [syncAdjustmentsUniforms]);
 
-    console.log("[FilterWorkspace] Updating effects for filter:", selectedFilter?.id);
+  // Visible composition drawing loop (copies WebGL canvas to visible 2D canvas with split screen clip)
+  const drawCompositeFrame = useCallback((skipHistogram = false) => {
+    const canvas = canvasRef.current;
+    const pixiCanvas = pixiCanvasRef.current;
+    const video = videoRef.current;
+    const img = imageRef.current;
+    if (!canvas || !pixiCanvas) return;
 
-    if (selectedFilter?.usePixi && selectedFilter?.pixiFilterType === "grayscale") {
-      const graph = new EffectGraph();
-      graph.addNode(GrayscaleEffect);
-      graph.resolve();
-      renderer.applyNodes(graph.nodes);
-      console.log("[FilterWorkspace] ✅ Effects updated");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // 1. Draw base (unfiltered) frame
+    ctx.clearRect(0, 0, w, h);
+    if (isVideo && video) {
+      ctx.drawImage(video, 0, 0, w, h);
+    } else if (!isVideo && img) {
+      ctx.drawImage(img, 0, 0, w, h);
+    }
+
+    // 2. Draw filtered WebGL canvas on top with clip if split is active
+    if (showSplitComparison) {
+      const splitX = (splitPosition / 100) * w;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(splitX, 0, w - splitX, h);
+      ctx.clip();
+      ctx.drawImage(pixiCanvas, 0, 0, w, h);
+      ctx.restore();
     } else {
-      // No PixiJS filter selected, clear effects
-      renderer.applyNodes([]);
-      console.log("[FilterWorkspace] ✅ Effects cleared");
+      ctx.drawImage(pixiCanvas, 0, 0, w, h);
     }
-  }, [selectedFilter]);
 
-  // Sync histogram when scrubbing / paused
-  useEffect(() => {
-    if (!isPlaying && pixiCanvasRef.current) {
-      calculateHistogram(pixiCanvasRef.current);
-    }
-  }, [currentTime, isPlaying, calculateHistogram]);
-
-  // Render filter on image
-  const renderFilterOnImage = useCallback(
-    (img: HTMLImageElement) => {
-      const canvas = canvasRef.current;
-      if (!canvas || !img) return;
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-
-      canvas.width = img.width;
-      canvas.height = img.height;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.filter = "none";
-      ctx.drawImage(img, 0, 0);
-
-      if (showSplitComparison) {
-        const splitX = (splitPosition / 100) * canvas.width;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(splitX, 0, canvas.width - splitX, canvas.height);
-        ctx.clip();
-
-        ctx.filter = combinedFilterString;
-        ctx.drawImage(img, 0, 0);
-
-        applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
-
-        if (manualAdjustments.vignette > 0) {
-          applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
-        }
-
-        ctx.restore();
-      } else {
-        ctx.filter = combinedFilterString;
-        ctx.drawImage(img, 0, 0);
-
-        applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
-
-        if (manualAdjustments.vignette > 0) {
-          applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
-        }
-      }
-
+    // 3. Update histogram if not skipped
+    if (!skipHistogram) {
       calculateHistogram(canvas);
-    },
-    [combinedFilterString, manualAdjustments, showSplitComparison, splitPosition, calculateHistogram],
-  );
-
-  // Render filter on video frame (traditional canvas rendering fallback)
-  const renderFilterOnVideo = useCallback(
-    (video: HTMLVideoElement) => {
-      const canvas = canvasRef.current;
-      if (!canvas || !video) return;
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.filter = "none";
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      if (showSplitComparison) {
-        const splitX = (splitPosition / 100) * canvas.width;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(splitX, 0, canvas.width - splitX, canvas.height);
-        ctx.clip();
-
-        ctx.filter = combinedFilterString;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
-
-        if (manualAdjustments.vignette > 0) {
-          applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
-        }
-
-        ctx.restore();
-      } else {
-        ctx.filter = combinedFilterString;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        applyColorOverlays(ctx, canvas.width, canvas.height, manualAdjustments);
-
-        if (manualAdjustments.vignette > 0) {
-          applyVignette(ctx, canvas.width, canvas.height, manualAdjustments.vignette);
-        }
-      }
-
-      calculateHistogram(canvas);
-    },
-    [combinedFilterString, manualAdjustments, showSplitComparison, splitPosition, calculateHistogram],
-  );
-
-  // Re-render Canvas 2D fallback when filters or intensity changes (only when Pixi is not mounted)
-  useEffect(() => {
-    if (!isVideo && imageRef.current) {
-      renderFilterOnImage(imageRef.current);
-    } else if (isVideo && videoRef.current && !isPlaying) {
-      renderFilterOnVideo(videoRef.current);
     }
-  }, [isVideo, selectedFilter, intensity, manualAdjustments, showSplitComparison, splitPosition, isPlaying, renderFilterOnImage, renderFilterOnVideo]);
+  }, [isVideo, showSplitComparison, splitPosition, calculateHistogram]);
 
-  // Video playback loop (simply updates currentTime - Pixi handles frame ticks automatically)
+  // Active video playing composite loop
+  useEffect(() => {
+    if (!isVideo || !isPlaying) return;
+
+    let rafId: number;
+    let lastHistogramTime = 0;
+
+    const animate = () => {
+      const now = Date.now();
+      const skipHist = now - lastHistogramTime < 100; // max 10 FPS for histogram during playback
+      
+      drawCompositeFrame(skipHist);
+      
+      if (!skipHist) {
+        lastHistogramTime = now;
+      }
+      
+      rafId = requestAnimationFrame(animate);
+    };
+
+    rafId = requestAnimationFrame(animate);
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [isVideo, isPlaying, drawCompositeFrame]);
+
+  // Static/Paused/Adjustment updates redraw
+  useEffect(() => {
+    // Redraw once
+    const timer = setTimeout(() => {
+      drawCompositeFrame();
+    }, 40);
+
+    return () => clearTimeout(timer);
+  }, [drawCompositeFrame, selectedFilter, intensity, manualAdjustments, mediaMetadata]);
+
+  // Video playback loop (simply updates currentTime for slider)
   useEffect(() => {
     if (!isVideo || !videoRef.current || !isPlaying) return;
 
@@ -768,7 +580,20 @@ export function FilterWorkspace() {
       img.onload = () => {
         setMediaMetadata({ width: img.width, height: img.height });
         imageRef.current = img;
-        renderFilterOnImage(img);
+
+        if (canvasRef.current) {
+          canvasRef.current.width = img.width;
+          canvasRef.current.height = img.height;
+        }
+        if (pixiCanvasRef.current) {
+          pixiCanvasRef.current.width = img.width;
+          pixiCanvasRef.current.height = img.height;
+        }
+
+        // Draw the initial frame
+        setTimeout(() => {
+          drawCompositeFrame();
+        }, 50);
 
         // Capture initial preview frame for presets
         try {
@@ -788,7 +613,7 @@ export function FilterWorkspace() {
       };
       img.src = url;
     },
-    [renderFilterOnImage],
+    [drawCompositeFrame],
   );
 
   // Handle video upload
@@ -823,10 +648,9 @@ export function FilterWorkspace() {
 
   const handleVideoSeeked = useCallback(
     (e: React.SyntheticEvent<HTMLVideoElement>) => {
-      const video = e.currentTarget;
-      renderFilterOnVideo(video);
+      drawCompositeFrame();
     },
-    [renderFilterOnVideo],
+    [drawCompositeFrame],
   );
 
   const handlePlayPause = useCallback(() => {
@@ -976,31 +800,12 @@ export function FilterWorkspace() {
     setUploadStatus("uploading");
     setUploadMessage("");
 
-    // Always generate a thumbnail from the canvas if it exists
+    // Always generate a thumbnail from the WebGL canvas if it exists
     let thumbnailDataUrl: string | undefined;
-    const canvas = pixiCanvasRef.current || canvasRef.current;
+    const canvas = pixiCanvasRef.current;
     if (canvas) {
       try {
-        const thumbCanvas = document.createElement("canvas");
-        thumbCanvas.width = canvas.width;
-        thumbCanvas.height = canvas.height;
-        const thumbCtx = thumbCanvas.getContext("2d");
-        if (thumbCtx) {
-          const source = isVideo ? videoRef.current : imageRef.current;
-          if (source) {
-            thumbCtx.filter = "none";
-            thumbCtx.drawImage(source as any, 0, 0, thumbCanvas.width, thumbCanvas.height);
-            thumbCtx.filter = combinedFilterString;
-            thumbCtx.drawImage(source as any, 0, 0, thumbCanvas.width, thumbCanvas.height);
-            applyColorOverlays(thumbCtx, thumbCanvas.width, thumbCanvas.height, manualAdjustments);
-            if (manualAdjustments.vignette > 0) {
-              applyVignette(thumbCtx, thumbCanvas.width, thumbCanvas.height, manualAdjustments.vignette);
-            }
-          } else {
-            thumbCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
-          }
-          thumbnailDataUrl = thumbCanvas.toDataURL("image/png");
-        }
+        thumbnailDataUrl = canvas.toDataURL("image/png");
       } catch (e) {
         console.error("Failed to generate preview thumbnail:", e);
       }
@@ -1371,12 +1176,6 @@ export function FilterWorkspace() {
               <canvas
                 ref={canvasRef}
                 style={{
-                  display: "none",
-                }}
-              />
-              <canvas
-                ref={pixiCanvasRef}
-                style={{
                   display: "block",
                   maxWidth: "100%",
                   maxHeight: "calc(100vh - 200px)",
@@ -1384,6 +1183,12 @@ export function FilterWorkspace() {
                   height: "auto",
                 }}
                 className="select-none pointer-events-none"
+              />
+              <canvas
+                ref={pixiCanvasRef}
+                style={{
+                  display: "none",
+                }}
               />
 
               {mediaUrl && isVideo && <video ref={videoRef} src={mediaUrl} className="hidden" preload="auto" playsInline muted onLoadedMetadata={handleVideoMetadataLoaded} onSeeked={handleVideoSeeked} />}

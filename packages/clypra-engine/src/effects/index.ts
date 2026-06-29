@@ -9,6 +9,7 @@ export * from './light/HslAdjustmentEffect.js'
 export * from './light/AlphaEffect.js'
 export * from './light/ColorMatrixEffect.js'
 export * from './light/NeonGlowEffect.js'
+export * from './light/ColorAdjustmentsEffect.js'
 
 // Glitch & Noise Category
 export * from './glitch/RGBSplitEffect.js'

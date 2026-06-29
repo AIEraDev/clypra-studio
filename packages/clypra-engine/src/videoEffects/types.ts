@@ -88,6 +88,7 @@ export type EffectRenderer =
   | "hsl-adjustment"
   | "alpha"
   | "color-matrix"
+  | "color-adjustments"
   | "neon-glow"
   | "static-noise"
   | "old-film"

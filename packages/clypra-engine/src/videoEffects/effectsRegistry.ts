@@ -602,6 +602,39 @@ export const EFFECTS_REGISTRY: Record<string, EffectMetadata> = {
     },
     tags: ["light", "color", "overlay"]
   },
+  "color-adjustments": {
+    id: "color-adjustments",
+    name: "Color Adjustments",
+    category: "light",
+    description: "Adjust exposure, brightness, contrast, saturation, temperature, tint, sepia, grayscale, hue, invert, and vignette.",
+    defaultParams: {
+      exposure: 0.0,
+      brightness: 0.0,
+      contrast: 0.0,
+      saturation: 0.0,
+      temperature: 0.0,
+      tint: 0.0,
+      sepia: 0.0,
+      grayscale: 0.0,
+      hueRotate: 0.0,
+      vignette: 0.0,
+      invert: 0.0
+    },
+    parameterSchema: {
+      exposure: { type: "number", label: "Exposure", min: -1.0, max: 1.0, default: 0.0, step: 0.01 },
+      brightness: { type: "number", label: "Brightness", min: -1.0, max: 1.0, default: 0.0, step: 0.01 },
+      contrast: { type: "number", label: "Contrast", min: -1.0, max: 1.0, default: 0.0, step: 0.01 },
+      saturation: { type: "number", label: "Saturation", min: -1.0, max: 1.0, default: 0.0, step: 0.01 },
+      temperature: { type: "number", label: "Temperature", min: -1.0, max: 1.0, default: 0.0, step: 0.01 },
+      tint: { type: "number", label: "Tint", min: -1.0, max: 1.0, default: 0.0, step: 0.01 },
+      sepia: { type: "number", label: "Sepia", min: 0.0, max: 1.0, default: 0.0, step: 0.01 },
+      grayscale: { type: "number", label: "Grayscale", min: 0.0, max: 1.0, default: 0.0, step: 0.01 },
+      hueRotate: { type: "number", label: "Hue Rotate", min: 0.0, max: 6.28318, default: 0.0, step: 0.01 },
+      vignette: { type: "number", label: "Vignette", min: 0.0, max: 1.0, default: 0.0, step: 0.01 },
+      invert: { type: "number", label: "Invert", min: 0.0, max: 1.0, default: 0.0, step: 0.01 }
+    },
+    tags: ["color", "adjustments", "light", "vignette"]
+  },
   "hsl-adjustment": {
     id: "hsl-adjustment",
     name: "HSL Adjustment",
@@ -1302,6 +1335,88 @@ export function getEffectRenderer(id: EffectRendererType): ((ctx: CanvasRenderin
       ctx.globalAlpha = (Number(params.alpha ?? 0.3)) * intensity;
       ctx.fillRect(0, 0, width, height);
       ctx.restore();
+    },
+    "color-adjustments": (ctx: CanvasRenderingContext2D, params: EffectParameters, intensity: number) => {
+      const width = ctx.canvas.width;
+      const height = ctx.canvas.height;
+      const f = intensity;
+
+      const exp = Number(params.exposure ?? 0.0) * f;
+      const brightnessVal = 1.0 + (Number(params.brightness ?? 0.0)) * f + exp;
+      const contrastVal = 1.0 + (Number(params.contrast ?? 0.0)) * f;
+      const saturationVal = 1.0 + (Number(params.saturation ?? 0.0)) * f;
+      const sepiaVal = (Number(params.sepia ?? 0.0)) * f;
+      const grayscaleVal = (Number(params.grayscale ?? 0.0)) * f;
+      const hueVal = (Number(params.hueRotate ?? 0.0)) * f;
+      const invertVal = (Number(params.invert ?? 0.0)) * f;
+
+      const filterParts: string[] = [];
+      if (brightnessVal !== 1.0) filterParts.push(`brightness(${brightnessVal})`);
+      if (contrastVal !== 1.0) filterParts.push(`contrast(${contrastVal})`);
+      if (saturationVal !== 1.0) filterParts.push(`saturate(${saturationVal})`);
+      if (sepiaVal > 0) filterParts.push(`sepia(${sepiaVal * 100}%)`);
+      if (grayscaleVal > 0) filterParts.push(`grayscale(${grayscaleVal * 100}%)`);
+      if (hueVal !== 0) filterParts.push(`hue-rotate(${(hueVal * 180) / Math.PI}deg)`);
+      if (invertVal > 0) filterParts.push(`invert(${invertVal * 100}%)`);
+
+      if (filterParts.length > 0) {
+        ctx.save();
+        const temp = document.createElement("canvas");
+        temp.width = width;
+        temp.height = height;
+        const tempCtx = temp.getContext("2d");
+        if (tempCtx) {
+          tempCtx.drawImage(ctx.canvas, 0, 0);
+          ctx.clearRect(0, 0, width, height);
+          ctx.filter = filterParts.join(" ");
+          ctx.drawImage(temp, 0, 0);
+          ctx.filter = "none";
+        }
+        ctx.restore();
+      }
+
+      const tempVal = (Number(params.temperature ?? 0.0)) * f;
+      if (tempVal !== 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = "soft-light";
+        if (tempVal > 0) {
+          ctx.fillStyle = `rgba(255, 140, 40, ${tempVal})`;
+        } else {
+          ctx.fillStyle = `rgba(40, 120, 255, ${-tempVal})`;
+        }
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+      }
+
+      const tintVal = (Number(params.tint ?? 0.0)) * f;
+      if (tintVal !== 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = "soft-light";
+        if (tintVal > 0) {
+          ctx.fillStyle = `rgba(255, 40, 180, ${tintVal})`;
+        } else {
+          ctx.fillStyle = `rgba(40, 255, 100, ${-tintVal})`;
+        }
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+      }
+
+      const vignetteVal = (Number(params.vignette ?? 0.0)) * f;
+      if (vignetteVal > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = "multiply";
+        const cx = width / 2;
+        const cy = height / 2;
+        const maxRadius = Math.sqrt(cx * cx + cy * cy);
+        const gradient = ctx.createRadialGradient(cx, cy, maxRadius * 0.45, cx, cy, maxRadius * 1.0);
+        gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+        gradient.addColorStop(0.5, `rgba(0, 0, 0, ${vignetteVal * 0.15})`);
+        gradient.addColorStop(0.8, `rgba(0, 0, 0, ${vignetteVal * 0.55})`);
+        gradient.addColorStop(1, `rgba(0, 0, 0, ${vignetteVal * 0.9})`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+      }
     },
     "hsl-adjustment": (ctx: CanvasRenderingContext2D, params: EffectParameters, intensity: number) => {
       if (params.colorize) {
