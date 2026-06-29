@@ -171,7 +171,6 @@ const applyColorOverlays = (ctx: CanvasRenderingContext2D, width: number, height
 };
 
 export function FilterWorkspace() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const pixiCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -396,7 +395,7 @@ export function FilterWorkspace() {
     const maskGraphics = maskGraphicsRef.current;
     if (!renderer || !renderer.isReady || !unfilteredSprite || !maskGraphics) return;
 
-    const videoSprite = renderer.getVideoSprite();
+    const videoSprite = (renderer as any).videoSprite;
     if (!videoSprite) return;
 
     // 1. Sync dimensions & texture
@@ -476,9 +475,8 @@ export function FilterWorkspace() {
         const resolvedNodes = graph.resolve();
         renderer.applyNodes(resolvedNodes);
 
-        // Set up the split compare unfiltered layer and mask
-        const app = renderer.getApp();
-        const videoSprite = renderer.getVideoSprite();
+        const app = (renderer as any).app;
+        const videoSprite = (renderer as any).videoSprite;
         if (app && videoSprite) {
           const unfilteredSprite = new Sprite();
           const maskGraphics = new Graphics();
@@ -607,10 +605,6 @@ export function FilterWorkspace() {
         setMediaMetadata({ width: img.width, height: img.height });
         imageRef.current = img;
 
-        if (canvasRef.current) {
-          canvasRef.current.width = img.width;
-          canvasRef.current.height = img.height;
-        }
         if (pixiCanvasRef.current) {
           pixiCanvasRef.current.width = img.width;
           pixiCanvasRef.current.height = img.height;
@@ -665,10 +659,6 @@ export function FilterWorkspace() {
       height: video.videoHeight,
       duration: video.duration,
     });
-    if (canvasRef.current) {
-      canvasRef.current.width = video.videoWidth;
-      canvasRef.current.height = video.videoHeight;
-    }
     if (pixiCanvasRef.current) {
       pixiCanvasRef.current.width = video.videoWidth;
       pixiCanvasRef.current.height = video.videoHeight;
@@ -1203,12 +1193,6 @@ export function FilterWorkspace() {
         <div className="flex-1 flex items-center justify-center p-2 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(28,26,45,0.4)_0%,transparent_70%)]">
           {mediaUrl ? (
             <div ref={containerRef} className="relative inline-block max-h-full max-w-full rounded-xl overflow-hidden shadow-2xl border border-[#22222F] checkerboard" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleTouchMove} onTouchEnd={handleMouseUp}>
-              <canvas
-                ref={canvasRef}
-                style={{
-                  display: "none",
-                }}
-              />
               <canvas
                 ref={pixiCanvasRef}
                 style={{

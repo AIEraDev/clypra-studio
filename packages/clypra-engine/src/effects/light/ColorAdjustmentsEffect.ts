@@ -133,7 +133,7 @@ export const ColorAdjustmentsEffect: PixiEffectDefinition = {
       return Filter.from({
         gl: { vertex: ADJUSTMENTS_VERTEX_SHADER, fragment: ADJUSTMENTS_FRAGMENT_SHADER },
         resources: {
-          uniforms: {
+          adjustmentsUniforms: {
             uExposure: { value: params.exposure as number || 0.0, type: 'f32' },
             uBrightness: { value: params.brightness as number || 0.0, type: 'f32' },
             uContrast: { value: params.contrast as number || 0.0, type: 'f32' },
@@ -152,7 +152,7 @@ export const ColorAdjustmentsEffect: PixiEffectDefinition = {
       })
     },
     updateUniforms(filter: Filter, params: ParamValues): void {
-      const uniforms = (filter as any).resources?.uniforms?.uniforms
+      const uniforms = (filter as any).resources?.adjustmentsUniforms?.uniforms
       if (!uniforms) return
 
       const tempWeight = Math.abs(params.temperature as number || 0.0)
