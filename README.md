@@ -4,8 +4,21 @@
   <p><strong>AI-Powered Text Effects & Creative Editor</strong></p>
   <p>Design, animate, and export high-performance Canvas 2D text effects with gradients, bevels, glow stacks, shadows, and procedural engines.</p>
   
-  <a href="https://clypra.abdulkabirmusa.com">Live Demo</a> • 
-  <a href="https://clypra.abdulkabirmusa.com/studio">Studio App</a>
+  <p>
+    <a href="https://clypra.abdulkabirmusa.com">Live Demo</a> • 
+    <a href="https://clypra.abdulkabirmusa.com/studio">Studio App</a> •
+    <a href="#-features">Features</a> •
+    <a href="#-getting-started">Getting Started</a> •
+    <a href="./CONTRIBUTING.md">Contributing</a>
+  </p>
+
+  <p>
+    <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" alt="React 19" />
+    <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white" alt="Vite" />
+    <img src="https://img.shields.io/badge/PixiJS-8-E60010?logo=pixijs&logoColor=white" alt="PixiJS" />
+    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
+  </p>
 </div>
 
 ---
@@ -242,13 +255,33 @@ The studio generates production-ready code:
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions from the community! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
+
+### Quick Start
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch (`git checkout -b feat/amazing-feature`)
+3. Make your changes following our [coding guidelines](./CONTRIBUTING.md)
+4. Commit using [conventional commits](https://www.conventionalcommits.org/) (`git commit -m 'feat: add amazing feature'`)
+5. Push to your branch (`git push origin feat/amazing-feature`)
+6. Open a Pull Request
+
+### Resources
+
+- [Contributing Guidelines](./CONTRIBUTING.md) - Detailed contribution instructions
+- [Code of Conduct](./CODE_OF_CONDUCT.md) - Community standards
+- [Security Policy](./SECURITY.md) - Report security vulnerabilities
+
+### Ways to Contribute
+
+- 🐛 Report bugs via [GitHub Issues](https://github.com/AIEraDev/clypra-studio/issues)
+- ✨ Suggest new features or enhancements
+- 📝 Improve documentation
+- 🎨 Design new effects or presets
+- 💻 Submit code improvements
+- 🧪 Write tests
+
+See [open issues](https://github.com/AIEraDev/clypra-studio/issues) for a list of proposed features and known issues.
 
 ---
 
