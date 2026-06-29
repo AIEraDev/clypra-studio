@@ -1,3 +1,10 @@
+## [1.28.2](https://github.com/AIEraDev/clypra-studio/compare/v1.28.1...v1.28.2) (2026-06-29)
+
+
+### Bug Fixes
+
+* correct uniforms access and cleanup FilterWorkspace ([6c9c227](https://github.com/AIEraDev/clypra-studio/commit/6c9c2274f7c48174983cd9c93ada52b7ba1a7758))
+
 ## [1.28.1](https://github.com/AIEraDev/clypra-studio/compare/v1.28.0...v1.28.1) (2026-06-29)
 
 
