@@ -1,3 +1,26 @@
+# [2.1.0](https://github.com/AIEraDev/clypra-studio/compare/v2.0.1...v2.1.0) (2026-06-29)
+
+
+### Bug Fixes
+
+* **studio:** resolve PixiRenderBackend initialization race condition ([d374b08](https://github.com/AIEraDev/clypra-studio/commit/d374b0869969dec6c56c8bc47f52a9fb416190a7))
+* **studio:** update PixiRenderBackend shaders to GLSL 300 ES ([503ad4e](https://github.com/AIEraDev/clypra-studio/commit/503ad4edad683b4f88201b753454324faf5b3861))
+* **studio:** use local workspace package for @clypra/engine ([3566e67](https://github.com/AIEraDev/clypra-studio/commit/3566e671b16afd2d7cbedc508a3a4c7b2a9039be))
+
+
+### Features
+
+* **auth:** protect in-studio Filter Lab workspace (/?q=filters) ([5ed1f32](https://github.com/AIEraDev/clypra-studio/commit/5ed1f32db3c072b36740ecc3cf560b6a4bb4c487))
+* **auth:** restrict Filter Lab and MPG Playground to admin users only ([80f5af0](https://github.com/AIEraDev/clypra-studio/commit/80f5af0d60313d48c6ca83ff5a65553a48ed4665))
+* **constants:** add shared filter categories constant ([352c2f6](https://github.com/AIEraDev/clypra-studio/commit/352c2f60f0f382ac84d5d58fe145dcb7fcbd6e43))
+* **engine:** implement V2 MPG rendering pipeline ([b3e4395](https://github.com/AIEraDev/clypra-studio/commit/b3e43958dea464e1107369ef0b872b7b9c7747d7))
+* **github:** add pull request template ([f2325e2](https://github.com/AIEraDev/clypra-studio/commit/f2325e240357692620cb866aa762422577108eac))
+* **mpg:** complete V2 filter design lab with R2 publishing ([4c6ffe5](https://github.com/AIEraDev/clypra-studio/commit/4c6ffe53b8d0f0b11d4efe3bb237b14bd90fb224))
+* **publish:** add V2 MPG filter publishing to R2 ([3b674f2](https://github.com/AIEraDev/clypra-studio/commit/3b674f24ca62564fabfb899155d7cd83cc6cacf0))
+* **studio:** add image loading status indicators and better error logging ([83ef44c](https://github.com/AIEraDev/clypra-studio/commit/83ef44c233f50bc6a295a00955afe70dcc4a43ed))
+* **studio:** add navigation between Effect Graph Sandbox and MPG Playground ([cc9e636](https://github.com/AIEraDev/clypra-studio/commit/cc9e63698cb53b8ee59cd46d16646cdbe866c612))
+* **ui:** hide Filters navigation item for non-admin users ([1e85743](https://github.com/AIEraDev/clypra-studio/commit/1e857430abdaa11da09b628ee96e41f6993e7852))
+
 ## [2.0.1](https://github.com/AIEraDev/clypra-studio/compare/v2.0.0...v2.0.1) (2026-06-29)
 
 
