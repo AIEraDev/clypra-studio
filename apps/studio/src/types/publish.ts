@@ -163,3 +163,24 @@ export interface FilterPublishPayload {
   };
   thumbnailDataUrl?: string;
 }
+
+/** V2 MPG effect stack preset for Clypra Editor */
+export interface MpgStackPublishPayload {
+  id: string;
+  category: string;
+  metadata: {
+    name: string;
+    description?: string;
+    tags?: string[];
+    published?: boolean;
+    intensity: {
+      min: number;
+      max: number;
+      default: number;
+      step: number;
+    };
+    /** V2 node stack — consumed by editor via mpg_stack renderer */
+    effectStack: Array<{ type: string; params: Record<string, unknown> }>;
+  };
+  thumbnailDataUrl?: string;
+}

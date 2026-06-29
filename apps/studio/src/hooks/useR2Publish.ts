@@ -7,7 +7,7 @@
 
 import { type R2UploadConfig, getR2Config, saveR2Config, uploadFileFromDataUrl, uploadR2Json, getR2Json, upsertById, getPublicUrl, uploadBatch } from "../services/r2Service";
 
-import type { AudioPublishPayload, StickerPublishPayload, OverlayPublishPayload, VideoEffectPresetPublishPayload, VideoEffectPresetBatchPublishPayload, FilterPublishPayload } from "../types/publish";
+import type { AudioPublishPayload, StickerPublishPayload, OverlayPublishPayload, VideoEffectPresetPublishPayload, VideoEffectPresetBatchPublishPayload, FilterPublishPayload, MpgStackPublishPayload } from "../types/publish";
 
 export interface R2PublishResult {
   files: string[];
@@ -630,6 +630,94 @@ export function useR2Publish() {
     };
   };
 
+  /**
+   * Publish V2 MPG effect stack to R2 (filters/{category} — Clypra Editor Filters API)
+   */
+  const publishMpgStack = async (payload: MpgStackPublishPayload): Promise<R2PublishResult> => {
+    const config = getR2Config();
+    if (!config) throw new Error("R2 publishing is not configured.");
+
+    if (!payload.metadata.name.trim()) throw new Error("Effect name is required.");
+    if (!payload.metadata.effectStack.length) throw new Error("Effect stack cannot be empty.");
+
+    const category = payload.category.toLowerCase();
+    const definitionKey = `filters/${category}/${payload.id}.json`;
+    const thumbnailKey = `filters/${category}/${payload.id}.png`;
+    const categoryIndexKey = `filters/${category}/index.json`;
+    const globalIndexKey = `filters/index.json`;
+
+    const thumbnailUrl = payload.thumbnailDataUrl ? getPublicUrl(config.bucketName, thumbnailKey) : "";
+    const intensityDefault = payload.metadata.intensity.default;
+    const intensityLabel = intensityDefault >= 85 ? "Bold" : intensityDefault >= 65 ? "Medium" : "Light";
+
+    const indexEntry = {
+      id: payload.id,
+      name: payload.metadata.name,
+      category,
+      description: payload.metadata.description || "",
+      intensity: intensityLabel,
+      swatch: "",
+      published: payload.metadata.published ?? true,
+      pipeline: "v2",
+      effectStack: payload.metadata.effectStack,
+      tags: payload.metadata.tags || [],
+    };
+
+    const definition = {
+      id: payload.id,
+      name: payload.metadata.name,
+      type: "filter" as const,
+      category,
+      description: payload.metadata.description || "",
+      thumbnail: thumbnailUrl,
+      swatch: "",
+      pipeline: "v2",
+      effectStack: payload.metadata.effectStack,
+      tags: payload.metadata.tags || [],
+      intensity: payload.metadata.intensity,
+      published: payload.metadata.published ?? true,
+    };
+
+    const files = [definitionKey, categoryIndexKey, globalIndexKey];
+    const urls: Record<string, string> = {
+      definition: getPublicUrl(config.bucketName, definitionKey),
+      index: getPublicUrl(config.bucketName, categoryIndexKey),
+    };
+
+    if (payload.thumbnailDataUrl) {
+      await uploadFileFromDataUrl(config, thumbnailKey, payload.thumbnailDataUrl, "image/png");
+      files.push(thumbnailKey);
+      urls.thumbnail = thumbnailUrl;
+    }
+
+    await uploadR2Json(config, definitionKey, definition);
+
+    const categoryIndex = await getR2Json<any[]>(config, categoryIndexKey, []);
+    const globalIndex = await getR2Json<any[]>(config, globalIndexKey, []);
+
+    const summary = {
+      id: definition.id,
+      name: definition.name,
+      type: "filter",
+      category,
+      description: definition.description,
+      thumbnail: definition.thumbnail,
+      url: urls.definition,
+      pipeline: "v2",
+      effectStack: definition.effectStack,
+      tags: definition.tags,
+    };
+
+    await uploadR2Json(config, categoryIndexKey, upsertById(categoryIndex, indexEntry as any));
+    await uploadR2Json(config, globalIndexKey, upsertById(globalIndex, summary as any));
+
+    return {
+      files,
+      urls,
+      message: `Published MPG filter: ${definition.name} → filters/${category}`,
+    };
+  };
+
   return {
     publishEffect,
     publishTemplate,
@@ -639,6 +727,7 @@ export function useR2Publish() {
     publishVideoEffectPreset,
     publishVideoEffectPresetBatch,
     publishFilter,
+    publishMpgStack,
     getR2Config,
     saveR2Config,
   };
