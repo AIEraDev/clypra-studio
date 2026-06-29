@@ -380,7 +380,15 @@ export function FilterWorkspace() {
     Object.entries(finalParams).forEach(([key, val]) => {
       renderer.updateParam("color-adjustments-node", key, val);
     });
-  }, [selectedFilter, intensity, manualAdjustments]);
+
+    // Force render for static images (videos auto-render via ticker)
+    if (!isVideo) {
+      const app = (renderer as any).app;
+      if (app) {
+        app.renderer.render(app.stage);
+      }
+    }
+  }, [selectedFilter, intensity, manualAdjustments, isVideo]);
 
   // Keep comparison slider values in refs to avoid closure captures in PixiJS Ticker
   const showSplitRef = useRef(showSplitComparison);
@@ -456,6 +464,12 @@ export function FilterWorkspace() {
             import("pixi.js").then(({ Texture }) => {
               const texture = Texture.from(imageRef.current!);
               videoSprite.texture = texture;
+
+              // Force render after texture is set
+              const app = (renderer as any).app;
+              if (app) {
+                app.renderer.render(app.stage);
+              }
             });
           }
         }
