@@ -89,19 +89,26 @@ export const MPGPlayground: React.FC = () => {
     const imageData = TEST_IMAGES.find((i) => i.id === selectedImage);
     if (!imageData) return;
 
+    setImageLoaded(false);
     img.crossOrigin = "anonymous";
+
     img.onload = () => {
+      console.log("✅ Image loaded successfully:", imageData.url);
       sourceImageRef.current = img;
       setImageLoaded(true);
     };
-    img.onerror = () => {
-      console.error("Failed to load image:", imageData.url);
+
+    img.onerror = (e) => {
+      console.error("❌ Failed to load image:", imageData.url, e);
       setImageLoaded(false);
     };
+
+    console.log("🔄 Loading image:", imageData.url);
     img.src = imageData.url;
 
     return () => {
       setImageLoaded(false);
+      sourceImageRef.current = null;
     };
   }, [selectedImage]);
 
@@ -263,6 +270,21 @@ export const MPGPlayground: React.FC = () => {
           </div>
 
           {/* Validation Status */}
+          <div className="bg-[#1E1E24]/60 rounded-xl p-4 border border-[#22222E] space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Status</h3>
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${imageLoaded ? "bg-[#33CC99]" : "bg-[#FF3366]"}`} />
+                <span className="text-white">Image: {imageLoaded ? "Loaded" : "Loading..."}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${backendReady ? "bg-[#33CC99]" : "bg-[#FF3366]"}`} />
+                <span className="text-white">Backend: {backendReady ? "Ready" : "Initializing..."}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Validation */}
           <div className="bg-[#1E1E24]/60 rounded-xl p-4 border border-[#22222E] space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Validation</h3>
             {validationResult ? (
