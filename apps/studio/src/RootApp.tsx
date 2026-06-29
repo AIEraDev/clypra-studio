@@ -31,8 +31,8 @@ const ROUTE_METADATA = {
   },
   mpg: {
     canonical: "https://clypra.abdulkabirmusa.com/studio/mpg",
-    description: "Media Processing Graph Playground - V2 Pipeline validation laboratory for testing graph compilation, validation, planning, and Pixi-based execution.",
-    title: "Clypra Studio - MPG Playground (V2 Pipeline Lab)",
+    description: "MPG Filter Lab — design V2 effect stacks from scratch, test live, and publish to R2 for Clypra Editor.",
+    title: "Clypra Studio - MPG Filter Lab",
   },
   adminEffects: {
     canonical: "https://clypra.abdulkabirmusa.com/admin/effects",
@@ -132,10 +132,46 @@ export default function RootApp() {
   }, [metadata]);
 
   if (mpgRoute) {
+    if (!checkIsAdmin()) {
+      return (
+        <div className="flex flex-col h-screen bg-[#0E0E12] items-center justify-center text-white" style={{ fontFamily: "Inter, sans-serif" }}>
+          <div className="text-center space-y-4 max-w-sm px-6">
+            <h1 className="text-xl font-bold text-red-500">Access Denied</h1>
+            <p className="text-sm text-gray-400 font-medium">You must be logged in as an administrator to access the MPG Filter Lab.</p>
+            <button
+              onClick={() => {
+                window.location.href = "/studio";
+              }}
+              className="px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors"
+            >
+              Go to Studio
+            </button>
+          </div>
+        </div>
+      );
+    }
     return <MPGPlayground />;
   }
 
   if (effectsRoute) {
+    if (!checkIsAdmin()) {
+      return (
+        <div className="flex flex-col h-screen bg-[#0E0E12] items-center justify-center text-white" style={{ fontFamily: "Inter, sans-serif" }}>
+          <div className="text-center space-y-4 max-w-sm px-6">
+            <h1 className="text-xl font-bold text-red-500">Access Denied</h1>
+            <p className="text-sm text-gray-400 font-medium">You must be logged in as an administrator to access the Filter Lab.</p>
+            <button
+              onClick={() => {
+                window.location.href = "/studio";
+              }}
+              className="px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors"
+            >
+              Go to Studio
+            </button>
+          </div>
+        </div>
+      );
+    }
     return <EffectGraphSandbox />;
   }
 
