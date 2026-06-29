@@ -79,11 +79,17 @@ export function FilterWorkspace() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [rightTab, setRightTab] = useState<"adjust" | "histogram">("adjust");
 
-  // Simple check for admin role from search params or localStorage
+  // Check for admin role from JWT token
   const isAdmin = useMemo(() => {
     if (typeof window === "undefined") return false;
-    const params = new URLSearchParams(window.location.search);
-    return params.get("role") === "admin" || localStorage.getItem("clypra_role") === "admin";
+    try {
+      const token = localStorage.getItem("clypra_auth_token");
+      if (!token) return false;
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return !!payload.isAdmin;
+    } catch (e) {
+      return false;
+    }
   }, []);
 
   // Filter presets based on search query and category tab selection
@@ -132,6 +138,13 @@ export function FilterWorkspace() {
   const splitPositionRef = useRef(splitPosition);
   splitPositionRef.current = splitPosition;
 
+  const selectedFilterRef = useRef(selectedFilter);
+  selectedFilterRef.current = selectedFilter;
+  const intensityRef = useRef(intensity);
+  intensityRef.current = intensity;
+  const manualAdjustmentsRef = useRef(manualAdjustments);
+  manualAdjustmentsRef.current = manualAdjustments;
+
   // Update PixiJS mask and texture dimensions/sources
   const updatePixiMaskAndTexture = useCallback(() => {
     const renderer = pixiRendererRef.current;
@@ -139,7 +152,7 @@ export function FilterWorkspace() {
     const maskGraphics = maskGraphicsRef.current;
     if (!renderer || !renderer.isReady || !unfilteredSprite || !maskGraphics) return;
 
-    const videoSprite = (renderer as any).videoSprite;
+    const videoSprite = renderer.getVideoSprite();
     if (!videoSprite) return;
 
     // 1. Sync dimensions & texture
@@ -174,13 +187,9 @@ export function FilterWorkspace() {
 
       const f = inst / 100;
 
-      // ─────────────────────────────────────────────────────────────────────────
-      // FIX: Prioritize gradingParams (GLSL) over cssFilter (CSS) parsing
-      // This fixes the Vaporwave bug where temperature/tint were ignored
-      // ─────────────────────────────────────────────────────────────────────────
       let presetAdjust = {
         exposure: 0.0,
-        brightness: 0.0, // Note: stored as delta, not multiplier
+        brightness: 0.0,
         contrast: 0.0,
         saturation: 0.0,
         temperature: 0.0,
@@ -194,12 +203,9 @@ export function FilterWorkspace() {
 
       if (filter) {
         if (filter.gradingParams) {
-          // Use GLSL params directly (already in -1.0 to 1.0 range)
           presetAdjust = { ...presetAdjust, ...filter.gradingParams };
         } else if (filter.cssFilter) {
-          // Fallback: parse CSS string (legacy path)
           const parsed = parseCSSFilter(filter.cssFilter);
-          // Convert CSS multipliers to GLSL delta values
           presetAdjust.brightness = parsed.brightness - 1.0;
           presetAdjust.contrast = parsed.contrast - 1.0;
           presetAdjust.saturation = parsed.saturation - 1.0;
@@ -210,8 +216,7 @@ export function FilterWorkspace() {
         }
       }
 
-      // Combine preset & manual adjustments
-      const finalParams = {
+      const colorParams = {
         exposure: presetAdjust.exposure * f + adjusts.exposure / 100,
         brightness: presetAdjust.brightness * f + adjusts.brightness / 100,
         contrast: presetAdjust.contrast * f + adjusts.contrast / 100,
@@ -225,29 +230,14 @@ export function FilterWorkspace() {
         invert: presetAdjust.invert * f + adjusts.invert / 100,
       };
 
-      // Update each parameter individually in the active node of PixiRenderer
-      Object.entries(finalParams).forEach(([key, val]) => {
-        renderer.updateParam("color-adjustments-node", key, val);
-      });
+      renderer.updateParams("color-adjustments-node", colorParams);
+      renderer.updateParams("gaussian-blur-node", { blur: adjusts.blur, quality: 4 });
 
-      // Update blur parameter in the gaussian-blur-node
-      renderer.updateParam("gaussian-blur-node", "blur", adjusts.blur);
-
-      // Force render for static images (videos auto-render via ticker)
-      if (!isVideo) {
-        const app = (renderer as any).app;
-        if (app) {
-          app.renderer.render(app.stage);
-        }
-      }
+      updatePixiMaskAndTexture();
+      renderer.render();
     },
-    [isVideo],
+    [updatePixiMaskAndTexture],
   );
-
-  // Synchronize adjustments uniforms to the PixiRenderer
-  const syncAdjustmentsUniforms = useCallback(() => {
-    syncAdjustmentsUniformsDirect(selectedFilter, intensity, manualAdjustments);
-  }, [selectedFilter, intensity, manualAdjustments, syncAdjustmentsUniformsDirect]);
 
   // Initialize PixiRenderer from @clypra/engine and apply the ColorAdjustmentsEffect
   useEffect(() => {
@@ -311,8 +301,8 @@ export function FilterWorkspace() {
         renderer.applyNodes(resolvedNodes);
 
         // Set up the split compare unfiltered layer and mask
-        const app = (renderer as any).app;
-        const videoSprite = (renderer as any).videoSprite;
+        const app = renderer.getApp();
+        const videoSprite = renderer.getVideoSprite();
         if (app && videoSprite) {
           const unfilteredSprite = new Sprite();
           const maskGraphics = new Graphics();
@@ -334,8 +324,8 @@ export function FilterWorkspace() {
           app.ticker.add(syncTicker);
         }
 
-        // Sync initial uniforms
-        syncAdjustmentsUniforms();
+        // Sync initial uniforms after graph is ready
+        syncAdjustmentsUniformsDirect(selectedFilterRef.current, intensityRef.current, manualAdjustmentsRef.current);
       } catch (error) {
         console.error("[FilterWorkspace] PixiRenderer initialization failed:", error);
       }
@@ -350,12 +340,18 @@ export function FilterWorkspace() {
         pixiRendererRef.current = null;
       }
     };
-  }, [mediaUrl, isVideo, mediaMetadata]);
+  }, [mediaUrl, isVideo, mediaMetadata, syncAdjustmentsUniformsDirect]);
 
-  // Sync uniforms whenever selection, intensity, or manual settings change
+  // Live preview: re-apply when preset, intensity, or grading sliders change
   useEffect(() => {
-    syncAdjustmentsUniforms();
-  }, [syncAdjustmentsUniforms]);
+    syncAdjustmentsUniformsDirect(selectedFilter, intensity, manualAdjustments);
+  }, [selectedFilter, intensity, manualAdjustments, syncAdjustmentsUniformsDirect]);
+
+  // Re-render when split comparison changes
+  useEffect(() => {
+    updatePixiMaskAndTexture();
+    pixiRendererRef.current?.render();
+  }, [showSplitComparison, splitPosition, updatePixiMaskAndTexture]);
 
   // Handle image upload
   const handleImageUpload = useCallback(
@@ -367,7 +363,7 @@ export function FilterWorkspace() {
       setMediaUrl(url);
       setIsVideo(false);
 
-      const img = new Image();
+      const img = document.createElement("img");
       img.onload = () => {
         setMediaMetadata({ width: img.width, height: img.height });
         imageRef.current = img;
@@ -377,13 +373,9 @@ export function FilterWorkspace() {
           pixiCanvasRef.current.height = img.height;
         }
 
-        if (pixiRendererRef.current) {
-          pixiRendererRef.current.setImageSource(img);
-        }
-
-        // Draw the initial frame
         setTimeout(() => {
           updatePixiMaskAndTexture();
+          pixiRendererRef.current?.render();
         }, 50);
 
         // Capture initial preview frame for presets
