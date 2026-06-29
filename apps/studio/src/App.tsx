@@ -1523,7 +1523,20 @@ export default function App() {
           </div>
         ) : activeRailItem === "filters" ? (
           <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
-            <FilterWorkspace />
+            {isAdmin ? (
+              <FilterWorkspace />
+            ) : (
+              <div className="flex h-full items-center justify-center text-center p-6 text-(--studio-muted)">
+                <div className="max-w-md space-y-3">
+                  <Shield size={48} className="mx-auto text-red-500/50" />
+                  <h3 className="text-sm font-semibold text-white">Unauthorized Access</h3>
+                  <p className="text-xs text-(--studio-muted)">Only logged-in administrators are allowed to access the Filter Lab.</p>
+                  <button onClick={() => setActiveRailItem("text-effects")} className="mt-4 px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors">
+                    Go to Text Effects
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : activeRailItem === "transitions" ? (
           <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
