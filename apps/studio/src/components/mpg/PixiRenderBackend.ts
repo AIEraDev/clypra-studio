@@ -119,14 +119,24 @@ export class PixiRenderBackend implements RenderBackend {
         filter = new PIXI.Filter({
           glProgram: PIXI.GlProgram.from({
             vertex: `
-              attribute vec2 aPosition;
+              in vec2 aPosition;
+              out vec2 vTextureCoord;
+              
+              uniform mat3 projectionMatrix;
+              
               void main() {
-                gl_Position = vec4(aPosition, 0.0, 1.0);
+                gl_Position = vec4((projectionMatrix * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
+                vTextureCoord = aPosition;
               }
             `,
             fragment: `
+              in vec2 vTextureCoord;
+              out vec4 finalColor;
+              
+              uniform sampler2D uTexture;
+              
               void main() {
-                gl_FragColor = texture2D(uTexture, vTextureCoord);
+                finalColor = texture(uTexture, vTextureCoord);
               }
             `,
           }),
@@ -137,14 +147,24 @@ export class PixiRenderBackend implements RenderBackend {
         filter = new PIXI.Filter({
           glProgram: PIXI.GlProgram.from({
             vertex: `
-              attribute vec2 aPosition;
+              in vec2 aPosition;
+              out vec2 vTextureCoord;
+              
+              uniform mat3 projectionMatrix;
+              
               void main() {
-                gl_Position = vec4(aPosition, 0.0, 1.0);
+                gl_Position = vec4((projectionMatrix * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
+                vTextureCoord = aPosition;
               }
             `,
             fragment: `
+              in vec2 vTextureCoord;
+              out vec4 finalColor;
+              
+              uniform sampler2D uTexture;
+              
               void main() {
-                gl_FragColor = texture2D(uTexture, vTextureCoord);
+                finalColor = texture(uTexture, vTextureCoord);
               }
             `,
           }),
