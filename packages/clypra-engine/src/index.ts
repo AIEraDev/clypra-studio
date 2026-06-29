@@ -1,6 +1,6 @@
 /**
  * @clypra/engine — Canvas 2D text effects, Lottie tooling, and animation engine.
- * @version 1.0.0
+ * @version 2.0.1
  */
 export * from "./types.js";
 export * from "./validation.js";
@@ -60,3 +60,6 @@ export * from "./v2/runtime/NullBackend.js";
 export * from "./v2/compiler/ProjectCompiler.js";
 export * from "./v2/planner/FrameGraphBuilder.js";
 export * from "./v2/validation/GraphValidator.js";
+export * from "./v2/runtime/CommandBufferBuilder.js";
+export { MPGFrameRenderer, type FrameSource } from "./v2/runtime/MPGFrameRenderer.js";
+export * from "./v2/backends/index.js";

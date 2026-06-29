@@ -1,7 +1,14 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/transitions/index.ts", "src/videoEffects/index.ts", "src/textEffects/index.ts"],
+  entry: [
+    "src/index.ts",
+    "src/transitions/index.ts",
+    "src/videoEffects/index.ts",
+    "src/textEffects/index.ts",
+    "src/v2/backends/index.ts",
+    "src/v2/contract/index.ts",
+  ],
   format: ["esm", "cjs"],
   dts: true,
   sourcemap: true,

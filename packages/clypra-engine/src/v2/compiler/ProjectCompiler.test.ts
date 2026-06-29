@@ -6,7 +6,8 @@ import { NodeRegistry } from "../graph/NodeRegistry";
 import { GraphValidator } from "../validation/GraphValidator";
 import { GraphHelper, type MediaProcessingGraph } from "../graph/types";
 import { NullBackend } from "../runtime/NullBackend";
-import type { CommandBuffer, Command } from "../runtime/types";
+import { CommandBufferBuilder } from "../runtime/CommandBufferBuilder";
+import type { CommandBuffer } from "../runtime/types";
 
 describe("V2 Pipeline Vertical Slice", () => {
   it("should compile manifest and build a frame graph for active clips", () => {
@@ -720,13 +721,7 @@ describe("End-to-End: Null Execution Flow", () => {
     }
 
     // 8. Build command buffer from frame graph passes
-    const commandBuffer: CommandBuffer = {
-      frameNumber: frameGraph.frameNumber,
-      passes: frameGraph.passes.map((pass) => ({
-        pass,
-        commands: [{ op: "bind_texture" as const, resourceId: pass.inputs[0] }, { op: "bind_uniforms" as const, params: pass.uniforms }, { op: "draw" as const }],
-      })),
-    };
+    const commandBuffer = CommandBufferBuilder.fromFrameGraph(frameGraph);
 
     // 9. Submit to backend
     await backend.submit(commandBuffer);
@@ -742,9 +737,7 @@ describe("End-to-End: Null Execution Flow", () => {
     expect(passNames).toContain("Gaussian Blur Vertical");
     expect(passNames).toContain("Blit to Output");
 
-    // Verify the expected pass queue matches the scheduled order
-    const expectedPassOrder = ["copy", "gaussian-blur-h", "gaussian-blur-v", "blit-source"];
-
+    const expectedPassOrder = ["blit-source", "gaussian-blur-h", "gaussian-blur-v", "copy"];
     const actualPassOrder = backend.getLastShaderIds();
     expect(actualPassOrder).toEqual(expectedPassOrder);
 

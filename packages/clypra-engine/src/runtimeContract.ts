@@ -1,8 +1,8 @@
 /**
- * @clypra/engine — NLE Runtime & Pipeline Contract v2
- * 
- * This file defines the stable interfaces shared between Clypra Studio (TypeScript)
- * and the native rendering backend (Rust/wgpu).
+ * @clypra/engine — NLE Runtime & Pipeline Contract v2 (LEGACY DRAFT)
+ *
+ * @deprecated Prefer `v2/project`, `v2/graph`, `v2/planner`, and `v2/runtime`.
+ * Exported via `@clypra/engine/contract` for Rust/wgpu alignment only.
  */
 
 // ============================================================================

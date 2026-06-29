@@ -23,7 +23,7 @@ export const GaussianBlurEffect: PixiEffectDefinition = {
       return filter
     },
     updateUniforms(filter: BlurFilter, params: ParamValues): void {
-      filter.blur = params.blur as number
+      filter.strength = params.blur as number
       filter.quality = params.quality as number
     }
   }

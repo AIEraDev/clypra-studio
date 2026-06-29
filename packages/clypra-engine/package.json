@@ -25,6 +25,16 @@
       "types": "./dist/textEffects/index.d.ts",
       "import": "./dist/textEffects/index.js",
       "require": "./dist/textEffects/index.cjs"
+    },
+    "./backends": {
+      "types": "./dist/v2/backends/index.d.ts",
+      "import": "./dist/v2/backends/index.js",
+      "require": "./dist/v2/backends/index.cjs"
+    },
+    "./contract": {
+      "types": "./dist/v2/contract/index.d.ts",
+      "import": "./dist/v2/contract/index.js",
+      "require": "./dist/v2/contract/index.cjs"
     }
   },
   "files": [
@@ -43,7 +53,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "jszip": "^3.10.1",
@@ -62,7 +73,8 @@
     "@semantic-release/release-notes-generator": "^12.1.0",
     "semantic-release": "^23.0.0",
     "tsup": "^8.0.0",
-    "typescript": "~5.8.2"
+    "typescript": "~5.8.2",
+    "vitest": "^3.2.4"
   },
   "publishConfig": {
     "access": "public",

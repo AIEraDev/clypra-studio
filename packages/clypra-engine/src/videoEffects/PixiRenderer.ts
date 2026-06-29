@@ -225,6 +225,33 @@ export class PixiRenderer {
   }
 
   /**
+   * Update multiple params on a mounted effect in one pass.
+   */
+  updateParams(nodeId: string, params: ParamValues): void {
+    const m = this.mounted.get(nodeId)
+    if (!m) return
+
+    Object.assign(m.params, params)
+    Object.assign(m.ctx.params, params)
+
+    if (m.filters && m.definition.filterSpec?.updateUniforms) {
+      m.definition.filterSpec.updateUniforms(
+        m.filters.length === 1 ? m.filters[0] : m.filters,
+        m.params,
+        0,
+      )
+    }
+  }
+
+  /**
+   * Force a render pass (required for static image previews after uniform changes).
+   */
+  render(): void {
+    if (!this.app) return
+    this.app.renderer.render({ container: this.app.stage })
+  }
+
+  /**
    * Update a single param on a mounted effect.
    * Triggers uniform refresh and calls onParamChange lifecycle hook.
    */
@@ -235,7 +262,6 @@ export class PixiRenderer {
     m.params[key] = value
     m.ctx.params[key] = value
 
-    // Refresh filter uniforms immediately
     if (m.filters && m.definition.filterSpec?.updateUniforms) {
       m.definition.filterSpec.updateUniforms(
         m.filters.length === 1 ? m.filters[0] : m.filters,
@@ -244,7 +270,6 @@ export class PixiRenderer {
       )
     }
 
-    // Notify effect for motion param changes
     m.definition.onParamChange?.(m.ctx, key, value)
   }
 

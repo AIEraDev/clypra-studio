@@ -328,6 +328,72 @@ export class NodeRegistry {
       },
     );
 
+    // ── Color grading nodes (ColorAdjustments GLSL) ──────────────────────────
+
+    const colorInput = [{ id: "input", name: "Color Input", type: "Texture" as GraphDataType }];
+    const colorOutput = [{ id: "output", name: "Color Output", type: "Texture" as GraphDataType }];
+    const colorCaps: EffectCapabilities = {
+      temporal: false,
+      stateful: false,
+      spatial: false,
+      geometry: false,
+      inputsCount: 1,
+    };
+    const colorReqs: EffectRequirements = {
+      temporalRadius: 0,
+      preferredPrecision: "fp16",
+      multipass: false,
+      supportsHalfResolution: true,
+    };
+
+    const registerColorNode = (
+      type: string,
+      name: string,
+      description: string,
+      paramKey: string,
+      defaultVal: number,
+      min: number,
+      max: number,
+    ) => {
+      registry.register(
+        {
+          type,
+          name,
+          description,
+          version: 1,
+          capabilities: colorCaps,
+          requirements: colorReqs,
+          inputs: colorInput,
+          outputs: colorOutput,
+          defaultParams: { [paramKey]: defaultVal },
+          paramSchema: {
+            [paramKey]: { type: "number", min, max, default: defaultVal },
+          },
+        },
+        {
+          planExecution(nodeId, nodeType, params, inputs, output) {
+            return [
+              {
+                shaderId: "color-adjustments",
+                name: `Apply ${name}`,
+                inputs,
+                output,
+                uniforms: { [paramKey]: params[paramKey] ?? defaultVal },
+              },
+            ];
+          },
+        },
+      );
+    };
+
+    registerColorNode("Saturation", "Saturation", "Adjust color saturation", "saturation", 0.0, -1, 1);
+    registerColorNode("Temperature", "Temperature", "Warm or cool color temperature", "temperature", 0.0, -1, 1);
+    registerColorNode("Tint", "Tint", "Green/magenta tint shift", "tint", 0.0, -1, 1);
+    registerColorNode("Vignette", "Vignette", "Darken edges for cinematic focus", "vignette", 0.0, 0, 1);
+    registerColorNode("Sepia", "Sepia", "Warm vintage sepia tone", "sepia", 0.0, 0, 1);
+    registerColorNode("Grayscale", "Grayscale", "Desaturate to monochrome", "grayscale", 0.0, 0, 1);
+    registerColorNode("HueRotate", "Hue Rotate", "Rotate hue in radians", "hueRotate", 0.0, 0, 6.28318);
+
     // Register AlphaBlend
     registry.register(
       {

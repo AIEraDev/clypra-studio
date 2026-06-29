@@ -1,21 +1,32 @@
 import { Filter } from 'pixi.js'
 import type { PixiEffectDefinition, ParamValues } from '../../videoEffects/EffectDefinition'
 
+/** Pixi v8 default filter vertex — required for correct render-to-texture in MPG. */
 const ADJUSTMENTS_VERTEX_SHADER = `
   in vec2 aPosition;
   out vec2 vTextureCoord;
+
   uniform vec4 uInputSize;
   uniform vec4 uOutputFrame;
-  vec4 filterVertexPosition(void) {
-    vec2 position = aPosition * uOutputFrame.zw + uOutputFrame.xy;
-    return vec4(position * uInputSize.zw * 2.0 - 1.0, 0.0, 1.0);
+  uniform vec4 uOutputTexture;
+
+  vec4 filterVertexPosition( void )
+  {
+      vec2 position = aPosition * uOutputFrame.zw + uOutputFrame.xy;
+      position.x = position.x * (2.0 / uOutputTexture.x) - 1.0;
+      position.y = position.y * (2.0 * uOutputTexture.z / uOutputTexture.y) - uOutputTexture.z;
+      return vec4(position, 0.0, 1.0);
   }
-  vec2 filterTextureCoord(void) {
-    return aPosition * (uOutputFrame.zw * uInputSize.xy);
+
+  vec2 filterTextureCoord( void )
+  {
+      return aPosition * (uOutputFrame.zw * uInputSize.zw);
   }
-  void main(void) {
-    gl_Position = filterVertexPosition();
-    vTextureCoord = filterTextureCoord();
+
+  void main(void)
+  {
+      gl_Position = filterVertexPosition();
+      vTextureCoord = filterTextureCoord();
   }
 `;
 
@@ -132,6 +143,7 @@ export const ColorAdjustmentsEffect: PixiEffectDefinition = {
 
       return Filter.from({
         gl: { vertex: ADJUSTMENTS_VERTEX_SHADER, fragment: ADJUSTMENTS_FRAGMENT_SHADER },
+        clipToViewport: false,
         resources: {
           adjustmentsUniforms: {
             uExposure: { value: params.exposure as number || 0.0, type: 'f32' },
@@ -152,7 +164,13 @@ export const ColorAdjustmentsEffect: PixiEffectDefinition = {
       })
     },
     updateUniforms(filter: Filter, params: ParamValues): void {
-      const uniforms = (filter as any).resources?.adjustmentsUniforms?.uniforms
+      type UniformGroup = {
+        uniforms?: Record<string, unknown>
+        update?: () => void
+      }
+      const group = (filter as Filter & { resources?: { adjustmentsUniforms?: UniformGroup } }).resources
+        ?.adjustmentsUniforms
+      const uniforms = group?.uniforms
       if (!uniforms) return
 
       const tempWeight = Math.abs(params.temperature as number || 0.0)
@@ -174,6 +192,7 @@ export const ColorAdjustmentsEffect: PixiEffectDefinition = {
       uniforms.uHueRotate = params.hueRotate as number || 0.0
       uniforms.uVignette = params.vignette as number || 0.0
       uniforms.uInvert = params.invert as number || 0.0
+      group?.update?.()
     }
   }
 }
