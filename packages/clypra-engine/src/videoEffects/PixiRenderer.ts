@@ -87,6 +87,7 @@ export class PixiRenderer {
       preference: 'webgl',       // WebGL for production stability; swap to 'webgpu' later
       resolution: typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1,
       autoDensity: true,
+      preserveDrawingBuffer: true,
     })
 
     // Main video sprite — sits at the bottom of the scene
@@ -113,6 +114,14 @@ export class PixiRenderer {
     import('pixi.js').then(({ VideoSource, Texture }) => {
       const source = new VideoSource({ resource: video, autoPlay: false })
       const texture = new Texture({ source })
+      this.videoSprite!.texture = texture
+    })
+  }
+
+  setImageSource(image: HTMLImageElement): void {
+    if (!this.videoSprite || !this.app) return
+    import('pixi.js').then(({ Texture }) => {
+      const texture = Texture.from(image)
       this.videoSprite!.texture = texture
     })
   }
@@ -300,6 +309,14 @@ export class PixiRenderer {
 
   private _defaultParams(def: PixiEffectDefinition): ParamValues {
     return Object.fromEntries(def.params.map(p => [p.key, p.value]))
+  }
+
+  getApp(): Application | null {
+    return this.app
+  }
+
+  getVideoSprite(): Sprite | null {
+    return this.videoSprite
   }
 
   get isReady(): boolean {

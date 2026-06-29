@@ -8,6 +8,7 @@ import { getR2Config } from "../../../services/r2Service";
 import { useR2Publish } from "../../../hooks/useR2Publish";
 import { Download, Upload, Sparkles, Zap, Image as ImageIcon, Film, Loader2, Play, Pause, RotateCcw, Search, Sliders, BarChart4, Sun, Palette, Eye, EyeOff, ChevronRight, ChevronDown, Check, Undo, SlidersHorizontal, Compass } from "lucide-react";
 import { ColorAdjustmentsEffect, PixiRenderer, EffectGraph } from "@clypra/engine";
+import { Sprite, Graphics } from "pixi.js";
 
 // Types
 interface FilterPreset {
@@ -82,7 +83,6 @@ const INITIAL_MANUAL_ADJUSTMENTS = {
 };
 
 // Helper: Interpolate CSS filter strength
-
 
 const parseCSSFilter = (filterStr: string) => {
   const adjustments = {
@@ -180,6 +180,8 @@ export function FilterWorkspace() {
 
   // PixiJS references - using PixiRenderer from @clypra/engine
   const pixiRendererRef = useRef<PixiRenderer | null>(null);
+  const unfilteredSpriteRef = useRef<Sprite | null>(null);
+  const maskGraphicsRef = useRef<Graphics | null>(null);
 
   const { publishFilter } = useR2Publish();
 
@@ -338,7 +340,6 @@ export function FilterWorkspace() {
     setHistogramData({ r: rHist, g: gHist, b: bHist, l: lHist });
   }, []);
 
-
   // Note: With PixiRenderer, filter management is handled by the package
   // This function is kept for CSS filter fallback only
   // Synchronize adjustments uniforms to the PixiRenderer
@@ -382,6 +383,46 @@ export function FilterWorkspace() {
     });
   }, [selectedFilter, intensity, manualAdjustments]);
 
+  // Keep comparison slider values in refs to avoid closure captures in PixiJS Ticker
+  const showSplitRef = useRef(showSplitComparison);
+  showSplitRef.current = showSplitComparison;
+  const splitPositionRef = useRef(splitPosition);
+  splitPositionRef.current = splitPosition;
+
+  // Update PixiJS mask and texture dimensions/sources
+  const updatePixiMaskAndTexture = useCallback(() => {
+    const renderer = pixiRendererRef.current;
+    const unfilteredSprite = unfilteredSpriteRef.current;
+    const maskGraphics = maskGraphicsRef.current;
+    if (!renderer || !renderer.isReady || !unfilteredSprite || !maskGraphics) return;
+
+    const videoSprite = renderer.getVideoSprite();
+    if (!videoSprite) return;
+
+    // 1. Sync dimensions & texture
+    if (videoSprite.texture) {
+      unfilteredSprite.texture = videoSprite.texture;
+    }
+    unfilteredSprite.width = videoSprite.width;
+    unfilteredSprite.height = videoSprite.height;
+
+    // 2. Update split mask graphics
+    maskGraphics.clear();
+    const w = videoSprite.width;
+    const h = videoSprite.height;
+
+    const showSplit = showSplitRef.current;
+    const splitPos = splitPositionRef.current;
+
+    if (showSplit) {
+      const splitX = (splitPos / 100) * w;
+      maskGraphics.rect(splitX, 0, w - splitX, h);
+    } else {
+      maskGraphics.rect(0, 0, w, h);
+    }
+    maskGraphics.fill({ color: 0xffffff });
+  }, []);
+
   // Initialize PixiRenderer from @clypra/engine and apply the ColorAdjustmentsEffect
   useEffect(() => {
     const canvas = pixiCanvasRef.current;
@@ -406,9 +447,11 @@ export function FilterWorkspace() {
 
         pixiRendererRef.current = renderer;
 
-        // Set video source for the renderer if isVideo
+        // Set source for the renderer
         if (isVideo && video) {
           renderer.setVideoSource(video);
+        } else if (!isVideo && imageRef.current) {
+          renderer.setImageSource(imageRef.current);
         }
 
         // Build the EffectGraph containing only our ColorAdjustmentsEffect
@@ -427,11 +470,35 @@ export function FilterWorkspace() {
             grayscale: 0.0,
             hueRotate: 0.0,
             vignette: 0.0,
-            invert: 0.0
-          }
+            invert: 0.0,
+          },
         });
         const resolvedNodes = graph.resolve();
         renderer.applyNodes(resolvedNodes);
+
+        // Set up the split compare unfiltered layer and mask
+        const app = renderer.getApp();
+        const videoSprite = renderer.getVideoSprite();
+        if (app && videoSprite) {
+          const unfilteredSprite = new Sprite();
+          const maskGraphics = new Graphics();
+
+          app.stage.addChildAt(unfilteredSprite, 0);
+          app.stage.addChild(maskGraphics);
+
+          videoSprite.mask = maskGraphics;
+
+          unfilteredSpriteRef.current = unfilteredSprite;
+          maskGraphicsRef.current = maskGraphics;
+
+          // Add ticker listener to synchronize the split screen mask and textures
+          const syncTicker = () => {
+            if (active) {
+              updatePixiMaskAndTexture();
+            }
+          };
+          app.ticker.add(syncTicker);
+        }
 
         // Sync initial uniforms
         syncAdjustmentsUniforms();
@@ -456,83 +523,42 @@ export function FilterWorkspace() {
     syncAdjustmentsUniforms();
   }, [syncAdjustmentsUniforms]);
 
-  // Visible composition drawing loop (copies WebGL canvas to visible 2D canvas with split screen clip)
-  const drawCompositeFrame = useCallback((skipHistogram = false) => {
-    const canvas = canvasRef.current;
-    const pixiCanvas = pixiCanvasRef.current;
-    const video = videoRef.current;
-    const img = imageRef.current;
-    if (!canvas || !pixiCanvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const w = canvas.width;
-    const h = canvas.height;
-
-    // 1. Draw base (unfiltered) frame
-    ctx.clearRect(0, 0, w, h);
-    if (isVideo && video) {
-      ctx.drawImage(video, 0, 0, w, h);
-    } else if (!isVideo && img) {
-      ctx.drawImage(img, 0, 0, w, h);
-    }
-
-    // 2. Draw filtered WebGL canvas on top with clip if split is active
-    if (showSplitComparison) {
-      const splitX = (splitPosition / 100) * w;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(splitX, 0, w - splitX, h);
-      ctx.clip();
-      ctx.drawImage(pixiCanvas, 0, 0, w, h);
-      ctx.restore();
-    } else {
-      ctx.drawImage(pixiCanvas, 0, 0, w, h);
-    }
-
-    // 3. Update histogram if not skipped
-    if (!skipHistogram) {
-      calculateHistogram(canvas);
-    }
-  }, [isVideo, showSplitComparison, splitPosition, calculateHistogram]);
-
-  // Active video playing composite loop
+  // Active video playing/static loop for live histogram updates
   useEffect(() => {
-    if (!isVideo || !isPlaying) return;
-
+    let active = true;
     let rafId: number;
     let lastHistogramTime = 0;
 
-    const animate = () => {
+    const updateHistogram = () => {
+      const pixiCanvas = pixiCanvasRef.current;
+      if (!pixiCanvas) return;
+
       const now = Date.now();
-      const skipHist = now - lastHistogramTime < 100; // max 10 FPS for histogram during playback
-      
-      drawCompositeFrame(skipHist);
-      
+      const skipHist = isPlaying && now - lastHistogramTime < 100; // max 10 FPS for histogram during video playback
+
       if (!skipHist) {
+        calculateHistogram(pixiCanvas);
         lastHistogramTime = now;
       }
-      
-      rafId = requestAnimationFrame(animate);
+
+      if (isPlaying && active) {
+        rafId = requestAnimationFrame(updateHistogram);
+      }
     };
 
-    rafId = requestAnimationFrame(animate);
+    if (isPlaying) {
+      rafId = requestAnimationFrame(updateHistogram);
+    } else {
+      // Refresh histogram for static adjustments
+      const timer = setTimeout(updateHistogram, 50);
+      return () => clearTimeout(timer);
+    }
 
     return () => {
+      active = false;
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [isVideo, isPlaying, drawCompositeFrame]);
-
-  // Static/Paused/Adjustment updates redraw
-  useEffect(() => {
-    // Redraw once
-    const timer = setTimeout(() => {
-      drawCompositeFrame();
-    }, 40);
-
-    return () => clearTimeout(timer);
-  }, [drawCompositeFrame, selectedFilter, intensity, manualAdjustments, mediaMetadata]);
+  }, [isPlaying, isVideo, selectedFilter, intensity, manualAdjustments, mediaMetadata, calculateHistogram]);
 
   // Video playback loop (simply updates currentTime for slider)
   useEffect(() => {
@@ -590,9 +616,13 @@ export function FilterWorkspace() {
           pixiCanvasRef.current.height = img.height;
         }
 
+        if (pixiRendererRef.current) {
+          pixiRendererRef.current.setImageSource(img);
+        }
+
         // Draw the initial frame
         setTimeout(() => {
-          drawCompositeFrame();
+          updatePixiMaskAndTexture();
         }, 50);
 
         // Capture initial preview frame for presets
@@ -613,7 +643,7 @@ export function FilterWorkspace() {
       };
       img.src = url;
     },
-    [drawCompositeFrame],
+    [updatePixiMaskAndTexture],
   );
 
   // Handle video upload
@@ -648,9 +678,9 @@ export function FilterWorkspace() {
 
   const handleVideoSeeked = useCallback(
     (e: React.SyntheticEvent<HTMLVideoElement>) => {
-      drawCompositeFrame();
+      updatePixiMaskAndTexture();
     },
-    [drawCompositeFrame],
+    [updatePixiMaskAndTexture],
   );
 
   const handlePlayPause = useCallback(() => {
@@ -998,7 +1028,7 @@ export function FilterWorkspace() {
                       className={`w-full p-2.5 rounded-lg border text-left flex items-start gap-3 transition-all cursor-pointer group ${isSelected ? "bg-[#1E1E2A] border-[#7C6FFF] shadow-md shadow-[#7C6FFF]/5" : "bg-[#13131B] border-[#22222F] hover:bg-[#181824] hover:border-[#2C2C3F]"}`}
                     >
                       {/* Mini Preview Square */}
-                      <div className="relative w-12 h-12 rounded bg-gradient-to-tr from-[#3A3270] to-[#7C6FFF] overflow-hidden shrink-0 border border-[#22222F] group-hover:scale-105 transition-transform duration-300">
+                      <div className="relative w-12 h-12 rounded bg-linear-to-tr from-[#3A3270] to-[#7C6FFF] overflow-hidden shrink-0 border border-[#22222F] group-hover:scale-105 transition-transform duration-300">
                         <div
                           className="w-full h-full bg-cover bg-center"
                           style={{
@@ -1170,11 +1200,17 @@ export function FilterWorkspace() {
         </div>
 
         {/* Canvas Workspace Viewport Area */}
-        <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(28,26,45,0.4)_0%,transparent_70%)]">
+        <div className="flex-1 flex items-center justify-center p-2 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(28,26,45,0.4)_0%,transparent_70%)]">
           {mediaUrl ? (
             <div ref={containerRef} className="relative inline-block max-h-full max-w-full rounded-xl overflow-hidden shadow-2xl border border-[#22222F] checkerboard" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchMove={handleTouchMove} onTouchEnd={handleMouseUp}>
               <canvas
                 ref={canvasRef}
+                style={{
+                  display: "none",
+                }}
+              />
+              <canvas
+                ref={pixiCanvasRef}
                 style={{
                   display: "block",
                   maxWidth: "100%",
@@ -1183,12 +1219,6 @@ export function FilterWorkspace() {
                   height: "auto",
                 }}
                 className="select-none pointer-events-none"
-              />
-              <canvas
-                ref={pixiCanvasRef}
-                style={{
-                  display: "none",
-                }}
               />
 
               {mediaUrl && isVideo && <video ref={videoRef} src={mediaUrl} className="hidden" preload="auto" playsInline muted onLoadedMetadata={handleVideoMetadataLoaded} onSeeked={handleVideoSeeked} />}
@@ -1219,7 +1249,7 @@ export function FilterWorkspace() {
           ) : (
             /* Styled Import drop zone placeholder */
             <div className="max-w-md w-full p-8 rounded-2xl border border-[#22222F] bg-[#111117]/60 backdrop-blur-md text-center space-y-6 shadow-2xl">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#7C6FFF]/20 to-purple-500/20 border border-[#7C6FFF]/25 flex items-center justify-center mx-auto text-[#7C6FFF]">
+              <div className="w-16 h-16 rounded-2xl bg-linear-to-tr from-[#7C6FFF]/20 to-purple-500/20 border border-[#7C6FFF]/25 flex items-center justify-center mx-auto text-[#7C6FFF]">
                 <Compass size={28} className="animate-pulse" />
               </div>
               <div className="space-y-1">
@@ -1383,7 +1413,7 @@ export function FilterWorkspace() {
                           {manualAdjustments.temperature > 0 ? `Warm (${manualAdjustments.temperature})` : manualAdjustments.temperature < 0 ? `Cool (${manualAdjustments.temperature})` : "Neutral"}
                         </button>
                       </div>
-                      <input type="range" min="-100" max="100" step="1" value={manualAdjustments.temperature} onChange={(e) => handleAdjustmentChange("temperature", parseInt(e.target.value))} className="w-full h-1 rounded appearance-none bg-gradient-to-r from-blue-500 via-[#0F0F15] to-amber-500 accent-[#7C6FFF] outline-none cursor-pointer" />
+                      <input type="range" min="-100" max="100" step="1" value={manualAdjustments.temperature} onChange={(e) => handleAdjustmentChange("temperature", parseInt(e.target.value))} className="w-full h-1 rounded appearance-none bg-linear-to-r from-blue-500 via-[#0F0F15] to-amber-500 accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
 
                     {/* Tint */}
@@ -1394,7 +1424,7 @@ export function FilterWorkspace() {
                           {manualAdjustments.tint > 0 ? `Magenta (${manualAdjustments.tint})` : manualAdjustments.tint < 0 ? `Green (${manualAdjustments.tint})` : "Neutral"}
                         </button>
                       </div>
-                      <input type="range" min="-100" max="100" step="1" value={manualAdjustments.tint} onChange={(e) => handleAdjustmentChange("tint", parseInt(e.target.value))} className="w-full h-1 rounded appearance-none bg-gradient-to-r from-emerald-500 via-[#0F0F15] to-pink-500 accent-[#7C6FFF] outline-none cursor-pointer" />
+                      <input type="range" min="-100" max="100" step="1" value={manualAdjustments.tint} onChange={(e) => handleAdjustmentChange("tint", parseInt(e.target.value))} className="w-full h-1 rounded appearance-none bg-linear-to-r from-emerald-500 via-[#0F0F15] to-pink-500 accent-[#7C6FFF] outline-none cursor-pointer" />
                     </div>
 
                     {/* Saturation */}
@@ -1547,7 +1577,7 @@ export function FilterWorkspace() {
               {previewFrameUrl && (
                 <div onClick={() => setShowThumbnailLightbox(true)} className="relative aspect-video w-full rounded border border-[#1A1A24] overflow-hidden bg-black/45 shadow-inner cursor-zoom-in hover:border-[#7C6FFF]/50 transition-colors group" title="Click to zoom preview">
                   <img src={previewFrameUrl} alt="Current Thumbnail Frame" className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300" style={{ filter: selectedFilter.cssFilter }} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent flex items-end p-1.5 pointer-events-none">
+                  <div className="absolute inset-0 bg-linear-to-t from-black/75 to-transparent flex items-end p-1.5 pointer-events-none">
                     <span className="text-[8px] text-gray-300 uppercase tracking-widest font-mono">Thumbnail Frame</span>
                   </div>
                 </div>
