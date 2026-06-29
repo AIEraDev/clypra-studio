@@ -15,7 +15,7 @@ const RAIL_ITEMS: Array<{
   { id: "overlays", label: "Overlays", icon: Video },
   { id: "video-effects", label: "Video Effects", icon: Wand2 },
   { id: "body-effects", label: "Body Effects", icon: Sparkles },
-  { id: "filters", label: "Filters", icon: Filter },
+  { id: "filters", label: "Filters", icon: Filter, adminOnly: true },
   { id: "transitions", label: "Transitions", icon: Shuffle },
   { id: "admin", label: "Admin Settings", icon: Shield, adminOnly: true },
 ];
