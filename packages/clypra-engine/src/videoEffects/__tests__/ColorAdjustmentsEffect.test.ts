@@ -116,6 +116,30 @@ describe("ColorAdjustmentsEffect Unit Tests", () => {
       // Verify vignette radial gradient creation
       expect(ctx.createRadialGradient).toHaveBeenCalled()
       expect(ctx.save).toHaveBeenCalled()
+    })
+
+    it("should trigger HTML Canvas filter fallback when blur parameter is set", () => {
+      const ctx = createMockCtx()
+      const mockCanvasElement = {
+        width: 0,
+        height: 0,
+        getContext: vi.fn().mockReturnValue({
+          drawImage: vi.fn()
+        })
+      }
+      global.document = {
+        createElement: vi.fn().mockReturnValue(mockCanvasElement)
+      } as any
+
+      const renderer = getEffectRenderer("color-adjustments")
+      const params = {
+        blur: 5.0
+      }
+
+      renderer!(ctx, params, 1.0)
+
+      expect(global.document.createElement).toHaveBeenCalledWith("canvas")
+      expect(ctx.save).toHaveBeenCalled()
       expect(ctx.restore).toHaveBeenCalled()
     })
   })

@@ -618,7 +618,8 @@ export const EFFECTS_REGISTRY: Record<string, EffectMetadata> = {
       grayscale: 0.0,
       hueRotate: 0.0,
       vignette: 0.0,
-      invert: 0.0
+      invert: 0.0,
+      blur: 0.0
     },
     parameterSchema: {
       exposure: { type: "number", label: "Exposure", min: -1.0, max: 1.0, default: 0.0, step: 0.01 },
@@ -631,7 +632,8 @@ export const EFFECTS_REGISTRY: Record<string, EffectMetadata> = {
       grayscale: { type: "number", label: "Grayscale", min: 0.0, max: 1.0, default: 0.0, step: 0.01 },
       hueRotate: { type: "number", label: "Hue Rotate", min: 0.0, max: 6.28318, default: 0.0, step: 0.01 },
       vignette: { type: "number", label: "Vignette", min: 0.0, max: 1.0, default: 0.0, step: 0.01 },
-      invert: { type: "number", label: "Invert", min: 0.0, max: 1.0, default: 0.0, step: 0.01 }
+      invert: { type: "number", label: "Invert", min: 0.0, max: 1.0, default: 0.0, step: 0.01 },
+      blur: { type: "number", label: "Blur", min: 0.0, max: 15.0, default: 0.0, step: 0.5 }
     },
     tags: ["color", "adjustments", "light", "vignette"]
   },
@@ -1349,6 +1351,7 @@ export function getEffectRenderer(id: EffectRendererType): ((ctx: CanvasRenderin
       const grayscaleVal = (Number(params.grayscale ?? 0.0)) * f;
       const hueVal = (Number(params.hueRotate ?? 0.0)) * f;
       const invertVal = (Number(params.invert ?? 0.0)) * f;
+      const blurVal = (Number(params.blur ?? 0.0)) * f;
 
       const filterParts: string[] = [];
       if (brightnessVal !== 1.0) filterParts.push(`brightness(${brightnessVal})`);
@@ -1358,6 +1361,7 @@ export function getEffectRenderer(id: EffectRendererType): ((ctx: CanvasRenderin
       if (grayscaleVal > 0) filterParts.push(`grayscale(${grayscaleVal * 100}%)`);
       if (hueVal !== 0) filterParts.push(`hue-rotate(${(hueVal * 180) / Math.PI}deg)`);
       if (invertVal > 0) filterParts.push(`invert(${invertVal * 100}%)`);
+      if (blurVal > 0) filterParts.push(`blur(${blurVal}px)`);
 
       if (filterParts.length > 0) {
         ctx.save();
