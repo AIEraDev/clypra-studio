@@ -1,3 +1,16 @@
+# [1.29.0](https://github.com/AIEraDev/clypra-studio/compare/v1.28.2...v1.29.0) (2026-06-29)
+
+
+### Bug Fixes
+
+* force PixiJS render for static images after parameter updates ([b52866a](https://github.com/AIEraDev/clypra-studio/commit/b52866a7c6dbbfe4ae466842dc71e28764a57de7))
+* handle image source without setImageSource for v1.28.2 ([5756f7f](https://github.com/AIEraDev/clypra-studio/commit/5756f7f835d3b97d9f402f480ca8844d1bb2fbed))
+
+
+### Features
+
+* **studio:** modularize FilterWorkspace & integrate GPU-accelerated direct sync adjustments and blur filter ([d67036f](https://github.com/AIEraDev/clypra-studio/commit/d67036f34f9e8eca5985dc3f19a98a6c273151af))
+
 ## [1.28.2](https://github.com/AIEraDev/clypra-studio/compare/v1.28.1...v1.28.2) (2026-06-29)
 
 
