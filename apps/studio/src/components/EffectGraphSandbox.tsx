@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { EffectGraph, EffectEngine, GraphDefinition } from "@clypra/engine/videoEffects";
 
+/** videoEffects v1 sandbox — V2 MPG pipeline lives at /studio/mpg */
+
 export const EffectGraphSandbox: React.FC = () => {
   const [activePreset, setActivePreset] = useState<string>("glitch-split");
   const [playhead, setPlayhead] = useState<number>(0);
