@@ -15,6 +15,7 @@
     "clean": "npm run clean --workspaces",
     "lint": "npm run lint --workspaces",
     "test": "vitest run",
+    "test:engine": "npm run test --workspace=packages/clypra-engine",
     "test:watch": "vitest",
     "generate:effect-previews": "tsx scripts/generateEffectPreviews.ts"
   },
@@ -25,6 +26,6 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@clypra/engine": "^1.30.0"
+    "@clypra/engine": "^2.0.1"
   }
 }
