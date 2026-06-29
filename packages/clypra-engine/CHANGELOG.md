@@ -1,3 +1,16 @@
+## [1.28.1](https://github.com/AIEraDev/clypra-studio/compare/v1.28.0...v1.28.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* create separate texture instances for base and filtered sprites ([3e2dfdb](https://github.com/AIEraDev/clypra-studio/commit/3e2dfdbe5f1eaae7f4cd35b73cb46065d9db8b9d))
+* **filter:** correct PixiJS renderer type detection from string to enum ([43fb8d6](https://github.com/AIEraDev/clypra-studio/commit/43fb8d6b7485c411ebdf4bc1d4cebbc748f62563))
+* **FilterWorkspace:** correct sprite layering and mask logic for PixiJS filters ([f1ed7e4](https://github.com/AIEraDev/clypra-studio/commit/f1ed7e49bad7205eba873705151b43ec057c2060))
+* **FilterWorkspace:** ensure video source loads before creating texture ([c2d7af6](https://github.com/AIEraDev/clypra-studio/commit/c2d7af6bdc5f0d08aca0999b6bef21f4848bb2c8))
+* **FilterWorkspace:** force VideoSource frame update for paused videos ([c9a8bff](https://github.com/AIEraDev/clypra-studio/commit/c9a8bfff35d72e0cbeb7a8d7f891efa608bddc65))
+* **FilterWorkspace:** load textures before adding sprites to stage ([b1cac9e](https://github.com/AIEraDev/clypra-studio/commit/b1cac9ecbb8e27bb0471171659a33b41fc23694a))
+* **FilterWorkspace:** prevent double stage.addChild and set dimensions after texture load ([4023c33](https://github.com/AIEraDev/clypra-studio/commit/4023c33aecea0c21b172f714aa1935af6617fa09))
+
 # [1.28.0](https://github.com/AIEraDev/clypra-studio/compare/v1.27.0...v1.28.0) (2026-06-28)
 
 
