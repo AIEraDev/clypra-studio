@@ -3,6 +3,7 @@ import { useEffect, lazy, Suspense } from "react";
 import StudioApp from "./App";
 import { WebShowcase } from "./components/screens/WebShowcase";
 import { EffectGraphSandbox } from "./components/EffectGraphSandbox";
+import { MPGPlayground } from "./components/MPGPlayground";
 
 const TemplateWorkspace = lazy(() => import("./components/TemplateWorkspace").then((m) => ({ default: m.TemplateWorkspace })));
 const AdminEffectsPanel = lazy(() => import("./components/effects/video/AdminEffectsPanel").then((m) => ({ default: m.AdminEffectsPanel })));
@@ -28,6 +29,11 @@ const ROUTE_METADATA = {
     description: "Sandbox for testing effect graphs and WebGL engine execution.",
     title: "Clypra Studio - Effect Graph Sandbox",
   },
+  mpg: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/mpg",
+    description: "Media Processing Graph Playground - V2 Pipeline validation laboratory for testing graph compilation, validation, planning, and Pixi-based execution.",
+    title: "Clypra Studio - MPG Playground (V2 Pipeline Lab)",
+  },
   adminEffects: {
     canonical: "https://clypra.abdulkabirmusa.com/admin/effects",
     description: "Moderator portal for reviewing generated AI effects.",
@@ -45,6 +51,10 @@ function isLottieRoute(pathname: string) {
 
 function isEffectsRoute(pathname: string) {
   return pathname === "/studio/effects" || pathname.startsWith("/studio/effects");
+}
+
+function isMPGRoute(pathname: string) {
+  return pathname === "/studio/mpg" || pathname.startsWith("/studio/mpg");
 }
 
 function isAdminEffectsRoute(pathname: string) {
@@ -69,30 +79,23 @@ function checkIsAdmin(): boolean {
 export default function RootApp() {
   const { pathname } = window.location;
   const effectsRoute = isEffectsRoute(pathname);
+  const mpgRoute = isMPGRoute(pathname);
   const adminEffectsRoute = isAdminEffectsRoute(pathname);
-  const studioRoute = !effectsRoute && !adminEffectsRoute && isStudioRoute(pathname);
+  const studioRoute = !effectsRoute && !mpgRoute && !adminEffectsRoute && isStudioRoute(pathname);
   const lottieRoute = isLottieRoute(pathname);
-  const metadata = lottieRoute 
-    ? ROUTE_METADATA.lottie 
-    : effectsRoute 
-      ? ROUTE_METADATA.effects 
-      : adminEffectsRoute
-        ? ROUTE_METADATA.adminEffects
-        : studioRoute 
-          ? ROUTE_METADATA.studio 
-          : ROUTE_METADATA.showcase;
+  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : adminEffectsRoute ? ROUTE_METADATA.adminEffects : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
 
-  // Normalise /studio/* → /studio (preserve ?q= param) unless it's effects sandbox
+  // Normalise /studio/* → /studio (preserve ?q= param) unless it's effects sandbox or mpg playground
   useEffect(() => {
     const p = window.location.pathname;
-    if (p.startsWith("/studio") && p !== "/studio" && p !== "/studio/effects") {
+    if (p.startsWith("/studio") && p !== "/studio" && p !== "/studio/effects" && p !== "/studio/mpg") {
       window.history.replaceState({}, "", `/studio${window.location.search}`);
     }
   }, []);
 
   // Set page scroll styles based on current route
   useEffect(() => {
-    if (studioRoute || lottieRoute) {
+    if (studioRoute || lottieRoute || mpgRoute) {
       document.body.style.overflow = "hidden";
       document.body.style.overflowX = "hidden";
       document.body.style.overflowY = "hidden";
@@ -113,7 +116,7 @@ export default function RootApp() {
       document.documentElement.style.overflowX = "";
       document.documentElement.style.overflowY = "";
     };
-  }, [studioRoute, lottieRoute]);
+  }, [studioRoute, lottieRoute, mpgRoute]);
 
   useEffect(() => {
     document.title = metadata.title;
@@ -128,6 +131,10 @@ export default function RootApp() {
     upsertMeta('link[rel="canonical"]', "href", metadata.canonical);
   }, [metadata]);
 
+  if (mpgRoute) {
+    return <MPGPlayground />;
+  }
+
   if (effectsRoute) {
     return <EffectGraphSandbox />;
   }
@@ -139,8 +146,10 @@ export default function RootApp() {
           <div className="text-center space-y-4 max-w-sm px-6">
             <h1 className="text-xl font-bold text-red-500">Access Denied</h1>
             <p className="text-sm text-gray-400 font-medium">You must be logged in as an administrator to access this area.</p>
-            <button 
-              onClick={() => { window.location.href = "/studio"; }} 
+            <button
+              onClick={() => {
+                window.location.href = "/studio";
+              }}
               className="px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors"
             >
               Go to Studio
