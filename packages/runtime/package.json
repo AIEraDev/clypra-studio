@@ -1,0 +1,34 @@
+{
+  "name": "@clypra/runtime",
+  "version": "1.0.0",
+  "description": "Shared runtime infrastructure for all Clypra Studio Labs",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./graph": "./dist/graph/index.js",
+    "./planner": "./dist/planner/index.js",
+    "./pixi": "./dist/pixi/index.js",
+    "./resources": "./dist/resources/index.js",
+    "./validation": "./dist/validation/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pixi.js": "^8.6.6",
+    "pixi-filters": "^6.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsup": "^8.3.5",
+    "typescript": "~5.8.2",
+    "vitest": "^3.2.4"
+  }
+}
