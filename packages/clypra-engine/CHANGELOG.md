@@ -1,3 +1,22 @@
+# [2.2.0](https://github.com/AIEraDev/clypra-studio/compare/v2.1.0...v2.2.0) (2026-06-30)
+
+
+### Features
+
+* **body-effects:** implement 5 mask-based body effects ([16d2e52](https://github.com/AIEraDev/clypra-studio/commit/16d2e52d48fbdadfa71d2818713cf10dfd41de37))
+* **feature-providers:** add extensible feature provider architecture ([784f651](https://github.com/AIEraDev/clypra-studio/commit/784f651ab66ef4ef2f0da1708b2f481f4529abe7))
+* **labs-ui:** add labs navigation panel component ([bc31c08](https://github.com/AIEraDev/clypra-studio/commit/bc31c08bb26f8edc50486cf697b68ce607eb9145))
+* **labs:** add three specialized effect lab UIs ([0ac9ecb](https://github.com/AIEraDev/clypra-studio/commit/0ac9ecbed53ea99e550f9ef161bad3d87d74657f))
+* **root-app:** add lab routes with lazy loading and metadata ([c844746](https://github.com/AIEraDev/clypra-studio/commit/c844746eed2059b9b0b87ecab2c2729a9b144a18))
+* **runtime:** add unified runtime infrastructure for all labs ([15bffec](https://github.com/AIEraDev/clypra-studio/commit/15bffec311f5b7ac48172f397ba2c17a3e910612))
+* **shader-library:** add reusable GLSL shader library package ([29467c5](https://github.com/AIEraDev/clypra-studio/commit/29467c5d46b01b20d5d5bd37f117cebbae1ae442))
+* **studio-app:** integrate labs panel with admin access control ([fda2c15](https://github.com/AIEraDev/clypra-studio/commit/fda2c15d064870802167243fbcd980345b8761c0))
+* **studio-chrome:** add labs navigation to left rail ([d5cb08d](https://github.com/AIEraDev/clypra-studio/commit/d5cb08d20ff7b2df38d41c8503444a896b7e6f89))
+* **transition-effects:** implement 5 dual-input transitions ([eb421eb](https://github.com/AIEraDev/clypra-studio/commit/eb421ebb539ed87ecc7a3ef8fa663c4741d060e3))
+* **ui:** add shared UI components for all labs ([975b295](https://github.com/AIEraDev/clypra-studio/commit/975b29553778a9829affabafdc929ae32054cda7))
+* **validation:** add CLI tool for effect validation ([91b0162](https://github.com/AIEraDev/clypra-studio/commit/91b0162cccbd09060ff1adfdb70fad92ad87916f))
+* **video-effects:** implement 5 production video effects ([8ff5b8c](https://github.com/AIEraDev/clypra-studio/commit/8ff5b8cf8e87c19226670015715074407347ea8b))
+
 # [2.1.0](https://github.com/AIEraDev/clypra-studio/compare/v2.0.1...v2.1.0) (2026-06-29)
 
 
