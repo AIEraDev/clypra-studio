@@ -8,6 +8,11 @@ import { MPGPlayground } from "./components/MPGPlayground";
 const TemplateWorkspace = lazy(() => import("./components/TemplateWorkspace").then((m) => ({ default: m.TemplateWorkspace })));
 const AdminEffectsPanel = lazy(() => import("./components/effects/video/AdminEffectsPanel").then((m) => ({ default: m.AdminEffectsPanel })));
 
+// Labs
+const VideoLabView = lazy(() => import("./labs/video").then((m) => ({ default: m.VideoLabView })));
+const TransitionLabView = lazy(() => import("./labs/transition").then((m) => ({ default: m.TransitionLabView })));
+const BodyLabView = lazy(() => import("./labs/body").then((m) => ({ default: m.BodyLabView })));
+
 const ROUTE_METADATA = {
   showcase: {
     canonical: "https://clypra.abdulkabirmusa.com/",
@@ -39,6 +44,21 @@ const ROUTE_METADATA = {
     description: "Moderator portal for reviewing generated AI effects.",
     title: "AI Effects Moderator Portal",
   },
+  videoLab: {
+    canonical: "https://clypra.abdulkabirmusa.com/video-lab",
+    description: "Video Effects Lab - Design, test, and publish single-input video effects with the unified runtime.",
+    title: "Clypra Studio - Video Lab",
+  },
+  transitionLab: {
+    canonical: "https://clypra.abdulkabirmusa.com/transition-lab",
+    description: "Transition Lab - Design, test, and publish dual-input transition effects with the unified runtime.",
+    title: "Clypra Studio - Transition Lab",
+  },
+  bodyLab: {
+    canonical: "https://clypra.abdulkabirmusa.com/body-lab",
+    description: "Body Lab - Design, test, and publish mask-based body effects with extensible feature providers.",
+    title: "Clypra Studio - Body Lab",
+  },
 };
 
 function isStudioRoute(pathname: string) {
@@ -61,6 +81,18 @@ function isAdminEffectsRoute(pathname: string) {
   return pathname === "/admin/effects" || pathname.startsWith("/admin/effects");
 }
 
+function isVideoLabRoute(pathname: string) {
+  return pathname === "/video-lab" || pathname.startsWith("/video-lab");
+}
+
+function isTransitionLabRoute(pathname: string) {
+  return pathname === "/transition-lab" || pathname.startsWith("/transition-lab");
+}
+
+function isBodyLabRoute(pathname: string) {
+  return pathname === "/body-lab" || pathname.startsWith("/body-lab");
+}
+
 function upsertMeta(selector: string, attr: "content" | "href", value: string) {
   document.head.querySelector(selector)?.setAttribute(attr, value);
 }
@@ -81,9 +113,12 @@ export default function RootApp() {
   const effectsRoute = isEffectsRoute(pathname);
   const mpgRoute = isMPGRoute(pathname);
   const adminEffectsRoute = isAdminEffectsRoute(pathname);
-  const studioRoute = !effectsRoute && !mpgRoute && !adminEffectsRoute && isStudioRoute(pathname);
+  const videoLabRoute = isVideoLabRoute(pathname);
+  const transitionLabRoute = isTransitionLabRoute(pathname);
+  const bodyLabRoute = isBodyLabRoute(pathname);
+  const studioRoute = !effectsRoute && !mpgRoute && !adminEffectsRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && isStudioRoute(pathname);
   const lottieRoute = isLottieRoute(pathname);
-  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : adminEffectsRoute ? ROUTE_METADATA.adminEffects : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
+  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : adminEffectsRoute ? ROUTE_METADATA.adminEffects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
 
   // Normalise /studio/* → /studio (preserve ?q= param) unless it's effects sandbox or mpg playground
   useEffect(() => {
@@ -95,7 +130,7 @@ export default function RootApp() {
 
   // Set page scroll styles based on current route
   useEffect(() => {
-    if (studioRoute || lottieRoute || mpgRoute) {
+    if (studioRoute || lottieRoute || mpgRoute || videoLabRoute || transitionLabRoute || bodyLabRoute) {
       document.body.style.overflow = "hidden";
       document.body.style.overflowX = "hidden";
       document.body.style.overflowY = "hidden";
@@ -116,7 +151,7 @@ export default function RootApp() {
       document.documentElement.style.overflowX = "";
       document.documentElement.style.overflowY = "";
     };
-  }, [studioRoute, lottieRoute, mpgRoute]);
+  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute]);
 
   useEffect(() => {
     document.title = metadata.title;
@@ -217,6 +252,58 @@ export default function RootApp() {
           <TemplateWorkspace onBackToDesign={() => (window.location.href = "/studio")} />
         </Suspense>
       </div>
+    );
+  }
+
+  // Lab Routes
+  if (videoLabRoute) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-screen bg-[#020617] items-center justify-center text-white">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#10b981] mx-auto mb-4" />
+              <p className="text-sm text-gray-400">Loading Video Lab...</p>
+            </div>
+          </div>
+        }
+      >
+        <VideoLabView />
+      </Suspense>
+    );
+  }
+
+  if (transitionLabRoute) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-screen bg-[#020617] items-center justify-center text-white">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3b82f6] mx-auto mb-4" />
+              <p className="text-sm text-gray-400">Loading Transition Lab...</p>
+            </div>
+          </div>
+        }
+      >
+        <TransitionLabView />
+      </Suspense>
+    );
+  }
+
+  if (bodyLabRoute) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-screen bg-[#020617] items-center justify-center text-white">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#10b981] mx-auto mb-4" />
+              <p className="text-sm text-gray-400">Loading Body Lab...</p>
+            </div>
+          </div>
+        }
+      >
+        <BodyLabView />
+      </Suspense>
     );
   }
 
