@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/AIEraDev/clypra-studio/compare/v2.2.0...v2.3.0) (2026-06-30)
+
+
+### Features
+
+* **ci:** add GitHub Actions workflows for new package publishing ([e8647e1](https://github.com/AIEraDev/clypra-studio/commit/e8647e1135b28d4ba4c7d87e40132d928e681c4b))
+
 # [2.2.0](https://github.com/AIEraDev/clypra-studio/compare/v2.1.0...v2.2.0) (2026-06-30)
 
 
