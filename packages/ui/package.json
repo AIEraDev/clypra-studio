@@ -30,5 +30,18 @@
   "peerDependencies": {
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AIEraDev/clypra-studio.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/AIEraDev/clypra-studio/tree/main/packages/ui#readme",
+  "bugs": {
+    "url": "https://github.com/AIEraDev/clypra-studio/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

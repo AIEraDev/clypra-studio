@@ -28,5 +28,18 @@
     "tsup": "^8.3.5",
     "typescript": "~5.8.2",
     "vitest": "^3.2.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AIEraDev/clypra-studio.git",
+    "directory": "packages/shader-library"
+  },
+  "homepage": "https://github.com/AIEraDev/clypra-studio/tree/main/packages/shader-library#readme",
+  "bugs": {
+    "url": "https://github.com/AIEraDev/clypra-studio/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
