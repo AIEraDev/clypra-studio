@@ -1,0 +1,29 @@
+{
+  "name": "@clypra/feature-providers",
+  "version": "1.0.0",
+  "description": "Extensible feature providers for Body Effect Lab",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./types": "./dist/types.js",
+    "./segmentation": "./dist/segmentation/index.js",
+    "./chroma-key": "./dist/chroma-key/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsup": "^8.3.5",
+    "typescript": "~5.8.2",
+    "vitest": "^3.2.4"
+  }
+}
