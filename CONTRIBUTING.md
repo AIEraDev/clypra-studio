@@ -102,11 +102,30 @@ clypra-studio/
 ├── apps/
 │   └── studio/          # Main studio application
 ├── packages/
-│   └── clypra-engine/   # Core rendering engine
-├── api/                 # API handlers (deprecated - moved to clypra-api)
+│   ├── types/           # Shared type definitions (single source of truth)
+│   ├── runtime/         # V2 rendering pipeline
+│   ├── engine/          # Core rendering engine (clypra-engine)
+│   ├── ui/              # Shared UI components
+│   ├── shader-library/  # Shader utilities
+│   └── feature-providers/ # Feature detection & providers
 ├── docs/                # Documentation
 └── scripts/             # Build and utility scripts
 ```
+
+### Package Dependencies
+
+The packages follow this dependency hierarchy:
+
+```
+@clypra/types (no dependencies - single source of truth)
+     ↑
+     ├── @clypra/runtime
+     ├── @clypra/engine
+     ├── @clypra/ui
+     └── @clypra/studio
+```
+
+**Important**: Always import shared types from `@clypra/types`, not from other packages.
 
 ## Pull Request Process
 
@@ -160,6 +179,35 @@ clypra-studio/
 - Avoid `any` - use proper types or `unknown`
 - Export types that might be useful to consumers
 - Use `interface` for object shapes, `type` for unions/aliases
+- **Import shared types from `@clypra/types`** (single source of truth)
+
+#### Type Import Conventions
+
+**DO** import shared types from `@clypra/types`:
+
+```typescript
+// ✅ Correct
+import type { EffectDefinition, RenderJob, RuntimeSnapshot } from "@clypra/types";
+```
+
+**DON'T** import shared types from other packages:
+
+```typescript
+// ❌ Wrong
+import type { EffectDefinition } from "@clypra/runtime";
+import type { RuntimeSnapshot } from "@clypra/ui";
+
+// ✅ Correct
+import type { EffectDefinition, RuntimeSnapshot } from "@clypra/types";
+```
+
+**Type Categories in `@clypra/types`**:
+
+- `effect.ts` - Effect system types
+- `graph.ts` - Media processing graph types
+- `frame.ts` - Frame-level rendering types
+- `job.ts` - Render job types (immutable execution plans)
+- `snapshot.ts` - Runtime observability snapshots
 
 ### React
 
