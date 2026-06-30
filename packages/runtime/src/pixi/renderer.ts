@@ -7,6 +7,8 @@
 import * as PIXI from "pixi.js";
 import type { FrameGraph, RenderPass } from "../planner/types";
 import type { RendererConfig, RenderResult, RenderStats } from "./types";
+import type { RuntimeTelemetry } from "../telemetry/types";
+import { NoOpTelemetry } from "../telemetry/types";
 import { TexturePool } from "./texture-pool";
 import { createFilter, updateFilterUniforms } from "./filters";
 
@@ -22,9 +24,11 @@ export class PixiRenderer {
   private resources = new Map<string, PIXI.Texture>();
   private filters = new Map<string, PIXI.Filter>();
   private canvasElement?: HTMLCanvasElement;
+  private telemetry: RuntimeTelemetry;
 
-  constructor() {
+  constructor(telemetry?: RuntimeTelemetry) {
     this.texturePool = new TexturePool(20);
+    this.telemetry = telemetry || new NoOpTelemetry();
   }
 
   /**
@@ -64,37 +68,69 @@ export class PixiRenderer {
       throw new Error("PixiRenderer not initialized");
     }
 
-    const startTime = performance.now();
+    const renderStart = performance.now();
+
+    // Assertions: Validate frame graph before execution
+    console.assert(frameGraph.passes.length > 0, "FrameGraph must have at least one pass");
+    console.assert(frameGraph.resourceRequests.length > 0, "FrameGraph must have at least one resource");
+    console.assert(
+      frameGraph.resourceRequests.some((r) => r.id === "output"),
+      'FrameGraph must have an "output" resource',
+    );
 
     // Allocate resources
     for (const resource of frameGraph.resourceRequests) {
       if (!this.resources.has(resource.id)) {
+        const allocStart = performance.now();
         this.allocateResource(resource.id, resource.width, resource.height);
+        const allocDuration = performance.now() - allocStart;
+
+        this.telemetry.resourceAllocated(resource.id, resource.width, resource.height, resource.transient);
+      } else {
+        this.telemetry.resourceReused(resource.id);
+        this.telemetry.cacheHit(resource.id);
       }
+    }
+
+    // Assert: All resources must be allocated
+    for (const resource of frameGraph.resourceRequests) {
+      console.assert(this.resources.has(resource.id), `Resource "${resource.id}" must be allocated`);
     }
 
     // Execute passes
     let totalGpuTime = 0;
     for (const pass of frameGraph.passes) {
+      // Assert: Output resource must exist
+      console.assert(this.resources.has(pass.output), `Output resource "${pass.output}" must exist for pass "${pass.id}"`);
+
+      this.telemetry.passStart(pass.name, pass.shaderId);
       const passStart = performance.now();
+
       await this.executePass(pass);
-      totalGpuTime += performance.now() - passStart;
+
+      const passTime = performance.now() - passStart;
+      totalGpuTime += passTime;
+      this.telemetry.passEnd(pass.name, passTime);
     }
 
     // Release transient resources
     for (const resource of frameGraph.resourceRequests) {
       if (resource.transient) {
         this.releaseResource(resource.id);
+        this.telemetry.resourceReleased(resource.id);
       }
     }
 
-    const totalCpuTime = performance.now() - startTime - totalGpuTime;
+    const totalCpuTime = performance.now() - renderStart - totalGpuTime;
 
     // Get output texture
-    const outputTexture = this.resources.get("output") || this.resources.values().next().value;
+    const outputTexture = this.resources.get("output");
 
+    // Assert: Output must exist after rendering
+    console.assert(outputTexture, "Output texture must exist after rendering");
     if (!outputTexture) {
-      throw new Error("No output texture available");
+      this.telemetry.error("renderer", "No output texture available after rendering");
+      throw new Error("No output texture available after rendering");
     }
 
     const stats: RenderStats = {
@@ -235,16 +271,33 @@ export class PixiRenderer {
 
     for (const resourceId of resourceIds) {
       const texture = this.resources.get(resourceId);
-      if (!texture || !(texture instanceof PIXI.RenderTexture)) continue;
+      if (!texture || !(texture instanceof PIXI.RenderTexture)) {
+        this.telemetry.warning("renderer", `Resource not found or not a RenderTexture: ${resourceId}`);
+        continue;
+      }
 
-      // Contain-fit scaling
-      const fitScale = Math.min(texture.width / sourceTexture.width, texture.height / sourceTexture.height);
+      const uploadStart = performance.now();
+
+      // Check if dimensions match (1:1 mapping)
+      const dimensionsMatch = texture.width === sourceTexture.width && texture.height === sourceTexture.height;
 
       const sprite = new PIXI.Sprite(sourceTexture);
-      sprite.scale.set(fitScale);
-      sprite.position.set((texture.width - sourceTexture.width * fitScale) / 2, (texture.height - sourceTexture.height * fitScale) / 2);
+
+      if (dimensionsMatch) {
+        // 1:1 fill - no scaling needed, perfect match
+        sprite.width = texture.width;
+        sprite.height = texture.height;
+      } else {
+        // Cover-fit scaling - fill entire texture, may crop
+        const fitScale = Math.max(texture.width / sourceTexture.width, texture.height / sourceTexture.height);
+        sprite.scale.set(fitScale);
+        sprite.position.set((texture.width - sourceTexture.width * fitScale) / 2, (texture.height - sourceTexture.height * fitScale) / 2);
+      }
 
       this.app.renderer.render({ container: sprite, target: texture });
+
+      const uploadDuration = performance.now() - uploadStart;
+      this.telemetry.textureUploaded(resourceId, texture.width, texture.height, uploadDuration);
     }
   }
 
@@ -253,6 +306,9 @@ export class PixiRenderer {
    */
   present(resourceId: string): void {
     if (!this.app) return;
+
+    this.telemetry.presentStart();
+    const presentStart = performance.now();
 
     const texture = this.resources.get(resourceId);
     if (!texture) return;
@@ -268,6 +324,9 @@ export class PixiRenderer {
     this.app.stage.removeChildren();
     this.app.stage.addChild(sprite);
     this.app.renderer.render(this.app.stage);
+
+    const presentDuration = performance.now() - presentStart;
+    this.telemetry.presentEnd(presentDuration);
   }
 
   /**
