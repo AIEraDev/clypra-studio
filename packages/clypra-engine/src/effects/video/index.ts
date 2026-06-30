@@ -5,12 +5,14 @@
  * Phase 3 Week 6 - 5 Production-Quality Effects
  */
 
+export { identityEffect } from "./identity";
 export { filmGrainEffect } from "./filmGrain";
 export { vhsEffect } from "./vhs";
 export { bloomEffect } from "./bloom";
 export { chromaticAberrationEffect } from "./chromaticAberration";
 export { heatDistortionEffect } from "./heatDistortion";
 
+import { identityEffect } from "./identity";
 import { filmGrainEffect } from "./filmGrain";
 import { vhsEffect } from "./vhs";
 import { bloomEffect } from "./bloom";
@@ -20,12 +22,13 @@ import { heatDistortionEffect } from "./heatDistortion";
 /**
  * All video effects available in the Video Lab
  */
-export const videoEffects = [filmGrainEffect, vhsEffect, bloomEffect, chromaticAberrationEffect, heatDistortionEffect];
+export const videoEffects = [identityEffect, filmGrainEffect, vhsEffect, bloomEffect, chromaticAberrationEffect, heatDistortionEffect];
 
 /**
  * Video effects registry by ID
  */
 export const videoEffectsById = {
+  "video.identity": identityEffect,
   "video.film-grain": filmGrainEffect,
   "video.vhs": vhsEffect,
   "video.bloom": bloomEffect,
