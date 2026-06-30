@@ -1,0 +1,39 @@
+{
+  "name": "@clypra/types",
+  "version": "1.0.0",
+  "description": "Shared type definitions for all Clypra Studio packages - Single source of truth",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./effect": "./dist/effect.js",
+    "./graph": "./dist/graph.js",
+    "./frame": "./dist/frame.js",
+    "./job": "./dist/job.js",
+    "./snapshot": "./dist/snapshot.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "~5.8.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AIEraDev/clypra-studio.git",
+    "directory": "packages/types"
+  },
+  "homepage": "https://github.com/AIEraDev/clypra-studio/tree/main/packages/types#readme",
+  "bugs": {
+    "url": "https://github.com/AIEraDev/clypra-studio/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
