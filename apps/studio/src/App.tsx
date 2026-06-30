@@ -16,6 +16,7 @@ import { OverlayPublishPanel } from "./components/OverlayPublishPanel";
 import { VideoEffectWorkspace, FilterWorkspace, BodyEffectWorkspace, TransitionWorkspace } from "./components/effects";
 import { AdminPurgeSettings } from "./components/settings/AdminPurgeSettings";
 import { AdminTransitionsSettings } from "./components/settings/AdminTransitionsSettings";
+import { LabsPanel } from "./components/LabsPanel";
 import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra/engine";
 import { getPresetScene } from "@clypra/engine";
 import { COMPOSITION_PRESETS } from "@clypra/engine";
@@ -1552,6 +1553,23 @@ export default function App() {
                   <Shield size={48} className="mx-auto text-red-500/50" />
                   <h3 className="text-sm font-semibold text-white">Unauthorized Access</h3>
                   <p className="text-xs text-(--studio-muted)">Only logged-in administrators are allowed to access the admin panel.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : activeRailItem === "labs" ? (
+          <div className="min-w-0 flex-1 flex flex-col overflow-hidden bg-[#0B0B10]">
+            {isAdmin ? (
+              <LabsPanel />
+            ) : (
+              <div className="flex h-full items-center justify-center text-center p-6 text-(--studio-muted)">
+                <div className="max-w-md space-y-3">
+                  <Shield size={48} className="mx-auto text-red-500/50" />
+                  <h3 className="text-sm font-semibold text-white">Unauthorized Access</h3>
+                  <p className="text-xs text-(--studio-muted)">Only logged-in administrators are allowed to access the Labs.</p>
+                  <button onClick={() => setActiveRailItem("text-effects")} className="mt-4 px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors">
+                    Go to Text Effects
+                  </button>
                 </div>
               </div>
             )}
