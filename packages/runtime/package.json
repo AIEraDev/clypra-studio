@@ -9,15 +9,23 @@
     ".": "./dist/index.js",
     "./graph": "./dist/graph/index.js",
     "./planner": "./dist/planner/index.js",
+    "./job": "./dist/job/index.js",
+    "./executor": "./dist/executor/index.js",
+    "./state": "./dist/state/index.js",
     "./pixi": "./dist/pixi/index.js",
+    "./null": "./dist/null/index.js",
     "./resources": "./dist/resources/index.js",
-    "./validation": "./dist/validation/index.js"
+    "./validation": "./dist/validation/index.js",
+    "./telemetry": "./dist/telemetry/index.js"
   },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:gpu": "playwright test",
+    "test:gpu:ui": "playwright test --ui",
+    "test:serve": "vite serve src/__tests__/gpu --port 5173",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
@@ -26,10 +34,13 @@
     "pixi.js": "^8.6.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^22.14.0",
     "happy-dom": "^20.10.6",
+    "playwright": "^1.61.1",
     "tsup": "^8.3.5",
     "typescript": "~5.8.2",
+    "vite": "^8.1.1",
     "vitest": "^3.2.4"
   },
   "repository": {

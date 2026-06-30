@@ -11,14 +11,27 @@ export * from "./graph";
 // Frame planning
 export * from "./planner";
 
-// Pixi rendering backend
+// Render jobs (immutable execution plans)
+export * from "./job";
+
+// Execution
+export * from "./executor";
+
+// Runtime snapshots (state, not events)
+export * from "./state";
+
+// Renderers
 export * from "./pixi";
+export * from "./null";
 
 // Resource management
 export * from "./resources";
 
 // Runtime validation
 export * from "./validation";
+
+// Telemetry (event-oriented, complementary to state)
+export * from "./telemetry";
 
 // Testing & Publishing (Phase 6)
 export * from "./testing/goldenTests";
