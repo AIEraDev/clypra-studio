@@ -9,15 +9,25 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=apps/studio",
+    "build:runtime": "npm run build --workspace=packages/runtime",
+    "build:feature-providers": "npm run build --workspace=packages/feature-providers",
+    "build:shader-library": "npm run build --workspace=packages/shader-library",
+    "build:ui": "npm run build --workspace=packages/ui",
     "build:engine": "npm run build --workspace=packages/clypra-engine",
     "build:studio": "npm run build --workspace=apps/studio",
-    "build": "npm run build:engine && npm run build:studio",
+    "build:packages": "npm run build:shader-library && npm run build:runtime && npm run build:feature-providers && npm run build:ui && npm run build:engine",
+    "build": "npm run build:packages && npm run build:studio",
     "clean": "npm run clean --workspaces",
     "lint": "npm run lint --workspaces",
     "test": "vitest run",
+    "test:runtime": "npm run test --workspace=packages/runtime",
+    "test:feature-providers": "npm run test --workspace=packages/feature-providers",
     "test:engine": "npm run test --workspace=packages/clypra-engine",
     "test:watch": "vitest",
-    "generate:effect-previews": "tsx scripts/generateEffectPreviews.ts"
+    "generate:effect-previews": "tsx scripts/generateEffectPreviews.ts",
+    "validate": "echo '⚠️  Validation pipeline not yet implemented. Coming in Phase 6.'",
+    "test:golden": "echo '⚠️  Golden tests not yet implemented. Coming in Phase 6.'",
+    "benchmark": "echo '⚠️  Benchmark suite not yet implemented. Coming in Phase 6.'"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
