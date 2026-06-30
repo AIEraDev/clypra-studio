@@ -141,8 +141,21 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
         ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
 
         // TODO: Apply effect shaders here
+        // Effect rendering will be integrated with @clypra/runtime PixiRenderer
         if (effect) {
-          // Effect rendering will be integrated with @clypra/runtime
+          // For now, show effect info as overlay
+          ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+          ctx.fillRect(10, 10, 300, 80);
+
+          ctx.fillStyle = "#3b82f6";
+          ctx.font = "16px sans-serif";
+          ctx.textAlign = "left";
+          ctx.fillText(`Effect: ${effect.name}`, 20, 35);
+
+          ctx.fillStyle = "#94a3b8";
+          ctx.font = "12px monospace";
+          ctx.fillText("⚠️  Effect rendering coming soon", 20, 60);
+          ctx.fillText("Runtime integration in progress", 20, 78);
         }
 
         if (showComparison) {
