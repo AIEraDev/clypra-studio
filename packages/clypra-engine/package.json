@@ -26,6 +26,9 @@
       "import": "./dist/textEffects/index.js",
       "require": "./dist/textEffects/index.cjs"
     },
+    "./effects/video": "./dist/index.js",
+    "./effects/transitions": "./dist/index.js",
+    "./effects/body": "./dist/index.js",
     "./backends": {
       "types": "./dist/v2/backends/index.d.ts",
       "import": "./dist/v2/backends/index.js",
