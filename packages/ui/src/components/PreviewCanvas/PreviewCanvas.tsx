@@ -5,10 +5,13 @@
  * Video → Compiler → Planner → PixiRenderer → Canvas
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GraphBuilder } from "@clypra/runtime/graph";
 import { FrameGraphPlanner } from "@clypra/runtime/planner";
 import { PixiRenderer } from "@clypra/runtime/pixi";
+import { ValidationBackend } from "@clypra/runtime/validation";
+import type { RuntimeTelemetry } from "@clypra/runtime/telemetry";
+import { RuntimeInspector } from "../RuntimeInspector/RuntimeInspector";
 
 export interface PreviewCanvasProps {
   /** Effect definition to render */
@@ -163,72 +166,62 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
           fpsUpdateTime = now;
         }
 
+        // ALWAYS go through the full GPU pipeline
+        // If no effect is selected, create a minimal identity graph
+        const effectDef = effect || {
+          id: "identity",
+          type: "copy",
+          parameters: {},
+        };
+
         // Step 1: Compile (Build Graph)
-        if (effect) {
-          const graph = builderRef.current.build(
-            {
-              id: effect.id,
-              type: effect.id,
-              parameters: effect.parameters || {},
-            },
-            [{ id: "video", type: "video", source: "video-input" }],
-          );
+        const graph = builderRef.current.build(
+          {
+            id: effectDef.id,
+            type: effectDef.type,
+            parameters: effectDef.parameters || {},
+          },
+          [{ id: "video", type: "video", source: "video-input" }],
+        );
 
-          setRuntimeStatus((prev) => ({ ...prev, compiled: true }));
+        setRuntimeStatus((prev) => ({ ...prev, compiled: true }));
 
-          // Step 2: Plan (Generate FrameGraph)
-          const frameGraph = plannerRef.current.plan(graph, Math.floor(video.currentTime * 60), video.currentTime * 1000);
+        // Step 2: Plan (Generate FrameGraph)
+        const frameGraph = plannerRef.current.plan(graph, Math.floor(video.currentTime * 60), video.currentTime * 1000);
 
-          setRuntimeStatus((prev) => ({ ...prev, planned: true }));
+        // Assert: Frame graph must be valid
+        console.assert(frameGraph.passes.length > 0, "FrameGraph must have at least one pass");
+        console.assert(frameGraph.resourceRequests.length > 0, "FrameGraph must have at least one resource");
 
-          // Step 3: Upload video frame to GPU
-          rendererRef.current.uploadSourceImage(
-            video,
-            frameGraph.resourceRequests.filter((r) => !r.transient).map((r) => r.id),
-          );
+        setRuntimeStatus((prev) => ({ ...prev, planned: true }));
 
-          // Step 4: Execute (Render)
-          setRuntimeStatus((prev) => ({ ...prev, rendering: true }));
+        // Step 3: Upload video frame to GPU
+        // Find non-transient resources (these are persistent input/output textures)
+        const persistentResources = frameGraph.resourceRequests.filter((r) => !r.transient).map((r) => r.id);
 
-          const result = await rendererRef.current.render(frameGraph);
+        console.assert(persistentResources.length > 0, "Must have at least one persistent resource for video upload");
 
-          // Step 5: Present to canvas
-          rendererRef.current.present(result.outputTexture.label || "output");
+        rendererRef.current.uploadSourceImage(video, persistentResources);
 
-          // Update stats
-          setRenderStats({
-            fps: Math.round(1000 / (now - lastFrameTime)),
-            gpuTime: result.stats.totalGpuTime,
-            cpuTime: result.stats.totalCpuTime,
-            passCount: result.stats.passCount,
-          });
+        // Step 4: Execute (Render)
+        setRuntimeStatus((prev) => ({ ...prev, rendering: true }));
 
-          lastFrameTime = now;
-        } else {
-          // No effect - just show video
-          const ctx = canvasRef.current?.getContext("2d");
-          if (ctx && canvasRef.current) {
-            ctx.clearRect(0, 0, width, height);
+        const result = await rendererRef.current.render(frameGraph);
 
-            const videoAspect = video.videoWidth / video.videoHeight;
-            const canvasAspect = width / height;
+        console.assert(result.outputTexture, "Render result must have output texture");
 
-            let drawWidth = width;
-            let drawHeight = height;
-            let offsetX = 0;
-            let offsetY = 0;
+        // Step 5: Present to canvas
+        rendererRef.current.present("output");
 
-            if (videoAspect > canvasAspect) {
-              drawHeight = width / videoAspect;
-              offsetY = (height - drawHeight) / 2;
-            } else {
-              drawWidth = height * videoAspect;
-              offsetX = (width - drawWidth) / 2;
-            }
+        // Update stats
+        setRenderStats({
+          fps: Math.round(1000 / (now - lastFrameTime)),
+          gpuTime: result.stats.totalGpuTime,
+          cpuTime: result.stats.totalCpuTime,
+          passCount: result.stats.passCount,
+        });
 
-            ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
-          }
-        }
+        lastFrameTime = now;
 
         // Update time if playing
         if (playing) {
@@ -267,7 +260,7 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
   };
 
   return (
-    <div className="preview-canvas-container">
+    <div className="preview-canvas-container" style={{ position: "relative" }}>
       {/* Hidden video element for loading and playback */}
       {videoObjectUrl && <video ref={videoRef} src={videoObjectUrl} onLoadedData={handleVideoLoaded} style={{ display: "none" }} preload="auto" playsInline muted />}
 
@@ -285,6 +278,9 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
           background: "#1a1a1a",
         }}
       />
+
+      {/* Runtime Inspector Overlay */}
+      {videoLoaded && <RuntimeInspector effectName={effect?.name || "Identity"} compiled={runtimeStatus.compiled} planned={runtimeStatus.planned} resourceCount={renderStats.passCount > 0 ? 2 : 0} passCount={renderStats.passCount} textureCount={renderStats.passCount > 0 ? 2 : 0} gpuTime={renderStats.gpuTime} fps={renderStats.fps} compact={false} />}
 
       <div
         style={{
@@ -312,16 +308,6 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
         >
           {playing ? "⏸ Pause" : "▶ Play"}
         </button>
-
-        {/* Runtime status indicators */}
-        <div style={{ display: "flex", gap: "8px", fontSize: "12px" }}>
-          <span style={{ color: runtimeStatus.compiled ? "#10b981" : "#6b7280" }}>{runtimeStatus.compiled ? "✓" : "○"} Compile</span>
-          <span style={{ color: runtimeStatus.planned ? "#10b981" : "#6b7280" }}>{runtimeStatus.planned ? "✓" : "○"} Plan</span>
-          <span style={{ color: runtimeStatus.rendering ? "#10b981" : "#6b7280" }}>{runtimeStatus.rendering ? "✓" : "○"} Render</span>
-        </div>
-
-        {/* FPS counter */}
-        {videoLoaded && <span style={{ marginLeft: "auto", fontWeight: 600, color: renderStats.fps >= 50 ? "#10b981" : "#f59e0b" }}>{renderStats.fps} FPS</span>}
 
         <span>
           Resolution: {width}×{height}

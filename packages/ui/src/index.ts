@@ -23,6 +23,9 @@ export type { PerformanceMonitorProps, PerformanceMetrics } from "./components/P
 export { PreviewCanvas } from "./components/PreviewCanvas";
 export type { PreviewCanvasProps } from "./components/PreviewCanvas";
 
+export { PreviewCanvasV2 } from "./components/PreviewCanvas";
+export type { PreviewCanvasV2Props } from "./components/PreviewCanvas";
+
 export { Timeline } from "./components/Timeline";
 export type { TimelineProps } from "./components/Timeline";
 
@@ -31,5 +34,14 @@ export type { PresetManagerProps, Preset } from "./components/PresetManager";
 
 export { ValidationPanel } from "./components/ValidationPanel";
 export type { ValidationPanelProps, ValidationIssue, ValidationSeverity } from "./components/ValidationPanel";
+
+export { RuntimeInspector } from "./components/RuntimeInspector/RuntimeInspector";
+export type { RuntimeInspectorProps } from "./components/RuntimeInspector/RuntimeInspector";
+
+export { RuntimeObservatory } from "./components/RuntimeObservatory";
+export type { RuntimeObservatoryProps } from "./components/RuntimeObservatory";
+
+export { SnapshotObservatory } from "./components/RuntimeObservatory";
+export type { SnapshotObservatoryProps } from "./components/RuntimeObservatory";
 
 export const UI_VERSION = "1.0.0";
