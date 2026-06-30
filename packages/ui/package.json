@@ -16,6 +16,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@clypra/types": "file:../types",
     "@clypra/runtime": "file:../runtime",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

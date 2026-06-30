@@ -30,6 +30,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@clypra/types": "file:../types",
     "pixi-filters": "^6.0.4",
     "pixi.js": "^8.6.6"
   },
