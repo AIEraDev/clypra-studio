@@ -27,7 +27,9 @@
     "generate:effect-previews": "tsx scripts/generateEffectPreviews.ts",
     "validate": "echo '⚠️  Validation pipeline not yet implemented. Coming in Phase 6.'",
     "test:golden": "echo '⚠️  Golden tests not yet implemented. Coming in Phase 6.'",
-    "benchmark": "echo '⚠️  Benchmark suite not yet implemented. Coming in Phase 6.'"
+    "benchmark": "echo '⚠️  Benchmark suite not yet implemented. Coming in Phase 6.'",
+    "use:local": "bash scripts/use-local-packages.sh",
+    "use:published": "bash scripts/use-published-packages.sh"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
