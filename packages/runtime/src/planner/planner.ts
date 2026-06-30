@@ -70,13 +70,17 @@ export class FrameGraphPlanner {
    */
   private generateResourceRequests(nodes: readonly GraphNode[]): readonly ResourceRequest[] {
     const requests: ResourceRequest[] = [];
-    let resourceId = 0;
 
-    for (const node of nodes) {
+    // Find the Output node position
+    const outputNodeIndex = nodes.findIndex((n) => n.type === "Output");
+
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+
       // Input resources (from MediaInput nodes)
       if (node.type === "MediaInput") {
         requests.push({
-          id: `resource-${resourceId++}`,
+          id: `${node.id}-output`,
           type: "texture",
           width: this.config.targetWidth,
           height: this.config.targetHeight,
@@ -85,26 +89,46 @@ export class FrameGraphPlanner {
         });
       }
 
-      // Output resources
-      const outputKeys = Object.keys(node.outputs);
-      for (const outputKey of outputKeys) {
-        const output = node.outputs[outputKey];
-        const format = this.getFormatForType(output.type);
+      // Output resources for effect nodes
+      // Skip creating intermediate resource if this is the last effect node (writes to "output" directly)
+      if (node.type !== "MediaInput" && node.type !== "Output") {
+        const isLastEffectNode = i === outputNodeIndex - 1;
 
+        if (!isLastEffectNode) {
+          // Create intermediate resource for non-final effect nodes
+          const outputKeys = Object.keys(node.outputs);
+          for (const outputKey of outputKeys) {
+            const output = node.outputs[outputKey];
+            const format = this.getFormatForType(output.type);
+
+            requests.push({
+              id: `${node.id}-${outputKey}`,
+              type: "texture",
+              width: this.config.targetWidth,
+              height: this.config.targetHeight,
+              format,
+              transient: true,
+            });
+          }
+        }
+      }
+
+      // Final output resource (non-transient)
+      if (node.type === "Output") {
         requests.push({
-          id: `resource-${resourceId++}`,
+          id: "output",
           type: "texture",
           width: this.config.targetWidth,
           height: this.config.targetHeight,
-          format,
-          transient: node.type !== "Output", // Output resource is not transient
+          format: "rgba8",
+          transient: false,
         });
       }
 
       // Temporary resources for multipass effects
       if (node.requirements.multipass) {
         requests.push({
-          id: `resource-${resourceId++}-temp`,
+          id: `${node.id}-temp`,
           type: "texture",
           width: this.config.targetWidth,
           height: this.config.targetHeight,
@@ -123,7 +147,12 @@ export class FrameGraphPlanner {
   private generateRenderPasses(graph: MediaProcessingGraph, nodes: readonly GraphNode[]): readonly RenderPass[] {
     const passes: RenderPass[] = [];
 
-    for (const node of nodes) {
+    // Find the Output node position
+    const outputNodeIndex = nodes.findIndex((n) => n.type === "Output");
+
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+
       // Skip input and output nodes (they don't have shaders)
       if (node.type === "MediaInput" || node.type === "Output") {
         continue;
@@ -138,8 +167,10 @@ export class FrameGraphPlanner {
         inputResourceIds.push(`${edge.fromNodeId}-${edge.fromPinId}`);
       }
 
-      // Get output resource
-      const outputResourceId = `${node.id}-output`;
+      // Determine output resource
+      // If this is the last effect node before Output, write to "output"
+      const isLastEffectNode = i === outputNodeIndex - 1;
+      const outputResourceId = isLastEffectNode ? "output" : `${node.id}-output`;
 
       // Create pass
       const pass: RenderPass = {
@@ -161,7 +192,7 @@ export class FrameGraphPlanner {
           name: `${node.type}-pass2`,
           shaderId: `${node.type}-pass2`,
           inputs: [outputResourceId],
-          output: `${node.id}-output-final`,
+          output: isLastEffectNode ? "output" : `${node.id}-output-final`,
           uniforms: node.params,
         });
       }

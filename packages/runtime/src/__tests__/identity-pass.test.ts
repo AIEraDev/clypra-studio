@@ -13,7 +13,23 @@ import { GraphBuilder } from "../graph/builder";
 import { FrameGraphPlanner } from "../planner/planner";
 import { PixiRenderer } from "../pixi/renderer";
 
-describe("Runtime Capability: Identity Pass", () => {
+/**
+ * Check if WebGL is available
+ */
+function hasWebGLSupport(): boolean {
+  if (typeof document === "undefined") return false;
+
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    return gl !== null;
+  } catch {
+    return false;
+  }
+}
+
+// Skip entire suite if WebGL is not available
+describe.skipIf(!hasWebGLSupport())("Runtime Capability: Identity Pass", () => {
   let renderer: PixiRenderer;
   let builder: GraphBuilder;
   let planner: FrameGraphPlanner;

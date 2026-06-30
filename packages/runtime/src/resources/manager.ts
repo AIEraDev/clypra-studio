@@ -4,7 +4,7 @@
  * Manages allocation and deallocation of GPU resources.
  */
 
-import type { ResourceDescriptor, ResourceStats, ResourceHandle } from "./types";
+import type { ResourcePoolDescriptor, ResourceStats, ResourceHandle } from "./types";
 import { LRUCache } from "./cache";
 
 /**
@@ -15,10 +15,10 @@ import { LRUCache } from "./cache";
 export class ResourceManager<T = any> {
   private resources = new Map<string, ResourceHandle<T>>();
   private cache: LRUCache<T>;
-  private allocator: (descriptor: ResourceDescriptor) => T;
+  private allocator: (descriptor: ResourcePoolDescriptor) => T;
   private deallocator: (resource: T) => void;
 
-  constructor(allocator: (descriptor: ResourceDescriptor) => T, deallocator: (resource: T) => void, cacheSize: number = 20) {
+  constructor(allocator: (descriptor: ResourcePoolDescriptor) => T, deallocator: (resource: T) => void, cacheSize: number = 20) {
     this.allocator = allocator;
     this.deallocator = deallocator;
     this.cache = new LRUCache<T>(cacheSize);
@@ -27,7 +27,7 @@ export class ResourceManager<T = any> {
   /**
    * Allocate a resource
    */
-  allocate(descriptor: ResourceDescriptor): T {
+  allocate(descriptor: ResourcePoolDescriptor): T {
     // Check if already allocated
     if (this.resources.has(descriptor.id)) {
       const handle = this.resources.get(descriptor.id)!;
@@ -105,14 +105,14 @@ export class ResourceManager<T = any> {
   /**
    * Generate cache key from descriptor
    */
-  private descriptorKey(descriptor: ResourceDescriptor): string {
+  private descriptorKey(descriptor: ResourcePoolDescriptor): string {
     return `${descriptor.type}:${descriptor.width}x${descriptor.height}:${descriptor.format}`;
   }
 
   /**
    * Calculate resource size (for cache management)
    */
-  private calculateSize(descriptor: ResourceDescriptor): number {
+  private calculateSize(descriptor: ResourcePoolDescriptor): number {
     const bytesPerPixel = this.getBytesPerPixel(descriptor.format);
     return descriptor.width * descriptor.height * bytesPerPixel;
   }

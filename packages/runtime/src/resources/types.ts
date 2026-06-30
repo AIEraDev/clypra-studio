@@ -2,7 +2,7 @@
  * @clypra/runtime — Resource Types
  */
 
-export interface ResourceDescriptor {
+export interface ResourcePoolDescriptor {
   id: string;
   type: "texture" | "buffer";
   width: number;
@@ -23,7 +23,7 @@ export interface ResourceStats {
 export interface ResourceHandle<T = any> {
   id: string;
   resource: T;
-  descriptor: ResourceDescriptor;
+  descriptor: ResourcePoolDescriptor;
   refCount: number;
   lastUsed: number;
 }
