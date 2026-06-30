@@ -529,20 +529,27 @@ export function TransitionLabView() {
           {activeDevTab === "passes" && (
             <PassInspector
               frameGraph={{
+                frameNumber: 0,
+                timelineTimeMs: 0,
+                nodes: [],
+                edges: [],
                 passes: [],
+                resourceRequests: [],
               }}
             />
           )}
 
           {activeDevTab === "resources" && (
             <ResourceInspector
-              manager={{
-                stats: () => ({
-                  allocated: 0,
-                  freed: 0,
-                  active: 0,
-                }),
+              frameGraph={{
+                frameNumber: 0,
+                timelineTimeMs: 0,
+                nodes: [],
+                edges: [],
+                passes: [],
+                resourceRequests: [],
               }}
+              memoryUsage={0}
             />
           )}
 
@@ -552,7 +559,9 @@ export function TransitionLabView() {
                 gpuTime: 0,
                 cpuTime: 0,
                 fps: 60,
-                passTimes: 0,
+                passCount: 0,
+                memoryUsage: 0,
+                passTimes: [],
               }}
             />
           )}
