@@ -12,6 +12,7 @@ const AdminEffectsPanel = lazy(() => import("./components/effects/video/AdminEff
 const VideoLabView = lazy(() => import("./labs/video").then((m) => ({ default: m.VideoLabView })));
 const TransitionLabView = lazy(() => import("./labs/transition").then((m) => ({ default: m.TransitionLabView })));
 const BodyLabView = lazy(() => import("./labs/body").then((m) => ({ default: m.BodyLabView })));
+const RuntimeObservatoryDemo = lazy(() => import("./labs/RuntimeObservatoryDemo").then((m) => ({ default: m.RuntimeObservatoryDemo })));
 
 const ROUTE_METADATA = {
   showcase: {
@@ -59,6 +60,11 @@ const ROUTE_METADATA = {
     description: "Body Lab - Design, test, and publish mask-based body effects with extensible feature providers.",
     title: "Clypra Studio - Body Lab",
   },
+  observatoryDemo: {
+    canonical: "https://clypra.abdulkabirmusa.com/observatory-demo",
+    description: "Runtime Observatory Demo - Experience the V2 pipeline with snapshot-based observability and real-time performance monitoring.",
+    title: "Clypra Studio - Runtime Observatory Demo",
+  },
 };
 
 function isStudioRoute(pathname: string) {
@@ -93,6 +99,10 @@ function isBodyLabRoute(pathname: string) {
   return pathname === "/body-lab" || pathname.startsWith("/body-lab");
 }
 
+function isObservatoryDemoRoute(pathname: string) {
+  return pathname === "/observatory-demo" || pathname.startsWith("/observatory-demo");
+}
+
 function upsertMeta(selector: string, attr: "content" | "href", value: string) {
   document.head.querySelector(selector)?.setAttribute(attr, value);
 }
@@ -116,9 +126,10 @@ export default function RootApp() {
   const videoLabRoute = isVideoLabRoute(pathname);
   const transitionLabRoute = isTransitionLabRoute(pathname);
   const bodyLabRoute = isBodyLabRoute(pathname);
-  const studioRoute = !effectsRoute && !mpgRoute && !adminEffectsRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && isStudioRoute(pathname);
+  const observatoryDemoRoute = isObservatoryDemoRoute(pathname);
+  const studioRoute = !effectsRoute && !mpgRoute && !adminEffectsRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && !observatoryDemoRoute && isStudioRoute(pathname);
   const lottieRoute = isLottieRoute(pathname);
-  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : adminEffectsRoute ? ROUTE_METADATA.adminEffects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
+  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : adminEffectsRoute ? ROUTE_METADATA.adminEffects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : observatoryDemoRoute ? ROUTE_METADATA.observatoryDemo : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
 
   // Normalise /studio/* → /studio (preserve ?q= param) unless it's effects sandbox or mpg playground
   useEffect(() => {
@@ -151,7 +162,7 @@ export default function RootApp() {
       document.documentElement.style.overflowX = "";
       document.documentElement.style.overflowY = "";
     };
-  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute]);
+  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute, observatoryDemoRoute]);
 
   useEffect(() => {
     document.title = metadata.title;
@@ -303,6 +314,23 @@ export default function RootApp() {
         }
       >
         <BodyLabView />
+      </Suspense>
+    );
+  }
+
+  if (observatoryDemoRoute) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-screen bg-[#020617] items-center justify-center text-white">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3b82f6] mx-auto mb-4" />
+              <p className="text-sm text-gray-400">Loading Runtime Observatory...</p>
+            </div>
+          </div>
+        }
+      >
+        <RuntimeObservatoryDemo />
       </Suspense>
     );
   }
