@@ -389,7 +389,7 @@ export function VideoLabView() {
             gap: "16px",
           }}
         >
-          <PreviewCanvas effect={selectedEffect} inputs={{ video: videoFile }} currentTime={currentTime} playing={playing} onPlayingChange={setPlaying} onTimeChange={setCurrentTime} width={1920} height={1080} />
+          <PreviewCanvas effect={selectedEffect ? { ...selectedEffect, parameters } : null} inputs={{ video: videoFile }} currentTime={currentTime} playing={playing} onPlayingChange={setPlaying} onTimeChange={setCurrentTime} width={1920} height={1080} />
 
           <Timeline duration={duration} currentTime={currentTime} onSeek={setCurrentTime} frameRate={60} />
 

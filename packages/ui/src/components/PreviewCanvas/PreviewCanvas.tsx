@@ -1,15 +1,18 @@
 /**
  * PreviewCanvas Component
  *
- * Renders effect with current parameters.
- * Supports pause/play/scrub and before/after comparison.
+ * Hosts the Pixi renderer and executes effects through the V2 pipeline:
+ * Video → Compiler → Planner → PixiRenderer → Canvas
  */
 
 import React, { useEffect, useRef, useState } from "react";
+import { GraphBuilder } from "@clypra/runtime/graph";
+import { FrameGraphPlanner } from "@clypra/runtime/planner";
+import { PixiRenderer } from "@clypra/runtime/pixi";
 
 export interface PreviewCanvasProps {
   /** Effect definition to render */
-  effect: any; // TODO: Type from @clypra/engine
+  effect: any;
   /** Media inputs for the effect */
   inputs: Record<string, any>;
   /** Current playback time in seconds */
@@ -31,10 +34,25 @@ export interface PreviewCanvasProps {
 export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, height = 1080, showComparison = false, playing = false, onPlayingChange, onTimeChange }: PreviewCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const rendererRef = useRef<PixiRenderer | null>(null);
+  const builderRef = useRef<GraphBuilder | null>(null);
+  const plannerRef = useRef<FrameGraphPlanner | null>(null);
   const animationFrameRef = useRef<number>();
-  const lastTimeRef = useRef<number>(0);
+
   const [videoObjectUrl, setVideoObjectUrl] = useState<string | null>(null);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [runtimeStatus, setRuntimeStatus] = useState<{
+    compiled: boolean;
+    planned: boolean;
+    rendering: boolean;
+    error?: string;
+  }>({ compiled: false, planned: false, rendering: false });
+  const [renderStats, setRenderStats] = useState({
+    fps: 0,
+    gpuTime: 0,
+    cpuTime: 0,
+    passCount: 0,
+  });
 
   // Create object URL from video file
   useEffect(() => {
@@ -53,18 +71,55 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
     }
   }, [inputs?.video]);
 
+  // Initialize Pixi renderer
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const initRenderer = async () => {
+      try {
+        const renderer = new PixiRenderer();
+        await renderer.initialize({
+          canvas: canvasRef.current!,
+          width,
+          height,
+          backgroundColor: 0x1a1a1a,
+        });
+
+        rendererRef.current = renderer;
+        builderRef.current = new GraphBuilder("video-lab-graph");
+        plannerRef.current = new FrameGraphPlanner({
+          targetWidth: width,
+          targetHeight: height,
+        });
+
+        console.log("✓ Pixi Renderer initialized");
+      } catch (error) {
+        console.error("Failed to initialize renderer:", error);
+        setRuntimeStatus((prev) => ({ ...prev, error: String(error) }));
+      }
+    };
+
+    initRenderer();
+
+    return () => {
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current = null;
+      }
+    };
+  }, [width, height]);
+
   // Sync video element with currentTime
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !videoLoaded) return;
 
-    // Update video currentTime if it differs significantly
     if (Math.abs(video.currentTime - currentTime) > 0.1) {
       video.currentTime = currentTime;
     }
   }, [currentTime, videoLoaded]);
 
-  // Sync video playback with playing state
+  // Sync video playback state
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !videoLoaded) return;
@@ -76,127 +131,134 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
     }
   }, [playing, videoLoaded]);
 
-  // Handle playback animation
+  // Main render loop
   useEffect(() => {
-    if (!playing) {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+    if (!videoLoaded || !rendererRef.current || !builderRef.current || !plannerRef.current) {
       return;
     }
 
-    const animate = () => {
-      const video = videoRef.current;
-      if (video && videoLoaded) {
-        onTimeChange?.(video.currentTime);
+    const video = videoRef.current;
+    if (!video) return;
+
+    let lastFrameTime = performance.now();
+    let frameCount = 0;
+    let fpsUpdateTime = performance.now();
+
+    const renderFrame = async () => {
+      if (!video || !rendererRef.current || !builderRef.current || !plannerRef.current) {
+        return;
       }
 
-      animationFrameRef.current = requestAnimationFrame(animate);
+      try {
+        const now = performance.now();
+
+        // Update FPS counter
+        frameCount++;
+        if (now - fpsUpdateTime >= 1000) {
+          setRenderStats((prev) => ({
+            ...prev,
+            fps: Math.round((frameCount * 1000) / (now - fpsUpdateTime)),
+          }));
+          frameCount = 0;
+          fpsUpdateTime = now;
+        }
+
+        // Step 1: Compile (Build Graph)
+        if (effect) {
+          const graph = builderRef.current.build(
+            {
+              id: effect.id,
+              type: effect.id,
+              parameters: effect.parameters || {},
+            },
+            [{ id: "video", type: "video", source: "video-input" }],
+          );
+
+          setRuntimeStatus((prev) => ({ ...prev, compiled: true }));
+
+          // Step 2: Plan (Generate FrameGraph)
+          const frameGraph = plannerRef.current.plan(graph, Math.floor(video.currentTime * 60), video.currentTime * 1000);
+
+          setRuntimeStatus((prev) => ({ ...prev, planned: true }));
+
+          // Step 3: Upload video frame to GPU
+          rendererRef.current.uploadSourceImage(
+            video,
+            frameGraph.resourceRequests.filter((r) => !r.transient).map((r) => r.id),
+          );
+
+          // Step 4: Execute (Render)
+          setRuntimeStatus((prev) => ({ ...prev, rendering: true }));
+
+          const result = await rendererRef.current.render(frameGraph);
+
+          // Step 5: Present to canvas
+          rendererRef.current.present(result.outputTexture.label || "output");
+
+          // Update stats
+          setRenderStats({
+            fps: Math.round(1000 / (now - lastFrameTime)),
+            gpuTime: result.stats.totalGpuTime,
+            cpuTime: result.stats.totalCpuTime,
+            passCount: result.stats.passCount,
+          });
+
+          lastFrameTime = now;
+        } else {
+          // No effect - just show video
+          const ctx = canvasRef.current?.getContext("2d");
+          if (ctx && canvasRef.current) {
+            ctx.clearRect(0, 0, width, height);
+
+            const videoAspect = video.videoWidth / video.videoHeight;
+            const canvasAspect = width / height;
+
+            let drawWidth = width;
+            let drawHeight = height;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            if (videoAspect > canvasAspect) {
+              drawHeight = width / videoAspect;
+              offsetY = (height - drawHeight) / 2;
+            } else {
+              drawWidth = height * videoAspect;
+              offsetX = (width - drawWidth) / 2;
+            }
+
+            ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
+          }
+        }
+
+        // Update time if playing
+        if (playing) {
+          onTimeChange?.(video.currentTime);
+        }
+      } catch (error) {
+        console.error("Render error:", error);
+        setRuntimeStatus((prev) => ({ ...prev, error: String(error), rendering: false }));
+      }
+
+      animationFrameRef.current = requestAnimationFrame(renderFrame);
     };
 
-    animationFrameRef.current = requestAnimationFrame(animate);
+    // Start render loop
+    animationFrameRef.current = requestAnimationFrame(renderFrame);
 
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [playing, videoLoaded, onTimeChange]);
+  }, [videoLoaded, effect, playing, width, height, onTimeChange]);
 
-  // Render video frame to canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
+  const handleVideoLoaded = () => {
+    setVideoLoaded(true);
     const video = videoRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const render = () => {
-      // Clear canvas
-      ctx.fillStyle = "#1a1a1a";
-      ctx.fillRect(0, 0, width, height);
-
-      if (video && videoLoaded && video.readyState >= 2) {
-        // Calculate aspect ratio fit
-        const videoAspect = video.videoWidth / video.videoHeight;
-        const canvasAspect = width / height;
-
-        let drawWidth = width;
-        let drawHeight = height;
-        let offsetX = 0;
-        let offsetY = 0;
-
-        if (videoAspect > canvasAspect) {
-          // Video is wider - fit width
-          drawHeight = width / videoAspect;
-          offsetY = (height - drawHeight) / 2;
-        } else {
-          // Video is taller - fit height
-          drawWidth = height * videoAspect;
-          offsetX = (width - drawWidth) / 2;
-        }
-
-        // Draw video frame
-        ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
-
-        // TODO: Apply effect shaders here
-        // Effect rendering will be integrated with @clypra/runtime PixiRenderer
-        if (effect) {
-          // For now, show effect info as overlay
-          ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-          ctx.fillRect(10, 10, 300, 80);
-
-          ctx.fillStyle = "#3b82f6";
-          ctx.font = "16px sans-serif";
-          ctx.textAlign = "left";
-          ctx.fillText(`Effect: ${effect.name}`, 20, 35);
-
-          ctx.fillStyle = "#94a3b8";
-          ctx.font = "12px monospace";
-          ctx.fillText("⚠️  Effect rendering coming soon", 20, 60);
-          ctx.fillText("Runtime integration in progress", 20, 78);
-        }
-
-        if (showComparison) {
-          // Draw comparison split
-          ctx.strokeStyle = "#f59e0b";
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.moveTo(width / 2, 0);
-          ctx.lineTo(width / 2, height);
-          ctx.stroke();
-
-          ctx.fillStyle = "#f59e0b";
-          ctx.font = "14px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("Before", width / 4, 30);
-          ctx.fillText("After", (width * 3) / 4, 30);
-        }
-      } else {
-        // Show placeholder
-        ctx.fillStyle = "#3b82f6";
-        ctx.font = "24px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(`Preview Canvas - ${effect?.name || "No Effect"}`, width / 2, height / 2 - 30);
-
-        ctx.fillStyle = "#94a3b8";
-        ctx.font = "16px monospace";
-        ctx.fillText(videoObjectUrl ? "Loading video..." : "Upload a video to preview", width / 2, height / 2 + 10);
-        ctx.fillText(`Time: ${currentTime.toFixed(2)}s`, width / 2, height / 2 + 40);
-      }
-    };
-
-    // Render immediately
-    render();
-
-    // Re-render on playing state or when video frame updates
-    if (playing) {
-      const interval = setInterval(render, 1000 / 60); // 60 FPS
-      return () => clearInterval(interval);
+    if (video && onTimeChange) {
+      onTimeChange(0);
     }
-  }, [effect, videoObjectUrl, videoLoaded, currentTime, width, height, showComparison, playing]);
+  };
 
   const handleCanvasClick = () => {
     if (onPlayingChange) {
@@ -204,32 +266,10 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
     }
   };
 
-  const handleVideoLoaded = () => {
-    setVideoLoaded(true);
-    const video = videoRef.current;
-    if (video && onTimeChange) {
-      onTimeChange(0); // Reset to start
-    }
-  };
-
   return (
     <div className="preview-canvas-container">
       {/* Hidden video element for loading and playback */}
-      {videoObjectUrl && (
-        <video
-          ref={videoRef}
-          src={videoObjectUrl}
-          onLoadedData={handleVideoLoaded}
-          onTimeUpdate={(e) => {
-            if (playing) {
-              const video = e.currentTarget;
-              onTimeChange?.(video.currentTime);
-            }
-          }}
-          style={{ display: "none" }}
-          preload="auto"
-        />
-      )}
+      {videoObjectUrl && <video ref={videoRef} src={videoObjectUrl} onLoadedData={handleVideoLoaded} style={{ display: "none" }} preload="auto" playsInline muted />}
 
       <canvas
         ref={canvasRef}
@@ -245,6 +285,7 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
           background: "#1a1a1a",
         }}
       />
+
       <div
         style={{
           marginTop: "8px",
@@ -271,21 +312,28 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
         >
           {playing ? "⏸ Pause" : "▶ Play"}
         </button>
-        <label>
-          <input
-            type="checkbox"
-            checked={showComparison}
-            onChange={(e) => {
-              // Handle comparison toggle - prop would need to be passed
-            }}
-            style={{ marginRight: "6px" }}
-          />
-          Before/After
-        </label>
+
+        {/* Runtime status indicators */}
+        <div style={{ display: "flex", gap: "8px", fontSize: "12px" }}>
+          <span style={{ color: runtimeStatus.compiled ? "#10b981" : "#6b7280" }}>{runtimeStatus.compiled ? "✓" : "○"} Compile</span>
+          <span style={{ color: runtimeStatus.planned ? "#10b981" : "#6b7280" }}>{runtimeStatus.planned ? "✓" : "○"} Plan</span>
+          <span style={{ color: runtimeStatus.rendering ? "#10b981" : "#6b7280" }}>{runtimeStatus.rendering ? "✓" : "○"} Render</span>
+        </div>
+
+        {/* FPS counter */}
+        {videoLoaded && <span style={{ marginLeft: "auto", fontWeight: 600, color: renderStats.fps >= 50 ? "#10b981" : "#f59e0b" }}>{renderStats.fps} FPS</span>}
+
         <span>
           Resolution: {width}×{height}
         </span>
       </div>
+
+      {/* Error message */}
+      {runtimeStatus.error && (
+        <div style={{ marginTop: "8px", padding: "12px", background: "#7f1d1d", borderRadius: "6px", fontSize: "12px", color: "#fca5a5" }}>
+          <strong>Runtime Error:</strong> {runtimeStatus.error}
+        </div>
+      )}
     </div>
   );
 }
