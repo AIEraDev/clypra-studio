@@ -1,0 +1,16 @@
+/**
+ * PreviewCanvasV2 Styles
+ * 
+ * These styles override Pixi.js inline styles to ensure proper aspect ratio fitting
+ */
+
+.preview-canvas-v2__canvas {
+  /* Override Pixi.js inline styles with !important */
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+
+  /* Ensure proper object fitting */
+  object-fit: contain !important;
+}
