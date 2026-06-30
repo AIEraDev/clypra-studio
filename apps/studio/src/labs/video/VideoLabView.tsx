@@ -48,7 +48,15 @@ export function VideoLabView() {
     const file = e.target.files?.[0];
     if (file) {
       setVideoFile(file);
-      // TODO: Extract video metadata and set duration
+
+      // Extract video metadata and set duration
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        setDuration(video.duration);
+        URL.revokeObjectURL(video.src);
+      };
+      video.src = URL.createObjectURL(file);
     }
   };
 
@@ -445,22 +453,17 @@ export function VideoLabView() {
           {activeDevTab === "passes" && (
             <PassInspector
               frameGraph={{
+                frameNumber: 0,
+                timelineTimeMs: 0,
+                nodes: [],
+                edges: [],
                 passes: [],
+                resourceRequests: [],
               }}
             />
           )}
 
-          {activeDevTab === "resources" && (
-            <ResourceInspector
-              manager={{
-                stats: () => ({
-                  allocated: 0,
-                  freed: 0,
-                  active: 0,
-                }),
-              }}
-            />
-          )}
+          {activeDevTab === "resources" && <ResourceInspector resources={[]} />}
 
           {activeDevTab === "performance" && (
             <PerformanceMonitor
@@ -468,7 +471,7 @@ export function VideoLabView() {
                 gpuTime: 0,
                 cpuTime: 0,
                 fps: 60,
-                passTimes: 0,
+                passTimes: [],
               }}
             />
           )}
