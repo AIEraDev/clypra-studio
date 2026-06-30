@@ -463,7 +463,19 @@ export function VideoLabView() {
             />
           )}
 
-          {activeDevTab === "resources" && <ResourceInspector resources={[]} />}
+          {activeDevTab === "resources" && (
+            <ResourceInspector
+              frameGraph={{
+                frameNumber: 0,
+                timelineTimeMs: 0,
+                nodes: [],
+                edges: [],
+                passes: [],
+                resourceRequests: [],
+              }}
+              memoryUsage={0}
+            />
+          )}
 
           {activeDevTab === "performance" && (
             <PerformanceMonitor
@@ -471,6 +483,8 @@ export function VideoLabView() {
                 gpuTime: 0,
                 cpuTime: 0,
                 fps: 60,
+                passCount: 0,
+                memoryUsage: 0,
                 passTimes: [],
               }}
             />
