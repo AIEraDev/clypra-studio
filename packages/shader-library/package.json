@@ -1,0 +1,32 @@
+{
+  "name": "@clypra/shader-library",
+  "version": "1.0.0",
+  "description": "Reusable GLSL shader library for video effects",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./color": "./dist/color/index.js",
+    "./blur": "./dist/blur/index.js",
+    "./distortion": "./dist/distortion/index.js",
+    "./composite": "./dist/composite/index.js",
+    "./noise": "./dist/noise/index.js",
+    "./utils": "./dist/utils/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsup": "^8.3.5",
+    "typescript": "~5.8.2",
+    "vitest": "^3.2.4"
+  }
+}
