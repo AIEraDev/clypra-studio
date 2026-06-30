@@ -12,6 +12,17 @@ import { AdjustmentFilter } from "pixi-filters";
  */
 export function createFilter(shaderId: string, uniforms: Record<string, any> = {}): PIXI.Filter {
   switch (shaderId) {
+    case "identity":
+      // Pure pass-through - no modifications
+      return new AdjustmentFilter({
+        brightness: 1.0,
+        contrast: 1.0,
+        saturation: 1.0,
+        red: 1.0,
+        green: 1.0,
+        blue: 1.0,
+      });
+
     case "brightness":
       return new AdjustmentFilter({ brightness: uniforms.brightness ?? 1.0 });
 

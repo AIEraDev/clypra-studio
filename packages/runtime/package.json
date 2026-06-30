@@ -22,11 +22,12 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "pixi.js": "^8.6.6",
-    "pixi-filters": "^6.0.4"
+    "pixi-filters": "^6.0.4",
+    "pixi.js": "^8.6.6"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "happy-dom": "^20.10.6",
     "tsup": "^8.3.5",
     "typescript": "~5.8.2",
     "vitest": "^3.2.4"
