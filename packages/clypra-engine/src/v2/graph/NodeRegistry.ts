@@ -5,15 +5,15 @@
  * Eliminates hardcoded string checks in the compiler and planner by providing a centralized capability lookup.
  */
 
-import type { EffectCapabilities, EffectRequirements, GraphPin, GraphDataType } from "./types";
+import type { NodeCapabilities, NodeRequirements, GraphPin, GraphDataType } from "@clypra/types";
 
 export interface NodeDefinition {
   readonly type: string;
   readonly name: string;
   readonly description: string;
   readonly version: number;
-  readonly capabilities: EffectCapabilities;
-  readonly requirements: EffectRequirements;
+  readonly capabilities: NodeCapabilities;
+  readonly requirements: NodeRequirements;
   readonly inputs: readonly GraphPin[];
   readonly outputs: readonly GraphPin[];
   readonly defaultParams: Readonly<Record<string, any>>;
@@ -332,29 +332,21 @@ export class NodeRegistry {
 
     const colorInput = [{ id: "input", name: "Color Input", type: "Texture" as GraphDataType }];
     const colorOutput = [{ id: "output", name: "Color Output", type: "Texture" as GraphDataType }];
-    const colorCaps: EffectCapabilities = {
+    const colorCaps: NodeCapabilities = {
       temporal: false,
       stateful: false,
       spatial: false,
       geometry: false,
       inputsCount: 1,
     };
-    const colorReqs: EffectRequirements = {
+    const colorReqs: NodeRequirements = {
       temporalRadius: 0,
       preferredPrecision: "fp16",
       multipass: false,
       supportsHalfResolution: true,
     };
 
-    const registerColorNode = (
-      type: string,
-      name: string,
-      description: string,
-      paramKey: string,
-      defaultVal: number,
-      min: number,
-      max: number,
-    ) => {
+    const registerColorNode = (type: string, name: string, description: string, paramKey: string, defaultVal: number, min: number, max: number) => {
       registry.register(
         {
           type,

@@ -1,17 +1,17 @@
 /**
  * @clypra/engine — Pipeline V2: Render Planner Definitions
- * 
+ *
  * Defines transient planning constructs: resource requests, frame-isolated graphs, and render passes.
  */
 
-import type { GraphNode, GraphEdge } from '../graph/types';
+import type { GraphNode, GraphEdge } from "@clypra/types";
 
 export interface ResourceRequest {
   readonly id: string;
-  readonly type: 'texture' | 'buffer';
+  readonly type: "texture" | "buffer";
   readonly width: number;
   readonly height: number;
-  readonly format: 'rgba8' | 'rgba16f' | 'rgba32f' | 'r8';
+  readonly format: "rgba8" | "rgba16f" | "rgba32f" | "r8";
   readonly transient: boolean; // True if it can be reclaimed after the pass completes
 }
 
@@ -20,7 +20,7 @@ export interface RenderPass {
   readonly name: string;
   readonly shaderId: string;
   readonly inputs: readonly string[]; // Active resource IDs
-  readonly output: string;            // Target resource ID
+  readonly output: string; // Target resource ID
   readonly uniforms: Readonly<Record<string, any>>;
 }
 

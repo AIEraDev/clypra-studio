@@ -60,6 +60,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@clypra/types": "file:../types",
     "jszip": "^3.10.1",
     "lottie-web": "^5.13.0",
     "pixi-filters": "^6.0.0",

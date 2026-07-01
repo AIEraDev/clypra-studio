@@ -5,8 +5,8 @@
  * resolves dependency execution order, plans texture allocations, and constructs a FrameGraph.
  */
 
-import type { MediaProcessingGraph, GraphNode, GraphEdge } from "../graph/types";
-import { GraphHelper } from "../graph/types";
+import type { MediaProcessingGraph, GraphNode, GraphEdge } from "@clypra/types";
+import { GraphHelper } from "@clypra/types";
 import { NodeRegistry } from "../graph/NodeRegistry";
 import type { FrameGraph, ResourceRequest, RenderPass } from "./types";
 
@@ -14,14 +14,7 @@ export class FrameGraphBuilder {
   /**
    * Builds the FrameGraph for a specific timeline time point.
    */
-  static build(
-    compiledGraph: MediaProcessingGraph,
-    timelineTimeMs: number,
-    frameNumber: number,
-    viewportWidth: number,
-    viewportHeight: number,
-    registry: NodeRegistry = NodeRegistry.createDefault(),
-  ): FrameGraph {
+  static build(compiledGraph: MediaProcessingGraph, timelineTimeMs: number, frameNumber: number, viewportWidth: number, viewportHeight: number, registry: NodeRegistry = NodeRegistry.createDefault()): FrameGraph {
     const activeNodeIds = new Set<string>();
     const nodeById = new Map<string, GraphNode>();
     for (const node of compiledGraph.nodes) {
@@ -29,10 +22,7 @@ export class FrameGraphBuilder {
 
       if (node.type === "TrackSourceManager") {
         const clips = node.params.clips || [];
-        const hasActiveClip = clips.some(
-          (c: { enabled: boolean; timelineStartMs: number; timelineEndMs: number }) =>
-            c.enabled && timelineTimeMs >= c.timelineStartMs && timelineTimeMs <= c.timelineEndMs,
-        );
+        const hasActiveClip = clips.some((c: { enabled: boolean; timelineStartMs: number; timelineEndMs: number }) => c.enabled && timelineTimeMs >= c.timelineStartMs && timelineTimeMs <= c.timelineEndMs);
         if (hasActiveClip) {
           activeNodeIds.add(node.id);
         }
@@ -116,17 +106,7 @@ export class FrameGraphBuilder {
     nodeOutputResourceMap.set("composite-output", "res-final-frame");
 
     for (const node of activeNodesList) {
-      FrameGraphBuilder.planNodePasses(
-        node,
-        activeEdgesList,
-        nodeOutputResourceMap,
-        resourceRequests,
-        renderPasses,
-        registry,
-        timelineTimeMs,
-        viewportWidth,
-        viewportHeight,
-      );
+      FrameGraphBuilder.planNodePasses(node, activeEdgesList, nodeOutputResourceMap, resourceRequests, renderPasses, registry, timelineTimeMs, viewportWidth, viewportHeight);
     }
 
     return {
@@ -139,17 +119,7 @@ export class FrameGraphBuilder {
     };
   }
 
-  private static planNodePasses(
-    node: GraphNode,
-    activeEdgesList: GraphEdge[],
-    nodeOutputResourceMap: Map<string, string>,
-    resourceRequests: ResourceRequest[],
-    renderPasses: RenderPass[],
-    registry: NodeRegistry,
-    timelineTimeMs: number,
-    viewportWidth: number,
-    viewportHeight: number,
-  ): void {
+  private static planNodePasses(node: GraphNode, activeEdgesList: GraphEdge[], nodeOutputResourceMap: Map<string, string>, resourceRequests: ResourceRequest[], renderPasses: RenderPass[], registry: NodeRegistry, timelineTimeMs: number, viewportWidth: number, viewportHeight: number): void {
     const planner = registry.getPlanner(node.type);
 
     if (node.type === "TrackSourceManager") {
@@ -165,20 +135,7 @@ export class FrameGraphBuilder {
       nodeOutputResourceMap.set(node.id, resourceId);
 
       if (planner) {
-        FrameGraphBuilder.appendPlannedPasses(
-          node.id,
-          planner.planExecution(
-            node.id,
-            node.type,
-            { ...node.params, timeMs: timelineTimeMs },
-            [],
-            resourceId,
-            viewportWidth,
-            viewportHeight,
-          ),
-          resourceRequests,
-          renderPasses,
-        );
+        FrameGraphBuilder.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, { ...node.params, timeMs: timelineTimeMs }, [], resourceId, viewportWidth, viewportHeight), resourceRequests, renderPasses);
       }
       return;
     }
@@ -189,12 +146,7 @@ export class FrameGraphBuilder {
       const inputIds = [inputResource || "res-src-frame"];
 
       if (planner) {
-        FrameGraphBuilder.appendPlannedPasses(
-          node.id,
-          planner.planExecution(node.id, node.type, node.params, inputIds, "res-final-frame", viewportWidth, viewportHeight),
-          resourceRequests,
-          renderPasses,
-        );
+        FrameGraphBuilder.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, node.params, inputIds, "res-final-frame", viewportWidth, viewportHeight), resourceRequests, renderPasses);
       }
       return;
     }
@@ -219,12 +171,7 @@ export class FrameGraphBuilder {
       nodeOutputResourceMap.set(node.id, outputResource);
 
       if (planner) {
-        FrameGraphBuilder.appendPlannedPasses(
-          node.id,
-          planner.planExecution(node.id, node.type, node.params, inputIds, outputResource, viewportWidth, viewportHeight),
-          resourceRequests,
-          renderPasses,
-        );
+        FrameGraphBuilder.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, node.params, inputIds, outputResource, viewportWidth, viewportHeight), resourceRequests, renderPasses);
       }
       return;
     }
@@ -246,12 +193,7 @@ export class FrameGraphBuilder {
       nodeOutputResourceMap.set(node.id, outputResource);
 
       if (planner) {
-        FrameGraphBuilder.appendPlannedPasses(
-          node.id,
-          planner.planExecution(node.id, node.type, node.params, inputIds, outputResource, viewportWidth, viewportHeight),
-          resourceRequests,
-          renderPasses,
-        );
+        FrameGraphBuilder.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, node.params, inputIds, outputResource, viewportWidth, viewportHeight), resourceRequests, renderPasses);
       }
       return;
     }
@@ -272,12 +214,7 @@ export class FrameGraphBuilder {
     nodeOutputResourceMap.set(node.id, outputResource);
 
     if (planner) {
-      FrameGraphBuilder.appendPlannedPasses(
-        node.id,
-        planner.planExecution(node.id, node.type, node.params, inputIds, outputResource, viewportWidth, viewportHeight),
-        resourceRequests,
-        renderPasses,
-      );
+      FrameGraphBuilder.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, node.params, inputIds, outputResource, viewportWidth, viewportHeight), resourceRequests, renderPasses);
     } else {
       renderPasses.push({
         id: `pass-${node.id}`,
@@ -290,12 +227,7 @@ export class FrameGraphBuilder {
     }
   }
 
-  private static appendPlannedPasses(
-    nodeId: string,
-    planned: ReturnType<NonNullable<ReturnType<NodeRegistry["getPlanner"]>>["planExecution"]>,
-    resourceRequests: ResourceRequest[],
-    renderPasses: RenderPass[],
-  ): void {
+  private static appendPlannedPasses(nodeId: string, planned: ReturnType<NonNullable<ReturnType<NodeRegistry["getPlanner"]>>["planExecution"]>, resourceRequests: ResourceRequest[], renderPasses: RenderPass[]): void {
     planned.forEach((p, index) => {
       if (p.intermediateResources) {
         for (const ir of p.intermediateResources) {
