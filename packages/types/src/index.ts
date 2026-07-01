@@ -9,7 +9,7 @@
 export type { EffectDefinition, EffectInstance, EffectCapabilities, EffectRequirements, EffectProfile, EffectMetadata, EffectPreset, AppliedEffect, EffectParameters, EffectValidationResult, EffectCategory, EffectManifest } from "./effect";
 
 // Graph types
-export type { GraphNode, GraphEdge, NodeLifecycleState, MediaProcessingGraph, GraphDataType, GraphValue, GraphPin, EffectCapabilities as GraphEffectCapabilities, EffectRequirements as GraphEffectRequirements } from "./graph";
+export type { GraphNode, GraphEdge, NodeLifecycleState, MediaProcessingGraph, GraphDataType, GraphValue, GraphPin, NodeCapabilities, NodeRequirements } from "./graph";
 export { GraphHelper } from "./graph";
 
 // Frame types

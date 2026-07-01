@@ -14,7 +14,7 @@ export interface GraphValue<T = any> {
   readonly payload: T;
 }
 
-export interface EffectCapabilities {
+export interface NodeCapabilities {
   readonly temporal: boolean;
   readonly stateful: boolean;
   readonly spatial: boolean;
@@ -22,7 +22,7 @@ export interface EffectCapabilities {
   readonly inputsCount: number;
 }
 
-export interface EffectRequirements {
+export interface NodeRequirements {
   readonly temporalRadius: number;
   readonly preferredPrecision: "fp8" | "fp16" | "fp32";
   readonly multipass: boolean;
@@ -42,8 +42,8 @@ export interface GraphNode {
   readonly params: Readonly<Record<string, any>>;
   readonly inputs: Readonly<Record<string, GraphPin>>;
   readonly outputs: Readonly<Record<string, GraphPin>>;
-  readonly capabilities: EffectCapabilities;
-  readonly requirements: EffectRequirements;
+  readonly capabilities: NodeCapabilities;
+  readonly requirements: NodeRequirements;
   readonly lifecycle: NodeLifecycleState;
 }
 
