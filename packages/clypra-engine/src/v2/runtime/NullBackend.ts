@@ -1,6 +1,10 @@
 /**
  * @clypra/engine — Pipeline V2: Null Backend
  *
+ * @deprecated Use @clypra/runtime/renderer instead
+ * The runtime version (NullRenderer) is more complete and follows the same interface.
+ * This file will be removed in v3.0.0
+ *
  * A mock execution backend representing a headless/CPU-free queue.
  * Implements RenderBackend to record submitted command buffers, rendering lists, and pass executions.
  * Enables automated integration tests to prove planner scheduling without requiring WebGL/WebGPU surface allocations.

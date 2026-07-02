@@ -1,6 +1,10 @@
 /**
  * @clypra/engine — Pipeline V2: MPG Frame Renderer
  *
+ * @deprecated Use @clypra/runtime/renderer instead
+ * The runtime has a more complete Executor implementation.
+ * This file will be removed in v3.0.0
+ *
  * High-level helper: FrameGraph → allocate → upload source → CommandBuffer → RenderBackend.
  */
 
@@ -15,12 +19,7 @@ export class MPGFrameRenderer {
   /**
    * Render a complete frame graph to the backend canvas.
    */
-  static async render(
-    backend: RenderBackend,
-    frameGraph: FrameGraph,
-    source: FrameSource,
-    options?: { outputResourceId?: string },
-  ): Promise<void> {
+  static async render(backend: RenderBackend, frameGraph: FrameGraph, source: FrameSource, options?: { outputResourceId?: string }): Promise<void> {
     const outputId = options?.outputResourceId ?? "res-final-frame";
 
     const width = frameGraph.resourceRequests[0]?.width ?? 1920;
@@ -40,9 +39,7 @@ export class MPGFrameRenderer {
     }
 
     if (backend instanceof PixiRenderBackend) {
-      const sourceResourceIds = frameGraph.resourceRequests
-        .filter((r) => r.id.includes("src-frame") || r.id.includes("track-source"))
-        .map((r) => r.id);
+      const sourceResourceIds = frameGraph.resourceRequests.filter((r) => r.id.includes("src-frame") || r.id.includes("track-source")).map((r) => r.id);
       backend.uploadSourceImage(source as HTMLImageElement, sourceResourceIds);
     }
 
@@ -57,12 +54,7 @@ export class MPGFrameRenderer {
   /**
    * Render into an offscreen canvas at the given resolution (export path).
    */
-  static async renderToCanvas(
-    frameGraph: FrameGraph,
-    source: FrameSource,
-    width: number,
-    height: number,
-  ): Promise<HTMLCanvasElement> {
+  static async renderToCanvas(frameGraph: FrameGraph, source: FrameSource, width: number, height: number): Promise<HTMLCanvasElement> {
     const canvas = document.createElement("canvas");
     const backend = new PixiRenderBackend();
     await backend.init(canvas, width, height);
