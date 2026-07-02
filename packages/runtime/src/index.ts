@@ -8,6 +8,12 @@
 // Graph building
 export * from "./graph";
 
+// Project model (NLE timeline structure)
+export * from "./project";
+
+// Project compiler (converts NLE projects to graphs)
+export * from "./compiler";
+
 // Frame planning
 export * from "./planner";
 
