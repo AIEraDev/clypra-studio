@@ -1,6 +1,10 @@
 /**
  * @clypra/engine — Pipeline V2: Pixi Render Backend
  *
+ * @deprecated Use @clypra/runtime/renderer instead
+ * The runtime version (PixiRenderer) is more complete with better resource management.
+ * This file will be removed in v3.0.0
+ *
  * RenderBackend implementation using Pixi.js for GPU pass execution.
  */
 
@@ -8,11 +12,7 @@ import * as PIXI from "pixi.js";
 import { AdjustmentFilter } from "pixi-filters";
 import type { RenderBackend, CommandBuffer } from "../runtime/types";
 import type { RenderPass } from "../planner/types";
-import {
-  createColorAdjustmentsFilter,
-  updateColorAdjustmentsFilter,
-  normalizeColorAdjustmentsUniforms,
-} from "./colorAdjustmentsFilter.js";
+import { createColorAdjustmentsFilter, updateColorAdjustmentsFilter, normalizeColorAdjustmentsUniforms } from "./colorAdjustmentsFilter.js";
 
 export class PixiRenderBackend implements RenderBackend {
   private app: PIXI.Application | null = null;
@@ -198,10 +198,7 @@ export class PixiRenderBackend implements RenderBackend {
   }
 
   /** Upload a source image into track/source render textures (contain-fit). */
-  uploadSourceImage(
-    sourceImage: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement,
-    resourceIds: readonly string[],
-  ): void {
+  uploadSourceImage(sourceImage: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement, resourceIds: readonly string[]): void {
     if (!this.app) return;
 
     const sourceTexture = PIXI.Texture.from(sourceImage);
@@ -212,10 +209,7 @@ export class PixiRenderBackend implements RenderBackend {
       const blitSprite = new PIXI.Sprite(sourceTexture);
       const fitScale = Math.min(texture.width / sourceTexture.width, texture.height / sourceTexture.height);
       blitSprite.scale.set(fitScale);
-      blitSprite.position.set(
-        (texture.width - sourceTexture.width * fitScale) / 2,
-        (texture.height - sourceTexture.height * fitScale) / 2,
-      );
+      blitSprite.position.set((texture.width - sourceTexture.width * fitScale) / 2, (texture.height - sourceTexture.height * fitScale) / 2);
       this.app.renderer.render({ container: blitSprite, target: texture as PIXI.RenderTexture });
     }
   }
@@ -231,10 +225,7 @@ export class PixiRenderBackend implements RenderBackend {
     const scale = Math.min(screenW / texture.width, screenH / texture.height);
     const sprite = new PIXI.Sprite(texture);
     sprite.scale.set(scale);
-    sprite.position.set(
-      (screenW - texture.width * scale) / 2,
-      (screenH - texture.height * scale) / 2,
-    );
+    sprite.position.set((screenW - texture.width * scale) / 2, (screenH - texture.height * scale) / 2);
 
     this.app.stage.removeChildren();
     this.app.stage.addChild(sprite);
