@@ -398,7 +398,7 @@ export function PreviewCanvasV2({ effect, inputs, currentTime, width = 1920, hei
   };
 
   return (
-    <div className="preview-canvas-v2" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, overflow: "hidden" }}>
+    <div className="preview-canvas-v2" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       {/* Canvas Container */}
       <div
         ref={containerRef}
@@ -410,7 +410,6 @@ export function PreviewCanvasV2({ effect, inputs, currentTime, width = 1920, hei
           position: "relative",
           minHeight: 0,
           minWidth: 0,
-          overflow: "hidden",
           padding: "12px",
         }}
       >
