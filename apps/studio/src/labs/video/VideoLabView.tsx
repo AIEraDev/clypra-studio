@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from "react";
-import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, PreviewCanvas, Timeline, PresetManager, ValidationPanel, type Preset, type ValidationIssue } from "@clypra/ui";
+import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, ResponsivePreviewCanvas, Timeline, PresetManager, ValidationPanel, type Preset, type ValidationIssue } from "@clypra/ui";
 import { videoEffects } from "@clypra/engine/effects/video";
 
 export function VideoLabView() {
@@ -383,13 +383,13 @@ export function VideoLabView() {
           style={{
             flex: 1,
             padding: "24px",
-            overflowY: "auto",
+            overflow: "auto",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
           }}
         >
-          <PreviewCanvas effect={selectedEffect ? { ...selectedEffect, parameters } : null} inputs={{ video: videoFile }} currentTime={currentTime} playing={playing} onPlayingChange={setPlaying} onTimeChange={setCurrentTime} width={1920} height={1080} />
+          <ResponsivePreviewCanvas effect={selectedEffect ? { ...selectedEffect, parameters } : null} inputs={{ video: videoFile }} currentTime={currentTime} playing={playing} onPlayingChange={setPlaying} onTimeChange={setCurrentTime} renderWidth={1920} renderHeight={1080} responsive={true} fit="contain" />
 
           <Timeline duration={duration} currentTime={currentTime} onSeek={setCurrentTime} frameRate={60} />
 
