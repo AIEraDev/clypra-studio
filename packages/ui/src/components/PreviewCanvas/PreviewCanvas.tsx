@@ -12,6 +12,7 @@ import { PixiRenderer } from "@clypra/runtime/pixi";
 import { ValidationBackend } from "@clypra/runtime/validation";
 import type { RuntimeTelemetry } from "@clypra/runtime/telemetry";
 import { RuntimeInspector } from "../RuntimeInspector/RuntimeInspector";
+import "./PreviewCanvas.css";
 
 export interface PreviewCanvasProps {
   /** Effect definition to render */
@@ -96,6 +97,12 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
         });
 
         console.log("✓ Pixi Renderer initialized");
+
+        // Remove Pixi's inline width/height styles to allow CSS to control sizing
+        if (canvasRef.current) {
+          canvasRef.current.style.removeProperty("width");
+          canvasRef.current.style.removeProperty("height");
+        }
       } catch (error) {
         console.error("Failed to initialize renderer:", error);
         setRuntimeStatus((prev) => ({ ...prev, error: String(error) }));
@@ -269,9 +276,8 @@ export function PreviewCanvas({ effect, inputs, currentTime, width = 1920, heigh
         width={width}
         height={height}
         onClick={handleCanvasClick}
+        className="preview-canvas-responsive"
         style={{
-          width: "100%",
-          height: "auto",
           cursor: "pointer",
           border: "1px solid #334155",
           borderRadius: "8px",
