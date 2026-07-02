@@ -2,10 +2,19 @@
  * @clypra/runtime — Frame Graph Planner
  *
  * Converts media processing graphs into executable frame graphs.
+ * Merged implementation combining the best features from engine/v2 and runtime.
+ *
+ * Features:
+ * - NodeRegistry integration for dynamic shader planning
+ * - Clip activation logic for timeline management
+ * - ExecutionPlanner interface for per-node planning
+ * - Multipass support with intermediate resources
+ * - PlannerConfig for configuration management
  */
 
-import type { MediaProcessingGraph, GraphNode } from "../graph/types";
-import { GraphHelper } from "../graph/types";
+import type { MediaProcessingGraph, GraphNode, GraphEdge } from "@clypra/types";
+import { GraphHelper } from "@clypra/types";
+import type { NodeRegistry } from "../graph/NodeRegistry";
 import type { FrameGraph, ResourceRequest, RenderPass, PlannerConfig } from "./types";
 
 /**
@@ -13,8 +22,9 @@ import type { FrameGraph, ResourceRequest, RenderPass, PlannerConfig } from "./t
  */
 export class FrameGraphPlanner {
   private config: PlannerConfig;
+  private registry?: NodeRegistry;
 
-  constructor(config: Partial<PlannerConfig> = {}) {
+  constructor(config: Partial<PlannerConfig> = {}, registry?: NodeRegistry) {
     this.config = {
       targetWidth: config.targetWidth || 1920,
       targetHeight: config.targetHeight || 1080,
@@ -22,198 +32,294 @@ export class FrameGraphPlanner {
       allowHalfResolution: config.allowHalfResolution ?? true,
       maxTransientResources: config.maxTransientResources || 8,
     };
+    this.registry = registry;
   }
 
   /**
-   * Plan frame execution for a specific frame number
+   * Plan frame execution for a specific frame number and timeline time.
+   * Evaluates clip activation, traces active nodes upstream, and plans resources/passes.
    */
   plan(graph: MediaProcessingGraph, frameNumber: number, timeMs: number): FrameGraph {
-    // Get topologically sorted nodes
-    const sortedNodes = GraphHelper.topologicalSort(graph);
+    const { targetWidth, targetHeight } = this.config;
 
-    // Filter active nodes (for now, all nodes are active)
-    const activeNodes = this.filterActiveNodes(sortedNodes, frameNumber);
+    // Phase 1: Determine active nodes based on timeline time
+    const activeNodeIds = new Set<string>();
+    const nodeById = new Map<string, GraphNode>();
 
-    // Generate resource requests
-    const resourceRequests = this.generateResourceRequests(activeNodes);
+    for (const node of graph.nodes) {
+      nodeById.set(node.id, node);
 
-    // Generate render passes
-    const passes = this.generateRenderPasses(graph, activeNodes);
+      // TrackSourceManager nodes are active if they have enabled clips in range
+      if (node.type === "TrackSourceManager") {
+        const clips = node.params.clips || [];
+        const hasActiveClip = clips.some((c: { enabled: boolean; timelineStartMs: number; timelineEndMs: number }) => c.enabled && timeMs >= c.timelineStartMs && timeMs <= c.timelineEndMs);
+        if (hasActiveClip) {
+          activeNodeIds.add(node.id);
+        }
+      } else if (node.type === "OutputNode" || node.type === "Output") {
+        activeNodeIds.add(node.id);
+      }
+    }
+
+    // Phase 2: Trace upstream from output to find all contributing nodes
+    const visited = new Set<string>();
+    const activeNodesList: GraphNode[] = [];
+    const activeEdgesList: GraphEdge[] = [];
+
+    const traceUpstream = (nodeId: string): boolean => {
+      const node = nodeById.get(nodeId);
+      if (!node) return false;
+
+      // TrackSourceManager is a leaf - check if it's active
+      if (node.type === "TrackSourceManager") {
+        const isActive = activeNodeIds.has(nodeId);
+        if (isActive && !visited.has(nodeId)) {
+          visited.add(nodeId);
+          activeNodesList.push(node);
+        }
+        return isActive;
+      }
+
+      // For other nodes, check if any input is active
+      const incomingEdges = GraphHelper.getIncomingEdges(graph, nodeId);
+      let anyInputActive = incomingEdges.length === 0;
+      const activeEdges: GraphEdge[] = [];
+
+      for (const edge of incomingEdges) {
+        if (traceUpstream(edge.fromNodeId)) {
+          anyInputActive = true;
+          activeEdges.push(edge);
+        }
+      }
+
+      // Include output nodes and nodes with active inputs
+      if (anyInputActive || nodeId === "composite-output" || node.type === "OutputNode" || node.type === "Output") {
+        if (!visited.has(nodeId)) {
+          visited.add(nodeId);
+          activeNodesList.push(node);
+          activeEdges.forEach((e) => activeEdgesList.push(e));
+        }
+        return true;
+      }
+
+      return false;
+    };
+
+    // Start tracing from output node
+    const outputNode = Array.from(nodeById.values()).find((n) => n.type === "OutputNode" || n.type === "Output" || n.id === "composite-output");
+    if (outputNode) {
+      traceUpstream(outputNode.id);
+    }
+
+    // Phase 3: Plan resources and passes
+    const resourceRequests: ResourceRequest[] = [];
+    const renderPasses: RenderPass[] = [];
+
+    // Standard source and final frame resources
+    resourceRequests.push({
+      id: "res-src-frame",
+      type: "texture",
+      width: targetWidth,
+      height: targetHeight,
+      format: "rgba8",
+      transient: false,
+    });
+
+    resourceRequests.push({
+      id: "output",
+      type: "texture",
+      width: targetWidth,
+      height: targetHeight,
+      format: "rgba8",
+      transient: false,
+    });
+
+    // Map node IDs to their output resource IDs
+    const nodeOutputResourceMap = new Map<string, string>();
+    nodeOutputResourceMap.set("composite-output", "output");
+    if (outputNode) {
+      nodeOutputResourceMap.set(outputNode.id, "output");
+    }
+
+    // Plan each active node
+    for (const node of activeNodesList) {
+      this.planNodePasses(node, activeEdgesList, nodeOutputResourceMap, resourceRequests, renderPasses, timeMs, targetWidth, targetHeight);
+    }
 
     return {
       frameNumber,
       timelineTimeMs: timeMs,
-      nodes: activeNodes,
-      edges: graph.edges,
+      nodes: activeNodesList,
+      edges: activeEdgesList,
       resourceRequests,
-      passes,
+      passes: renderPasses,
     };
   }
 
   /**
-   * Filter nodes that contribute to the current frame
+   * Plan resources and passes for a single node.
+   * Uses NodeRegistry for dynamic planning if available.
    */
-  private filterActiveNodes(nodes: readonly GraphNode[], frameNumber: number): readonly GraphNode[] {
-    // For now, all nodes are active
-    // In the future, we can skip nodes based on temporal properties, conditions, etc.
-    return nodes.filter((node) => {
-      // Skip nodes that are disabled or culled
-      if (node.lifecycle === "Disposed") return false;
+  private planNodePasses(node: GraphNode, activeEdges: GraphEdge[], nodeOutputResourceMap: Map<string, string>, resourceRequests: ResourceRequest[], renderPasses: RenderPass[], timeMs: number, width: number, height: number): void {
+    const planner = this.registry?.getPlanner(node.type);
 
-      // Include all other nodes
-      return true;
+    // TrackSourceManager: source frame reading
+    if (node.type === "TrackSourceManager") {
+      const resourceId = `res-${node.id}`;
+      resourceRequests.push({
+        id: resourceId,
+        type: "texture",
+        width,
+        height,
+        format: "rgba8",
+        transient: true,
+      });
+      nodeOutputResourceMap.set(node.id, resourceId);
+
+      if (planner) {
+        this.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, { ...node.params, timeMs }, [], resourceId, width, height), resourceRequests, renderPasses);
+      }
+      return;
+    }
+
+    // OutputNode: final blit to output
+    if (node.type === "OutputNode" || node.type === "Output") {
+      const incoming = activeEdges.find((e) => e.toNodeId === node.id);
+      const inputResource = incoming ? nodeOutputResourceMap.get(incoming.fromNodeId) : "res-src-frame";
+      const inputIds = [inputResource || "res-src-frame"];
+
+      if (planner) {
+        this.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, node.params, inputIds, "output", width, height), resourceRequests, renderPasses);
+      }
+      return;
+    }
+
+    // AlphaBlend: two-input compositing
+    if (node.type === "AlphaBlend") {
+      const edges = activeEdges.filter((e) => e.toNodeId === node.id);
+      const baseEdge = edges.find((e) => e.toPinId === "base");
+      const overEdge = edges.find((e) => e.toPinId === "over");
+      const baseResource = baseEdge ? nodeOutputResourceMap.get(baseEdge.fromNodeId) : "res-src-frame";
+      const overResource = overEdge ? nodeOutputResourceMap.get(overEdge.fromNodeId) : "res-src-frame";
+      const inputIds = [baseResource || "res-src-frame", overResource || "res-src-frame"];
+      const outputResource = `res-blend-out-${node.id}`;
+
+      resourceRequests.push({
+        id: outputResource,
+        type: "texture",
+        width,
+        height,
+        format: "rgba8",
+        transient: true,
+      });
+      nodeOutputResourceMap.set(node.id, outputResource);
+
+      if (planner) {
+        this.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, node.params, inputIds, outputResource, width, height), resourceRequests, renderPasses);
+      }
+      return;
+    }
+
+    // GaussianBlur: multipass with fp16 intermediate
+    if (node.type === "GaussianBlur") {
+      const incoming = activeEdges.find((e) => e.toNodeId === node.id);
+      const inputResource = incoming ? nodeOutputResourceMap.get(incoming.fromNodeId) : "res-src-frame";
+      const inputIds = [inputResource || "res-src-frame"];
+      const outputResource = `res-blur-out-${node.id}`;
+
+      resourceRequests.push({
+        id: outputResource,
+        type: "texture",
+        width,
+        height,
+        format: "rgba16f",
+        transient: true,
+      });
+      nodeOutputResourceMap.set(node.id, outputResource);
+
+      if (planner) {
+        this.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, node.params, inputIds, outputResource, width, height), resourceRequests, renderPasses);
+      }
+      return;
+    }
+
+    // Generic single-input effect
+    const incoming = activeEdges.find((e) => e.toNodeId === node.id);
+    const inputResource = incoming ? nodeOutputResourceMap.get(incoming.fromNodeId) : "res-src-frame";
+    const inputIds = [inputResource || "res-src-frame"];
+    const outputResource = `res-out-${node.id}`;
+
+    resourceRequests.push({
+      id: outputResource,
+      type: "texture",
+      width,
+      height,
+      format: "rgba8",
+      transient: true,
     });
+    nodeOutputResourceMap.set(node.id, outputResource);
+
+    if (planner) {
+      this.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, node.params, inputIds, outputResource, width, height), resourceRequests, renderPasses);
+    } else {
+      // Fallback: simple pass without registry
+      renderPasses.push({
+        id: `pass-${node.id}`,
+        name: `Apply ${node.type}`,
+        shaderId: node.type.toLowerCase(),
+        inputs: inputIds,
+        output: outputResource,
+        uniforms: node.params,
+      });
+    }
   }
 
   /**
-   * Generate resource requests for active nodes
+   * Append passes planned by ExecutionPlanner, including intermediate resources.
    */
-  private generateResourceRequests(nodes: readonly GraphNode[]): readonly ResourceRequest[] {
-    const requests: ResourceRequest[] = [];
-
-    // Find the Output node position
-    const outputNodeIndex = nodes.findIndex((n) => n.type === "Output");
-
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-
-      // Input resources (from MediaInput nodes)
-      if (node.type === "MediaInput") {
-        requests.push({
-          id: `${node.id}-output`,
-          type: "texture",
-          width: this.config.targetWidth,
-          height: this.config.targetHeight,
-          format: "rgba8",
-          transient: false,
-        });
-      }
-
-      // Output resources for effect nodes
-      // Skip creating intermediate resource if this is the last effect node (writes to "output" directly)
-      if (node.type !== "MediaInput" && node.type !== "Output") {
-        const isLastEffectNode = i === outputNodeIndex - 1;
-
-        if (!isLastEffectNode) {
-          // Create intermediate resource for non-final effect nodes
-          const outputKeys = Object.keys(node.outputs);
-          for (const outputKey of outputKeys) {
-            const output = node.outputs[outputKey];
-            const format = this.getFormatForType(output.type);
-
-            requests.push({
-              id: `${node.id}-${outputKey}`,
-              type: "texture",
-              width: this.config.targetWidth,
-              height: this.config.targetHeight,
-              format,
-              transient: true,
+  private appendPlannedPasses(
+    nodeId: string,
+    planned: Array<{
+      shaderId: string;
+      name: string;
+      inputs: readonly string[];
+      output: string;
+      uniforms: Readonly<Record<string, any>>;
+      intermediateResources?: Array<{
+        id: string;
+        type: "texture" | "buffer";
+        width: number;
+        height: number;
+        format: string;
+        transient: boolean;
+      }>;
+    }>,
+    resourceRequests: ResourceRequest[],
+    renderPasses: RenderPass[],
+  ): void {
+    planned.forEach((p, index) => {
+      // Register intermediate resources
+      if (p.intermediateResources) {
+        for (const ir of p.intermediateResources) {
+          if (!resourceRequests.some((r) => r.id === ir.id)) {
+            resourceRequests.push({
+              ...ir,
+              format: ir.format as ResourceRequest["format"],
             });
           }
         }
       }
 
-      // Final output resource (non-transient)
-      if (node.type === "Output") {
-        requests.push({
-          id: "output",
-          type: "texture",
-          width: this.config.targetWidth,
-          height: this.config.targetHeight,
-          format: "rgba8",
-          transient: false,
-        });
-      }
-
-      // Temporary resources for multipass effects
-      if (node.requirements.multipass) {
-        requests.push({
-          id: `${node.id}-temp`,
-          type: "texture",
-          width: this.config.targetWidth,
-          height: this.config.targetHeight,
-          format: "rgba16f",
-          transient: true,
-        });
-      }
-    }
-
-    return requests;
-  }
-
-  /**
-   * Generate render passes from nodes
-   */
-  private generateRenderPasses(graph: MediaProcessingGraph, nodes: readonly GraphNode[]): readonly RenderPass[] {
-    const passes: RenderPass[] = [];
-
-    // Find the Output node position
-    const outputNodeIndex = nodes.findIndex((n) => n.type === "Output");
-
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-
-      // Skip input and output nodes (they don't have shaders)
-      if (node.type === "MediaInput" || node.type === "Output") {
-        continue;
-      }
-
-      // Get input resources
-      const inputResourceIds: string[] = [];
-      const incomingEdges = GraphHelper.getIncomingEdges(graph, node.id);
-      for (const edge of incomingEdges) {
-        // Find the resource ID for this edge
-        // For now, use a simple naming scheme
-        inputResourceIds.push(`${edge.fromNodeId}-${edge.fromPinId}`);
-      }
-
-      // Determine output resource
-      // If this is the last effect node before Output, write to "output"
-      const isLastEffectNode = i === outputNodeIndex - 1;
-      const outputResourceId = isLastEffectNode ? "output" : `${node.id}-output`;
-
-      // Create pass
-      const pass: RenderPass = {
-        id: `pass-${node.id}`,
-        name: node.type,
-        shaderId: node.type,
-        inputs: inputResourceIds,
-        output: outputResourceId,
-        uniforms: node.params,
-      };
-
-      passes.push(pass);
-
-      // If multipass, add additional passes
-      if (node.requirements.multipass) {
-        // Add a second pass (e.g., for blur, we'd do horizontal then vertical)
-        passes.push({
-          id: `pass-${node.id}-2`,
-          name: `${node.type}-pass2`,
-          shaderId: `${node.type}-pass2`,
-          inputs: [outputResourceId],
-          output: isLastEffectNode ? "output" : `${node.id}-output-final`,
-          uniforms: node.params,
-        });
-      }
-    }
-
-    return passes;
-  }
-
-  /**
-   * Get texture format based on data type
-   */
-  private getFormatForType(type: string): "rgba8" | "rgba16f" | "rgba32f" | "r8" | "depth24" {
-    switch (type) {
-      case "Depth":
-        return "depth24";
-      case "Mask":
-        return "r8";
-      case "Texture":
-      default:
-        return "rgba8";
-    }
+      // Add render pass
+      renderPasses.push({
+        id: planned.length > 1 ? `pass-${nodeId}-${index}` : `pass-${nodeId}`,
+        name: p.name,
+        shaderId: p.shaderId,
+        inputs: [...p.inputs],
+        output: p.output,
+        uniforms: p.uniforms,
+      });
+    });
   }
 
   /**
@@ -228,5 +334,19 @@ export class FrameGraphPlanner {
    */
   getConfig(): PlannerConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Update or set the NodeRegistry
+   */
+  setRegistry(registry: NodeRegistry): void {
+    this.registry = registry;
+  }
+
+  /**
+   * Get the current NodeRegistry
+   */
+  getRegistry(): NodeRegistry | undefined {
+    return this.registry;
   }
 }
