@@ -1,6 +1,11 @@
 /**
  * @clypra/engine — Pipeline V2: Graph Validator
  *
+ * @deprecated This implementation should be merged into @clypra/runtime/graph/validator
+ * This version has MORE COMPLETE functionality (NodeRegistry integration, detailed error types,
+ * cycle path tracking) than the current runtime version and should be used as the canonical implementation.
+ * This file will be removed in v3.0.0 after merging into runtime.
+ *
  * Separates graph validation into a dedicated compilation pre-pass.
  * Validates pin connection type-safety, performs cycle detection (DAG validation),
  * and enforces capability matches.
