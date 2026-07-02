@@ -1,6 +1,11 @@
 /**
  * @clypra/engine — Pipeline V2: Frame Graph Builder
  *
+ * @deprecated This implementation should be merged into @clypra/runtime/planner
+ * This version has MORE COMPLETE functionality (NodeRegistry integration, clip activation)
+ * than the current runtime version and should be used as the canonical implementation.
+ * This file will be removed in v3.0.0 after merging into runtime.
+ *
  * Takes a compiled MediaProcessingGraph, evaluates segment activation at a specific time point,
  * resolves dependency execution order, plans texture allocations, and constructs a FrameGraph.
  */

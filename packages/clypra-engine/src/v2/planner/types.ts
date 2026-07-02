@@ -1,6 +1,14 @@
 /**
  * @clypra/engine — Pipeline V2: Render Planner Definitions
  *
+ * @deprecated This file has been superseded by @clypra/runtime/planner/types
+ * Import from @clypra/runtime instead:
+ * ```ts
+ * import type { FrameGraph, ResourceRequest, RenderPass } from "@clypra/runtime/planner";
+ * ```
+ * Note: Runtime version includes additional properties (blendMode, clearBeforeRender, PlannerConfig)
+ * This file will be removed in v3.0.0
+ *
  * Defines transient planning constructs: resource requests, frame-isolated graphs, and render passes.
  */
 
