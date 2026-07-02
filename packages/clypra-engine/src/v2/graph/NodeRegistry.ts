@@ -1,6 +1,13 @@
 /**
  * @clypra/engine — Pipeline V2: Node Registry
  *
+ * @deprecated This file has been moved to @clypra/runtime/graph/NodeRegistry
+ * Import from @clypra/runtime instead:
+ * ```ts
+ * import { NodeRegistry } from "@clypra/runtime/graph";
+ * ```
+ * This file will be removed in v3.0.0
+ *
  * Implements a dynamic registry pattern to load, hold, and retrieve effect and processing node definitions.
  * Eliminates hardcoded string checks in the compiler and planner by providing a centralized capability lookup.
  */
