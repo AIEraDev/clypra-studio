@@ -1,4 +1,15 @@
 /**
+ * @deprecated This file has been moved to @clypra/runtime/compiler
+ *
+ * Import from @clypra/runtime instead:
+ * ```typescript
+ * import { ProjectCompiler } from '@clypra/runtime/compiler';
+ * ```
+ *
+ * This file will be removed in v3.0.0
+ */
+
+/**
  * @clypra/engine — Pipeline V2: Project Compiler
  *
  * Compiles an NLE ProjectManifestV2 into a connected, dependency-resolved MediaProcessingGraph.
