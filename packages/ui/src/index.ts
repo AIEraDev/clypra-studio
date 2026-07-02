@@ -26,6 +26,12 @@ export type { PreviewCanvasProps } from "./components/PreviewCanvas";
 export { PreviewCanvasV2 } from "./components/PreviewCanvas";
 export type { PreviewCanvasV2Props } from "./components/PreviewCanvas";
 
+export { ResponsivePreviewCanvas } from "./components/PreviewCanvas";
+export type { ResponsivePreviewCanvasProps } from "./components/PreviewCanvas";
+
+export { useResponsiveCanvas } from "./components/PreviewCanvas";
+export type { ResponsiveCanvasConfig, ResponsiveCanvasState } from "./components/PreviewCanvas";
+
 export { Timeline } from "./components/Timeline";
 export type { TimelineProps } from "./components/Timeline";
 
