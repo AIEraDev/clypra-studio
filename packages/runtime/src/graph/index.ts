@@ -26,3 +26,6 @@ export * from "./types";
 // Graph builder and validator implementations
 export * from "./builder";
 export * from "./validator";
+
+// Node registry for dynamic effect lookup
+export * from "./NodeRegistry";
