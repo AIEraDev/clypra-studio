@@ -8,6 +8,8 @@
   "exports": {
     ".": "./dist/index.js",
     "./graph": "./dist/graph/index.js",
+    "./project": "./dist/project/index.js",
+    "./compiler": "./dist/compiler/index.js",
     "./planner": "./dist/planner/index.js",
     "./job": "./dist/job/index.js",
     "./executor": "./dist/executor/index.js",
