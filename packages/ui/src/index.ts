@@ -4,6 +4,8 @@
  * Shared UI components for all Clypra Studio Labs.
  * These components provide common developer tools: graph inspection,
  * performance monitoring, resource visualization, and parameter editing.
+ *
+ * @packageDocumentation
  */
 
 // Week 3 Components - Developer Panels
