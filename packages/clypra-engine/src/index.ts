@@ -1,6 +1,7 @@
 /**
  * @clypra/engine — Canvas 2D text effects, Lottie tooling, and animation engine.
  * @version 2.0.1
+ * @packageDocumentation
  */
 export * from "./types.js";
 export * from "./validation.js";
