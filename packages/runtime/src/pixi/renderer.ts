@@ -190,18 +190,12 @@ export class PixiRenderer {
       console.log(`[PixiRenderer] Compiling custom shader for pass: ${pass.id}`);
       filter = this.compileCustomShader(pass.shaderId, pass.customShader, pass.uniforms || {}, target.width, target.height);
       disposeFilter = true; // Always dispose custom shaders
-    } else if (this.filters.has(pass.shaderId)) {
-      filter = this.filters.get(pass.shaderId)!;
-      updateFilterUniforms(filter, pass.uniforms, pass.shaderId);
     } else {
+      // Don't cache filters - create fresh instances to avoid mutation issues
+      // When multiple passes use same shaderId with different uniforms,
+      // cached filter mutation can cause incorrect results
       filter = createFilter(pass.shaderId, pass.uniforms);
-
-      // Cache simple filters
-      if (["brightness", "contrast", "saturation", "copy", "blit"].includes(pass.shaderId)) {
-        this.filters.set(pass.shaderId, filter);
-      } else {
-        disposeFilter = true;
-      }
+      disposeFilter = true;
     }
 
     // Apply filter and render
