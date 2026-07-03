@@ -11,16 +11,18 @@ interface PooledTexture {
   texture: PIXI.RenderTexture;
   descriptor: PixiResourceDescriptor;
   lastUsed: number;
+  id: number; // Unique identifier for this pooled texture
 }
 
 /**
  * Texture pool with LRU eviction
  */
 export class TexturePool {
-  private pool: Map<string, PooledTexture> = new Map();
+  private pool: Map<string, PooledTexture[]> = new Map(); // Changed to array per key
   private maxSize: number;
   private hits = 0;
   private misses = 0;
+  private nextId = 0;
 
   constructor(maxSize: number = 20) {
     this.maxSize = maxSize;
@@ -31,11 +33,14 @@ export class TexturePool {
    */
   acquire(descriptor: PixiResourceDescriptor): PIXI.RenderTexture {
     const key = this.descriptorKey(descriptor);
-    const pooled = this.pool.get(key);
+    const pooledArray = this.pool.get(key);
 
-    if (pooled) {
-      // Hit: Reuse existing texture
-      this.pool.delete(key);
+    if (pooledArray && pooledArray.length > 0) {
+      // Hit: Reuse existing texture from the pool
+      const pooled = pooledArray.pop()!;
+      if (pooledArray.length === 0) {
+        this.pool.delete(key);
+      }
       this.hits++;
       return pooled.texture;
     }
@@ -57,15 +62,35 @@ export class TexturePool {
     const key = this.descriptorKey(descriptor);
 
     // Check if pool is full
-    if (this.pool.size >= this.maxSize) {
+    const totalPooled = this.getTotalPooledCount();
+    if (totalPooled >= this.maxSize) {
       this.evictLRU();
     }
 
-    this.pool.set(key, {
+    // Get or create array for this key
+    let pooledArray = this.pool.get(key);
+    if (!pooledArray) {
+      pooledArray = [];
+      this.pool.set(key, pooledArray);
+    }
+
+    pooledArray.push({
       texture,
       descriptor,
       lastUsed: Date.now(),
+      id: this.nextId++,
     });
+  }
+
+  /**
+   * Get total count of pooled textures
+   */
+  private getTotalPooledCount(): number {
+    let count = 0;
+    for (const array of this.pool.values()) {
+      count += array.length;
+    }
+    return count;
   }
 
   /**
@@ -73,20 +98,29 @@ export class TexturePool {
    */
   private evictLRU(): void {
     let oldestKey: string | null = null;
+    let oldestIndex = -1;
     let oldestTime = Infinity;
 
-    for (const [key, pooled] of this.pool.entries()) {
-      if (pooled.lastUsed < oldestTime) {
-        oldestTime = pooled.lastUsed;
-        oldestKey = key;
+    for (const [key, pooledArray] of this.pool.entries()) {
+      for (let i = 0; i < pooledArray.length; i++) {
+        const pooled = pooledArray[i];
+        if (pooled.lastUsed < oldestTime) {
+          oldestTime = pooled.lastUsed;
+          oldestKey = key;
+          oldestIndex = i;
+        }
       }
     }
 
-    if (oldestKey) {
-      const pooled = this.pool.get(oldestKey);
-      if (pooled) {
+    if (oldestKey && oldestIndex >= 0) {
+      const pooledArray = this.pool.get(oldestKey);
+      if (pooledArray) {
+        const pooled = pooledArray[oldestIndex];
         pooled.texture.destroy(true);
-        this.pool.delete(oldestKey);
+        pooledArray.splice(oldestIndex, 1);
+        if (pooledArray.length === 0) {
+          this.pool.delete(oldestKey);
+        }
       }
     }
   }
@@ -103,15 +137,19 @@ export class TexturePool {
    */
   getStats(): TexturePoolStats {
     let totalMemory = 0;
+    let totalCount = 0;
 
-    for (const pooled of this.pool.values()) {
-      const bytesPerPixel = this.getBytesPerPixel(pooled.descriptor.format);
-      totalMemory += pooled.descriptor.width * pooled.descriptor.height * bytesPerPixel;
+    for (const pooledArray of this.pool.values()) {
+      for (const pooled of pooledArray) {
+        const bytesPerPixel = this.getBytesPerPixel(pooled.descriptor.format);
+        totalMemory += pooled.descriptor.width * pooled.descriptor.height * bytesPerPixel;
+        totalCount++;
+      }
     }
 
     return {
-      allocated: this.pool.size,
-      available: this.maxSize - this.pool.size,
+      allocated: totalCount,
+      available: this.maxSize - totalCount,
       totalMemory,
       hits: this.hits,
       misses: this.misses,
@@ -142,8 +180,10 @@ export class TexturePool {
    * Clear the pool
    */
   clear(): void {
-    for (const pooled of this.pool.values()) {
-      pooled.texture.destroy(true);
+    for (const pooledArray of this.pool.values()) {
+      for (const pooled of pooledArray) {
+        pooled.texture.destroy(true);
+      }
     }
     this.pool.clear();
     this.hits = 0;
