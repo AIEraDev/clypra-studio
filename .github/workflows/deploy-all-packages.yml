@@ -1,0 +1,408 @@
+name: Deploy All Clypra Studio Packages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/**"
+      - "!packages/**/README.md"
+  workflow_dispatch:
+    inputs:
+      force-publish:
+        description: "Force publish all packages (ignore change detection)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  detect-changes:
+    name: Detect Package Changes
+    runs-on: ubuntu-latest
+    outputs:
+      types-changed: ${{ steps.changes.outputs.types }}
+      shader-library-changed: ${{ steps.changes.outputs.shader-library }}
+      runtime-changed: ${{ steps.changes.outputs.runtime }}
+      ui-changed: ${{ steps.changes.outputs.ui }}
+      engine-changed: ${{ steps.changes.outputs.engine }}
+      feature-providers-changed: ${{ steps.changes.outputs.feature-providers }}
+      any-changed: ${{ steps.changes.outputs.any-changed }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: changes
+        run: |
+          # Force publish mode
+          if [ "${{ github.event.inputs.force-publish }}" = "true" ]; then
+            echo "types=true" >> $GITHUB_OUTPUT
+            echo "shader-library=true" >> $GITHUB_OUTPUT
+            echo "runtime=true" >> $GITHUB_OUTPUT
+            echo "ui=true" >> $GITHUB_OUTPUT
+            echo "engine=true" >> $GITHUB_OUTPUT
+            echo "feature-providers=true" >> $GITHUB_OUTPUT
+            echo "any-changed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Get changed files
+          if [ "${{ github.event_name }}" = "push" ]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }}..${{ github.sha }})
+          else
+            CHANGED_FILES=$(git diff --name-only HEAD^..HEAD)
+          fi
+
+          # Check each package
+          echo "$CHANGED_FILES" | grep -q "^packages/types/" && echo "types=true" >> $GITHUB_OUTPUT || echo "types=false" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" | grep -q "^packages/shader-library/" && echo "shader-library=true" >> $GITHUB_OUTPUT || echo "shader-library=false" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" | grep -q "^packages/runtime/" && echo "runtime=true" >> $GITHUB_OUTPUT || echo "runtime=false" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" | grep -q "^packages/ui/" && echo "ui=true" >> $GITHUB_OUTPUT || echo "ui=false" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" | grep -q "^packages/clypra-engine/" && echo "engine=true" >> $GITHUB_OUTPUT || echo "engine=false" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" | grep -q "^packages/feature-providers/" && echo "feature-providers=true" >> $GITHUB_OUTPUT || echo "feature-providers=false" >> $GITHUB_OUTPUT
+
+          # Check if any changed
+          if echo "$CHANGED_FILES" | grep -q "^packages/"; then
+            echo "any-changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "any-changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Build and test all packages first
+  build-and-test:
+    name: Build & Test All Packages
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any-changed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Build all packages
+        run: npm run build:packages
+
+      - name: Run all tests
+        run: npm test -- --run
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-packages
+          path: |
+            packages/*/dist
+            packages/*/package.json
+          retention-days: 1
+
+  # Publish packages in dependency order
+  publish-types:
+    name: Publish @clypra/types
+    needs: [detect-changes, build-and-test]
+    if: needs.detect-changes.outputs.types-changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Build @clypra/types
+        run: npm run build:types
+
+      - name: Publish
+        working-directory: packages/types
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "github-actions[bot]"
+          GIT_COMMITTER_EMAIL: "github-actions[bot]@users.noreply.github.com"
+
+  publish-shader-library:
+    name: Publish @clypra/shader-library
+    needs: [detect-changes, build-and-test, publish-types]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.shader-library-changed == 'true' &&
+      (needs.publish-types.result == 'success' || needs.publish-types.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Build dependencies
+        run: |
+          npm run build:types
+          npm run build:shader-library
+
+      - name: Publish
+        working-directory: packages/shader-library
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "github-actions[bot]"
+          GIT_COMMITTER_EMAIL: "github-actions[bot]@users.noreply.github.com"
+
+  publish-runtime:
+    name: Publish @clypra/runtime
+    needs: [detect-changes, build-and-test, publish-types, publish-shader-library]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.runtime-changed == 'true' &&
+      (needs.publish-types.result == 'success' || needs.publish-types.result == 'skipped') &&
+      (needs.publish-shader-library.result == 'success' || needs.publish-shader-library.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Build dependencies
+        run: |
+          npm run build:types
+          npm run build:shader-library
+          npm run build:runtime
+
+      - name: Publish
+        working-directory: packages/runtime
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "github-actions[bot]"
+          GIT_COMMITTER_EMAIL: "github-actions[bot]@users.noreply.github.com"
+
+  publish-feature-providers:
+    name: Publish @clypra/feature-providers
+    needs: [detect-changes, build-and-test, publish-types]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.feature-providers-changed == 'true' &&
+      (needs.publish-types.result == 'success' || needs.publish-types.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Build dependencies
+        run: |
+          npm run build:types
+          npm run build:feature-providers
+
+      - name: Publish
+        working-directory: packages/feature-providers
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "github-actions[bot]"
+          GIT_COMMITTER_EMAIL: "github-actions[bot]@users.noreply.github.com"
+
+  publish-ui:
+    name: Publish @clypra/ui
+    needs: [detect-changes, build-and-test, publish-types, publish-shader-library, publish-runtime]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.ui-changed == 'true' &&
+      (needs.publish-types.result == 'success' || needs.publish-types.result == 'skipped') &&
+      (needs.publish-shader-library.result == 'success' || needs.publish-shader-library.result == 'skipped') &&
+      (needs.publish-runtime.result == 'success' || needs.publish-runtime.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Build dependencies
+        run: |
+          npm run build:types
+          npm run build:shader-library
+          npm run build:runtime
+          npm run build:ui
+
+      - name: Publish
+        working-directory: packages/ui
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "github-actions[bot]"
+          GIT_COMMITTER_EMAIL: "github-actions[bot]@users.noreply.github.com"
+
+  publish-engine:
+    name: Publish @clypra/engine
+    needs: [detect-changes, build-and-test, publish-types, publish-shader-library, publish-runtime]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.engine-changed == 'true' &&
+      (needs.publish-types.result == 'success' || needs.publish-types.result == 'skipped') &&
+      (needs.publish-shader-library.result == 'success' || needs.publish-shader-library.result == 'skipped') &&
+      (needs.publish-runtime.result == 'success' || needs.publish-runtime.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        run: npm install --workspaces --include-workspace-root
+
+      - name: Build dependencies
+        run: |
+          npm run build:types
+          npm run build:shader-library
+          npm run build:runtime
+          npm run build:engine
+
+      - name: Publish
+        working-directory: packages/clypra-engine
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "github-actions[bot]"
+          GIT_COMMITTER_EMAIL: "github-actions[bot]@users.noreply.github.com"
+
+  summary:
+    name: Deployment Summary
+    needs:
+      - detect-changes
+      - build-and-test
+      - publish-types
+      - publish-shader-library
+      - publish-runtime
+      - publish-feature-providers
+      - publish-ui
+      - publish-engine
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 📦 Clypra Studio Package Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Package Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| @clypra/types | ${{ needs.publish-types.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @clypra/shader-library | ${{ needs.publish-shader-library.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @clypra/runtime | ${{ needs.publish-runtime.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @clypra/feature-providers | ${{ needs.publish-feature-providers.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @clypra/ui | ${{ needs.publish-ui.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @clypra/engine | ${{ needs.publish-engine.result }} |" >> $GITHUB_STEP_SUMMARY
