@@ -52,7 +52,7 @@ export class FrameGraphPlanner {
       // Source nodes (TrackSourceManager, MediaInput, source, etc.)
       if (node.type === "TrackSourceManager") {
         const clips = node.params.clips || [];
-        const hasActiveClip = clips.some((c: { enabled: boolean; timelineStartMs: number; timelineEndMs: number }) => c.enabled && timeMs >= c.timelineStartMs && timeMs <= c.timelineEndMs);
+        const hasActiveClip = clips.some((c: { enabled: boolean; timelineStartMs: number; timelineEndMs: number }) => c.enabled && timeMs >= c.timelineStartMs && timeMs < c.timelineEndMs);
         if (hasActiveClip) {
           activeNodeIds.add(node.id);
         }
@@ -73,10 +73,15 @@ export class FrameGraphPlanner {
       const node = nodeById.get(nodeId);
       if (!node) return false;
 
+      // Early return if already visited (prevents exponential traversal in diamond DAGs)
+      if (visited.has(nodeId)) {
+        return activeNodeIds.has(nodeId);
+      }
+
       // Source nodes (TrackSourceManager, MediaInput, source) are leaves
       if (node.type === "TrackSourceManager" || node.type === "MediaInput" || node.type === "source" || node.capabilities.inputsCount === 0) {
         const isActive = activeNodeIds.has(nodeId);
-        if (isActive && !visited.has(nodeId)) {
+        if (isActive) {
           visited.add(nodeId);
           activeNodesList.push(node);
         }
@@ -97,11 +102,9 @@ export class FrameGraphPlanner {
 
       // Include output nodes and nodes with active inputs
       if (anyInputActive || nodeId === "composite-output" || node.type === "OutputNode" || node.type === "Output" || node.type === "sink") {
-        if (!visited.has(nodeId)) {
-          visited.add(nodeId);
-          activeNodesList.push(node);
-          activeEdges.forEach((e) => activeEdgesList.push(e));
-        }
+        visited.add(nodeId);
+        activeNodesList.push(node);
+        activeEdges.forEach((e) => activeEdgesList.push(e));
         return true;
       }
 
@@ -288,8 +291,6 @@ export class FrameGraphPlanner {
           resolvedUniforms[key] = uniformValue !== undefined ? uniformValue : uniform;
         }
       }
-
-      console.log(`[FrameGraphPlanner] Planning ShaderNode: ${node.id}, uniforms:`, Object.keys(resolvedUniforms));
 
       // Add render pass with custom shader
       renderPasses.push({
