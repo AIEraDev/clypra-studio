@@ -2,7 +2,7 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "apps/studio/dist",
-  "installCommand": "npm ci --workspaces --include-workspace-root --legacy-peer-deps",
+  "installCommand": "npm ci --workspaces --include-workspace-root",
   "framework": null,
   "devCommand": "npm run dev",
   "nodeVersion": "20.x",
