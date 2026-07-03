@@ -397,6 +397,7 @@ export class FrameGraphPlanner {
       inputs: readonly string[];
       output: string;
       uniforms: Readonly<Record<string, any>>;
+      customShader?: string; // Custom GLSL shader code
       intermediateResources?: Array<{
         id: string;
         type: "texture" | "buffer";
@@ -430,6 +431,7 @@ export class FrameGraphPlanner {
         inputs: [...p.inputs],
         output: p.output,
         uniforms: p.uniforms,
+        customShader: p.customShader, // Forward custom shader if present
       });
     });
   }
