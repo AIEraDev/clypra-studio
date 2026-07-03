@@ -3,6 +3,8 @@
  *
  * Shared runtime infrastructure for all Clypra Studio Labs.
  * This package contains the core execution engine used by Video Lab, Transition Lab, and Body Lab.
+ *
+ * @packageDocumentation
  */
 
 // Graph building
