@@ -1,6 +1,6 @@
 {
   "name": "@clypra/feature-providers",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Extensible feature providers for Body Effect Lab",
   "type": "module",
   "main": "./dist/index.js",
