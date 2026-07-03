@@ -3,6 +3,8 @@
  *
  * Reusable GLSL shader library for video effects.
  * All shaders are organized by category for easy reuse across effects.
+ *
+ * @packageDocumentation
  */
 
 // Utilities
