@@ -49,14 +49,17 @@ export class FrameGraphPlanner {
     for (const node of graph.nodes) {
       nodeById.set(node.id, node);
 
-      // TrackSourceManager nodes are active if they have enabled clips in range
+      // Source nodes (TrackSourceManager, MediaInput, source, etc.)
       if (node.type === "TrackSourceManager") {
         const clips = node.params.clips || [];
         const hasActiveClip = clips.some((c: { enabled: boolean; timelineStartMs: number; timelineEndMs: number }) => c.enabled && timeMs >= c.timelineStartMs && timeMs <= c.timelineEndMs);
         if (hasActiveClip) {
           activeNodeIds.add(node.id);
         }
-      } else if (node.type === "OutputNode" || node.type === "Output") {
+      } else if (node.type === "MediaInput" || node.type === "source" || node.capabilities.inputsCount === 0) {
+        // Source nodes have no inputs
+        activeNodeIds.add(node.id);
+      } else if (node.type === "OutputNode" || node.type === "Output" || node.type === "sink") {
         activeNodeIds.add(node.id);
       }
     }
@@ -70,8 +73,8 @@ export class FrameGraphPlanner {
       const node = nodeById.get(nodeId);
       if (!node) return false;
 
-      // TrackSourceManager is a leaf - check if it's active
-      if (node.type === "TrackSourceManager") {
+      // Source nodes (TrackSourceManager, MediaInput, source) are leaves
+      if (node.type === "TrackSourceManager" || node.type === "MediaInput" || node.type === "source" || node.capabilities.inputsCount === 0) {
         const isActive = activeNodeIds.has(nodeId);
         if (isActive && !visited.has(nodeId)) {
           visited.add(nodeId);
@@ -93,7 +96,7 @@ export class FrameGraphPlanner {
       }
 
       // Include output nodes and nodes with active inputs
-      if (anyInputActive || nodeId === "composite-output" || node.type === "OutputNode" || node.type === "Output") {
+      if (anyInputActive || nodeId === "composite-output" || node.type === "OutputNode" || node.type === "Output" || node.type === "sink") {
         if (!visited.has(nodeId)) {
           visited.add(nodeId);
           activeNodesList.push(node);
@@ -106,7 +109,7 @@ export class FrameGraphPlanner {
     };
 
     // Start tracing from output node
-    const outputNode = Array.from(nodeById.values()).find((n) => n.type === "OutputNode" || n.type === "Output" || n.id === "composite-output");
+    const outputNode = Array.from(nodeById.values()).find((n) => n.type === "OutputNode" || n.type === "Output" || n.type === "sink" || n.id === "composite-output");
     if (outputNode) {
       traceUpstream(outputNode.id);
     }
@@ -146,6 +149,39 @@ export class FrameGraphPlanner {
       this.planNodePasses(node, activeEdgesList, nodeOutputResourceMap, resourceRequests, renderPasses, timeMs, targetWidth, targetHeight);
     }
 
+    // Optimization: If we only have source + identity effect + output, merge into single pass
+    if (renderPasses.length === 3 && activeNodesList.length === 3) {
+      const effectNode = activeNodesList.find((n) => n.type !== "MediaInput" && n.type !== "source" && n.type !== "OutputNode" && n.type !== "Output" && n.type !== "sink");
+      if (effectNode && (effectNode.type === "copy" || effectNode.id === "identity")) {
+        // Find the source node's output resource
+        const sourceNode = activeNodesList.find((n) => n.type === "MediaInput" || n.type === "source" || n.capabilities.inputsCount === 0);
+        const inputResourceId = sourceNode ? nodeOutputResourceMap.get(sourceNode.id) : "res-src-frame";
+
+        // Replace all 3 passes with single optimized pass
+        renderPasses.length = 0;
+        renderPasses.push({
+          id: "pass-identity",
+          name: "Identity",
+          shaderId: "copy",
+          inputs: [inputResourceId || "res-src-frame"],
+          output: "output",
+          uniforms: {},
+        });
+
+        // Remove transient resources, keep only input resource and output
+        const inputResource = resourceRequests.find((r) => r.id === inputResourceId);
+        const outputResource = resourceRequests.find((r) => r.id === "output");
+        resourceRequests.length = 0;
+        if (inputResource) {
+          // Make input resource persistent for identity pass
+          resourceRequests.push({ ...inputResource, transient: false });
+        }
+        if (outputResource) {
+          resourceRequests.push(outputResource);
+        }
+      }
+    }
+
     return {
       frameNumber,
       timelineTimeMs: timeMs,
@@ -163,8 +199,8 @@ export class FrameGraphPlanner {
   private planNodePasses(node: GraphNode, activeEdges: GraphEdge[], nodeOutputResourceMap: Map<string, string>, resourceRequests: ResourceRequest[], renderPasses: RenderPass[], timeMs: number, width: number, height: number): void {
     const planner = this.registry?.getPlanner(node.type);
 
-    // TrackSourceManager: source frame reading
-    if (node.type === "TrackSourceManager") {
+    // Source nodes (TrackSourceManager, MediaInput, source): source frame reading
+    if (node.type === "TrackSourceManager" || node.type === "MediaInput" || node.type === "source" || node.capabilities.inputsCount === 0) {
       const resourceId = `res-${node.id}`;
       resourceRequests.push({
         id: resourceId,
@@ -178,19 +214,94 @@ export class FrameGraphPlanner {
 
       if (planner) {
         this.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, { ...node.params, timeMs }, [], resourceId, width, height), resourceRequests, renderPasses);
+      } else {
+        // Fallback: simple pass for source nodes
+        renderPasses.push({
+          id: `pass-${node.id}`,
+          name: `Load ${node.type}`,
+          shaderId: "blit-source",
+          inputs: [],
+          output: resourceId,
+          uniforms: {},
+        });
       }
       return;
     }
 
-    // OutputNode: final blit to output
-    if (node.type === "OutputNode" || node.type === "Output") {
+    // Output nodes (OutputNode, Output, sink): final blit to output
+    if (node.type === "OutputNode" || node.type === "Output" || node.type === "sink") {
       const incoming = activeEdges.find((e) => e.toNodeId === node.id);
       const inputResource = incoming ? nodeOutputResourceMap.get(incoming.fromNodeId) : "res-src-frame";
       const inputIds = [inputResource || "res-src-frame"];
 
       if (planner) {
         this.appendPlannedPasses(node.id, planner.planExecution(node.id, node.type, node.params, inputIds, "output", width, height), resourceRequests, renderPasses);
+      } else {
+        // Fallback: simple blit to output
+        renderPasses.push({
+          id: `pass-${node.id}`,
+          name: `Output ${node.type}`,
+          shaderId: "blit",
+          inputs: inputIds,
+          output: "output",
+          uniforms: {},
+        });
       }
+      return;
+    }
+
+    // NEW: Handle ShaderNode with custom shader
+    if (node.type === "ShaderNode" && node.params?.shader) {
+      const incoming = activeEdges.find((e) => e.toNodeId === node.id);
+      const inputResource = incoming ? nodeOutputResourceMap.get(incoming.fromNodeId) : "res-src-frame";
+      const inputIds = [inputResource || "res-src-frame"];
+      const outputResource = `res-out-${node.id}`;
+
+      resourceRequests.push({
+        id: outputResource,
+        type: "texture",
+        width,
+        height,
+        format: "rgba8",
+        transient: true,
+      });
+      nodeOutputResourceMap.set(node.id, outputResource);
+
+      // Extract shader code and uniforms
+      const shaderCode = node.params.shader;
+      const uniforms = node.params.uniforms || {};
+
+      // Resolve uniform values
+      const resolvedUniforms: Record<string, any> = {};
+      for (const [key, uniform] of Object.entries(uniforms)) {
+        const uniformValue = (uniform as any).value;
+
+        if (uniformValue === "time") {
+          resolvedUniforms[key] = timeMs / 1000.0; // Convert to seconds
+        } else if (uniformValue === "resolution") {
+          resolvedUniforms[key] = [width, height];
+        } else if (typeof uniformValue === "string" && uniformValue.startsWith("@input.")) {
+          // Input texture references handled by renderer
+          resolvedUniforms[key] = uniform;
+        } else {
+          // Direct value or already resolved
+          resolvedUniforms[key] = uniformValue !== undefined ? uniformValue : uniform;
+        }
+      }
+
+      console.log(`[FrameGraphPlanner] Planning ShaderNode: ${node.id}, uniforms:`, Object.keys(resolvedUniforms));
+
+      // Add render pass with custom shader
+      renderPasses.push({
+        id: `pass-${node.id}`,
+        name: `Shader ${node.id}`,
+        shaderId: node.id,
+        inputs: inputIds,
+        output: outputResource,
+        uniforms: resolvedUniforms,
+        customShader: shaderCode, // ← Pass shader to renderer
+      });
+
       return;
     }
 

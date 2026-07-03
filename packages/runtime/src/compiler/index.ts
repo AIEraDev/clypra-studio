@@ -5,3 +5,7 @@
  */
 
 export * from "./compiler";
+
+// Effect Graph Compiler for Video Lab
+export { EffectGraphCompiler } from "./effect-compiler";
+export type { VideoEffectDefinition } from "./effect-compiler";

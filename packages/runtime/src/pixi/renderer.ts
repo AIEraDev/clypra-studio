@@ -184,7 +184,13 @@ export class PixiRenderer {
     let filter: PIXI.Filter;
     let disposeFilter = false;
 
-    if (this.filters.has(pass.shaderId)) {
+    // NEW: Check for custom shader in pass
+    if (pass.customShader) {
+      // Compile custom GLSL shader
+      console.log(`[PixiRenderer] Compiling custom shader for pass: ${pass.id}`);
+      filter = this.compileCustomShader(pass.shaderId, pass.customShader, pass.uniforms || {}, target.width, target.height);
+      disposeFilter = true; // Always dispose custom shaders
+    } else if (this.filters.has(pass.shaderId)) {
       filter = this.filters.get(pass.shaderId)!;
       updateFilterUniforms(filter, pass.uniforms, pass.shaderId);
     } else {
@@ -210,6 +216,66 @@ export class PixiRenderer {
     // Clean up if needed
     if (disposeFilter) {
       filter.destroy();
+    }
+  }
+
+  /**
+   * Compile a custom GLSL shader into a PIXI.Filter
+   */
+  private compileCustomShader(shaderId: string, shaderCode: string, uniforms: Record<string, any>, width: number, height: number): PIXI.Filter {
+    console.log(`[PixiRenderer] Compiling custom shader: ${shaderId}`);
+
+    // Parse uniform definitions and create PIXI uniforms
+    const pixiUniforms: Record<string, any> = {};
+
+    for (const [key, uniform] of Object.entries(uniforms)) {
+      if (!uniform) continue;
+
+      // Handle different uniform structures
+      const value = uniform.value !== undefined ? uniform.value : uniform;
+
+      if (typeof value === "string" && value.startsWith("@")) {
+        // Skip unresolved references
+        continue;
+      }
+
+      if (typeof value === "number") {
+        pixiUniforms[key] = value;
+      } else if (Array.isArray(value)) {
+        pixiUniforms[key] = value;
+      } else if (typeof value === "boolean") {
+        pixiUniforms[key] = value ? 1.0 : 0.0;
+      } else if (typeof value === "object" && value !== null) {
+        // Handle typed uniform definitions
+        if (value.type === "float") {
+          pixiUniforms[key] = typeof value.value === "number" ? value.value : 0.0;
+        } else if (value.type === "vec2") {
+          pixiUniforms[key] = Array.isArray(value.value) ? value.value : [0, 0];
+        } else if (value.type === "vec3") {
+          pixiUniforms[key] = Array.isArray(value.value) ? value.value : [0, 0, 0];
+        } else if (value.type === "vec4") {
+          pixiUniforms[key] = Array.isArray(value.value) ? value.value : [0, 0, 0, 0];
+        }
+      }
+    }
+
+    // Add default resolution if not provided
+    if (!pixiUniforms.uResolution) {
+      pixiUniforms.uResolution = [width, height];
+    }
+
+    console.log(`[PixiRenderer] Custom shader uniforms:`, Object.keys(pixiUniforms));
+
+    try {
+      // Use PIXI.Filter with fragment shader - cast to any to bypass TypeScript strictness
+      const filter = new (PIXI.Filter as any)(undefined, shaderCode, pixiUniforms);
+
+      console.log(`[PixiRenderer] ✓ Custom shader compiled successfully: ${shaderId}`);
+      return filter;
+    } catch (error) {
+      console.error(`[PixiRenderer] Failed to compile shader ${shaderId}:`, error);
+      // Fallback to identity filter
+      return createFilter("identity", {});
     }
   }
 

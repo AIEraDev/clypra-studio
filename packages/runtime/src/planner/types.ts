@@ -24,6 +24,7 @@ export interface RenderPass {
   readonly uniforms: Readonly<Record<string, any>>;
   readonly blendMode?: string;
   readonly clearBeforeRender?: boolean;
+  readonly customShader?: string; // Custom GLSL shader code (for ShaderNode types)
 }
 
 /**

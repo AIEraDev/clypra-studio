@@ -18,7 +18,7 @@ import { GraphHelper } from "./types";
 import type { NodeRegistry } from "./NodeRegistry";
 
 export interface ValidationError {
-  readonly type: "type_mismatch" | "cycle_detected" | "capability_error" | "missing_node" | "invalid_connection" | "unknown_node_type" | "missing_connection" | "invalid-node";
+  readonly type: "type-mismatch" | "cycle" | "capability-error" | "missing-node" | "invalid-connection" | "unknown-node-type" | "missing-connection" | "invalid-node";
   readonly message: string;
   readonly nodeId?: string;
   readonly edgeIndex?: number;
@@ -69,7 +69,7 @@ export class GraphValidator {
       for (const node of graph.nodes) {
         if (!this.registry.has(node.type)) {
           errors.push({
-            type: "unknown_node_type",
+            type: "unknown-node-type",
             message: `Node type "${node.type}" is not registered in the NodeRegistry`,
             nodeId: node.id,
             details: { nodeType: node.type },
@@ -133,7 +133,7 @@ export class GraphValidator {
 
     if (!fromNode) {
       return {
-        type: "missing_node",
+        type: "missing-node",
         message: `Source node "${fromNodeId}" does not exist in graph`,
         details: { fromNodeId },
       };
@@ -141,7 +141,7 @@ export class GraphValidator {
 
     if (!toNode) {
       return {
-        type: "missing_node",
+        type: "missing-node",
         message: `Target node "${toNodeId}" does not exist in graph`,
         details: { toNodeId },
       };
@@ -150,7 +150,7 @@ export class GraphValidator {
     const fromPin = fromNode.outputs[fromPinId];
     if (!fromPin) {
       return {
-        type: "invalid_connection",
+        type: "invalid-connection",
         message: `Source node "${fromNodeId}" does not have output pin "${fromPinId}"`,
         nodeId: fromNodeId,
         details: { fromPinId, availableOutputs: Object.keys(fromNode.outputs) },
@@ -160,7 +160,7 @@ export class GraphValidator {
     const toPin = toNode.inputs[toPinId];
     if (!toPin) {
       return {
-        type: "invalid_connection",
+        type: "invalid-connection",
         message: `Target node "${toNodeId}" does not have input pin "${toPinId}"`,
         nodeId: toNodeId,
         details: { toPinId, availableInputs: Object.keys(toNode.inputs) },
@@ -169,7 +169,7 @@ export class GraphValidator {
 
     if (fromPin.type !== toPin.type) {
       return {
-        type: "type_mismatch",
+        type: "type-mismatch",
         message: `Type mismatch: Cannot connect ${fromPin.type} output to ${toPin.type} input`,
         details: {
           fromNode: fromNodeId,
@@ -201,25 +201,6 @@ export class GraphValidator {
       return errors;
     }
 
-    // Check if required inputs are connected
-    const inputKeys = Object.keys(node.inputs);
-    const incomingEdges = GraphHelper.getIncomingEdges(graph, node.id);
-    const connectedInputs = new Set(incomingEdges.map((e) => e.toPinId));
-
-    for (const inputKey of inputKeys) {
-      if (!connectedInputs.has(inputKey) && node.type !== "MediaInput" && node.type !== "TrackSourceManager") {
-        // Not all inputs need to be connected for some node types (optional inputs)
-        // Only error for non-source nodes
-        if (inputKeys.length > 0) {
-          errors.push({
-            type: "missing_connection",
-            message: `Node ${node.id} input '${inputKey}' is not connected`,
-            nodeId: node.id,
-          });
-        }
-      }
-    }
-
     // Validate input count matches expectations (if registry provided)
     if (this.registry) {
       const definition = this.registry.getDefinition(node.type);
@@ -229,7 +210,7 @@ export class GraphValidator {
 
         if (actualInputCount !== expectedInputCount) {
           errors.push({
-            type: "capability_error",
+            type: "capability-error",
             message: `Node "${node.id}" expects ${expectedInputCount} inputs but has ${actualInputCount} defined`,
             nodeId: node.id,
             details: {
@@ -256,7 +237,7 @@ export class GraphValidator {
 
     if (!fromNode) {
       errors.push({
-        type: "missing_node",
+        type: "invalid-node",
         message: `Edge references non-existent source node: ${edge.fromNodeId}`,
         edgeIndex,
         edgeFrom: edge.fromNodeId,
@@ -268,7 +249,7 @@ export class GraphValidator {
 
     if (!toNode) {
       errors.push({
-        type: "missing_node",
+        type: "invalid-node",
         message: `Edge references non-existent target node: ${edge.toNodeId}`,
         edgeIndex,
         edgeFrom: edge.fromNodeId,
@@ -284,7 +265,7 @@ export class GraphValidator {
 
     if (!fromPin) {
       errors.push({
-        type: "invalid_connection",
+        type: "missing-connection",
         message: `Source node ${edge.fromNodeId} does not have output pin '${edge.fromPinId}'`,
         edgeIndex,
         nodeId: fromNode.id,
@@ -296,7 +277,7 @@ export class GraphValidator {
 
     if (!toPin) {
       errors.push({
-        type: "invalid_connection",
+        type: "missing-connection",
         message: `Target node ${edge.toNodeId} does not have input pin '${edge.toPinId}'`,
         edgeIndex,
         nodeId: toNode.id,
@@ -309,7 +290,7 @@ export class GraphValidator {
     // Check type compatibility
     if (fromPin && toPin && fromPin.type !== toPin.type) {
       errors.push({
-        type: "type_mismatch",
+        type: "type-mismatch",
         message: `Type mismatch: Cannot connect ${fromPin.type} output to ${toPin.type} input (${edge.fromNodeId}.${edge.fromPinId} → ${edge.toNodeId}.${edge.toPinId})`,
         edgeIndex,
         edgeFrom: edge.fromNodeId,
@@ -346,7 +327,7 @@ export class GraphValidator {
         const cycleStart = path.indexOf(nodeId);
         const cyclePath = [...path.slice(cycleStart), nodeId];
         errors.push({
-          type: "cycle_detected",
+          type: "cycle",
           message: `Cycle detected in graph: ${cyclePath.join(" → ")}`,
           nodeId,
           details: { cyclePath },
@@ -405,7 +386,7 @@ export class GraphValidator {
         const incomingEdges = graph.edges.filter((e) => e.toNodeId === node.id);
         if (incomingEdges.length === 0) {
           errors.push({
-            type: "capability_error",
+            type: "capability-error",
             message: `Temporal node "${node.id}" requires ${node.requirements.temporalRadius} frames of history but has no inputs`,
             nodeId: node.id,
             details: {

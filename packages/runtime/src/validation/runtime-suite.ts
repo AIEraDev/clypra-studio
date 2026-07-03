@@ -387,9 +387,16 @@ class UniformUpdateTest implements ValidationTest {
     const frame1 = planner.plan(graph1, 0, 0);
 
     // Check uniforms in pass
-    const pass = frame1.passes[0];
+    if (frame1.passes.length === 0) {
+      errors.push("No passes generated");
+      return { passed: false, duration: 0, errors, warnings: [] };
+    }
+
+    // Find the brightness pass (should have shaderId "brightness")
+    const pass = frame1.passes.find((p) => p.shaderId === "brightness" || p.uniforms.brightness !== undefined) || frame1.passes[frame1.passes.length - 1];
+
     if (!pass) {
-      errors.push("No pass generated");
+      errors.push("No pass found");
       return { passed: false, duration: 0, errors, warnings: [] };
     }
 
@@ -401,7 +408,12 @@ class UniformUpdateTest implements ValidationTest {
     const graph2 = builder.build({ id: "brightness", type: "brightness", parameters: { brightness: 1.5 } }, [{ id: "video", type: "video", source: "test" }]);
 
     const frame2 = planner.plan(graph2, 0, 0);
-    const pass2 = frame2.passes[0];
+    const pass2 = frame2.passes.find((p) => p.shaderId === "brightness" || p.uniforms.brightness !== undefined) || frame2.passes[frame2.passes.length - 1];
+
+    if (!pass2) {
+      errors.push("No pass2 found");
+      return { passed: false, duration: 0, errors, warnings: [] };
+    }
 
     if (pass2.uniforms.brightness !== 1.5) {
       errors.push(`Expected brightness=1.5, got ${pass2.uniforms.brightness}`);

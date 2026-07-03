@@ -14,9 +14,9 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { GraphBuilder } from "@clypra/runtime/graph";
 import { FrameGraphPlanner } from "@clypra/runtime/planner";
 import { PixiRenderer } from "@clypra/runtime/pixi";
+import { EffectGraphCompiler } from "@clypra/runtime";
 import { RuntimeInspector } from "../RuntimeInspector/RuntimeInspector";
 import { useResponsiveCanvas } from "./useResponsiveCanvas";
 import "./PreviewCanvas.css";
@@ -54,7 +54,7 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const rendererRef = useRef<PixiRenderer | null>(null);
-  const builderRef = useRef<GraphBuilder | null>(null);
+  const compilerRef = useRef<EffectGraphCompiler | null>(null);
   const plannerRef = useRef<FrameGraphPlanner | null>(null);
   const animationFrameRef = useRef<number>();
 
@@ -83,16 +83,21 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
 
   // Create object URL from video file
   useEffect(() => {
+    console.log("[ResponsivePreviewCanvas] Video input changed:", inputs?.video?.name);
     const videoFile = inputs?.video;
     if (videoFile instanceof File) {
+      console.log("[ResponsivePreviewCanvas] Creating object URL for video:", videoFile.name, videoFile.size, "bytes");
       const url = URL.createObjectURL(videoFile);
       setVideoObjectUrl(url);
       setVideoLoaded(false);
+      console.log("[ResponsivePreviewCanvas] Object URL created:", url);
       return () => {
+        console.log("[ResponsivePreviewCanvas] Revoking object URL");
         URL.revokeObjectURL(url);
         setVideoObjectUrl(null);
       };
     } else {
+      console.log("[ResponsivePreviewCanvas] No valid video file");
       setVideoObjectUrl(null);
       setVideoLoaded(false);
     }
@@ -100,14 +105,31 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
 
   // Initialize Pixi renderer with proper sizing
   useEffect(() => {
-    if (!canvasRef.current || !isReady) return;
+    console.log("[ResponsivePreviewCanvas] Init check - canvasRef:", !!canvasRef.current, "isReady:", isReady, "videoLoaded:", videoLoaded);
+
+    // Don't initialize until we have a video loaded
+    if (!canvasRef.current || !isReady || !videoLoaded) {
+      console.log("[ResponsivePreviewCanvas] Skipping init - waiting for:", {
+        canvas: !canvasRef.current,
+        ready: !isReady,
+        video: !videoLoaded,
+      });
+      return;
+    }
+
+    console.log("[ResponsivePreviewCanvas] Starting Pixi initialization...");
 
     const initRenderer = async () => {
+      // Calculate actual render resolution (considering maxRenderScale)
+      const scale = Math.min(maxRenderScale, 1.0);
+      const actualRenderWidth = Math.round(renderWidth * scale);
+      const actualRenderHeight = Math.round(renderHeight * scale);
+
       try {
-        // Calculate actual render resolution (considering maxRenderScale)
-        const scale = Math.min(maxRenderScale, 1.0);
-        const actualRenderWidth = Math.round(renderWidth * scale);
-        const actualRenderHeight = Math.round(renderHeight * scale);
+        console.log("[ResponsivePreviewCanvas] Creating Pixi renderer with:", {
+          width: actualRenderWidth,
+          height: actualRenderHeight,
+        });
 
         const renderer = new PixiRenderer();
         await renderer.initialize({
@@ -119,8 +141,10 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
           antialias: true,
         });
 
+        console.log("[ResponsivePreviewCanvas] Pixi renderer initialized successfully");
+
         rendererRef.current = renderer;
-        builderRef.current = new GraphBuilder("preview-canvas");
+        compilerRef.current = new EffectGraphCompiler();
         plannerRef.current = new FrameGraphPlanner({
           targetWidth: actualRenderWidth,
           targetHeight: actualRenderHeight,
@@ -143,7 +167,7 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
         rendererRef.current = null;
       }
     };
-  }, [renderWidth, renderHeight, maxRenderScale, isReady, displaySize]);
+  }, [renderWidth, renderHeight, maxRenderScale, isReady, displaySize, videoLoaded]);
 
   // Sync video element with currentTime
   useEffect(() => {
@@ -169,20 +193,75 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
 
   // Main render loop
   useEffect(() => {
-    if (!videoLoaded || !rendererRef.current || !builderRef.current || !plannerRef.current) {
+    console.log("[ResponsivePreviewCanvas] Render loop effect triggered - videoLoaded:", videoLoaded, "rendererRef:", !!rendererRef.current);
+
+    if (!videoLoaded || !rendererRef.current || !compilerRef.current || !plannerRef.current) {
+      console.log("[ResponsivePreviewCanvas] Render loop waiting for:", {
+        videoLoaded,
+        renderer: !!rendererRef.current,
+        compiler: !!compilerRef.current,
+        planner: !!plannerRef.current,
+      });
       return;
     }
 
+    console.log("[ResponsivePreviewCanvas] Starting render loop...");
+
     const video = videoRef.current;
-    if (!video) return;
+    if (!video) {
+      console.error("[ResponsivePreviewCanvas] Video element is null!");
+      return;
+    }
+
+    console.log("[ResponsivePreviewCanvas] Video element ready for rendering");
 
     let lastFrameTime = performance.now();
     let frameCount = 0;
     let fpsUpdateTime = performance.now();
+    let lastRenderedTime = -1;
+    let compiledGraph: any = null;
+    let compiledFrameGraph: any = null;
+
+    // Pre-compile graph once (not on every frame)
+    const effectDef = effect;
+
+    if (effectDef && effectDef.nodes) {
+      // Video effect with internal graph structure
+      console.log("[ResponsivePreviewCanvas] Compiling video effect:", effectDef.id);
+      try {
+        compiledGraph = compilerRef.current.compile(effectDef, effectDef.parameters || {});
+        console.log("✓ Effect graph compiled:", compiledGraph.nodes.length, "nodes");
+        setRuntimeStatus((prev) => ({ ...prev, compiled: true }));
+      } catch (error) {
+        console.error("Effect compilation failed:", error);
+        setRuntimeStatus((prev) => ({ ...prev, error: String(error) }));
+        return;
+      }
+    } else {
+      // Fallback to identity
+      console.log("[ResponsivePreviewCanvas] Using identity graph (no effect)");
+      compiledGraph = compilerRef.current.createIdentityGraph();
+      setRuntimeStatus((prev) => ({ ...prev, compiled: true }));
+    }
 
     const renderFrame = async () => {
-      if (!video || !rendererRef.current || !builderRef.current || !plannerRef.current) {
+      if (!video || !rendererRef.current || !compilerRef.current || !plannerRef.current) {
         return;
+      }
+
+      // Only render if video time changed or playing
+      const currentVideoTime = video.currentTime;
+      const timeDiff = Math.abs(currentVideoTime - lastRenderedTime);
+
+      // Throttle rendering when paused (max 30fps when seeking)
+      if (!playing) {
+        if (timeDiff < 0.016) {
+          // No change, skip frame
+          animationFrameRef.current = requestAnimationFrame(renderFrame);
+          return;
+        }
+        // Add small delay when paused to prevent UI lock
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
       try {
@@ -199,37 +278,17 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
           fpsUpdateTime = now;
         }
 
-        // Create effect graph (or identity if none selected)
-        const effectDef = effect || {
-          id: "identity",
-          type: "copy",
-          parameters: {},
-        };
-
-        // Step 1: Compile
-        const graph = builderRef.current.build(
-          {
-            id: effectDef.id,
-            type: effectDef.type,
-            parameters: effectDef.parameters || {},
-          },
-          [{ id: "video", type: "video", source: "video-input" }],
-        );
-
-        setRuntimeStatus((prev) => ({ ...prev, compiled: true }));
-
-        // Step 2: Plan
-        const frameGraph = plannerRef.current.plan(graph, Math.floor(video.currentTime * 60), video.currentTime * 1000);
-
+        // Step 2: Plan (reuse compiled graph)
+        compiledFrameGraph = plannerRef.current.plan(compiledGraph, Math.floor(currentVideoTime * 60), currentVideoTime * 1000);
         setRuntimeStatus((prev) => ({ ...prev, planned: true }));
 
         // Step 3: Upload video frame
-        const persistentResources = frameGraph.resourceRequests.filter((r) => !r.transient).map((r) => r.id);
+        const persistentResources = compiledFrameGraph.resourceRequests.filter((r: any) => !r.transient).map((r: any) => r.id);
         rendererRef.current.uploadSourceImage(video, persistentResources);
 
         // Step 4: Execute
         setRuntimeStatus((prev) => ({ ...prev, rendering: true }));
-        const result = await rendererRef.current.render(frameGraph);
+        const result = await rendererRef.current.render(compiledFrameGraph);
 
         // Step 5: Present
         rendererRef.current.present("output");
@@ -243,9 +302,10 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
         });
 
         lastFrameTime = now;
+        lastRenderedTime = currentVideoTime;
 
         if (playing) {
-          onTimeChange?.(video.currentTime);
+          onTimeChange?.(currentVideoTime);
         }
       } catch (error) {
         console.error("Render error:", error);
@@ -265,8 +325,16 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
   }, [videoLoaded, effect, playing, renderWidth, renderHeight, onTimeChange]);
 
   const handleVideoLoaded = () => {
-    setVideoLoaded(true);
+    console.log("[ResponsivePreviewCanvas] Video loaded event fired");
     const video = videoRef.current;
+    console.log("[ResponsivePreviewCanvas] Video element:", {
+      exists: !!video,
+      duration: video?.duration,
+      videoWidth: video?.videoWidth,
+      videoHeight: video?.videoHeight,
+      readyState: video?.readyState,
+    });
+    setVideoLoaded(true);
     if (video && onTimeChange) {
       onTimeChange(0);
     }
