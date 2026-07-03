@@ -2,7 +2,12 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "apps/studio/dist",
-  "installCommand": "npm install --workspaces --include-workspace-root",
+  "installCommand": "npm ci --workspaces --include-workspace-root --legacy-peer-deps",
   "framework": null,
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "devCommand": "npm run dev",
+  "nodeVersion": "20.x",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "github": {
+    "silent": true
+  }
 }
