@@ -3,6 +3,8 @@
  *
  * Single source of truth for all type definitions in Clypra Studio.
  * This package is the contract between all other packages.
+ *
+ * @packageDocumentation
  */
 
 // Effect types
