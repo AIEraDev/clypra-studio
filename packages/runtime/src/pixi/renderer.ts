@@ -187,7 +187,6 @@ export class PixiRenderer {
     // NEW: Check for custom shader in pass
     if (pass.customShader) {
       // Compile custom GLSL shader
-      console.log(`[PixiRenderer] Compiling custom shader for pass: ${pass.id}`);
       filter = this.compileCustomShader(pass.shaderId, pass.customShader, pass.uniforms || {}, target.width, target.height);
       disposeFilter = true; // Always dispose custom shaders
     } else {
