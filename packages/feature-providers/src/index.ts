@@ -6,6 +6,8 @@
  * Feature providers produce feature maps (masks, poses, depth, etc.)
  * that body effects consume. This architecture makes body effects
  * future-proof and infinitely extensible.
+ *
+ * @packageDocumentation
  */
 
 // Core types
