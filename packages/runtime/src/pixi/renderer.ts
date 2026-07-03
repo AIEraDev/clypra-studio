@@ -213,20 +213,21 @@ export class PixiRenderer {
     });
     sprite.filters = null;
 
-    // Clean up if needed
+    // Clean up filter if needed
     if (disposeFilter) {
       filter.destroy();
     }
+
+    // Always destroy sprite to prevent memory leak
+    sprite.destroy(false); // false = don't destroy texture
   }
 
   /**
-   * Compile a custom GLSL shader into a PIXI.Filter
+   * Compile a custom GLSL shader into a PIXI.Filter (Pixi v8 API)
    */
   private compileCustomShader(shaderId: string, shaderCode: string, uniforms: Record<string, any>, width: number, height: number): PIXI.Filter {
-    console.log(`[PixiRenderer] Compiling custom shader: ${shaderId}`);
-
-    // Parse uniform definitions and create PIXI uniforms
-    const pixiUniforms: Record<string, any> = {};
+    // Parse uniform definitions and create PIXI v8 uniform resources
+    const pixiUniformResources: Record<string, any> = {};
 
     for (const [key, uniform] of Object.entries(uniforms)) {
       if (!uniform) continue;
@@ -239,44 +240,144 @@ export class PixiRenderer {
         continue;
       }
 
+      // Determine type string for Pixi v8
+      let type: string;
+      let finalValue: any;
+
       if (typeof value === "number") {
-        pixiUniforms[key] = value;
-      } else if (Array.isArray(value)) {
-        pixiUniforms[key] = value;
+        type = "f32";
+        finalValue = value;
       } else if (typeof value === "boolean") {
-        pixiUniforms[key] = value ? 1.0 : 0.0;
+        type = "f32";
+        finalValue = value ? 1.0 : 0.0;
+      } else if (Array.isArray(value)) {
+        if (value.length === 2) type = "vec2<f32>";
+        else if (value.length === 3) type = "vec3<f32>";
+        else if (value.length === 4) type = "vec4<f32>";
+        else type = "f32";
+        finalValue = value;
       } else if (typeof value === "object" && value !== null) {
         // Handle typed uniform definitions
         if (value.type === "float") {
-          pixiUniforms[key] = typeof value.value === "number" ? value.value : 0.0;
+          type = "f32";
+          finalValue = typeof value.value === "number" ? value.value : 0.0;
         } else if (value.type === "vec2") {
-          pixiUniforms[key] = Array.isArray(value.value) ? value.value : [0, 0];
+          type = "vec2<f32>";
+          finalValue = Array.isArray(value.value) ? value.value : [0, 0];
         } else if (value.type === "vec3") {
-          pixiUniforms[key] = Array.isArray(value.value) ? value.value : [0, 0, 0];
+          type = "vec3<f32>";
+          finalValue = Array.isArray(value.value) ? value.value : [0, 0, 0];
         } else if (value.type === "vec4") {
-          pixiUniforms[key] = Array.isArray(value.value) ? value.value : [0, 0, 0, 0];
+          type = "vec4<f32>";
+          finalValue = Array.isArray(value.value) ? value.value : [0, 0, 0, 0];
+        } else {
+          continue;
         }
+      } else {
+        continue;
       }
+
+      pixiUniformResources[key] = { value: finalValue, type };
     }
 
     // Add default resolution if not provided
-    if (!pixiUniforms.uResolution) {
-      pixiUniforms.uResolution = [width, height];
+    if (!pixiUniformResources.uResolution) {
+      pixiUniformResources.uResolution = { value: [width, height], type: "vec2<f32>" };
     }
 
-    console.log(`[PixiRenderer] Custom shader uniforms:`, Object.keys(pixiUniforms));
+    // Convert GLSL 100 to GLSL 300 es if needed
+    const glsl300Shader = this.convertToGLSL300(shaderCode);
+
+    // Default vertex shader for Pixi v8 (standard fullscreen quad)
+    const vertexShader = `
+      in vec2 aPosition;
+      out vec2 vTextureCoord;
+
+      uniform vec4 uInputSize;
+      uniform vec4 uOutputFrame;
+      uniform vec4 uOutputTexture;
+
+      vec4 filterVertexPosition(void) {
+        vec2 position = aPosition * uOutputFrame.zw + uOutputFrame.xy;
+        position.x = position.x * (2.0 / uOutputTexture.x) - 1.0;
+        position.y = position.y * (2.0 * uOutputTexture.z / uOutputTexture.y) - uOutputTexture.z;
+        return vec4(position, 0.0, 1.0);
+      }
+
+      vec2 filterTextureCoord(void) {
+        return aPosition * (uOutputFrame.zw * uInputSize.zw);
+      }
+
+      void main(void) {
+        gl_Position = filterVertexPosition();
+        vTextureCoord = filterTextureCoord();
+      }
+    `;
 
     try {
-      // Use PIXI.Filter with fragment shader - cast to any to bypass TypeScript strictness
-      const filter = new (PIXI.Filter as any)(undefined, shaderCode, pixiUniforms);
+      // Use Pixi v8 Filter.from() API
+      const filter = PIXI.Filter.from({
+        gl: {
+          vertex: vertexShader,
+          fragment: glsl300Shader,
+        },
+        resources: {
+          customUniforms: pixiUniformResources,
+        },
+      });
 
-      console.log(`[PixiRenderer] ✓ Custom shader compiled successfully: ${shaderId}`);
       return filter;
     } catch (error) {
       console.error(`[PixiRenderer] Failed to compile shader ${shaderId}:`, error);
       // Fallback to identity filter
       return createFilter("identity", {});
     }
+  }
+
+  /**
+   * Convert GLSL 100 shader code to GLSL 300 es
+   */
+  private convertToGLSL300(glslCode: string): string {
+    let converted = glslCode;
+
+    // Check if already GLSL 300 es
+    if (converted.includes("#version 300 es") || converted.includes("in vec2 vTextureCoord")) {
+      return converted;
+    }
+
+    // Add version directive if not present
+    if (!converted.includes("#version")) {
+      converted = "#version 300 es\n" + converted;
+    }
+
+    // Replace varying with in for fragment shader
+    converted = converted.replace(/varying\s+/g, "in ");
+
+    // Replace gl_FragColor with out variable
+    if (converted.includes("gl_FragColor")) {
+      // Add out declaration if not present
+      if (!converted.includes("out vec4")) {
+        const precisionIndex = converted.indexOf("precision");
+        if (precisionIndex !== -1) {
+          const nextLine = converted.indexOf("\n", precisionIndex) + 1;
+          converted = converted.slice(0, nextLine) + "out vec4 fragColor;\n" + converted.slice(nextLine);
+        } else {
+          converted = converted.replace("#version 300 es\n", "#version 300 es\nout vec4 fragColor;\n");
+        }
+      }
+      converted = converted.replace(/gl_FragColor/g, "fragColor");
+    }
+
+    // Replace texture2D with texture
+    converted = converted.replace(/texture2D\s*\(/g, "texture(");
+
+    // Replace textureCube with texture
+    converted = converted.replace(/textureCube\s*\(/g, "texture(");
+
+    // Replace vUv with vTextureCoord (Pixi v8 standard)
+    converted = converted.replace(/\bvUv\b/g, "vTextureCoord");
+
+    return converted;
   }
 
   /**
@@ -294,6 +395,9 @@ export class PixiRenderer {
       target,
       clear,
     });
+
+    // Destroy sprite to prevent memory leak
+    sprite.destroy(false);
   }
 
   /**
@@ -362,6 +466,9 @@ export class PixiRenderer {
 
       this.app.renderer.render({ container: sprite, target: texture });
 
+      // Destroy sprite to prevent memory leak
+      sprite.destroy(false);
+
       const uploadDuration = performance.now() - uploadStart;
       this.telemetry.textureUploaded(resourceId, texture.width, texture.height, uploadDuration);
     }
@@ -393,6 +500,8 @@ export class PixiRenderer {
 
     const presentDuration = performance.now() - presentStart;
     this.telemetry.presentEnd(presentDuration);
+
+    // Note: Don't destroy sprite here as it's added to stage and will be cleaned up on next present()
   }
 
   /**
