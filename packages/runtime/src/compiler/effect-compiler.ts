@@ -44,10 +44,6 @@ export class EffectGraphCompiler {
   compile(effect: VideoEffectDefinition, parameters: Record<string, any>): MediaProcessingGraph {
     const graph = GraphHelper.create(`effect-${effect.id}`);
 
-    console.log(`[EffectGraphCompiler] Compiling effect: ${effect.id}`);
-    console.log(`[EffectGraphCompiler] Parameters:`, parameters);
-    console.log(`[EffectGraphCompiler] Nodes:`, effect.nodes.length);
-
     // Convert effect nodes to graph nodes
     const nodeMap = new Map<string, GraphNode>();
 
@@ -90,8 +86,6 @@ export class EffectGraphCompiler {
       graphWithEdges = GraphHelper.withEdge(graphWithEdges, edge.from, edge.fromPin, edge.to, edge.toPin);
     }
 
-    console.log(`[EffectGraphCompiler] ✓ Compiled graph with ${graphWithEdges.nodes.length} nodes and ${graphWithEdges.edges.length} edges`);
-
     return graphWithEdges;
   }
 
@@ -127,8 +121,6 @@ export class EffectGraphCompiler {
           ...uniform,
           value: paramValue !== undefined ? paramValue : uniform.default,
         };
-
-        console.log(`[EffectGraphCompiler] Resolved ${key}: @params.${paramName} → ${resolved[key].value}`);
       } else {
         // Keep as-is (will be resolved later for @input.*, time, resolution)
         resolved[key] = uniform;
