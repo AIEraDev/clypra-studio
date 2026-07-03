@@ -93,17 +93,3 @@ export function updateFilterUniforms(filter: PIXI.Filter, uniforms: Record<strin
     }
   }
 }
-
-/**
- * Normalize color adjustment uniforms
- */
-export function normalizeColorUniforms(uniforms: Record<string, any>): Record<string, number> {
-  return {
-    brightness: uniforms.brightness !== undefined ? 1.0 + Number(uniforms.brightness) : 1.0,
-    contrast: uniforms.contrast !== undefined ? 1.0 + Number(uniforms.contrast) : 1.0,
-    saturation: uniforms.saturation !== undefined ? 1.0 + Number(uniforms.saturation) : 1.0,
-    red: uniforms.red ?? 1.0,
-    green: uniforms.green ?? 1.0,
-    blue: uniforms.blue ?? 1.0,
-  };
-}
