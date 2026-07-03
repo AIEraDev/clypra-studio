@@ -36,7 +36,9 @@ jobs:
         run: npm install --workspaces --include-workspace-root
 
       - name: Build dependencies first
-        run: npm run build:shader-library
+        run: |
+          npm run build:types
+          npm run build:shader-library
 
       - name: Build @clypra/runtime
         run: npm run build:runtime
