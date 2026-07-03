@@ -26,8 +26,16 @@
       "import": "./dist/textEffects/index.js",
       "require": "./dist/textEffects/index.cjs"
     },
-    "./effects/video": "./dist/index.js",
-    "./effects/transitions": "./dist/index.js",
+    "./effects/video": {
+      "types": "./dist/videoEffects/index.d.ts",
+      "import": "./dist/videoEffects/index.js",
+      "require": "./dist/videoEffects/index.cjs"
+    },
+    "./effects/transitions": {
+      "types": "./dist/transitions/index.d.ts",
+      "import": "./dist/transitions/index.js",
+      "require": "./dist/transitions/index.cjs"
+    },
     "./effects/body": "./dist/index.js",
     "./backends": {
       "types": "./dist/v2/backends/index.d.ts",
