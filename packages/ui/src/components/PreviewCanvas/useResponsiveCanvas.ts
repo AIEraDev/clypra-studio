@@ -93,6 +93,12 @@ export function useResponsiveCanvas(config: ResponsiveCanvasConfig): ResponsiveC
   const [isReady, setIsReady] = useState(false);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
+  // Use ref to avoid dependency array issues with callback
+  const onDisplaySizeChangeRef = useRef(onDisplaySizeChange);
+  useEffect(() => {
+    onDisplaySizeChangeRef.current = onDisplaySizeChange;
+  }, [onDisplaySizeChange]);
+
   // Calculate display size when container or config changes
   useEffect(() => {
     if (!enabled || containerSize.width === 0 || containerSize.height === 0) {
@@ -106,10 +112,10 @@ export function useResponsiveCanvas(config: ResponsiveCanvasConfig): ResponsiveC
     setDisplaySize(newDisplaySize);
     setIsReady(true);
 
-    if (onDisplaySizeChange) {
-      onDisplaySizeChange(newDisplaySize);
+    if (onDisplaySizeChangeRef.current) {
+      onDisplaySizeChangeRef.current(newDisplaySize);
     }
-  }, [containerSize.width, containerSize.height, aspectRatio, fit, enabled, onDisplaySizeChange]);
+  }, [containerSize.width, containerSize.height, aspectRatio, fit, enabled]);
 
   // Set up ResizeObserver
   useEffect(() => {
