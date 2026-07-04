@@ -54,10 +54,24 @@ jobs:
       - name: Build packages
         run: pnpm build:packages
 
-      - name: Verify npm token identity
+      - name: Verify NPM token is present
         run: |
-          npm whoami
-          npm org ls clypra-studio
+          test -n "$NODE_AUTH_TOKEN"
+          echo "NPM token is present."
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Configure npm authentication
+        run: |
+          cat > ~/.npmrc <<'EOF'
+          registry=https://registry.npmjs.org/
+          //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
+          EOF
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify npm token identity
+        run: npm whoami
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
