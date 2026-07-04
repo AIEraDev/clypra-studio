@@ -39,6 +39,6 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@clypra/engine": "^2.0.1"
+    "@clypra-studio/engine": "^2.0.1"
   }
 }

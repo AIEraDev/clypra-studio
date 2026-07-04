@@ -1,5 +1,5 @@
 {
-  "name": "@clypra/feature-providers",
+  "name": "@clypra-studio/feature-providers",
   "version": "0.1.0",
   "description": "Extensible feature providers for Body Effect Lab",
   "type": "module",

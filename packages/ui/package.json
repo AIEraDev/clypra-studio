@@ -1,5 +1,5 @@
 {
-  "name": "@clypra/ui",
+  "name": "@clypra-studio/ui",
   "version": "0.1.0",
   "description": "Shared UI components for all Clypra Studio Labs",
   "type": "module",
@@ -16,8 +16,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@clypra/types": "file:../types",
-    "@clypra/runtime": "file:../runtime",
+    "@clypra-studio/types": "file:../types",
+    "@clypra-studio/runtime": "file:../runtime",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

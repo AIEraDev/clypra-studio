@@ -11,9 +11,9 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@clypra/engine": "file:../../packages/clypra-engine",
-    "@clypra/runtime": "file:../../packages/runtime",
-    "@clypra/ui": "file:../../packages/ui",
+    "@clypra-studio/engine": "file:../../packages/clypra-engine",
+    "@clypra-studio/runtime": "file:../../packages/runtime",
+    "@clypra-studio/ui": "file:../../packages/ui",
     "@google/genai": "^2.4.0",
     "@lottiefiles/react-lottie-player": "^3.6.0",
     "@tailwindcss/vite": "^4.1.14",

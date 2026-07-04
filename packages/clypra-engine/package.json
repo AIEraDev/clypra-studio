@@ -1,5 +1,5 @@
 {
-  "name": "@clypra/engine",
+  "name": "@clypra-studio/engine",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -68,7 +68,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@clypra/types": "file:../types",
+    "@clypra-studio/types": "file:../types",
     "jszip": "^3.10.1",
     "lottie-web": "^5.13.0",
     "pixi-filters": "^6.0.0",

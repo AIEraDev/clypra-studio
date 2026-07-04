@@ -1,6 +1,6 @@
 {
-  "name": "@clypra/types",
-  "version": "3.2.1",
+  "name": "@clypra-studio/types",
+  "version": "0.1.0",
   "description": "Shared type definitions for all Clypra Studio packages - Single source of truth",
   "type": "module",
   "main": "./dist/index.js",
