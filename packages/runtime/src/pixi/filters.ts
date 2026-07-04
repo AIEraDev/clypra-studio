@@ -91,5 +91,13 @@ export function updateFilterUniforms(filter: PIXI.Filter, uniforms: Record<strin
     if (uniforms.quality !== undefined) {
       filter.quality = Number(uniforms.quality);
     }
+  } else if ((filter as any).resources?.customUniforms?.uniforms) {
+    const u = (filter as any).resources.customUniforms.uniforms;
+    for (const [key, val] of Object.entries(uniforms)) {
+      if (val !== undefined && u[key] !== undefined) {
+        u[key] = typeof val === "object" && val !== null && "value" in val ? val.value : val;
+      }
+    }
   }
 }
+

@@ -142,6 +142,7 @@ export default function RootApp() {
   // Set page scroll styles based on current route
   useEffect(() => {
     if (studioRoute || lottieRoute || mpgRoute || videoLabRoute || transitionLabRoute || bodyLabRoute) {
+      window.scrollTo(0, 0);
       document.body.style.overflow = "hidden";
       document.body.style.overflowX = "hidden";
       document.body.style.overflowY = "hidden";

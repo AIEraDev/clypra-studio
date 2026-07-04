@@ -13,7 +13,7 @@
  * - Clean separation from Pixi implementation details
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { FrameGraphPlanner } from "@clypra-studio/runtime/planner";
 import { PixiRenderer } from "@clypra-studio/runtime/pixi";
 import { EffectGraphCompiler } from "@clypra-studio/runtime";
@@ -48,9 +48,11 @@ export interface ResponsivePreviewCanvasProps {
   onTimeChange?: (time: number) => void;
   /** Callback when display size changes */
   onDisplaySizeChange?: (size: { width: number; height: number }) => void;
+  /** Callback for live log messages */
+  onLog?: (message: string) => void;
 }
 
-export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWidth = 1920, renderHeight = 1080, responsive = true, fit = "contain", maxRenderScale = 1.0, playing = false, onPlayingChange, onTimeChange, onDisplaySizeChange }: ResponsivePreviewCanvasProps) {
+export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWidth = 1920, renderHeight = 1080, responsive = true, fit = "contain", maxRenderScale = 1.0, playing = false, onPlayingChange, onTimeChange, onDisplaySizeChange, onLog }: ResponsivePreviewCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const rendererRef = useRef<PixiRenderer | null>(null);
@@ -58,8 +60,25 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
   const plannerRef = useRef<FrameGraphPlanner | null>(null);
   const animationFrameRef = useRef<number>();
 
+  // Bug #2 fix: compiledGraph converted from useState to a ref-in-loopStateRef.
+  // Previously useState caused a cascade: setting the graph → re-render → loopStateRef
+  // sync effect fires → further effects re-run. Now the graph is written directly into
+  // loopStateRef.current.activeGraph so the render loop picks it up with zero re-renders.
+  // loopStateRef is declared here (before the compile effect) so the effect can write
+  // into it on first mount without a temporal dead-zone issue.
+  const loopStateRef = useRef({
+    video: null as HTMLVideoElement | null,
+    renderer: null as PixiRenderer | null,
+    planner: null as FrameGraphPlanner | null,
+    activeGraph: null as any,
+    playing: false,
+    fit: "contain" as "contain" | "cover" | "fill",
+    onTimeChange: undefined as ((time: number) => void) | undefined,
+  });
+
   const [videoObjectUrl, setVideoObjectUrl] = useState<string | null>(null);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [isRendererReady, setIsRendererReady] = useState(false);
   const [runtimeStatus, setRuntimeStatus] = useState<{
     compiled: boolean;
     planned: boolean;
@@ -71,6 +90,7 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
     gpuTime: 0,
     cpuTime: 0,
     passCount: 0,
+    resourceCount: 0,
   });
 
   // Responsive canvas controller
@@ -81,67 +101,84 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
     onDisplaySizeChange,
   });
 
-  // Create object URL from video file
+  // Memoize log to avoid re-creating a new function reference on every render,
+  // which would make it an unstable dep inside effects.
+  const onLogRef = useRef(onLog);
+  useEffect(() => { onLogRef.current = onLog; }, [onLog]);
+  const log = useCallback((msg: string) => {
+    console.log(msg);
+    onLogRef.current?.(msg);
+  }, []);
+
+
+  // Create object URL from video file or support string URLs directly
   useEffect(() => {
-    console.log("[ResponsivePreviewCanvas] Video input changed:", inputs?.video?.name);
-    const videoFile = inputs?.video;
-    if (videoFile instanceof File) {
-      console.log("[ResponsivePreviewCanvas] Creating object URL for video:", videoFile.name, videoFile.size, "bytes");
-      const url = URL.createObjectURL(videoFile);
+    const videoSource = inputs?.video;
+    if (videoSource instanceof File) {
+      log(`🎬 [VideoLab] Step 1: New video file received -> ${videoSource.name} (${(videoSource.size / 1024 / 1024).toFixed(2)} MB)`);
+      const url = URL.createObjectURL(videoSource);
       setVideoObjectUrl(url);
       setVideoLoaded(false);
-      console.log("[ResponsivePreviewCanvas] Object URL created:", url);
+      log(`🎬 [VideoLab] Step 2: Created preview Blob URL -> ${url}`);
       return () => {
-        console.log("[ResponsivePreviewCanvas] Revoking object URL");
+        log(`🎬 [VideoLab] Cleaning up Blob URL -> ${url}`);
         URL.revokeObjectURL(url);
         setVideoObjectUrl(null);
       };
+    } else if (typeof videoSource === "string") {
+      log(`🎬 [VideoLab] Step 1: New video URL string received -> ${videoSource}`);
+      setVideoObjectUrl(videoSource);
+      setVideoLoaded(false);
     } else {
-      console.log("[ResponsivePreviewCanvas] No valid video file");
       setVideoObjectUrl(null);
       setVideoLoaded(false);
     }
   }, [inputs?.video]);
 
-  // Initialize Pixi renderer with proper sizing
+  // Fallback readyState inspector (catches fast-loading or cached videos)
   useEffect(() => {
-    console.log("[ResponsivePreviewCanvas] Init check - canvasRef:", !!canvasRef.current, "isReady:", isReady, "videoLoaded:", videoLoaded);
+    if (!videoObjectUrl || videoLoaded) return;
 
-    // Don't initialize until we have a video loaded
-    if (!canvasRef.current || !isReady || !videoLoaded) {
-      console.log("[ResponsivePreviewCanvas] Skipping init - waiting for:", {
-        canvas: !canvasRef.current,
-        ready: !isReady,
-        video: !videoLoaded,
-      });
-      return;
-    }
+    const checkReady = () => {
+      const video = videoRef.current;
+      if (video && video.readyState >= 1) {
+        log(`🎬 [VideoLab] Step 3: Video element ready (readyState=${video.readyState}, ${video.videoWidth}x${video.videoHeight})`);
+        setVideoLoaded(true);
+      }
+    };
 
-    console.log("[ResponsivePreviewCanvas] Starting Pixi initialization...");
+    checkReady();
+    const interval = setInterval(checkReady, 250);
+    return () => clearInterval(interval);
+  }, [videoObjectUrl, videoLoaded]);
+
+  // Initialize Pixi renderer ONCE when canvas is ready
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    let mounted = true;
+    const renderer = new PixiRenderer();
 
     const initRenderer = async () => {
-      // Calculate actual render resolution (considering maxRenderScale)
       const scale = Math.min(maxRenderScale, 1.0);
       const actualRenderWidth = Math.round(renderWidth * scale);
       const actualRenderHeight = Math.round(renderHeight * scale);
 
       try {
-        console.log("[ResponsivePreviewCanvas] Creating Pixi renderer with:", {
-          width: actualRenderWidth,
-          height: actualRenderHeight,
-        });
-
-        const renderer = new PixiRenderer();
+        log(`🎨 [VideoLab] Initializing Pixi.js renderer (${actualRenderWidth}x${actualRenderHeight})...`);
         await renderer.initialize({
           canvas: canvasRef.current!,
           width: actualRenderWidth,
           height: actualRenderHeight,
           backgroundColor: 0x1a1a1a,
-          resolution: 1, // We manage resolution explicitly
+          resolution: 1,
           antialias: true,
         });
 
-        console.log("[ResponsivePreviewCanvas] Pixi renderer initialized successfully");
+        if (!mounted) {
+          renderer.dispose();
+          return;
+        }
 
         rendererRef.current = renderer;
         compilerRef.current = new EffectGraphCompiler();
@@ -150,24 +187,46 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
           targetHeight: actualRenderHeight,
         });
 
-        console.log("✓ Responsive Pixi Renderer initialized");
-        console.log(`  Render: ${actualRenderWidth}×${actualRenderHeight}`);
-        console.log(`  Display: ${displaySize.width.toFixed(0)}×${displaySize.height.toFixed(0)}`);
+        setIsRendererReady(true);
+        log("✓ [VideoLab] Pixi.js renderer initialized successfully.");
       } catch (error) {
-        console.error("Failed to initialize renderer:", error);
-        setRuntimeStatus((prev) => ({ ...prev, error: String(error) }));
+        if (mounted) {
+          log(`❌ [VideoLab] Failed to initialize renderer: ${error}`);
+          setRuntimeStatus((prev) => ({ ...prev, error: String(error) }));
+        }
       }
     };
 
     initRenderer();
 
     return () => {
-      if (rendererRef.current) {
-        rendererRef.current.dispose();
-        rendererRef.current = null;
-      }
+      mounted = false;
+      setIsRendererReady(false);
+      log("[VideoLab] Disposing renderer");
+      renderer.dispose();
+      rendererRef.current = null;
+      compilerRef.current = null;
+      plannerRef.current = null;
     };
-  }, [renderWidth, renderHeight, maxRenderScale, isReady, displaySize, videoLoaded]);
+  }, [maxRenderScale]);
+
+  // Handle render size changes without recreating WebGL context
+  useEffect(() => {
+    if (!isRendererReady || !rendererRef.current) return;
+
+    const scale = Math.min(maxRenderScale, 1.0);
+    const actualRenderWidth = Math.round(renderWidth * scale);
+    const actualRenderHeight = Math.round(renderHeight * scale);
+
+    log(`🎨 [VideoLab] Resizing renderer to ${actualRenderWidth}x${actualRenderHeight}`);
+    rendererRef.current.resize(actualRenderWidth, actualRenderHeight);
+
+    // Recreate planner with new target dimensions
+    plannerRef.current = new FrameGraphPlanner({
+      targetWidth: actualRenderWidth,
+      targetHeight: actualRenderHeight,
+    });
+  }, [renderWidth, renderHeight, maxRenderScale, isRendererReady]);
 
   // Sync video element with currentTime
   useEffect(() => {
@@ -185,130 +244,148 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
     if (!video || !videoLoaded) return;
 
     if (playing) {
+      log("▶ [VideoLab] Playing video...");
       video.play().catch(console.error);
     } else {
+      log("⏸ [VideoLab] Pausing video...");
       video.pause();
     }
   }, [playing, videoLoaded]);
 
-  // Main render loop
+  // Stable effect key to prevent re-compilation loops
+  const effectKey = useMemo(() => JSON.stringify(effect || null), [effect]);
+
+  // Pre-compile graph only when effect definition actually changes.
+  // Bug #2 fix: write directly into loopStateRef.current.activeGraph instead of
+  // calling setCompiledGraph() (state). The old approach triggered a re-render on
+  // every isRendererReady transition, cascading through the loopStateRef sync effect.
   useEffect(() => {
-    console.log("[ResponsivePreviewCanvas] Render loop effect triggered - videoLoaded:", videoLoaded, "rendererRef:", !!rendererRef.current);
-
-    if (!videoLoaded || !rendererRef.current || !compilerRef.current || !plannerRef.current) {
-      console.log("[ResponsivePreviewCanvas] Render loop waiting for:", {
-        videoLoaded,
-        renderer: !!rendererRef.current,
-        compiler: !!compilerRef.current,
-        planner: !!plannerRef.current,
-      });
+    if (!isRendererReady || !compilerRef.current) {
+      loopStateRef.current.activeGraph = null;
       return;
     }
-
-    console.log("[ResponsivePreviewCanvas] Starting render loop...");
-
-    const video = videoRef.current;
-    if (!video) {
-      console.error("[ResponsivePreviewCanvas] Video element is null!");
-      return;
+    const effectDef = effect;
+    if (effectDef && effectDef.nodes) {
+      try {
+        log(`⚡ [VideoLab] Compiling effect graph for: ${effectDef.id || effectDef.name}`);
+        const graph = compilerRef.current.compile(effectDef, effectDef.parameters || {});
+        loopStateRef.current.activeGraph = graph;
+        setRuntimeStatus((prev) => ({ ...prev, compiled: true, error: undefined }));
+        log(`✓ [VideoLab] Effect graph compiled successfully: ${graph.nodes.length} nodes`);
+      } catch (error) {
+        log(`❌ [VideoLab] Effect compilation failed: ${error}`);
+        loopStateRef.current.activeGraph = null;
+        setRuntimeStatus((prev) => ({ ...prev, compiled: false, error: String(error) }));
+      }
+    } else {
+      log("⚡ [VideoLab] Compiling identity graph (no effect)");
+      const graph = compilerRef.current.createIdentityGraph();
+      loopStateRef.current.activeGraph = graph;
+      setRuntimeStatus((prev) => ({ ...prev, compiled: true, error: undefined }));
     }
+  }, [effectKey, isRendererReady]);
 
-    console.log("[ResponsivePreviewCanvas] Video element ready for rendering");
+  // Keep loopStateRef in sync with latest values to prevent stale closures.
+  // Note: activeGraph is written directly by the compile effect (above) — it is NOT
+  // updated here to avoid triggering a re-render cascade (Bug #2 fix).
+  useEffect(() => {
+    loopStateRef.current.video = videoRef.current;
+    loopStateRef.current.renderer = rendererRef.current;
+    loopStateRef.current.planner = plannerRef.current;
+    loopStateRef.current.playing = playing;
+    loopStateRef.current.fit = fit;
+    loopStateRef.current.onTimeChange = onTimeChange;
+  }, [playing, fit, onTimeChange, isRendererReady, videoLoaded]);
 
+
+  // Main render loop.
+  // Bug #1 fix: when the loop is idle (no video/renderer/graph ready), throttle to
+  // ~10 fps (100ms setTimeout) instead of busy-spinning at 60 fps with RAF. This
+  // cuts idle CPU load by ~6x while keeping the warm-up poll responsive.
+  useEffect(() => {
     let lastFrameTime = performance.now();
     let frameCount = 0;
     let fpsUpdateTime = performance.now();
     let lastRenderedTime = -1;
-    let compiledGraph: any = null;
-    let compiledFrameGraph: any = null;
+    let hasLoggedFirstFrame = false;
+    let isLoopRunning = true;
+    let idleTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
-    // Pre-compile graph once (not on every frame)
-    const effectDef = effect;
-
-    if (effectDef && effectDef.nodes) {
-      // Video effect with internal graph structure
-      console.log("[ResponsivePreviewCanvas] Compiling video effect:", effectDef.id);
-      try {
-        compiledGraph = compilerRef.current.compile(effectDef, effectDef.parameters || {});
-        console.log("✓ Effect graph compiled:", compiledGraph.nodes.length, "nodes");
-        setRuntimeStatus((prev) => ({ ...prev, compiled: true }));
-      } catch (error) {
-        console.error("Effect compilation failed:", error);
-        setRuntimeStatus((prev) => ({ ...prev, error: String(error) }));
-        return;
-      }
-    } else {
-      // Fallback to identity
-      console.log("[ResponsivePreviewCanvas] Using identity graph (no effect)");
-      compiledGraph = compilerRef.current.createIdentityGraph();
-      setRuntimeStatus((prev) => ({ ...prev, compiled: true }));
+    if (typeof window !== "undefined") {
+      (window as any).__activeRenderLoopCount = ((window as any).__activeRenderLoopCount || 0) + 1;
+      console.assert((window as any).__activeRenderLoopCount <= 1, `Multiple RAF loops detected: ${(window as any).__activeRenderLoopCount}`);
+      console.debug(`[PreviewRenderer] RAF started. Total loops: ${(window as any).__activeRenderLoopCount}`);
     }
 
-    const renderFrame = async () => {
-      if (!video || !rendererRef.current || !compilerRef.current || !plannerRef.current) {
+    const scheduleIdlePoll = () => {
+      if (!isLoopRunning) return;
+      // Throttle: retry in 100ms when not ready instead of every frame (~16ms)
+      idleTimeoutId = setTimeout(() => {
+        animationFrameRef.current = requestAnimationFrame(renderFrame);
+      }, 100);
+    };
+
+    const renderFrame = () => {
+      if (!isLoopRunning) return;
+
+      const state = loopStateRef.current;
+      const { video, renderer, planner, activeGraph, playing, fit, onTimeChange } = state;
+
+      if (!video || video.readyState < 2 || !renderer || !planner || !activeGraph) {
+        scheduleIdlePoll();
         return;
       }
 
-      // Only render if video time changed or playing
       const currentVideoTime = video.currentTime;
       const timeDiff = Math.abs(currentVideoTime - lastRenderedTime);
 
-      // Throttle rendering when paused (max 30fps when seeking)
-      if (!playing) {
-        if (timeDiff < 0.016) {
-          // No change, skip frame
-          animationFrameRef.current = requestAnimationFrame(renderFrame);
-          return;
-        }
-        // Add small delay when paused to prevent UI lock
-        await new Promise((resolve) => setTimeout(resolve, 10));
+      if (!playing && timeDiff < 0.016 && lastRenderedTime >= 0) {
+        animationFrameRef.current = requestAnimationFrame(renderFrame);
+        return;
       }
 
       try {
         const now = performance.now();
 
-        // Update FPS counter
-        frameCount++;
-        if (now - fpsUpdateTime >= 1000) {
-          setRenderStats((prev) => ({
-            ...prev,
-            fps: Math.round((frameCount * 1000) / (now - fpsUpdateTime)),
-          }));
-          frameCount = 0;
-          fpsUpdateTime = now;
-        }
+        // Step 2: Plan
+        const compiledFrameGraph = planner.plan(activeGraph, Math.floor(currentVideoTime * 60), currentVideoTime * 1000);
 
-        // Step 2: Plan (reuse compiled graph)
-        compiledFrameGraph = plannerRef.current.plan(compiledGraph, Math.floor(currentVideoTime * 60), currentVideoTime * 1000);
-        setRuntimeStatus((prev) => ({ ...prev, planned: true }));
-
-        // Step 3: Upload video frame
+        // Step 3: Upload video frame with fit mode scaling
         const persistentResources = compiledFrameGraph.resourceRequests.filter((r: any) => !r.transient).map((r: any) => r.id);
-        rendererRef.current.uploadSourceImage(video, persistentResources);
+        renderer.uploadSourceImage(video, persistentResources, fit);
 
-        // Step 4: Execute
-        setRuntimeStatus((prev) => ({ ...prev, rendering: true }));
-        const result = await rendererRef.current.render(compiledFrameGraph);
+        // Step 4: Execute & Present (100% Synchronous GPU Draw)
+        const result = renderer.render(compiledFrameGraph);
+        renderer.present("output");
 
-        // Step 5: Present
-        rendererRef.current.present("output");
-
-        // Update stats
-        setRenderStats({
-          fps: Math.round(1000 / (now - lastFrameTime)),
-          gpuTime: result.stats.totalGpuTime,
-          cpuTime: result.stats.totalCpuTime,
-          passCount: result.stats.passCount,
-        });
+        if (!hasLoggedFirstFrame) {
+          log("🎉 [VideoLab] First frame rendered and presented to WebGL canvas!");
+          hasLoggedFirstFrame = true;
+        }
 
         lastFrameTime = now;
         lastRenderedTime = currentVideoTime;
+
+        // Update stats throttled to once per second
+        frameCount++;
+        if (now - fpsUpdateTime >= 1000) {
+          setRenderStats({
+            fps: Math.round((frameCount * 1000) / (now - fpsUpdateTime)),
+            gpuTime: result.stats.totalGpuTime,
+            cpuTime: result.stats.totalCpuTime,
+            passCount: result.stats.passCount,
+            resourceCount: result.stats.resourceCount,
+          });
+          setRuntimeStatus((prev) => ({ ...prev, planned: true, rendering: true }));
+          frameCount = 0;
+          fpsUpdateTime = now;
+        }
 
         if (playing) {
           onTimeChange?.(currentVideoTime);
         }
       } catch (error) {
-        console.error("Render error:", error);
+        log(`❌ [VideoLab] Render error: ${error}`);
         setRuntimeStatus((prev) => ({ ...prev, error: String(error), rendering: false }));
       }
 
@@ -318,22 +395,21 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
     animationFrameRef.current = requestAnimationFrame(renderFrame);
 
     return () => {
-      if (animationFrameRef.current) {
+      isLoopRunning = false;
+      if (idleTimeoutId !== undefined) clearTimeout(idleTimeoutId);
+      if (typeof window !== "undefined") {
+        (window as any).__activeRenderLoopCount = Math.max(0, ((window as any).__activeRenderLoopCount || 0) - 1);
+        console.debug(`[PreviewRenderer] RAF cancelled. Remaining loops: ${(window as any).__activeRenderLoopCount}`);
+      }
+      if (animationFrameRef.current !== undefined) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [videoLoaded, effect, playing, renderWidth, renderHeight, onTimeChange]);
+  }, []);
 
   const handleVideoLoaded = () => {
-    console.log("[ResponsivePreviewCanvas] Video loaded event fired");
     const video = videoRef.current;
-    console.log("[ResponsivePreviewCanvas] Video element:", {
-      exists: !!video,
-      duration: video?.duration,
-      videoWidth: video?.videoWidth,
-      videoHeight: video?.videoHeight,
-      readyState: video?.readyState,
-    });
+    log(`🎬 [VideoLab] HTMLVideoElement metadata loaded: ${video?.videoWidth || 0}x${video?.videoHeight || 0} @ ${video?.duration ? video.duration.toFixed(1) : 0}s`);
     setVideoLoaded(true);
     if (video && onTimeChange) {
       onTimeChange(0);
@@ -353,39 +429,60 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
       style={{
         position: "relative",
         width: "100%",
+        minHeight: "420px",
         height: "100%",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        minHeight: 0,
-        minWidth: 0,
       }}
     >
-      {/* Hidden video element */}
-      {videoObjectUrl && <video ref={videoRef} src={videoObjectUrl} onLoadedData={handleVideoLoaded} style={{ display: "none" }} preload="auto" playsInline muted />}
+      {/* Off-screen video element (always mounted to prevent React DOM insertion errors) */}
+      <video
+        ref={videoRef}
+        src={videoObjectUrl || undefined}
+        onLoadedData={handleVideoLoaded}
+        onLoadedMetadata={handleVideoLoaded}
+        onCanPlay={handleVideoLoaded}
+        style={{ position: "fixed", top: "-9999px", left: "-9999px", opacity: 0, pointerEvents: "none" }}
+        preload="auto"
+        playsInline
+        muted
+      />
 
       {/* Canvas with explicit render and display dimensions */}
-      {isReady && displaySize.width > 0 && (
-        <canvas
-          ref={canvasRef}
-          width={renderWidth}
-          height={renderHeight}
-          onClick={handleCanvasClick}
-          style={{
-            width: `${displaySize.width}px`,
-            height: `${displaySize.height}px`,
-            cursor: "pointer",
-            border: "1px solid #334155",
-            borderRadius: "8px",
-            background: "#1a1a1a",
-            display: "block",
-          }}
-        />
-      )}
+      <canvas
+        ref={canvasRef}
+        width={renderWidth}
+        height={renderHeight}
+        onClick={handleCanvasClick}
+        style={{
+          width: displaySize.width > 0 ? `${displaySize.width}px` : "100%",
+          height: displaySize.height > 0 ? `${displaySize.height}px` : "405px",
+          maxHeight: "500px",
+          cursor: "pointer",
+          border: "1px solid #334155",
+          borderRadius: "8px",
+          background: "#1a1a1a",
+          display: "block",
+          objectFit: "contain",
+        }}
+      />
 
       {/* Runtime Inspector Overlay */}
-      {videoLoaded && <RuntimeInspector effectName={effect?.name || "Identity"} compiled={runtimeStatus.compiled} planned={runtimeStatus.planned} resourceCount={renderStats.passCount > 0 ? 2 : 0} passCount={renderStats.passCount} textureCount={renderStats.passCount > 0 ? 2 : 0} gpuTime={renderStats.gpuTime} fps={renderStats.fps} compact={false} />}
+      {videoLoaded && (
+        <RuntimeInspector
+          effectName={effect?.name || "Identity"}
+          compiled={runtimeStatus.compiled}
+          planned={runtimeStatus.planned}
+          resourceCount={renderStats.resourceCount}
+          passCount={renderStats.passCount}
+          textureCount={renderStats.resourceCount}
+          gpuTime={renderStats.gpuTime}
+          fps={renderStats.fps}
+          compact={false}
+        />
+      )}
 
       {/* Controls */}
       <div
@@ -435,3 +532,4 @@ export function ResponsivePreviewCanvas({ effect, inputs, currentTime, renderWid
     </div>
   );
 }
+

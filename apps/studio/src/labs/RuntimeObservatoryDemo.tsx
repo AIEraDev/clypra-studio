@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { PreviewCanvasV2 } from "@clypra-studio/ui";
+import { ResponsivePreviewCanvas } from "@clypra-studio/ui";
 
 const DEMO_EFFECTS = [
   { id: "identity", name: "Identity (Copy)", type: "copy", parameters: {} },
@@ -205,7 +205,7 @@ export function RuntimeObservatoryDemo() {
         >
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
             {videoFile ? (
-              <PreviewCanvasV2 effect={selectedEffect} inputs={{ video: videoFile }} currentTime={currentTime} width={1920} height={1080} playing={playing} showObservatory={false} onPlayingChange={setPlaying} onTimeChange={setCurrentTime} />
+              <ResponsivePreviewCanvas effect={selectedEffect} inputs={{ video: videoFile }} currentTime={currentTime} renderWidth={1920} renderHeight={1080} playing={playing} onPlayingChange={setPlaying} onTimeChange={setCurrentTime} />
             ) : (
               <div
                 style={{

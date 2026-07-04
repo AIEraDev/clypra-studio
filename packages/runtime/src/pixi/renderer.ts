@@ -20,25 +20,57 @@ import { createFilter, updateFilterUniforms } from "./filters";
 export class PixiRenderer {
   private app: PIXI.Application | null = null;
   private initialized = false;
+  /** In-flight init promise — prevents double-init in React Strict Mode (Bug #5 fix) */
+  private initializingPromise: Promise<void> | null = null;
   private texturePool: TexturePool;
   private resources = new Map<string, PIXI.Texture>();
   private filters = new Map<string, PIXI.Filter>();
   private canvasElement?: HTMLCanvasElement;
   private telemetry: RuntimeTelemetry;
+  private sharedSprite = new PIXI.Sprite();
+  private presentSprite: PIXI.Sprite | null = null;
+  private sourceTexture: PIXI.Texture | null = null;
+  private currentSource: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement | null = null;
 
   constructor(telemetry?: RuntimeTelemetry) {
     this.texturePool = new TexturePool(20);
     this.telemetry = telemetry || new NoOpTelemetry();
+
+    if (typeof window !== "undefined") {
+      (window as any).__rendererInstanceCount = ((window as any).__rendererInstanceCount || 0) + 1;
+      console.assert((window as any).__rendererInstanceCount <= 1, `Multiple Pixi renderers detected: ${(window as any).__rendererInstanceCount}`);
+      console.debug(`[PreviewRenderer] created. Total instances: ${(window as any).__rendererInstanceCount}`);
+    }
   }
 
   /**
-   * Initialize the renderer
+   * Initialize the renderer.
+   *
+   * Atomic: concurrent calls during React Strict Mode double-mount are deduplicated
+   * via `initializingPromise`. A second call while init is in-flight returns the
+   * same promise instead of creating a second PIXI.Application / WebGL context.
    */
   async initialize(config: RendererConfig = {}): Promise<void> {
     if (this.initialized) {
       throw new Error("PixiRenderer already initialized");
     }
 
+    // Guard: if a concurrent initialize() call is already in-flight, return its
+    // promise so we don't create a second WebGL context on the same canvas.
+    if (this.initializingPromise) {
+      console.warn("[PixiRenderer] initialize() called while already initializing — returning in-flight promise.");
+      return this.initializingPromise;
+    }
+
+    this.initializingPromise = this._doInitialize(config);
+    try {
+      await this.initializingPromise;
+    } finally {
+      this.initializingPromise = null;
+    }
+  }
+
+  private async _doInitialize(config: RendererConfig): Promise<void> {
     this.canvasElement = config.canvas;
 
     const width = config.width ?? config.canvas?.clientWidth ?? 1920;
@@ -61,9 +93,9 @@ export class PixiRenderer {
   }
 
   /**
-   * Render a frame graph
+   * Render a frame graph (Synchronous GPU execution)
    */
-  async render(frameGraph: FrameGraph): Promise<RenderResult> {
+  render(frameGraph: FrameGraph): RenderResult {
     if (!this.initialized || !this.app) {
       throw new Error("PixiRenderer not initialized");
     }
@@ -82,7 +114,7 @@ export class PixiRenderer {
     for (const resource of frameGraph.resourceRequests) {
       if (!this.resources.has(resource.id)) {
         const allocStart = performance.now();
-        this.allocateResource(resource.id, resource.width, resource.height);
+        this.allocateResource(resource.id, resource.width, resource.height, resource.format);
         const allocDuration = performance.now() - allocStart;
 
         this.telemetry.resourceAllocated(resource.id, resource.width, resource.height, resource.transient);
@@ -106,7 +138,7 @@ export class PixiRenderer {
       this.telemetry.passStart(pass.name, pass.shaderId);
       const passStart = performance.now();
 
-      await this.executePass(pass);
+      this.executePass(pass);
 
       const passTime = performance.now() - passStart;
       totalGpuTime += passTime;
@@ -148,9 +180,9 @@ export class PixiRenderer {
   }
 
   /**
-   * Execute a single render pass
+   * Execute a single render pass (Synchronous)
    */
-  private async executePass(pass: RenderPass): Promise<void> {
+  private executePass(pass: RenderPass): void {
     if (!this.app) return;
 
     // Get input and output textures
@@ -176,43 +208,32 @@ export class PixiRenderer {
 
     // Create sprite with input texture
     const target = outputTexture as PIXI.RenderTexture;
-    const sprite = new PIXI.Sprite(inputTexture);
-    sprite.width = target.width;
-    sprite.height = target.height;
+    this.sharedSprite.texture = inputTexture;
+    this.sharedSprite.width = target.width;
+    this.sharedSprite.height = target.height;
 
-    // Get or create filter
-    let filter: PIXI.Filter;
-    let disposeFilter = false;
-
-    // NEW: Check for custom shader in pass
-    if (pass.customShader) {
-      // Compile custom GLSL shader
-      filter = this.compileCustomShader(pass.shaderId, pass.customShader, pass.uniforms || {}, target.width, target.height);
-      disposeFilter = true; // Always dispose custom shaders
+    // Get or create cached filter
+    let filter = this.filters.get(pass.shaderId);
+    if (!filter) {
+      if (pass.customShader) {
+        filter = this.compileCustomShader(pass.shaderId, pass.customShader, pass.uniforms || {}, target.width, target.height);
+      } else {
+        filter = createFilter(pass.shaderId, pass.uniforms);
+      }
+      this.filters.set(pass.shaderId, filter);
     } else {
-      // Don't cache filters - create fresh instances to avoid mutation issues
-      // When multiple passes use same shaderId with different uniforms,
-      // cached filter mutation can cause incorrect results
-      filter = createFilter(pass.shaderId, pass.uniforms);
-      disposeFilter = true;
+      updateFilterUniforms(filter, pass.uniforms, pass.shaderId);
     }
 
     // Apply filter and render
-    sprite.filters = [filter];
+    this.sharedSprite.filters = [filter];
     this.app.renderer.render({
-      container: sprite,
+      container: this.sharedSprite,
       target,
       clear: pass.clearBeforeRender ?? true,
     });
-    sprite.filters = null;
-
-    // Clean up filter if needed
-    if (disposeFilter) {
-      filter.destroy();
-    }
-
-    // Always destroy sprite to prevent memory leak
-    sprite.destroy(false); // false = don't destroy texture
+    this.sharedSprite.filters = null;
+    this.sharedSprite.texture = PIXI.Texture.EMPTY;
   }
 
   /**
@@ -379,29 +400,28 @@ export class PixiRenderer {
   private blitTexture(source: PIXI.Texture, target: PIXI.RenderTexture, clear: boolean = true): void {
     if (!this.app) return;
 
-    const sprite = new PIXI.Sprite(source);
-    sprite.width = target.width;
-    sprite.height = target.height;
+    this.sharedSprite.texture = source;
+    this.sharedSprite.width = target.width;
+    this.sharedSprite.height = target.height;
 
     this.app.renderer.render({
-      container: sprite,
+      container: this.sharedSprite,
       target,
       clear,
     });
 
-    // Destroy sprite to prevent memory leak
-    sprite.destroy(false);
+    this.sharedSprite.texture = PIXI.Texture.EMPTY;
   }
 
   /**
    * Allocate a texture resource
    */
-  private allocateResource(id: string, width: number, height: number): void {
+  private allocateResource(id: string, width: number, height: number, format: string = "rgba8"): void {
     if (this.resources.has(id)) {
       throw new Error(`Resource "${id}" already allocated`);
     }
 
-    const texture = PIXI.RenderTexture.create({ width, height });
+    const texture = this.texturePool.acquire({ width, height, format: format as any });
     this.resources.set(id, texture);
   }
 
@@ -427,10 +447,46 @@ export class PixiRenderer {
   /**
    * Upload source image to resources
    */
-  uploadSourceImage(sourceImage: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement, resourceIds: readonly string[]): void {
+  uploadSourceImage(
+    sourceImage: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement,
+    resourceIds: readonly string[],
+    fitMode: "contain" | "cover" | "fill" = "contain"
+  ): void {
     if (!this.app) return;
 
-    const sourceTexture = PIXI.Texture.from(sourceImage);
+    const isVideo = typeof HTMLVideoElement !== "undefined" && sourceImage instanceof HTMLVideoElement;
+    const srcW = isVideo ? (sourceImage as HTMLVideoElement).videoWidth : sourceImage.width;
+    const srcH = isVideo ? (sourceImage as HTMLVideoElement).videoHeight : sourceImage.height;
+
+    if (!srcW || !srcH) return;
+
+    if (this.currentSource !== sourceImage || !this.sourceTexture) {
+      if (this.sourceTexture) {
+        this.sourceTexture.destroy(true);
+        console.debug("[PreviewRenderer] Destroyed old source texture to prevent GPU memory leak");
+      }
+      this.currentSource = sourceImage;
+      
+      let source: PIXI.TextureSource;
+      if (isVideo) {
+        source = new PIXI.VideoSource({
+          resource: sourceImage as HTMLVideoElement,
+          autoPlay: false,
+        });
+      } else {
+        source = PIXI.TextureSource.from(sourceImage);
+      }
+      this.sourceTexture = new PIXI.Texture({ source });
+      console.debug("[PreviewRenderer] Created new source texture");
+    }
+
+    const sourceTexture = this.sourceTexture;
+    if (sourceTexture && sourceTexture.source) {
+      if (sourceTexture.source.width !== srcW || sourceTexture.source.height !== srcH) {
+        sourceTexture.source.resize(srcW, srcH);
+      }
+      sourceTexture.source.update();
+    }
 
     for (const resourceId of resourceIds) {
       const texture = this.resources.get(resourceId);
@@ -440,27 +496,29 @@ export class PixiRenderer {
       }
 
       const uploadStart = performance.now();
-
-      // Check if dimensions match (1:1 mapping)
-      const dimensionsMatch = texture.width === sourceTexture.width && texture.height === sourceTexture.height;
-
-      const sprite = new PIXI.Sprite(sourceTexture);
-
-      if (dimensionsMatch) {
-        // 1:1 fill - no scaling needed, perfect match
-        sprite.width = texture.width;
-        sprite.height = texture.height;
+      
+      this.sharedSprite.texture = sourceTexture;
+      if (fitMode === "fill") {
+        this.sharedSprite.width = texture.width;
+        this.sharedSprite.height = texture.height;
+        this.sharedSprite.position.set(0, 0);
+      } else if (fitMode === "cover") {
+        const fitScale = Math.max(texture.width / srcW, texture.height / srcH);
+        this.sharedSprite.width = srcW * fitScale;
+        this.sharedSprite.height = srcH * fitScale;
+        this.sharedSprite.position.set((texture.width - this.sharedSprite.width) / 2, (texture.height - this.sharedSprite.height) / 2);
       } else {
-        // Cover-fit scaling - fill entire texture, may crop
-        const fitScale = Math.max(texture.width / sourceTexture.width, texture.height / sourceTexture.height);
-        sprite.scale.set(fitScale);
-        sprite.position.set((texture.width - sourceTexture.width * fitScale) / 2, (texture.height - sourceTexture.height * fitScale) / 2);
+        // "contain" (default): Fit entire video inside canvas without cropping
+        const fitScale = Math.min(texture.width / srcW, texture.height / srcH);
+        this.sharedSprite.width = srcW * fitScale;
+        this.sharedSprite.height = srcH * fitScale;
+        this.sharedSprite.position.set((texture.width - this.sharedSprite.width) / 2, (texture.height - this.sharedSprite.height) / 2);
       }
 
-      this.app.renderer.render({ container: sprite, target: texture });
+      this.app.renderer.render({ container: this.sharedSprite, target: texture });
 
-      // Destroy sprite to prevent memory leak
-      sprite.destroy(false);
+      this.sharedSprite.texture = PIXI.Texture.EMPTY;
+      this.sharedSprite.position.set(0, 0);
 
       const uploadDuration = performance.now() - uploadStart;
       this.telemetry.textureUploaded(resourceId, texture.width, texture.height, uploadDuration);
@@ -483,18 +541,20 @@ export class PixiRenderer {
     const screenH = this.app.renderer.screen.height;
     const scale = Math.min(screenW / texture.width, screenH / texture.height);
 
-    const sprite = new PIXI.Sprite(texture);
-    sprite.scale.set(scale);
-    sprite.position.set((screenW - texture.width * scale) / 2, (screenH - texture.height * scale) / 2);
+    if (!this.presentSprite) {
+      this.presentSprite = new PIXI.Sprite(texture);
+      this.app.stage.addChild(this.presentSprite);
+    } else {
+      this.presentSprite.texture = texture;
+    }
 
-    this.app.stage.removeChildren();
-    this.app.stage.addChild(sprite);
+    this.presentSprite.scale.set(scale);
+    this.presentSprite.position.set((screenW - texture.width * scale) / 2, (screenH - texture.height * scale) / 2);
+
     this.app.renderer.render(this.app.stage);
 
     const presentDuration = performance.now() - presentStart;
     this.telemetry.presentEnd(presentDuration);
-
-    // Note: Don't destroy sprite here as it's added to stage and will be cleaned up on next present()
   }
 
   /**
@@ -571,7 +631,25 @@ export class PixiRenderer {
    * Dispose the renderer
    */
   dispose(): void {
-    if (!this.initialized) return;
+    if (typeof window !== "undefined") {
+      (window as any).__rendererInstanceCount = Math.max(0, ((window as any).__rendererInstanceCount || 0) - 1);
+      console.debug(`[PreviewRenderer] renderer destroyed. Remaining instances: ${(window as any).__rendererInstanceCount}`);
+    }
+
+    if (this.sharedSprite) {
+      this.sharedSprite.destroy(false);
+    }
+
+    if (this.presentSprite) {
+      this.presentSprite.destroy(false);
+      this.presentSprite = null;
+    }
+
+    if (this.sourceTexture) {
+      this.sourceTexture.destroy(true);
+      this.sourceTexture = null;
+      this.currentSource = null;
+    }
 
     // Clear resources
     for (const texture of this.resources.values()) {

@@ -22,12 +22,6 @@ export { PerformanceMonitor } from "./components/PerformanceMonitor";
 export type { PerformanceMonitorProps, PerformanceMetrics } from "./components/PerformanceMonitor";
 
 // Week 4 Components - Preview & Timeline
-export { PreviewCanvas } from "./components/PreviewCanvas";
-export type { PreviewCanvasProps } from "./components/PreviewCanvas";
-
-export { PreviewCanvasV2 } from "./components/PreviewCanvas";
-export type { PreviewCanvasV2Props } from "./components/PreviewCanvas";
-
 export { ResponsivePreviewCanvas } from "./components/PreviewCanvas";
 export type { ResponsivePreviewCanvasProps } from "./components/PreviewCanvas";
 

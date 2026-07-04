@@ -84,6 +84,10 @@ export async function initializeFontSystem(): Promise<void> {
       const preloader = document.createElement("div");
       preloader.id = preloaderId;
       preloader.style.position = "absolute";
+      preloader.style.width = "0";
+      preloader.style.height = "0";
+      preloader.style.overflow = "hidden";
+      preloader.style.visibility = "hidden";
       preloader.style.opacity = "0";
       preloader.style.pointerEvents = "none";
       preloader.style.zIndex = "-9999";
