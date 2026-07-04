@@ -1,6 +1,6 @@
 {
-  "name": "@clypra-studio/shader-library",
-  "version": "3.2.3",
+  "name": "@clypra-studio/shaders",
+  "version": "0.0.0",
   "description": "Reusable GLSL shader library for video effects",
   "type": "module",
   "main": "./dist/index.js",
