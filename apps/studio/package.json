@@ -11,7 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@clypra-studio/engine": "^0.1.1",
+    "@clypra-studio/engine": "^0.1.2",
     "@clypra-studio/feature-providers": "^0.1.1",
     "@clypra-studio/runtime": "^0.1.1",
     "@clypra-studio/ui": "^0.1.1",
@@ -24,6 +24,7 @@
     "jszip": "^3.10.1",
     "lottie-web": "^5.13.0",
     "lucide-react": "^0.546.0",
+    "pixi.js": "^8.0.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "^6.2.3"

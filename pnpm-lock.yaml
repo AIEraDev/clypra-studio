@@ -30,7 +30,7 @@ importers:
   apps/studio:
     dependencies:
       '@clypra-studio/engine':
-        specifier: ^0.1.1
+        specifier: ^0.1.2
         version: 0.1.2
       '@clypra-studio/feature-providers':
         specifier: ^0.1.1
@@ -68,6 +68,9 @@ importers:
       lucide-react:
         specifier: ^0.546.0
         version: 0.546.0(react@19.2.7)
+      pixi.js:
+        specifier: ^8.0.0
+        version: 8.19.0
       react:
         specifier: ^19.0.1
         version: 19.2.7

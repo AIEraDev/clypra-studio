@@ -9,9 +9,11 @@
 
 import React, { useState } from "react";
 import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, PreviewCanvas, Timeline, PresetManager, ValidationPanel, type Preset, type ValidationIssue } from "@clypra-studio/ui";
-import { transitionEffects } from "@clypra-studio/engine/effects/transitions";
+import { getAllTransitions } from "@clypra-studio/engine/transitions";
 
 export function TransitionLabView() {
+  // Get all transitions
+  const transitionEffects = getAllTransitions();
   // State management
   const [selectedTransition, setSelectedTransition] = useState<any>(null);
   const [parameters, setParameters] = useState<Record<string, any>>({});
@@ -172,20 +174,13 @@ export function TransitionLabView() {
           >
             <h3 style={{ margin: "0 0 12px", fontSize: "14px", fontWeight: 600 }}>Transition Library</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {transitionEffects.map((transition) => (
+              {transitionEffects.map((transition: any) => (
                 <button
                   key={transition.id}
                   onClick={() => {
                     setSelectedTransition(transition);
-                    setParameters(
-                      Object.entries(transition.schema.parameters).reduce(
-                        (acc, [key, param]) => ({
-                          ...acc,
-                          [key]: param.default,
-                        }),
-                        {},
-                      ),
-                    );
+                    // Transitions don't have schema.parameters, just use empty object for now
+                    setParameters({});
                   }}
                   style={{
                     padding: "12px",
@@ -215,7 +210,7 @@ export function TransitionLabView() {
                       flexWrap: "wrap",
                     }}
                   >
-                    {transition.metadata.tags.slice(0, 3).map((tag) => (
+                    {(transition.tags || []).slice(0, 3).map((tag: string) => (
                       <span
                         key={tag}
                         style={{

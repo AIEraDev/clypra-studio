@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from "react";
 import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, PreviewCanvas, Timeline, PresetManager, ValidationPanel, type Preset, type ValidationIssue } from "@clypra-studio/ui";
 import { createDefaultProviderManager, type FeatureProvider, type FeatureMap, FeatureMapType } from "@clypra-studio/feature-providers";
-import { bodyEffects } from "@clypra-studio/engine/effects/body";
+import { bodyEffects } from "@clypra-studio/engine";
 
 export function BodyLabView() {
   // State management
@@ -281,7 +281,7 @@ export function BodyLabView() {
       if (provider?.config) {
         const defaultConfig: Record<string, any> = {};
         for (const [key, configValue] of Object.entries(provider.config)) {
-          defaultConfig[key] = configValue.default;
+          defaultConfig[key] = (configValue as any).default;
         }
         setProviderConfig(defaultConfig);
       }

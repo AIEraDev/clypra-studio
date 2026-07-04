@@ -346,13 +346,7 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
               {/* Admin Moderation - Published toggle */}
               {isAdmin && (
                 <div className="flex items-center gap-2 p-3 rounded-lg border border-[#2A2A38] bg-[#0E0E12] select-none">
-                  <input
-                    id="effect-publish-checkbox"
-                    type="checkbox"
-                    checked={publishApproved}
-                    onChange={(e) => setPublishApproved(e.target.checked)}
-                    className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-teal-500 focus:ring-teal-500 cursor-pointer"
-                  />
+                  <input id="effect-publish-checkbox" type="checkbox" checked={publishApproved} onChange={(e) => setPublishApproved(e.target.checked)} className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-teal-500 focus:ring-teal-500 cursor-pointer" />
                   <label htmlFor="effect-publish-checkbox" className="text-xs font-semibold text-white cursor-pointer">
                     Approve and Publish immediately (Make available in editor)
                   </label>
@@ -441,7 +435,7 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
                         <h4 className="text-xs font-bold text-red-300 mb-2">Validation Errors</h4>
                         <ul className="space-y-1 text-[10px] text-red-400">
                           {Object.entries(validationErrors).map(([key, message]) => (
-                            <li key={key}>• {message}</li>
+                            <li key={key}>• {String(message)}</li>
                           ))}
                         </ul>
                       </div>
