@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { EffectGraph, EffectEngine, GraphDefinition } from "@clypra/engine/videoEffects";
+import { EffectGraph, EffectEngine, GraphDefinition } from "@clypra-studio/engine/videoEffects";
 
 /** videoEffects v1 sandbox — V2 MPG pipeline lives at /studio/mpg */
 

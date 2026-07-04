@@ -1,6 +1,6 @@
 import React from "react";
 import { ChevronDown, ChevronUp, GripVertical, Plus, Trash2 } from "lucide-react";
-import { NodeRegistry } from "@clypra/engine";
+import { NodeRegistry } from "@clypra-studio/engine";
 import type { StackNode } from "../types";
 import { moveStackNode, removeStackNode } from "../stackUtils";
 

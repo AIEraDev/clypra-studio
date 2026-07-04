@@ -5,8 +5,8 @@
  * into MediaProcessingGraphs that the planner can execute.
  */
 
-import type { MediaProcessingGraph, GraphNode } from "@clypra/types";
-import { GraphHelper } from "@clypra/types";
+import type { MediaProcessingGraph, GraphNode } from "@clypra-studio/types";
+import { GraphHelper } from "@clypra-studio/types";
 
 export interface VideoEffectDefinition {
   id: string;

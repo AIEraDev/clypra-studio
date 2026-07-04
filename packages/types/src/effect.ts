@@ -1,5 +1,5 @@
 /**
- * @clypra/types — Effect Type Definitions
+ * @clypra-studio/types — Effect Type Definitions
  *
  * Single source of truth for all effect-related types across the Clypra ecosystem.
  */

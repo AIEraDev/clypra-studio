@@ -10,8 +10,8 @@
  * resolves dependency execution order, plans texture allocations, and constructs a FrameGraph.
  */
 
-import type { MediaProcessingGraph, GraphNode, GraphEdge } from "@clypra/types";
-import { GraphHelper } from "@clypra/types";
+import type { MediaProcessingGraph, GraphNode, GraphEdge } from "@clypra-studio/types";
+import { GraphHelper } from "@clypra-studio/types";
 import { NodeRegistry } from "../graph/NodeRegistry";
 import type { FrameGraph, ResourceRequest, RenderPass } from "./types";
 

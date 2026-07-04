@@ -52,7 +52,7 @@ import {
   CrossHatchEffect,
   PixelateEffect,
   AsciiEffect,
-} from "@clypra/engine";
+} from "@clypra-studio/engine";
 import { Filter } from "pixi.js";
 import { VideoPlayer, EffectParameterEditor } from "../common";
 import { exportStaticImageWithEffect } from "./EffectVideoExporter";
@@ -233,9 +233,9 @@ export function VideoEffectWorkspace() {
   const [effectCategories, setEffectCategories] = useState<Record<string, EffectRendererType[]>>({});
 
   useEffect(() => {
-    // Dynamically load effects from @clypra/engine
+    // Dynamically load effects from @clypra-studio/engine
     const loadEffects = async () => {
-      const { getEffectsByCategory } = await import("@clypra/engine");
+      const { getEffectsByCategory } = await import("@clypra-studio/engine");
 
       const categories: Record<string, EffectRendererType[]> = {};
 

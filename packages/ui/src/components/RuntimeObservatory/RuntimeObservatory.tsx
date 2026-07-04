@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState } from "react";
-import type { FrameTelemetry, TelemetryCollector } from "@clypra/runtime/telemetry";
+import type { FrameTelemetry, TelemetryCollector } from "@clypra-studio/runtime/telemetry";
 
 export interface RuntimeObservatoryProps {
   telemetry: TelemetryCollector;

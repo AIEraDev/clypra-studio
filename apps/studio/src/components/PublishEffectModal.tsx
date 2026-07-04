@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, Image as ImageIcon, Sparkles } from "lucide-react";
 import { useTextEffectR2Upload } from "../hooks/useTextEffectR2Upload";
-import type { TextEffectConfig } from "@clypra/engine";
+import type { TextEffectConfig } from "@clypra-studio/engine";
 
 export type EffectApiCategory = "essentials" | "neon" | "3d" | "glitch" | "gradient" | "outline";
 

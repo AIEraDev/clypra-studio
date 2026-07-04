@@ -12,8 +12,8 @@
  * - PlannerConfig for configuration management
  */
 
-import type { MediaProcessingGraph, GraphNode, GraphEdge } from "@clypra/types";
-import { GraphHelper } from "@clypra/types";
+import type { MediaProcessingGraph, GraphNode, GraphEdge } from "@clypra-studio/types";
+import { GraphHelper } from "@clypra-studio/types";
 import type { NodeRegistry } from "../graph/NodeRegistry";
 import type { FrameGraph, ResourceRequest, RenderPass, PlannerConfig } from "./types";
 

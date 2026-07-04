@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { EffectRenderer, type EffectRendererType, type EffectParameters } from "@clypra/engine";
+import { EffectRenderer, type EffectRendererType, type EffectParameters } from "@clypra-studio/engine";
 import { VideoPlayer, EffectParameterEditor } from "../common";
 import { exportStaticImageWithEffect } from "../video/EffectVideoExporter";
 import { Download, Upload, Info, Image as ImageIcon, Film, Sparkles, Loader2, Send, CloudUpload } from "lucide-react";
@@ -7,7 +7,7 @@ import { useR2Publish } from "../../../hooks/useR2Publish";
 import { generateVideoOrBodyEffectPresetSuggestion } from "../../../services/geminiService";
 import { segmentBodyMask, makeBodyMaskCacheKey } from "../../../services/bodySegmentation/bodySegmentationWorkerClient";
 import { bodyMaskCache } from "../../../services/bodySegmentation/maskCache";
-import type { BodySegmentationOptions } from "@clypra/engine";
+import type { BodySegmentationOptions } from "@clypra-studio/engine";
 import { Filter } from "pixi.js";
 
 const imageDataToCanvas = (imgData: ImageData): HTMLCanvasElement => {
@@ -219,9 +219,9 @@ export function BodyEffectWorkspace() {
   const [effectCategories, setEffectCategories] = useState<Record<string, EffectRendererType[]>>({});
 
   useEffect(() => {
-    // Dynamically load body effects from @clypra/engine
+    // Dynamically load body effects from @clypra-studio/engine
     const loadEffects = async () => {
-      const { getEffectsByCategory } = await import("@clypra/engine");
+      const { getEffectsByCategory } = await import("@clypra-studio/engine");
 
       const categories: Record<string, EffectRendererType[]> = {};
 

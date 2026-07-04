@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Copy, Eye, EyeOff, Layers, Plus, RotateCcw, Trash2 } from "lucide-react";
-import type { TextEffectConfig } from "@clypra/engine";
-import type { EffectLayer, EffectLayerType, SceneDocument } from "@clypra/engine";
-import { newLayerId } from "@clypra/engine";
-import { pruneTracksForLayer } from "@clypra/engine";
-import { COMPOSITION_PRESETS } from "@clypra/engine";
+import type { TextEffectConfig } from "@clypra-studio/engine";
+import type { EffectLayer, EffectLayerType, SceneDocument } from "@clypra-studio/engine";
+import { newLayerId } from "@clypra-studio/engine";
+import { pruneTracksForLayer } from "@clypra-studio/engine";
+import { COMPOSITION_PRESETS } from "@clypra-studio/engine";
 
 type ConfigPatch = Partial<TextEffectConfig> | ((config: TextEffectConfig) => TextEffectConfig);
 

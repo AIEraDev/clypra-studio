@@ -16,7 +16,7 @@ import {
   type MediaProcessingGraph,
   type FrameGraph,
   type ValidationResult,
-} from "@clypra/engine";
+} from "@clypra-studio/engine";
 import { Layers, Sparkles, Image as ImageIcon, Upload, Settings2, GitBranch } from "lucide-react";
 import { useR2Publish } from "../hooks/useR2Publish";
 import { buildManifestFromStack } from "./mpg/buildManifest";

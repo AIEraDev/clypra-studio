@@ -12,7 +12,7 @@
  * Defines transient planning constructs: resource requests, frame-isolated graphs, and render passes.
  */
 
-import type { GraphNode, GraphEdge } from "@clypra/types";
+import type { GraphNode, GraphEdge } from "@clypra-studio/types";
 
 export interface ResourceRequest {
   readonly id: string;

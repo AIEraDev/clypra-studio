@@ -5,7 +5,7 @@
  */
 
 import React from "react";
-import type { FrameGraph } from "@clypra/runtime/planner";
+import type { FrameGraph } from "@clypra-studio/runtime/planner";
 
 export interface ResourceInspectorProps {
   frameGraph: FrameGraph;

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ZoomIn, ZoomOut, Maximize2, Monitor } from "lucide-react";
-import type { TextEffectConfig } from "@clypra/engine";
-import { computeFitZoom } from "@clypra/engine";
+import type { TextEffectConfig } from "@clypra-studio/engine";
+import { computeFitZoom } from "@clypra-studio/engine";
 
 type ZoomMode = "fit" | "manual";
 type PlatformMode = "standard" | "mac-tauri" | "windows-tauri";

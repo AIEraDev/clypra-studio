@@ -6,7 +6,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { getR2Config } from "../../../services/r2Service";
 import { useR2Publish } from "../../../hooks/useR2Publish";
-import { ColorAdjustmentsEffect, GaussianBlurEffect, PixiRenderer, EffectGraph } from "@clypra/engine";
+import { ColorAdjustmentsEffect, GaussianBlurEffect, PixiRenderer, EffectGraph } from "@clypra-studio/engine";
 import { Sprite, Graphics } from "pixi.js";
 
 // Subcomponents & types/constants
@@ -25,7 +25,7 @@ export function FilterWorkspace() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const histogramCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // PixiJS references - using PixiRenderer from @clypra/engine
+  // PixiJS references - using PixiRenderer from @clypra-studio/engine
   const pixiRendererRef = useRef<PixiRenderer | null>(null);
   const unfilteredSpriteRef = useRef<Sprite | null>(null);
   const maskGraphicsRef = useRef<Graphics | null>(null);
@@ -239,7 +239,7 @@ export function FilterWorkspace() {
     [updatePixiMaskAndTexture],
   );
 
-  // Initialize PixiRenderer from @clypra/engine and apply the ColorAdjustmentsEffect
+  // Initialize PixiRenderer from @clypra-studio/engine and apply the ColorAdjustmentsEffect
   useEffect(() => {
     const canvas = pixiCanvasRef.current;
     const video = videoRef.current;
@@ -248,7 +248,7 @@ export function FilterWorkspace() {
       return;
     }
 
-    console.log("[FilterWorkspace] 🚀 Initializing PixiRenderer from @clypra/engine");
+    console.log("[FilterWorkspace] 🚀 Initializing PixiRenderer from @clypra-studio/engine");
     let active = true;
 
     const initRenderer = async () => {

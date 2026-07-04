@@ -1,5 +1,5 @@
 /**
- * @clypra/types
+ * @clypra-studio/types
  *
  * Single source of truth for all type definitions in Clypra Studio.
  * This package is the contract between all other packages.
@@ -11,7 +11,7 @@
 export const VERSION = "0.1.0";
 
 /** Package name */
-export const PACKAGE_NAME = "@clypra/types";
+export const PACKAGE_NAME = "@clypra-studio/types";
 
 // Effect types
 export type { EffectDefinition, EffectInstance, EffectCapabilities, EffectRequirements, EffectProfile, EffectMetadata, EffectPreset, AppliedEffect, EffectParameters, EffectValidationResult, EffectCategory, EffectManifest } from "./effect";

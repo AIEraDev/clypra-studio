@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ArrowUpDown, Beaker, Copy, Download, Loader2, Sparkles, UploadCloud } from "lucide-react";
-import type { Preset, TextEffectConfig } from "@clypra/engine";
-import type { SceneDocument } from "@clypra/engine";
+import type { Preset, TextEffectConfig } from "@clypra-studio/engine";
+import type { SceneDocument } from "@clypra-studio/engine";
 import { ExportBadge } from "./StudioChrome";
 import { getEffectRepresentation } from "../codeGenerator";
 import { PublishEffectModal } from "./PublishEffectModal";

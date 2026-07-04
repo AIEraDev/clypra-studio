@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import type { EffectRendererType, EffectParameters } from "@clypra/engine";
+import type { EffectRendererType, EffectParameters } from "@clypra-studio/engine";
 
 interface EffectParameterEditorProps {
   effectType: EffectRendererType | "custom";

@@ -1,8 +1,8 @@
 import React, { lazy, Suspense, useState, useEffect, useRef, useMemo } from "react";
 import { Download, Copy, Undo2, Redo2, Sparkles, Plus, Camera, Loader2, HelpCircle, Beaker, FolderPlus, Video, KeyRound, User, Shield } from "lucide-react";
 
-import { TextEffectConfig, Preset } from "@clypra/engine";
-import { defaultConfig, builtInPresets } from "@clypra/engine";
+import { TextEffectConfig, Preset } from "@clypra-studio/engine";
+import { defaultConfig, builtInPresets } from "@clypra-studio/engine";
 import { generateEngineClass, generateEffectDefinition, toKebabCase, toPascalCase, stripTypesToJS, generateHTMLFile, getEnrichedEffectName } from "./codeGenerator";
 import { GOOGLE_FONTS, GOOGLE_FONTS_LINK } from "./constants";
 import { LayerPanel } from "./components/LayerPanel";
@@ -17,9 +17,9 @@ import { VideoEffectWorkspace, FilterWorkspace, BodyEffectWorkspace, TransitionW
 import { AdminPurgeSettings } from "./components/settings/AdminPurgeSettings";
 import { AdminTransitionsSettings } from "./components/settings/AdminTransitionsSettings";
 import { LabsPanel } from "./components/LabsPanel";
-import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra/engine";
-import { getPresetScene } from "@clypra/engine";
-import { COMPOSITION_PRESETS } from "@clypra/engine";
+import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra-studio/engine";
+import { getPresetScene } from "@clypra-studio/engine";
+import { COMPOSITION_PRESETS } from "@clypra-studio/engine";
 import { useCollapsibleSections } from "./hooks/useCollapsibleSections";
 import { useResponsiveMobileTab } from "./hooks/useResponsiveMobileTab";
 import { useStudioWorkspaceState } from "./hooks/useStudioWorkspaceState";

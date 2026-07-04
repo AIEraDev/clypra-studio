@@ -1,8 +1,8 @@
 import React from "react";
 import { ChevronDown, ChevronUp, Eye, EyeOff, Layers, Plus, Trash2 } from "lucide-react";
-import type { SceneDocument, EffectLayer, EffectLayerType } from "@clypra/engine";
-import { newLayerId } from "@clypra/engine";
-import { pruneTracksForLayer } from "@clypra/engine";
+import type { SceneDocument, EffectLayer, EffectLayerType } from "@clypra-studio/engine";
+import { newLayerId } from "@clypra-studio/engine";
+import { pruneTracksForLayer } from "@clypra-studio/engine";
 
 interface LayerPanelProps {
   scene: SceneDocument;

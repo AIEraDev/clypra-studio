@@ -1,5 +1,5 @@
 import React from "react";
-import { NodeRegistry } from "@clypra/engine";
+import { NodeRegistry } from "@clypra-studio/engine";
 import type { StackNode } from "../types";
 
 interface NodeParamEditorProps {

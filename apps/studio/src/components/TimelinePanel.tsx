@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Diamond, Pause, Play, Plus, RotateCcw, Trash2, Wand2 } from "lucide-react";
-import type { Keyframe, SceneDocument } from "@clypra/engine";
-import { ensureDefaultTimeline } from "@clypra/engine";
-import { getAnimatableParamDef, getAnimatableParamsForLayer, readLayerScalar } from "@clypra/engine";
-import { addKeyframeAtTime, addTrack, duplicateTrackAtPlayhead, findTrackIndex, getLayerById, moveKeyframe, removeKeyframe, removeTrack, updateKeyframe, updateTimeline } from "@clypra/engine";
+import type { Keyframe, SceneDocument } from "@clypra-studio/engine";
+import { ensureDefaultTimeline } from "@clypra-studio/engine";
+import { getAnimatableParamDef, getAnimatableParamsForLayer, readLayerScalar } from "@clypra-studio/engine";
+import { addKeyframeAtTime, addTrack, duplicateTrackAtPlayhead, findTrackIndex, getLayerById, moveKeyframe, removeKeyframe, removeTrack, updateKeyframe, updateTimeline } from "@clypra-studio/engine";
 
 interface TimelinePanelProps {
   scene: SceneDocument;

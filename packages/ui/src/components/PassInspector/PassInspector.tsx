@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import type { FrameGraph, RenderPass } from "@clypra/runtime/planner";
+import type { FrameGraph, RenderPass } from "@clypra-studio/runtime/planner";
 
 export interface PassInspectorProps {
   frameGraph: FrameGraph;

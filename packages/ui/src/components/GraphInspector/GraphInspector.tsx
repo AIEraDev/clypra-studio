@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import type { MediaProcessingGraph, GraphNode } from "@clypra/runtime/graph";
+import type { MediaProcessingGraph, GraphNode } from "@clypra-studio/runtime/graph";
 
 export interface GraphInspectorProps {
   graph: MediaProcessingGraph;

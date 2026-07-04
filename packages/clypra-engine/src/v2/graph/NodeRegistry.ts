@@ -12,7 +12,7 @@
  * Eliminates hardcoded string checks in the compiler and planner by providing a centralized capability lookup.
  */
 
-import type { NodeCapabilities, NodeRequirements, GraphPin, GraphDataType } from "@clypra/types";
+import type { NodeCapabilities, NodeRequirements, GraphPin, GraphDataType } from "@clypra-studio/types";
 
 export interface NodeDefinition {
   readonly type: string;

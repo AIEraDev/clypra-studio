@@ -9,7 +9,7 @@
 
 import React, { useState } from "react";
 import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, PreviewCanvas, Timeline, PresetManager, ValidationPanel, type Preset, type ValidationIssue } from "@clypra/ui";
-import { transitionEffects } from "@clypra/engine/effects/transitions";
+import { transitionEffects } from "@clypra-studio/engine/effects/transitions";
 
 export function TransitionLabView() {
   // State management

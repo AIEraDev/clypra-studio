@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { GOOGLE_FONTS } from "../constants";
-import { TextEffectConfig } from "@clypra/engine";
-import { TextEffectRenderer } from "@clypra/engine";
+import { TextEffectConfig } from "@clypra-studio/engine";
+import { TextEffectRenderer } from "@clypra-studio/engine";
 import { X, ArrowLeft, ArrowRight } from "lucide-react";
 
 interface FontCompareProps {

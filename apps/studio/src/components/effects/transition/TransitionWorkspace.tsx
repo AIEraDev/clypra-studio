@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Upload, Play, Pause, RotateCcw, Search, Eye, EyeOff, Sliders, Download, Loader2, CheckCircle, AlertTriangle, Sparkles, Film, Image as ImageIcon, Video, X } from "lucide-react";
-import { TRANSITION_PRESETS, TRANSITION_CATEGORIES, getTransitionsByCategory, searchTransitions, type TransitionPreset, type TransitionCategory } from "@clypra/engine/transitions";
+import { TRANSITION_PRESETS, TRANSITION_CATEGORIES, getTransitionsByCategory, searchTransitions, type TransitionPreset, type TransitionCategory } from "@clypra-studio/engine/transitions";
 import { renderTransition } from "./transitionRenderer";
 import { Filter } from "pixi.js";
 

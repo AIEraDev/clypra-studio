@@ -6,12 +6,12 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { GraphBuilder } from "@clypra/runtime/graph";
-import { FrameGraphPlanner } from "@clypra/runtime/planner";
-import { Executor } from "@clypra/runtime/executor";
-import { PixiRenderer } from "@clypra/runtime/pixi";
-import type { RenderJob } from "@clypra/runtime/job";
-import type { RuntimeSnapshot, BackendInfo } from "@clypra/runtime/state";
+import { GraphBuilder } from "@clypra-studio/runtime/graph";
+import { FrameGraphPlanner } from "@clypra-studio/runtime/planner";
+import { Executor } from "@clypra-studio/runtime/executor";
+import { PixiRenderer } from "@clypra-studio/runtime/pixi";
+import type { RenderJob } from "@clypra-studio/runtime/job";
+import type { RuntimeSnapshot, BackendInfo } from "@clypra-studio/runtime/state";
 import { SnapshotObservatory } from "../RuntimeObservatory/SnapshotObservatory";
 import "./PreviewCanvasV2.css";
 

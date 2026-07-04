@@ -9,18 +9,18 @@
  * - Capability tracking
  */
 
-// Re-export from @clypra/types (single source of truth)
-export type { GraphNode, GraphEdge, NodeLifecycleState, MediaProcessingGraph, GraphDataType, GraphValue, GraphPin, NodeCapabilities, NodeRequirements } from "@clypra/types";
-export { GraphHelper } from "@clypra/types";
+// Re-export from @clypra-studio/types (single source of truth)
+export type { GraphNode, GraphEdge, NodeLifecycleState, MediaProcessingGraph, GraphDataType, GraphValue, GraphPin, NodeCapabilities, NodeRequirements } from "@clypra-studio/types";
+export { GraphHelper } from "@clypra-studio/types";
 
 // Legacy aliases for backward compatibility
-/** @deprecated Use NodeCapabilities from @clypra/types instead */
-export type { NodeCapabilities as EffectCapabilities } from "@clypra/types";
-/** @deprecated Use NodeRequirements from @clypra/types instead */
-export type { NodeRequirements as EffectRequirements } from "@clypra/types";
+/** @deprecated Use NodeCapabilities from @clypra-studio/types instead */
+export type { NodeCapabilities as EffectCapabilities } from "@clypra-studio/types";
+/** @deprecated Use NodeRequirements from @clypra-studio/types instead */
+export type { NodeRequirements as EffectRequirements } from "@clypra-studio/types";
 
 // Keep local types file for backward compatibility (deprecated)
-// @deprecated Import from @clypra/types instead
+// @deprecated Import from @clypra-studio/types instead
 export * from "./types";
 
 // Graph builder and validator implementations

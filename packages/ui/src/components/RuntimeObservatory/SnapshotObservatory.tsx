@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from "react";
-import type { RuntimeSnapshot } from "@clypra/runtime/state";
+import type { RuntimeSnapshot } from "@clypra-studio/runtime/state";
 import "./SnapshotObservatory.css";
 
 export interface SnapshotObservatoryProps {

@@ -3,7 +3,7 @@ import type { StickerCategory } from "../types/publish";
 import { AlertCircle, CheckCircle, Loader2, Upload, Film, Sparkles } from "lucide-react";
 import lottie from "lottie-web";
 import { Player } from "@lottiefiles/react-lottie-player";
-import { TemplateRenderer, getSupportedWebMMimeType } from "@clypra/engine";
+import { TemplateRenderer, getSupportedWebMMimeType } from "@clypra-studio/engine";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 const STICKER_CATEGORIES: StickerCategory[] = ["emoji", "text", "gaming", "sports", "animals", "love", "mood", "food", "travel", "birthday", "frames", "shapes", "fashion", "retro", "illustration"];

@@ -6,8 +6,8 @@
  */
 
 import type { ProjectManifestV2 } from "../project/types";
-import type { MediaProcessingGraph, GraphNode } from "@clypra/types";
-import { GraphHelper } from "@clypra/types";
+import type { MediaProcessingGraph, GraphNode } from "@clypra-studio/types";
+import { GraphHelper } from "@clypra-studio/types";
 import { NodeRegistry } from "../graph/NodeRegistry";
 
 export class ProjectCompiler {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Download, Copy, Plus, Play, Pause, Loader2, FolderPlus, ArrowLeft, Sparkles, FileJson, UploadCloud, X, RefreshCw, AlertTriangle, CheckCircle, Info, Layers, Lock, Unlock, Eye, EyeOff, Trash2, ChevronUp, ChevronDown, Settings, Image as ImageIcon, Sparkle, Clock } from "lucide-react";
 
-import { TemplateRenderer, BUILTIN_CANVAS_TEMPLATES, TemplateCategory, TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer, LayerAnimation, AnimationPreset, AnimatableValue, TemplateKeyframe, TemplateEasingFunction, addKeyframe, removeTemplateKeyframe, isKeyframed, getSupportedWebMMimeType } from "@clypra/engine";
+import { TemplateRenderer, BUILTIN_CANVAS_TEMPLATES, TemplateCategory, TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer, LayerAnimation, AnimationPreset, AnimatableValue, TemplateKeyframe, TemplateEasingFunction, addKeyframe, removeTemplateKeyframe, isKeyframed, getSupportedWebMMimeType } from "@clypra-studio/engine";
 import { PublishTemplateModal } from "./PublishTemplateModal";
 
 export interface TemplateWorkspaceProps {

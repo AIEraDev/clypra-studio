@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from "react";
 import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, PreviewCanvas, Timeline, PresetManager, ValidationPanel, type Preset, type ValidationIssue } from "@clypra/ui";
 import { createDefaultProviderManager, type FeatureProvider, type FeatureMap, FeatureMapType } from "@clypra/feature-providers";
-import { bodyEffects } from "@clypra/engine/effects/body";
+import { bodyEffects } from "@clypra-studio/engine/effects/body";
 
 export function BodyLabView() {
   // State management

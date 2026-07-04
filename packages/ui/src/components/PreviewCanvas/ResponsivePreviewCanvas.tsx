@@ -14,9 +14,9 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { FrameGraphPlanner } from "@clypra/runtime/planner";
-import { PixiRenderer } from "@clypra/runtime/pixi";
-import { EffectGraphCompiler } from "@clypra/runtime";
+import { FrameGraphPlanner } from "@clypra-studio/runtime/planner";
+import { PixiRenderer } from "@clypra-studio/runtime/pixi";
+import { EffectGraphCompiler } from "@clypra-studio/runtime";
 import { RuntimeInspector } from "../RuntimeInspector/RuntimeInspector";
 import { useResponsiveCanvas } from "./useResponsiveCanvas";
 import "./PreviewCanvas.css";

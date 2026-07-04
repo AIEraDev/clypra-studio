@@ -12,7 +12,7 @@ import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, T
 
 // Lazy load heavy components
 const ResponsivePreviewCanvas = lazy(() => import("@clypra/ui").then((m) => ({ default: m.ResponsivePreviewCanvas })));
-const videoEffectsPromise = import("@clypra/engine/effects/video").then((m) => m.videoEffects);
+const videoEffectsPromise = import("@clypra-studio/engine/effects/video").then((m) => m.videoEffects);
 
 export function VideoLabView() {
   console.log("[VideoLabView] Component rendering...");

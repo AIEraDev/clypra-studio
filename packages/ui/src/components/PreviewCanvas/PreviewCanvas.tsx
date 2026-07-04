@@ -6,11 +6,11 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { GraphBuilder } from "@clypra/runtime/graph";
-import { FrameGraphPlanner } from "@clypra/runtime/planner";
-import { PixiRenderer } from "@clypra/runtime/pixi";
-import { ValidationBackend } from "@clypra/runtime/validation";
-import type { RuntimeTelemetry } from "@clypra/runtime/telemetry";
+import { GraphBuilder } from "@clypra-studio/runtime/graph";
+import { FrameGraphPlanner } from "@clypra-studio/runtime/planner";
+import { PixiRenderer } from "@clypra-studio/runtime/pixi";
+import { ValidationBackend } from "@clypra-studio/runtime/validation";
+import type { RuntimeTelemetry } from "@clypra-studio/runtime/telemetry";
 import { RuntimeInspector } from "../RuntimeInspector/RuntimeInspector";
 import "./PreviewCanvas.css";
 
