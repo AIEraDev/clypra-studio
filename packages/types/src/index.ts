@@ -10,6 +10,9 @@
 /** Package version */
 export const VERSION = "0.1.0";
 
+/** Package name */
+export const PACKAGE_NAME = "@clypra/types";
+
 // Effect types
 export type { EffectDefinition, EffectInstance, EffectCapabilities, EffectRequirements, EffectProfile, EffectMetadata, EffectPreset, AppliedEffect, EffectParameters, EffectValidationResult, EffectCategory, EffectManifest } from "./effect";
 

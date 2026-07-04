@@ -13,6 +13,9 @@
 /** Package version */
 export const VERSION = "0.1.0";
 
+/** Package name */
+export const PACKAGE_NAME = "@clypra/feature-providers";
+
 // Core types
 export * from "./types";
 
