@@ -11,10 +11,10 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@clypra-studio/engine": "workspace:^",
-    "@clypra-studio/feature-providers": "workspace:^",
-    "@clypra-studio/runtime": "workspace:^",
-    "@clypra-studio/ui": "workspace:^",
+    "@clypra-studio/engine": "^0.1.1",
+    "@clypra-studio/feature-providers": "^0.1.1",
+    "@clypra-studio/runtime": "^0.1.1",
+    "@clypra-studio/ui": "^0.1.1",
     "@google/genai": "^2.4.0",
     "@lottiefiles/react-lottie-player": "^3.6.0",
     "@tailwindcss/vite": "^4.1.14",
