@@ -1,6 +1,6 @@
 {
   "name": "@clypra-studio/runtime",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared runtime infrastructure for all Clypra Studio Labs",
   "type": "module",
   "main": "./dist/index.js",
