@@ -46,4 +46,4 @@ export * from "./testing/goldenTests";
 export * from "./testing/benchmarkRunner";
 export { validateEffect, EffectValidator, type ValidationResult, type EffectDefinition } from "./validation/effectValidator";
 
-export const RUNTIME_VERSION = "1.0.0";
+export const RUNTIME_VERSION = "0.1.0";

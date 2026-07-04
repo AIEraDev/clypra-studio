@@ -7,6 +7,9 @@
  * @packageDocumentation
  */
 
+/** Package version */
+export const VERSION = "0.1.0";
+
 // Effect types
 export type { EffectDefinition, EffectInstance, EffectCapabilities, EffectRequirements, EffectProfile, EffectMetadata, EffectPreset, AppliedEffect, EffectParameters, EffectValidationResult, EffectCategory, EffectManifest } from "./effect";
 

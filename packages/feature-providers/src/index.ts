@@ -10,6 +10,9 @@
  * @packageDocumentation
  */
 
+/** Package version */
+export const VERSION = "0.1.0";
+
 // Core types
 export * from "./types";
 

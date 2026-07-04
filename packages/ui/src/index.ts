@@ -52,4 +52,4 @@ export type { RuntimeObservatoryProps } from "./components/RuntimeObservatory";
 export { SnapshotObservatory } from "./components/RuntimeObservatory";
 export type { SnapshotObservatoryProps } from "./components/RuntimeObservatory";
 
-export const UI_VERSION = "1.0.0";
+export const UI_VERSION = "0.1.0";
