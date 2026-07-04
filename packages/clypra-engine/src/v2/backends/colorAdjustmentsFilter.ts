@@ -7,18 +7,16 @@ import { ColorAdjustmentsEffect } from "../../effects/light/ColorAdjustmentsEffe
 
 const spec = ColorAdjustmentsEffect.filterSpec!;
 
-export function createColorAdjustmentsFilter(params: Record<string, unknown> = {}): Filter {
-  return spec.create(params);
+export function createColorAdjustmentsFilter(params: Record<string, unknown> = {}): Filter | Filter[] {
+  return spec.create(params as any);
 }
 
 export function updateColorAdjustmentsFilter(filter: Filter, params: Record<string, unknown>): void {
-  spec.updateUniforms(filter, params);
+  spec.updateUniforms(filter as any, params as any, 0);
 }
 
 /** Normalize partial uniforms into full ColorAdjustments param set */
-export function normalizeColorAdjustmentsUniforms(
-  uniforms: Readonly<Record<string, unknown>>,
-): Record<string, unknown> {
+export function normalizeColorAdjustmentsUniforms(uniforms: Readonly<Record<string, unknown>>): Record<string, unknown> {
   return {
     exposure: uniforms.exposure ?? 0,
     brightness: uniforms.brightness ?? 0,
