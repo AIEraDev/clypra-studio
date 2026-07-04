@@ -1,132 +1,51 @@
-# @clypra/types
+# @clypra-studio/types
 
-Single source of truth for all type definitions in Clypra Studio.
+Shared TypeScript type definitions for all Clypra Studio packages - Single source of truth.
 
-## Purpose
+## Installation
 
-This package serves as the **contract** between all other packages in the Clypra monorepo. It eliminates type duplication and provides a centralized location for all shared type definitions.
-
-## Philosophy
-
-- **Single Source of Truth**: All shared types live here
-- **Contract-First**: Types define the interface between packages
-- **Zero Dependencies**: This package has no runtime dependencies
-- **Immutable by Design**: Most types use `readonly` to enforce immutability
-
-## Type Categories
-
-### Effect Types (`effect.ts`)
-
-Core effect system types used across all labs:
-
-- `EffectDefinition` - Effect metadata and schema
-- `EffectInstance` - Instantiated effect with parameters
-- `EffectCapabilities` - What an effect can do
-- `EffectRequirements` - What an effect needs
-- `AppliedEffect` - Effect applied to a timeline
-
-### Graph Types (`graph.ts`)
-
-Media processing graph structures:
-
-- `GraphNode` - Node in the effect graph
-- `GraphEdge` - Connection between nodes
-- `MediaProcessingGraph` - Complete graph structure
-- `GraphHelper` - Immutable graph manipulation utilities
-
-### Frame Types (`frame.ts`)
-
-Frame-level rendering structures:
-
-- `FrameGraph` - Frame dependency graph
-- `RenderPass` - Single rendering pass
-- `ResourceRequest` - Resource requirements
-
-### Job Types (`job.ts`)
-
-Immutable render job definitions:
-
-- `RenderJob` - Complete render job (like SQL execution plan)
-- `PassDescriptor` - Pass-level execution details
-- `ExecutionResult` - Results after execution
-
-### Snapshot Types (`snapshot.ts`)
-
-Runtime observability snapshots:
-
-- `RuntimeSnapshot` - Top-level snapshot with all subsystems
-- `GraphSnapshot` - What was planned
-- `ExecutionSnapshot` - What happened
-- `ResourceSnapshot` - Allocation state
-- `PerformanceSnapshot` - Timing and memory
-- `DiagnosticSnapshot` - Errors and warnings
+```bash
+npm install @clypra-studio/types
+# or
+pnpm add @clypra-studio/types
+# or
+yarn add @clypra-studio/types
+```
 
 ## Usage
 
-Import types from this package in any other package:
-
 ```typescript
-import type { EffectDefinition, RenderJob, RuntimeSnapshot } from "@clypra/types";
+import type { Effect, Frame, Graph, Job, Snapshot } from "@clypra-studio/types";
+
+// Use individual type modules
+import type { EffectDefinition, EffectMetadata } from "@clypra-studio/types/effect";
+import type { GraphNode, GraphEdge } from "@clypra-studio/types/graph";
+import type { FrameData } from "@clypra-studio/types/frame";
+import type { JobConfig } from "@clypra-studio/types/job";
+import type { SnapshotData } from "@clypra-studio/types/snapshot";
 ```
 
-## Import Conventions
+## Exports
 
-**DO** import from `@clypra/types`:
+- **`effect`** - Effect-related types and interfaces
+- **`graph`** - Graph node and edge definitions
+- **`frame`** - Frame data structures
+- **`job`** - Job configuration types
+- **`snapshot`** - Snapshot data types
 
-```typescript
-import type { EffectDefinition, RenderJob } from "@clypra/types";
-```
+## Features
 
-**DON'T** import from other packages for shared types:
+- ✅ Comprehensive TypeScript definitions
+- ✅ Modular exports for tree-shaking
+- ✅ Zero runtime dependencies
+- ✅ Shared across all Clypra Studio packages
 
-```typescript
-// ❌ Wrong
-import type { EffectDefinition } from "@clypra/runtime";
+## License
 
-// ✅ Correct
-import type { EffectDefinition } from "@clypra/types";
-```
+MIT
 
-## Type Organization
+## Links
 
-Types are organized by domain, not by usage:
-
-- `effect.ts` - All effect-related types
-- `graph.ts` - All graph-related types
-- `frame.ts` - All frame-level types
-- `job.ts` - All render job types
-- `snapshot.ts` - All observability types
-
-## Migration Notes
-
-This package was created to consolidate types previously duplicated across:
-
-- `@clypra/runtime`
-- `@clypra/ui`
-- `@clypra/studio`
-- `@clypra/engine`
-
-Old imports will continue to work temporarily through re-exports, but new code should import from `@clypra/types`.
-
-## Development
-
-```bash
-# Build the package
-npm run build
-
-# Type check
-npm run type-check
-```
-
-## Architecture
-
-This package is **dependency-free** and sits at the bottom of the dependency tree:
-
-```
-@clypra/types (no dependencies)
-     ↑
-     ├── @clypra/runtime
-     ├── @clypra/engine
-     ├── @clypra/ui
-     └── @clypra/studio
-```
+- [GitHub Repository](https://github.com/AIEraDev/clypra-studio)
+- [Report Issues](https://github.com/AIEraDev/clypra-studio/issues)
+- [npm Package](https://www.npmjs.com/package/@clypra-studio/types)
