@@ -41,14 +41,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
+      - name: Lint packages
+        run: pnpm turbo lint --filter='./packages/*'
 
-      - name: Typecheck
-        run: pnpm typecheck
+      - name: Typecheck packages
+        run: pnpm turbo typecheck --filter='./packages/*'
 
-      - name: Test
-        run: pnpm test
+      - name: Test packages
+        run: pnpm turbo test --filter='./packages/*'
 
       - name: Build packages
         run: pnpm build:packages
