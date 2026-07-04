@@ -1,5 +1,6 @@
 {
   "branches": ["main"],
+  "tagFormat": "@clypra-studio/feature-providers-v${version}",
   "plugins": [
     [
       "@semantic-release/commit-analyzer",
