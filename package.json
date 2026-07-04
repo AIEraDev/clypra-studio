@@ -3,42 +3,31 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "pnpm@9.15.0",
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=apps/studio",
-    "build:types": "npm run build --workspace=packages/types",
-    "build:runtime": "npm run build --workspace=packages/runtime",
-    "build:feature-providers": "npm run build --workspace=packages/feature-providers",
-    "build:shader-library": "npm run build --workspace=packages/shader-library",
-    "build:ui": "npm run build --workspace=packages/ui",
-    "build:engine": "npm run build --workspace=packages/clypra-engine",
-    "build:studio": "npm run build --workspace=apps/studio",
-    "build:packages": "npm run build:types && npm run build:shader-library && npm run build:runtime && npm run build:feature-providers && npm run build:ui && npm run build:engine",
-    "build": "npm run build:packages && npm run build:studio",
-    "clean": "npm run clean --workspaces",
-    "lint": "npm run lint --workspaces",
-    "test": "vitest run",
-    "test:runtime": "npm run test --workspace=packages/runtime",
-    "test:feature-providers": "npm run test --workspace=packages/feature-providers",
-    "test:engine": "npm run test --workspace=packages/clypra-engine",
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "build:packages": "turbo build --filter='./packages/*'",
+    "build:studio": "turbo build --filter=clypra-studio-app",
+    "clean": "turbo clean",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
     "test:watch": "vitest",
-    "generate:effect-previews": "tsx scripts/generateEffectPreviews.ts",
-    "validate": "echo '⚠️  Validation pipeline not yet implemented. Coming in Phase 6.'",
-    "test:golden": "echo '⚠️  Golden tests not yet implemented. Coming in Phase 6.'",
-    "benchmark": "echo '⚠️  Benchmark suite not yet implemented. Coming in Phase 6.'",
-    "use:local": "bash scripts/use-local-packages.sh",
-    "use:published": "bash scripts/use-published-packages.sh"
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build:packages && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.1",
     "@types/node": "^22.14.0",
     "tsx": "^4.19.2",
+    "turbo": "^2.3.0",
     "typescript": "~5.8.2",
     "vitest": "^3.2.4"
-  },
-  "dependencies": {
-    "@clypra-studio/engine": "^2.0.1"
   }
 }

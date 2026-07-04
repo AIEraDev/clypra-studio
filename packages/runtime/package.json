@@ -29,10 +29,11 @@
     "test:gpu:ui": "playwright test --ui",
     "test:serve": "vite serve src/__tests__/gpu --port 5173",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clypra-studio/types": "file:../types",
+    "@clypra-studio/types": "workspace:^",
     "pixi-filters": "^6.0.4",
     "pixi.js": "^8.6.6"
   },

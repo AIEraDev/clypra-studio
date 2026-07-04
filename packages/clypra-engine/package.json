@@ -65,10 +65,11 @@
     "dev": "tsup --watch",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@clypra-studio/types": "file:../types",
+    "@clypra-studio/types": "workspace:^",
     "jszip": "^3.10.1",
     "lottie-web": "^5.13.0",
     "pixi-filters": "^6.0.0",
