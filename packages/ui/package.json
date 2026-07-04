@@ -1,6 +1,6 @@
 {
   "name": "@clypra-studio/ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared UI components for all Clypra Studio Labs",
   "type": "module",
   "main": "./dist/index.js",
