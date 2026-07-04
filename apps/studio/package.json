@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@clypra-studio/engine": "workspace:^",
+    "@clypra-studio/feature-providers": "workspace:^",
     "@clypra-studio/runtime": "workspace:^",
     "@clypra-studio/ui": "workspace:^",
     "@google/genai": "^2.4.0",

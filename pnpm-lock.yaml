@@ -32,6 +32,9 @@ importers:
       '@clypra-studio/engine':
         specifier: workspace:^
         version: link:../../packages/clypra-engine
+      '@clypra-studio/feature-providers':
+        specifier: workspace:^
+        version: link:../../packages/feature-providers
       '@clypra-studio/runtime':
         specifier: workspace:^
         version: link:../../packages/runtime
