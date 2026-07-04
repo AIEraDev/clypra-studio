@@ -204,7 +204,7 @@ importers:
         specifier: ^3.2.4
         version: 3.2.6(@types/node@22.19.20)(@vitest/ui@4.1.9)(happy-dom@20.10.6)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.0)
 
-  packages/shader-library:
+  packages/shaders:
     devDependencies:
       '@types/node':
         specifier: ^22.14.0
