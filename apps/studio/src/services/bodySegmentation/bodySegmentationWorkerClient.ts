@@ -1,6 +1,6 @@
 import { bodyMaskCache } from "./maskCache";
 import { getBodySegmentationConfig } from "./segmentationConfig";
-import type { BodySegmentationOptions, BodySegmentationRequest, BodySegmentationResponse } from "@clypra/engine";
+import type { BodySegmentationOptions, BodySegmentationRequest, BodySegmentationResponse } from "@clypra-studio/engine";
 
 const REQUEST_TIMEOUT_MS = 900;
 const FRAME_PRECISION = 1 / 24;

@@ -1,4 +1,4 @@
-import type { BodySegmentationRequest, BodySegmentationResponse, BodySegmentationRuntime } from "@clypra/engine";
+import type { BodySegmentationRequest, BodySegmentationResponse, BodySegmentationRuntime } from "@clypra-studio/engine";
 
 declare const self: {
   ort?: any;

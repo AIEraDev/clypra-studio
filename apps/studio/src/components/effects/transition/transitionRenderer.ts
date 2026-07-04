@@ -1,13 +1,13 @@
 /**
  * Transition Renderer
- * Wrapper around @clypra/engine TransitionRenderer for studio workspace
+ * Wrapper around @clypra-studio/engine TransitionRenderer for studio workspace
  */
 
-import { TransitionRenderer, type TransitionPreset } from "@clypra/engine/transitions";
+import { TransitionRenderer, type TransitionPreset } from "@clypra-studio/engine/transitions";
 
 /**
  * Main transition renderer wrapper for studio workspace
- * Uses @clypra/engine TransitionRenderer as single source of truth
+ * Uses @clypra-studio/engine TransitionRenderer as single source of truth
  */
 export function renderTransition(
   ctx: CanvasRenderingContext2D,

@@ -5,7 +5,7 @@
  * Direct client-side SDK usage has been removed for security and consistency.
  */
 
-import type { TextEffectConfig } from "@clypra/engine";
+import type { TextEffectConfig } from "@clypra-studio/engine";
 
 export interface VideoEffectPresetSuggestion {
   id: string;

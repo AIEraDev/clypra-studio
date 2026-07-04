@@ -8,10 +8,10 @@
  */
 
 import React, { useState, lazy, Suspense } from "react";
-import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, Timeline, PresetManager, ValidationPanel, type Preset, type ValidationIssue } from "@clypra/ui";
+import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, Timeline, PresetManager, ValidationPanel, type Preset, type ValidationIssue } from "@clypra-studio/ui";
 
 // Lazy load heavy components
-const ResponsivePreviewCanvas = lazy(() => import("@clypra/ui").then((m) => ({ default: m.ResponsivePreviewCanvas })));
+const ResponsivePreviewCanvas = lazy(() => import("@clypra-studio/ui").then((m) => ({ default: m.ResponsivePreviewCanvas })));
 const videoEffectsPromise = import("@clypra-studio/engine/effects/video").then((m) => m.videoEffects);
 
 export function VideoLabView() {

@@ -1,4 +1,4 @@
-import { ProjectHelper, type ProjectManifestV2, type AssetHandle, type TrackDefinition } from "@clypra/engine";
+import { ProjectHelper, type ProjectManifestV2, type AssetHandle, type TrackDefinition } from "@clypra-studio/engine";
 import type { SourceMedia, StackNode } from "./types";
 
 export function buildManifestFromStack(

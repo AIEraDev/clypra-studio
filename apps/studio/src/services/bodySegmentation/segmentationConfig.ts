@@ -1,4 +1,4 @@
-import type { BodySegmentationRuntime, BodySegmentationRuntimeConfig } from "@clypra/engine";
+import type { BodySegmentationRuntime, BodySegmentationRuntimeConfig } from "@clypra-studio/engine";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
 

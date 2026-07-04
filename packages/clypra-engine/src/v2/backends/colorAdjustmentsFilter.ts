@@ -3,16 +3,17 @@
  */
 
 import type { Filter } from "pixi.js";
+import type { ParamValues } from "../../videoEffects/EffectDefinition.js";
 import { ColorAdjustmentsEffect } from "../../effects/light/ColorAdjustmentsEffect.js";
 
 const spec = ColorAdjustmentsEffect.filterSpec!;
 
 export function createColorAdjustmentsFilter(params: Record<string, unknown> = {}): Filter | Filter[] {
-  return spec.create(params as any);
+  return spec.create(params as ParamValues);
 }
 
 export function updateColorAdjustmentsFilter(filter: Filter, params: Record<string, unknown>): void {
-  spec.updateUniforms(filter as any, params as any, 0);
+  spec.updateUniforms(filter, params as ParamValues, 0);
 }
 
 /** Normalize partial uniforms into full ColorAdjustments param set */

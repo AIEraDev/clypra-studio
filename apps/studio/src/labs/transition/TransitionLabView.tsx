@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from "react";
-import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, PreviewCanvas, Timeline, PresetManager, ValidationPanel, type Preset, type ValidationIssue } from "@clypra/ui";
+import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, PreviewCanvas, Timeline, PresetManager, ValidationPanel, type Preset, type ValidationIssue } from "@clypra-studio/ui";
 import { transitionEffects } from "@clypra-studio/engine/effects/transitions";
 
 export function TransitionLabView() {

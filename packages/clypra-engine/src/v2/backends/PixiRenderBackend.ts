@@ -148,7 +148,7 @@ export class PixiRenderBackend implements RenderBackend {
     sprite.width = target.width;
     sprite.height = target.height;
 
-    let filter: PIXI.Filter;
+    let filter: PIXI.Filter | PIXI.Filter[];
     let disposeFilter = false;
 
     if (pass.shaderId === "color-adjustments") {
@@ -158,19 +158,25 @@ export class PixiRenderBackend implements RenderBackend {
       if (!this.filters.has(pass.shaderId)) {
         this.compileShader(pass.shaderId, "");
       }
-      filter = this.filters.get(pass.shaderId);
-      if (!filter) {
+      const cachedFilter = this.filters.get(pass.shaderId);
+      if (!cachedFilter) {
         throw new Error(`Filter not compiled for shader: ${pass.shaderId}`);
       }
-      this.applyUniforms(filter, pass.uniforms, pass.shaderId);
+      filter = cachedFilter;
+      this.applyUniforms(cachedFilter, pass.uniforms, pass.shaderId);
     }
 
-    sprite.filters = [filter];
+    const filterArray = Array.isArray(filter) ? filter : [filter];
+    sprite.filters = filterArray;
     this.app.renderer.render({ container: sprite, target, clear: true });
     sprite.filters = null;
 
     if (disposeFilter) {
-      filter.destroy();
+      if (Array.isArray(filter)) {
+        filter.forEach((f) => f.destroy());
+      } else {
+        filter.destroy();
+      }
     }
   }
 

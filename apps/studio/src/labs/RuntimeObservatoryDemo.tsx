@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { PreviewCanvasV2 } from "@clypra/ui";
+import { PreviewCanvasV2 } from "@clypra-studio/ui";
 
 const DEMO_EFFECTS = [
   { id: "identity", name: "Identity (Copy)", type: "copy", parameters: {} },

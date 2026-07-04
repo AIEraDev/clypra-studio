@@ -1,4 +1,4 @@
-import { TextEffectConfig, textEffectConfigToScene } from "@clypra/engine";
+import { TextEffectConfig, textEffectConfigToScene } from "@clypra-studio/engine";
 
 // Helper to convert PascalCase to kebab-case
 export function toKebabCase(str: string): string {

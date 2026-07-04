@@ -4,7 +4,7 @@
  * Generates .webm videos of static images with effects applied
  */
 
-import { EffectRenderer, type EffectRendererType, type EffectParameters } from "@clypra/engine";
+import { EffectRenderer, type EffectRendererType, type EffectParameters } from "@clypra-studio/engine";
 
 export interface ExportOptions {
   effectType: EffectRendererType;
