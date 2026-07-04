@@ -5,7 +5,9 @@ on:
     branches:
       - main
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+concurrency:
+  group: release-main
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -14,38 +16,50 @@ permissions:
 
 jobs:
   release:
-    name: Release
+    name: Version or publish packages
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install pnpm
+      - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9.15.0
+          run_install: false
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "pnpm"
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
       - name: Build packages
         run: pnpm build:packages
 
-      - name: Create Release Pull Request or Publish
-        id: changesets
+      - name: Create release PR or publish packages
         uses: changesets/action@v1
         with:
-          publish: pnpm release
-          title: "chore: version packages"
+          version: pnpm changeset version
+          publish: pnpm changeset publish
           commit: "chore: version packages"
+          title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

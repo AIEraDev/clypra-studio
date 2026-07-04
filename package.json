@@ -17,10 +17,9 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
-    "test:watch": "vitest",
     "changeset": "changeset",
-    "version-packages": "changeset version",
-    "release": "pnpm build:packages && changeset publish"
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
