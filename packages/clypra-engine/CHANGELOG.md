@@ -1,5 +1,11 @@
 # [2.3.0](https://github.com/AIEraDev/clypra-studio/compare/v2.2.0...v2.3.0) (2026-06-30)
 
+## 0.1.2
+
+### Patch Changes
+
+- Fix engine package publish by removing provenance requirement
+
 ## 0.1.1
 
 ### Patch Changes
