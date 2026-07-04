@@ -5,7 +5,6 @@
   "installCommand": "npm ci --workspaces --include-workspace-root",
   "framework": null,
   "devCommand": "npm run dev",
-  "nodeVersion": "20.x",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "github": {
     "silent": true
