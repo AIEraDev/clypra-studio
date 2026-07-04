@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "apps/studio/dist",
-  "installCommand": "npm ci --workspaces --include-workspace-root",
+  "installCommand": "pnpm install --frozen-lockfile",
   "framework": null,
-  "devCommand": "npm run dev",
+  "devCommand": "pnpm run dev",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "github": {
     "silent": true
