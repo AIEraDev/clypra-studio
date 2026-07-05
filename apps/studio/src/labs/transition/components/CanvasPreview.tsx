@@ -24,6 +24,10 @@ interface CanvasPreviewProps {
   onFastForward: () => void;
   onMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
   onProgressSliderChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onLoadedMetadataA: () => void;
+  onLoadedMetadataB: () => void;
+  onClipAError: () => void;
+  onClipBError: () => void;
 }
 
 function formatTimecode(p: number, duration: number) {
@@ -62,12 +66,34 @@ export function CanvasPreview({
   onFastForward,
   onMouseDown,
   onProgressSliderChange,
+  onLoadedMetadataA,
+  onLoadedMetadataB,
+  onClipAError,
+  onClipBError,
 }: CanvasPreviewProps) {
   return (
     <section className="flex-1 flex flex-col bg-background relative overflow-hidden">
       {/* Dual hidden video elements */}
-      <video ref={videoARef} src={clipAUrl} className="hidden" loop muted playsInline />
-      <video ref={videoBRef} src={clipBUrl} className="hidden" loop muted playsInline />
+      <video
+        ref={videoARef}
+        src={clipAUrl}
+        onLoadedMetadata={onLoadedMetadataA}
+        onError={onClipAError}
+        style={{ position: "absolute", width: "1px", height: "1px", opacity: 0, pointerEvents: "none" }}
+        loop
+        playsInline
+        crossOrigin="anonymous"
+      />
+      <video
+        ref={videoBRef}
+        src={clipBUrl}
+        onLoadedMetadata={onLoadedMetadataB}
+        onError={onClipBError}
+        style={{ position: "absolute", width: "1px", height: "1px", opacity: 0, pointerEvents: "none" }}
+        loop
+        playsInline
+        crossOrigin="anonymous"
+      />
 
       {/* Preview Area */}
       <div className="flex-1 flex flex-col items-center justify-center p-2 bg-surface-container-lowest relative group border-b border-outline-variant">
@@ -79,7 +105,7 @@ export function CanvasPreview({
           }}
         />
 
-        <div className="relative w-full h-full max-w-5xl border border-outline-variant bg-black shadow-inner flex items-center justify-center overflow-hidden">
+        <div className="relative aspect-video h-[420px] border border-outline-variant bg-black shadow-inner flex items-center justify-center overflow-hidden">
           <canvas ref={canvasRef} width={1280} height={720} className="w-full h-full object-contain" />
 
           {/* Target Crosshair */}
