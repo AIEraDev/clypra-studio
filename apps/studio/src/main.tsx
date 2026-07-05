@@ -10,9 +10,9 @@ import { initializeFontSystem } from "@clypra-studio/engine";
 initializeFontSystem();
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+  <>
     <RootApp />
     <Analytics />
     <SpeedInsights />
-  </StrictMode>,
+  </>,
 );
