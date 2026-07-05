@@ -49,6 +49,7 @@ export * from "./bodyEffects";
 
 // Transitions (NEW - separated from videoEffects for clarity)
 export * from "./transitions";
+export * from "./types/TransitionDefinition.js";
 
 // Declarative Canvas Templates (NEW)
 export * from "./templates/TemplateRenderer.js";
