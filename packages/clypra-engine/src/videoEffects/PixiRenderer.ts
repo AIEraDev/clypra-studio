@@ -358,8 +358,12 @@ export class PixiRenderer {
 
   private _resizeSprite(sprite: Sprite, texture: Texture, fitMode: "stretch" | "fit" | "crop"): void {
     if (!this.app) return;
-    const canvasWidth = this.app.renderer.width;
-    const canvasHeight = this.app.renderer.height;
+    // Use app.screen (logical CSS pixels) not renderer.width/height (physical pixels).
+    // renderer.width is multiplied by devicePixelRatio (e.g. 2560 on a 2× Retina display),
+    // but sprites are positioned in logical space — using physical pixels makes them
+    // 2× too large and overflow the canvas on HiDPI screens.
+    const canvasWidth = this.app.screen.width;
+    const canvasHeight = this.app.screen.height;
 
     const { width: texWidth, height: texHeight } = this._getElementDimensions(texture);
 
