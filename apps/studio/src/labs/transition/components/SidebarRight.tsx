@@ -1,4 +1,5 @@
 import React from "react";
+import { ALL_TRANSITIONS } from "@clypra-studio/engine/transitions";
 
 interface SidebarRightProps {
   activeTab: "inspector" | "nodes" | "stats";
@@ -35,6 +36,8 @@ export function SidebarRight({
   onDumpLog,
   onResetContext,
 }: SidebarRightProps) {
+  const activeTransition = ALL_TRANSITIONS.find((t) => t.id === selectedTransition);
+
   return (
     <aside className="flex flex-col h-full w-[280px] min-w-[280px] bg-surface-container-low border-l border-outline-variant overflow-hidden select-none">
       <div className="flex bg-surface-container-lowest border-b border-outline-variant">
@@ -59,74 +62,73 @@ export function SidebarRight({
             <div>
               <h4 className="text-[10px] font-bold text-primary uppercase mb-1 flex items-center gap-1">
                 <span className="material-symbols-outlined text-[12px]">tune</span> SELECTED:{" "}
-                {selectedTransition.toUpperCase()}
+                {activeTransition ? activeTransition.name.toUpperCase() : selectedTransition.toUpperCase()}
               </h4>
               <div className="property-grid bg-surface-container border border-outline-variant rounded select-none">
-                <div className="text-outline">Easing</div>
-                <div className="text-on-surface select-none">
-                  <select
-                    value={parameters.easing ?? "linear"}
-                    onChange={(e) => onParamChange("easing", e.target.value)}
-                    className="bg-black/80 border border-outline-variant rounded text-[10px] px-1 py-0.5 text-on-surface outline-none"
-                  >
-                    <option value="linear">linear</option>
-                    <option value="ease-in">ease-in</option>
-                    <option value="ease-out">ease-out</option>
-                    <option value="ease-in-out">ease-in-out</option>
-                  </select>
-                </div>
-
-                {selectedTransition === "fade-to-black" && (
-                  <>
-                    <div className="text-outline">Dip Color</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={parameters.colorOverlay ?? "#000000"}
-                        onChange={(e) => onParamChange("colorOverlay", e.target.value)}
-                        className="w-6 h-4 bg-transparent border-0 cursor-pointer"
-                      />
-                      <span className="font-mono-data text-[9px] uppercase">
-                        {parameters.colorOverlay ?? "#000000"}
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {selectedTransition === "zoom-blur" && (
-                  <>
-                    <div className="text-outline">Blur Amount</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="30"
-                        step="1"
-                        value={parameters.blurAmount ?? 10}
-                        onChange={(e) => onParamChange("blurAmount", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.blurAmount ?? 10}px
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {selectedTransition === "slide-left" && (
-                  <>
-                    <div className="text-outline">Direction</div>
-                    <div className="text-on-surface select-none">
-                      <select
-                        value={parameters.slideDirection ?? "left"}
-                        onChange={(e) => onParamChange("slideDirection", e.target.value)}
-                        className="bg-black/80 border border-outline-variant rounded text-[10px] px-1 py-0.5 text-on-surface outline-none"
-                      >
-                        <option value="left">Left</option>
-                        <option value="right">Right</option>
-                      </select>
-                    </div>
-                  </>
+                {activeTransition?.params.map((param) => {
+                  const val = parameters[param.key] ?? param.value;
+                  return (
+                    <React.Fragment key={param.key}>
+                      <div className="text-outline text-xs">{param.label}</div>
+                      <div className="text-on-surface select-none">
+                        {param.type === "select" && (
+                          <select
+                            value={val}
+                            onChange={(e) => onParamChange(param.key, e.target.value)}
+                            className="bg-black/80 border border-outline-variant rounded text-[10px] px-1 py-0.5 text-on-surface outline-none"
+                          >
+                            {param.options?.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        {param.type === "range" && (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range"
+                              min={param.min ?? 0}
+                              max={param.max ?? 100}
+                              step={param.step ?? 1}
+                              value={val}
+                              onChange={(e) => onParamChange(param.key, parseFloat(e.target.value))}
+                              className="w-full accent-primary"
+                            />
+                            <span className="font-mono-data text-[10px]">
+                              {val}
+                            </span>
+                          </div>
+                        )}
+                        {param.type === "color" && (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={val}
+                              onChange={(e) => onParamChange(param.key, e.target.value)}
+                              className="w-6 h-4 bg-transparent border-0 cursor-pointer"
+                            />
+                            <span className="font-mono-data text-[9px] uppercase">
+                              {val}
+                            </span>
+                          </div>
+                        )}
+                        {param.type === "toggle" && (
+                          <input
+                            type="checkbox"
+                            checked={!!val}
+                            onChange={(e) => onParamChange(param.key, e.target.checked)}
+                            className="accent-primary"
+                          />
+                        )}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+                {(!activeTransition || activeTransition.params.length === 0) && (
+                  <div className="col-span-2 text-center text-on-surface-variant p-2 text-[10px]">
+                    No parameters configuration available
+                  </div>
                 )}
               </div>
             </div>
@@ -156,9 +158,11 @@ export function SidebarRight({
             <p className="pl-2">└─ Node: buf_02_chan2 (RGBA_8888, size: 1280x720)</p>
             <p className="text-primary font-bold mt-1">[NODE] Mix Compositor Pass</p>
             <p className="pl-2">└─ Mix: {selectedTransition.toUpperCase()}</p>
-            <p className="pl-4 text-on-surface-variant text-[9px]">
-              easing: {parameters.easing ?? "linear"}
-            </p>
+            {activeTransition?.params.map((p) => (
+              <p key={p.key} className="pl-4 text-on-surface-variant text-[9px]">
+                {p.key}: {String(parameters[p.key] ?? p.value)}
+              </p>
+            ))}
           </div>
         )}
 
