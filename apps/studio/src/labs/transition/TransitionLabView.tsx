@@ -456,8 +456,11 @@ export function TransitionLabView() {
       }
 
       // Check video stream readiness
-      const hasVideoA = videoA && videoA.readyState >= 1;
-      const hasVideoB = videoB && videoB.readyState >= 1;
+      // readyState >= 2 (HAVE_CURRENT_DATA) ensures a decoded frame is available
+      // for GPU upload — readyState == 1 (HAVE_METADATA) only gives dimensions/duration,
+      // not pixel data, which would render as a black frame on the canvas.
+      const hasVideoA = videoA && videoA.readyState >= 2;
+      const hasVideoB = videoB && videoB.readyState >= 2;
 
       // Select active texture sources (video if imported, fallback canvas placeholder otherwise)
       const sourceA = hasVideoA ? videoA : placeholderARef.current;
