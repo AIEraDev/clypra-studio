@@ -29,6 +29,13 @@ export function usePixiRenderer(
       registry.set(canvas, entry);
       renderer.init(canvas, width, height)
         .then(() => {
+          // PixiJS autoDensity injects `canvas.style.width/height = '1280px/720px'` as inline
+          // styles during init — these beat Tailwind classes in the CSS cascade and force the
+          // canvas to its logical pixel size, overflowing the container and causing clipping.
+          // Reset to 100% so the canvas scales to its CSS container; PixiJS continues to render
+          // into its internal 1280×720 logical space unchanged.
+          canvas.style.width = "100%";
+          canvas.style.height = "100%";
           onInit?.(renderer);
         })
         .catch((err) => {
