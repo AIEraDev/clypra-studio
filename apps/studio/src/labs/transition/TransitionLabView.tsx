@@ -9,17 +9,18 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { initializeFontSystem } from "@clypra-studio/engine";
+import { initializeFontSystem, PixiRenderer } from "@clypra-studio/engine";
+import { ALL_TRANSITIONS } from "@clypra-studio/engine/transitions";
+import { Texture } from "pixi.js";
 
 import { TopNavBar } from "./components/TopNavBar";
 import { SidebarLeft } from "./components/SidebarLeft";
 import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
+import { usePixiRenderer } from "./hooks/usePixiRenderer";
 
-const DEFAULT_CLIP_A =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
-const DEFAULT_CLIP_B =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4";
+const DEFAULT_CLIP_A = "";
+const DEFAULT_CLIP_B = "";
 
 export function TransitionLabView() {
   // Initialization of Lottie web fonts
@@ -31,6 +32,9 @@ export function TransitionLabView() {
     }
   }, []);
 
+  // State & Config Mapping
+  const initialTransition = ALL_TRANSITIONS.find((t) => t.id === "cross-dissolve");
+
   // State Management
   const [clipAFile, setClipAFile] = useState<File | null>(null);
   const [clipBFile, setClipBFile] = useState<File | null>(null);
@@ -38,23 +42,41 @@ export function TransitionLabView() {
   const [clipBUrl, setClipBUrl] = useState<string>(DEFAULT_CLIP_B);
 
   const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0.5); // 0.0 = Clip A, 1.0 = Clip B
-  const [duration, setDuration] = useState(2.0); // Transition duration in seconds
+  const [progress, setProgress] = useState(0.0); // 0.0 = Clip A, 1.0 = Clip B
   const [selectedTransition, setSelectedTransition] = useState<string>("cross-dissolve");
+  const [fitMode, setFitMode] = useState<"stretch" | "fit" | "crop">("fit");
   const [activeTab, setActiveTab] = useState<"inspector" | "nodes" | "stats">("inspector");
+
+  const [parameters, setParameters] = useState<Record<string, any>>(() => {
+    if (initialTransition) {
+      return Object.fromEntries(initialTransition.params.map((p) => [p.key, p.value]));
+    }
+    return {};
+  });
+
+  const [duration, setDuration] = useState(() => {
+    return initialTransition ? initialTransition.defaultDurationMs / 1000 : 2.0;
+  });
+
+  const sequenceTimeRef = useRef(0.0);
+  const playingRef = useRef(false);
+
+  useEffect(() => {
+    playingRef.current = playing;
+  }, [playing]);
+
+  useEffect(() => {
+    if (!playing) {
+      const totalDuration = 5.0 + duration + 5.0;
+      sequenceTimeRef.current = progress * totalDuration;
+    }
+  }, [progress, playing, duration]);
 
   const [logs, setLogs] = useState<string[]>([
     "[INIT] Transition console starting...",
     "[OK] Dual-channel video mixers ready.",
     "[INFO] Ready. Load outgoing/incoming clips or adjust parameters.",
   ]);
-
-  const [parameters, setParameters] = useState<Record<string, any>>({
-    easing: "linear",
-    colorOverlay: "#000000",
-    blurAmount: 10,
-    slideDirection: "left",
-  });
 
   const [latency, setLatency] = useState(0.02);
   const [cpuUsage, setCpuUsage] = useState(14);
@@ -71,6 +93,10 @@ export function TransitionLabView() {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
 
+  // Persistent placeholder canvases to prevent blank rendering
+  const placeholderARef = useRef<HTMLCanvasElement | null>(null);
+  const placeholderBRef = useRef<HTMLCanvasElement | null>(null);
+
   const addLog = useCallback((msg: string) => {
     setLogs((prev) => {
       const next = [...prev, msg];
@@ -78,6 +104,14 @@ export function TransitionLabView() {
       return next;
     });
   }, []);
+
+  const pixiRendererRef = usePixiRenderer(
+    canvasRef,
+    1280,
+    720,
+    () => addLog("[INIT] WebGL PixiRenderer successfully initialized."),
+    (err) => addLog(`[WARN] WebGL initialization failed: ${err.message}`)
+  );
 
   const handleClipAImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -103,6 +137,53 @@ export function TransitionLabView() {
     }
   };
 
+  const handleClipALoadedMetadata = () => {
+    if (videoARef.current) {
+      addLog(`[MEDIA] Outgoing Clip A ready: ${videoARef.current.videoWidth}x${videoARef.current.videoHeight}, ${videoARef.current.duration.toFixed(2)}s`);
+    }
+  };
+
+  const handleClipBLoadedMetadata = () => {
+    if (videoBRef.current) {
+      addLog(`[MEDIA] Incoming Clip B ready: ${videoBRef.current.videoWidth}x${videoBRef.current.videoHeight}, ${videoBRef.current.duration.toFixed(2)}s`);
+    }
+  };
+
+  const handleClipAError = () => {
+    addLog(`[WARN] Outgoing Clip A load failed.`);
+  };
+
+  const handleClipBError = () => {
+    addLog(`[WARN] Incoming Clip B load failed.`);
+  };
+
+  // Force video elements to load when their source URLs change
+  useEffect(() => {
+    if (videoARef.current) {
+      videoARef.current.load();
+    }
+  }, [clipAUrl]);
+
+  useEffect(() => {
+    if (videoBRef.current) {
+      videoBRef.current.load();
+    }
+  }, [clipBUrl]);
+
+  const handleSetPlaying = (val: boolean) => {
+    if (val && progress >= 1.0) {
+      setProgress(0);
+      sequenceTimeRef.current = 0.0;
+      if (videoARef.current) {
+        videoARef.current.currentTime = 0;
+      }
+      if (videoBRef.current) {
+        videoBRef.current.currentTime = 0;
+      }
+    }
+    setPlaying(val);
+  };
+
   const handleRewind = () => {
     setProgress((prev) => Math.max(0, prev - 0.1));
     addLog("[SEEK] Step rewind -10% progress");
@@ -118,6 +199,17 @@ export function TransitionLabView() {
       ...prev,
       [key]: value,
     }));
+  };
+
+  const handleSelectTransition = (id: string) => {
+    setSelectedTransition(id);
+    const trans = ALL_TRANSITIONS.find((t) => t.id === id);
+    if (trans) {
+      const defaults = Object.fromEntries(trans.params.map((p) => [p.key, p.value]));
+      setParameters(defaults);
+      setDuration(trans.defaultDurationMs / 1000);
+      addLog(`[SYSTEM] Selected transition: ${trans.name} (${trans.defaultDurationMs}ms)`);
+    }
   };
 
   const handleTimelineScrub = useCallback((clientX: number) => {
@@ -191,6 +283,26 @@ export function TransitionLabView() {
     ctx.fillText(label, w / 2, topH + (h - topH) / 2);
   };
 
+  // Draw placeholder canvas frames once on mount
+  useEffect(() => {
+    const canvasA = document.createElement("canvas");
+    canvasA.width = 1280;
+    canvasA.height = 720;
+    const ctxA = canvasA.getContext("2d");
+    if (ctxA) drawSMPTEBars(ctxA, 1280, 720, "CLIP A (OUTGOING)");
+    placeholderARef.current = canvasA;
+
+    const canvasB = document.createElement("canvas");
+    canvasB.width = 1280;
+    canvasB.height = 720;
+    const ctxB = canvasB.getContext("2d");
+    if (ctxB) drawSMPTEBars(ctxB, 1280, 720, "CLIP B (INCOMING)");
+    placeholderBRef.current = canvasB;
+  }, []);
+
+
+
+  // Main Preview Render loop
   useEffect(() => {
     let animId: number;
     let lastTime = performance.now();
@@ -200,140 +312,196 @@ export function TransitionLabView() {
       const videoA = videoARef.current;
       const videoB = videoBRef.current;
       const canvas = canvasRef.current;
-      if (!canvas) {
+      const renderer = pixiRendererRef.current;
+
+      if (!canvas || !renderer || !renderer.isReady) {
         animId = requestAnimationFrame(render);
         return;
       }
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        animId = requestAnimationFrame(render);
-        return;
-      }
+
+      renderer.setFitMode(fitMode);
 
       const startGpuTime = performance.now();
       const delta = (time - lastTime) / 1000;
       lastTime = time;
 
-      let currentProg = progress;
-      if (playing && !isScrubbing) {
-        currentProg += delta / duration;
-        if (currentProg >= 1.0) {
-          currentProg = 0.0;
-        }
-        setProgress(currentProg);
-      }
+      const transitionStart = 5.0;
+      const transitionEnd = transitionStart + duration;
+      const totalDuration = transitionEnd + 5.0;
 
-      if (videoA && videoA.readyState >= 1) {
-        const targetA = (1.0 - currentProg) * videoA.duration;
-        if (Math.abs(videoA.currentTime - targetA) > 0.1) {
-          videoA.currentTime = isNaN(targetA) ? 0 : targetA;
-        }
-      }
-      if (videoB && videoB.readyState >= 1) {
-        const targetB = currentProg * videoB.duration;
-        if (Math.abs(videoB.currentTime - targetB) > 0.1) {
-          videoB.currentTime = isNaN(targetB) ? 0 : targetB;
-        }
-      }
+      let currentSec = sequenceTimeRef.current;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const easedP = getProgressVal(currentProg);
-
-      const hasVideoA = videoA && videoA.readyState >= 2;
-      const hasVideoB = videoB && videoB.readyState >= 2;
-
-      ctx.save();
-
-      if (selectedTransition === "cross-dissolve") {
-        if (hasVideoA) ctx.drawImage(videoA!, 0, 0, canvas.width, canvas.height);
-        else drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIP_A (OUTGOING)");
-
-        ctx.globalAlpha = easedP;
-        if (hasVideoB) ctx.drawImage(videoB!, 0, 0, canvas.width, canvas.height);
-        else {
-          ctx.fillStyle = "rgba(0,0,0," + easedP + ")";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = "rgba(255,255,255," + easedP + ")";
-          ctx.font = "bold 24px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("CLIP B (INCOMING)", canvas.width / 2, canvas.height / 2);
-        }
-      } else if (selectedTransition === "fade-to-black") {
-        const color = parameters.colorOverlay ?? "#000000";
-        if (easedP < 0.5) {
-          const alpha = easedP * 2;
-          if (hasVideoA) ctx.drawImage(videoA!, 0, 0, canvas.width, canvas.height);
-          else drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIP A");
-          ctx.fillStyle = color;
-          ctx.globalAlpha = alpha;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (playingRef.current && !isScrubbing) {
+        // Master Clock synchronization: align timeline to video native audio/video clock
+        if (currentSec < transitionEnd) {
+          if (videoA && videoA.readyState >= 1) {
+            const targetA = Math.min(currentSec, videoA.duration);
+            if (Math.abs(videoA.currentTime - targetA) > 0.3) {
+              videoA.currentTime = targetA;
+            } else {
+              currentSec = videoA.currentTime;
+            }
+          } else {
+            currentSec += delta;
+          }
         } else {
-          const alpha = (1.0 - easedP) * 2;
-          if (hasVideoB) ctx.drawImage(videoB!, 0, 0, canvas.width, canvas.height);
-          else drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIP B");
-          ctx.fillStyle = color;
-          ctx.globalAlpha = alpha;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (videoB && videoB.readyState >= 1) {
+            const targetB = Math.min(currentSec - 5.0, videoB.duration);
+            if (Math.abs(videoB.currentTime - targetB) > 0.3) {
+              videoB.currentTime = targetB;
+            } else {
+              currentSec = 5.0 + videoB.currentTime;
+            }
+          } else {
+            currentSec += delta;
+          }
         }
-      } else if (selectedTransition === "slide-left") {
-        const dir = parameters.slideDirection ?? "left";
-        ctx.save();
-        if (dir === "left") {
-          const offsetA = -easedP * canvas.width;
-          const offsetB = (1.0 - easedP) * canvas.width;
-          ctx.translate(offsetA, 0);
-          if (hasVideoA) ctx.drawImage(videoA!, 0, 0, canvas.width, canvas.height);
-          else drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIP A");
-          ctx.translate(offsetB - offsetA, 0);
-          if (hasVideoB) ctx.drawImage(videoB!, 0, 0, canvas.width, canvas.height);
-          else drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIP B");
+
+        if (currentSec >= totalDuration) {
+          currentSec = totalDuration;
+          setPlaying(false);
+        }
+
+        sequenceTimeRef.current = currentSec;
+        setProgress(currentSec / totalDuration);
+      } else {
+        currentSec = progress * totalDuration;
+        sequenceTimeRef.current = currentSec;
+      }
+
+      // Transition progress mixProgress (goes from 0.0 to 1.0 during transition phase)
+      let mixProgress = 0.0;
+      if (currentSec >= transitionEnd) {
+        mixProgress = 1.0;
+      } else if (currentSec >= transitionStart) {
+        mixProgress = (currentSec - transitionStart) / duration;
+      }
+      const easedP = getProgressVal(mixProgress);
+
+      const playVideo = (v: HTMLVideoElement) => {
+        if (v.paused) {
+          v.play().catch(() => {});
+        }
+      };
+
+      const pauseVideo = (v: HTMLVideoElement) => {
+        if (!v.paused) {
+          v.pause();
+        }
+      };
+
+      if (playingRef.current && !isScrubbing) {
+        if (currentSec < transitionStart) {
+          if (videoA && videoA.readyState >= 1) {
+            playVideo(videoA);
+            const targetA = Math.min(currentSec, videoA.duration);
+            if (Math.abs(videoA.currentTime - targetA) > 0.15) {
+              videoA.currentTime = targetA;
+            }
+            videoA.volume = 1.0;
+          }
+          if (videoB && videoB.readyState >= 1) {
+            pauseVideo(videoB);
+            if (Math.abs(videoB.currentTime) > 0.1) {
+              videoB.currentTime = 0;
+            }
+            videoB.volume = 0.0;
+          }
+        } else if (currentSec < transitionEnd) {
+          if (videoA && videoA.readyState >= 1) {
+            playVideo(videoA);
+            const targetA = Math.min(currentSec, videoA.duration);
+            if (Math.abs(videoA.currentTime - targetA) > 0.15) {
+              videoA.currentTime = targetA;
+            }
+            videoA.volume = Math.max(0, Math.min(1, 1.0 - mixProgress));
+          }
+          if (videoB && videoB.readyState >= 1) {
+            playVideo(videoB);
+            const targetB = Math.min(currentSec - 5.0, videoB.duration);
+            if (Math.abs(videoB.currentTime - targetB) > 0.15) {
+              videoB.currentTime = targetB;
+            }
+            videoB.volume = Math.max(0, Math.min(1, mixProgress));
+          }
         } else {
-          const offsetA = easedP * canvas.width;
-          const offsetB = -(1.0 - easedP) * canvas.width;
-          ctx.translate(offsetA, 0);
-          if (hasVideoA) ctx.drawImage(videoA!, 0, 0, canvas.width, canvas.height);
-          else drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIP A");
-          ctx.translate(offsetB - offsetA, 0);
-          if (hasVideoB) ctx.drawImage(videoB!, 0, 0, canvas.width, canvas.height);
-          else drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIP B");
+          if (videoA && videoA.readyState >= 1) {
+            pauseVideo(videoA);
+            videoA.volume = 0.0;
+          }
+          if (videoB && videoB.readyState >= 1) {
+            playVideo(videoB);
+            const targetB = Math.min(currentSec - 5.0, videoB.duration);
+            if (Math.abs(videoB.currentTime - targetB) > 0.15) {
+              videoB.currentTime = targetB;
+            }
+            videoB.volume = 1.0;
+          }
         }
-        ctx.restore();
-      } else if (selectedTransition === "zoom-blur") {
-        const blurAmount = parameters.blurAmount ?? 10;
-        if (easedP < 0.5) {
-          const zoom = 1.0 + easedP * 0.4;
-          const localAlpha = easedP * 2;
-          ctx.save();
+      } else {
+        if (videoA && videoA.readyState >= 1) {
+          pauseVideo(videoA);
+          const targetA = Math.min(Math.min(currentSec, transitionEnd), videoA.duration);
+          if (Math.abs(videoA.currentTime - targetA) > 0.05) {
+            videoA.currentTime = isNaN(targetA) ? 0 : targetA;
+          }
+        }
+        if (videoB && videoB.readyState >= 1) {
+          pauseVideo(videoB);
+          const targetB = Math.min(Math.max(0, currentSec - transitionStart), videoB.duration);
+          if (Math.abs(videoB.currentTime - targetB) > 0.05) {
+            videoB.currentTime = isNaN(targetB) ? 0 : targetB;
+          }
+        }
+      }
+
+      // Check video stream readiness
+      const hasVideoA = videoA && videoA.readyState >= 1;
+      const hasVideoB = videoB && videoB.readyState >= 1;
+
+      // Select active texture sources (video if imported, fallback canvas placeholder otherwise)
+      const sourceA = hasVideoA ? videoA : placeholderARef.current;
+      const sourceB = hasVideoB ? videoB : placeholderBRef.current;
+
+      if (sourceA && sourceB) {
+        const texA = Texture.from(sourceA);
+        const texB = Texture.from(sourceB);
+
+        // Signal PixiJS to upload the current frame to GPU
+        texA.source.update();
+        texB.source.update();
+
+        if (currentSec >= transitionStart && currentSec < transitionEnd) {
+          const transDef = ALL_TRANSITIONS.find((t) => t.id === selectedTransition);
+          if (transDef) {
+            if (renderer.getActiveTransitionId() !== selectedTransition) {
+              renderer.mountTransition(transDef, texA, texB, parameters);
+            }
+            renderer.updateTransitionProgress(selectedTransition, easedP, parameters);
+          }
+        } else if (currentSec < transitionStart) {
+          if (renderer.getActiveTransitionId() !== null) {
+            renderer.unmountTransition();
+          }
           if (hasVideoA) {
-            ctx.drawImage(videoA!, 0, 0, canvas.width, canvas.height);
-            ctx.globalAlpha = localAlpha;
-            ctx.filter = `blur(${easedP * blurAmount}px)`;
-            const w = canvas.width * zoom;
-            const h = canvas.height * zoom;
-            ctx.drawImage(videoA!, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
-          } else {
-            drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIP A");
+            renderer.setVideoSource(videoA);
+          } else if (placeholderARef.current) {
+            renderer.setImageSource(placeholderARef.current);
           }
-          ctx.restore();
         } else {
-          const zoom = 1.4 - (easedP - 0.5) * 0.8;
-          const localAlpha = (1.0 - easedP) * 2;
-          ctx.save();
-          if (hasVideoB) {
-            ctx.drawImage(videoB!, 0, 0, canvas.width, canvas.height);
-            ctx.globalAlpha = localAlpha;
-            ctx.filter = `blur(${(1.0 - easedP) * blurAmount}px)`;
-            const w = canvas.width * zoom;
-            const h = canvas.height * zoom;
-            ctx.drawImage(videoB!, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
-          } else {
-            drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIP B");
+          if (renderer.getActiveTransitionId() !== null) {
+            renderer.unmountTransition();
           }
-          ctx.restore();
+          if (hasVideoB) {
+            renderer.setVideoSource(videoB);
+          } else if (placeholderBRef.current) {
+            renderer.setImageSource(placeholderBRef.current);
+          }
         }
       }
 
-      ctx.restore();
+      // Run PixiJS rendering pass
+      renderer.render();
 
       const now = performance.now();
       const frameDelta = now - startGpuTime;
@@ -342,7 +510,7 @@ export function TransitionLabView() {
         setLatency(parseFloat(frameDelta.toFixed(2)));
         setCpuUsage(Math.round(9 + Math.random() * 8));
         setGpuUsage(Math.round(20 + Math.random() * 15));
-        if (playing) {
+        if (playingRef.current) {
           setRedHeight(Math.round(20 + Math.random() * 70));
           setGreenHeight(Math.round(30 + Math.random() * 60));
           setBlueHeight(Math.round(40 + Math.random() * 50));
@@ -353,20 +521,26 @@ export function TransitionLabView() {
     };
 
     animId = requestAnimationFrame(render);
-    return () => cancelAnimationFrame(animId);
-  }, [selectedTransition, progress, playing, duration, parameters, isScrubbing]);
+    return () => {
+      cancelAnimationFrame(animId);
+      if (videoARef.current) videoARef.current.pause();
+      if (videoBRef.current) videoBRef.current.pause();
+    };
+  }, [selectedTransition, duration, parameters, isScrubbing, fitMode]);
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   const handleResetContext = () => {
-    setParameters({
-      easing: "linear",
-      colorOverlay: "#000000",
-      blurAmount: 10,
-      slideDirection: "left",
-    });
-    setSelectedTransition("cross-dissolve");
-    setProgress(0.5);
+    const id = "cross-dissolve";
+    setSelectedTransition(id);
+    const trans = ALL_TRANSITIONS.find((t) => t.id === id);
+    if (trans) {
+      const defaults = Object.fromEntries(trans.params.map((p) => [p.key, p.value]));
+      setParameters(defaults);
+      setDuration(trans.defaultDurationMs / 1000);
+    }
+    setProgress(0.0);
+    setPlaying(false);
     addLog("[SYSTEM] Sequencer buffer reset to factory defaults.");
   };
 
@@ -450,9 +624,11 @@ export function TransitionLabView() {
           clipAFile={clipAFile}
           clipBFile={clipBFile}
           selectedTransition={selectedTransition}
+          fitMode={fitMode}
           onClipAImport={handleClipAImport}
           onClipBImport={handleClipBImport}
-          onSelectTransition={setSelectedTransition}
+          onSelectTransition={handleSelectTransition}
+          onSetFitMode={setFitMode}
         />
 
         <CanvasPreview
@@ -464,7 +640,7 @@ export function TransitionLabView() {
           clipBUrl={clipBUrl}
           playing={playing}
           progress={progress}
-          duration={duration}
+          duration={duration + 10.0}
           latency={latency}
           cpuUsage={cpuUsage}
           gpuUsage={gpuUsage}
@@ -472,7 +648,7 @@ export function TransitionLabView() {
           redHeight={redHeight}
           greenHeight={greenHeight}
           blueHeight={blueHeight}
-          onSetPlaying={setPlaying}
+          onSetPlaying={handleSetPlaying}
           onSkipStart={() => {
             setProgress(0);
             addLog("[SEEK] Set timeline to head (0.0)");
@@ -485,6 +661,10 @@ export function TransitionLabView() {
           onFastForward={handleFastForward}
           onMouseDown={handleMouseDown}
           onProgressSliderChange={(e) => setProgress(parseFloat(e.target.value))}
+          onLoadedMetadataA={handleClipALoadedMetadata}
+          onLoadedMetadataB={handleClipBLoadedMetadata}
+          onClipAError={handleClipAError}
+          onClipBError={handleClipBError}
         />
 
         <SidebarRight
