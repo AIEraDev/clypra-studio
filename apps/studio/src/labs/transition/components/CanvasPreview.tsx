@@ -80,6 +80,7 @@ export function CanvasPreview({
         onLoadedMetadata={onLoadedMetadataA}
         onError={onClipAError}
         style={{ position: "absolute", width: "1px", height: "1px", opacity: 0, pointerEvents: "none" }}
+        preload="auto"
         loop
         playsInline
         crossOrigin="anonymous"
@@ -90,6 +91,7 @@ export function CanvasPreview({
         onLoadedMetadata={onLoadedMetadataB}
         onError={onClipBError}
         style={{ position: "absolute", width: "1px", height: "1px", opacity: 0, pointerEvents: "none" }}
+        preload="auto"
         loop
         playsInline
         crossOrigin="anonymous"
