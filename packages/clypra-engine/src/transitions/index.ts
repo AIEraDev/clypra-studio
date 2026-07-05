@@ -18,3 +18,6 @@ export { TRANSITION_PRESETS, TRANSITION_CATEGORIES } from "./presets";
 
 // Helper functions
 export { getTransitionCategories, getTransitionsByCategory, searchTransitions, getTransitionById, getTransitionByRenderer, getAllTransitions, getTransitionCountByCategory, getAllTransitionTags, getTransitionsByTags, getRecommendedDuration } from "./helpers";
+
+// GPU Transitions Registry
+export * from "../effects/transitions/index";
