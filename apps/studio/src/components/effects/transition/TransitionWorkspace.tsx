@@ -171,32 +171,59 @@ export function TransitionWorkspace() {
     }
   }, []);
 
-  // Load initial sample images
+  // Load initial sample images / videos
   useEffect(() => {
-    const loadImage = (url: string, isClipA: boolean) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        if (isClipA) {
-          clipARef.current = img;
-        } else {
-          clipBRef.current = img;
-        }
-        // Check if both clips are loaded
-        if (clipARef.current && clipBRef.current) {
-          setMediaLoaded(true);
-          renderCurrentFrame();
-        }
-      };
-      img.onerror = () => {
-        console.error(`Failed to load image: ${url}`);
-      };
-      img.src = url;
+    let active = true;
+    const loadMedia = (url: string, isClipA: boolean, isVideo: boolean) => {
+      if (isVideo) {
+        const video = document.createElement("video");
+        video.crossOrigin = "anonymous";
+        video.preload = "auto";
+        video.playsInline = true;
+        video.onloadedmetadata = () => {
+          if (!active) return;
+          if (isClipA) {
+            clipARef.current = video;
+          } else {
+            clipBRef.current = video;
+          }
+          if (clipARef.current && clipBRef.current) {
+            setMediaLoaded(true);
+          }
+        };
+        video.onerror = () => {
+          console.error(`Failed to load video: ${url}`);
+        };
+        video.src = url;
+      } else {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          if (!active) return;
+          if (isClipA) {
+            clipARef.current = img;
+          } else {
+            clipBRef.current = img;
+          }
+          if (clipARef.current && clipBRef.current) {
+            setMediaLoaded(true);
+          }
+        };
+        img.onerror = () => {
+          console.error(`Failed to load image: ${url}`);
+        };
+        img.src = url;
+      }
     };
 
-    loadImage(clipAUrl, true);
-    loadImage(clipBUrl, false);
-  }, [clipAUrl, clipBUrl]);
+    setMediaLoaded(false);
+    loadMedia(clipAUrl, true, isClipAVideo);
+    loadMedia(clipBUrl, false, isClipBVideo);
+
+    return () => {
+      active = false;
+    };
+  }, [clipAUrl, clipBUrl, isClipAVideo, isClipBVideo]);
 
   // Sync transition parameters to PixiJS WebGL shader uniforms
   const syncTransitionUniforms = useCallback((progressVal: number) => {
@@ -274,10 +301,10 @@ export function TransitionWorkspace() {
       filteredSprite.filters = [transitionFilter];
       transitionFilterRef.current = transitionFilter;
 
-      // Load textures
+      // Load textures from elements directly to correctly support blob videos
       const { Texture } = await import("pixi.js");
-      const texA = await Texture.from(clipAUrl);
-      const texB = await Texture.from(clipBUrl);
+      const texA = Texture.from(clipARef.current!);
+      const texB = Texture.from(clipBRef.current!);
 
       if (active) {
         baseSprite.texture = texA;
@@ -317,9 +344,66 @@ export function TransitionWorkspace() {
 
     const progress = duration > 0 ? Math.min(1, currentTime / duration) : 0;
 
+    // Sync HTML video elements playback, currentTime, and volume
+    if (isPlaying) {
+      if (clipA instanceof HTMLVideoElement && clipA.readyState >= 1) {
+        if (clipA.paused) {
+          clipA.play().catch(() => {});
+        }
+        const targetA = Math.min(currentTime, clipA.duration);
+        if (Math.abs(clipA.currentTime - targetA) > 0.15) {
+          clipA.currentTime = targetA;
+        }
+        clipA.volume = Math.max(0, Math.min(1, 1 - progress));
+      }
+      if (clipB instanceof HTMLVideoElement && clipB.readyState >= 1) {
+        if (clipB.paused) {
+          clipB.play().catch(() => {});
+        }
+        const targetB = Math.min(currentTime, clipB.duration);
+        if (Math.abs(clipB.currentTime - targetB) > 0.15) {
+          clipB.currentTime = targetB;
+        }
+        clipB.volume = Math.max(0, Math.min(1, progress));
+      }
+    } else {
+      if (clipA instanceof HTMLVideoElement && !clipA.paused) {
+        clipA.pause();
+      }
+      if (clipB instanceof HTMLVideoElement && !clipB.paused) {
+        clipB.pause();
+      }
+
+      // Sync currentTime even when paused (e.g. seeking)
+      if (clipA instanceof HTMLVideoElement && clipA.readyState >= 1) {
+        const targetA = Math.min(currentTime, clipA.duration);
+        if (Math.abs(clipA.currentTime - targetA) > 0.05) {
+          clipA.currentTime = isNaN(targetA) ? 0 : targetA;
+        }
+      }
+      if (clipB instanceof HTMLVideoElement && clipB.readyState >= 1) {
+        const targetB = Math.min(currentTime, clipB.duration);
+        if (Math.abs(clipB.currentTime - targetB) > 0.05) {
+          clipB.currentTime = isNaN(targetB) ? 0 : targetB;
+        }
+      }
+    }
+
+    // Tell PixiJS to upload the current video/image frame to the GPU
+    if (baseSpriteRef.current?.texture?.source) {
+      baseSpriteRef.current.texture.source.update();
+    }
+    if (filteredSpriteRef.current?.texture?.source) {
+      filteredSpriteRef.current.texture.source.update();
+    }
+    const transitionFilter = transitionFilterRef.current;
+    if (transitionFilter?.resources?.uniforms?.uniforms?.uTextureB?.source) {
+      transitionFilter.resources.uniforms.uniforms.uTextureB.source.update();
+    }
+
     renderTransition(ctx, clipA, clipB, selectedTransition, progress, duration);
     syncTransitionUniforms(progress);
-  }, [currentTime, duration, selectedTransition, syncTransitionUniforms]);
+  }, [currentTime, duration, selectedTransition, syncTransitionUniforms, isPlaying]);
 
   // Animation loop
   useEffect(() => {
@@ -376,33 +460,10 @@ export function TransitionWorkspace() {
       if (!file) return;
 
       const url = URL.createObjectURL(file);
+      setIsClipAVideo(file.type.startsWith("video/"));
       setClipAUrl(url);
-
-      if (file.type.startsWith("video/")) {
-        setIsClipAVideo(true);
-        const video = document.createElement("video");
-        video.src = url;
-        video.onloadedmetadata = () => {
-          clipARef.current = video;
-          if (clipBRef.current) {
-            setMediaLoaded(true);
-            renderCurrentFrame();
-          }
-        };
-      } else {
-        setIsClipAVideo(false);
-        const img = new Image();
-        img.src = url;
-        img.onload = () => {
-          clipARef.current = img;
-          if (clipBRef.current) {
-            setMediaLoaded(true);
-            renderCurrentFrame();
-          }
-        };
-      }
     },
-    [renderCurrentFrame],
+    [],
   );
 
   // Handle file upload for clip B
@@ -412,34 +473,23 @@ export function TransitionWorkspace() {
       if (!file) return;
 
       const url = URL.createObjectURL(file);
+      setIsClipBVideo(file.type.startsWith("video/"));
       setClipBUrl(url);
-
-      if (file.type.startsWith("video/")) {
-        setIsClipBVideo(true);
-        const video = document.createElement("video");
-        video.src = url;
-        video.onloadedmetadata = () => {
-          clipBRef.current = video;
-          if (clipARef.current) {
-            setMediaLoaded(true);
-            renderCurrentFrame();
-          }
-        };
-      } else {
-        setIsClipBVideo(false);
-        const img = new Image();
-        img.src = url;
-        img.onload = () => {
-          clipBRef.current = img;
-          if (clipARef.current) {
-            setMediaLoaded(true);
-            renderCurrentFrame();
-          }
-        };
-      }
     },
-    [renderCurrentFrame],
+    [],
   );
+
+  // Pause videos on unmount to prevent audio leaks
+  useEffect(() => {
+    return () => {
+      if (clipARef.current && clipARef.current instanceof HTMLVideoElement) {
+        clipARef.current.pause();
+      }
+      if (clipBRef.current && clipBRef.current instanceof HTMLVideoElement) {
+        clipBRef.current.pause();
+      }
+    };
+  }, []);
 
   // Handle play/pause
   const handlePlayPause = useCallback(() => {
