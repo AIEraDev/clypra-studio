@@ -47,7 +47,7 @@ export function BodyLabView() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(15.02);
   const [selectedEffect, setSelectedEffect] = useState<string>("neon-outline");
-  const [fitMode, setFitMode] = useState<"stretch" | "crop">("stretch");
+  const [fitMode, setFitMode] = useState<"stretch" | "fit" | "crop">("fit");
   const [activeTab, setActiveTab] = useState<"inspector" | "nodes" | "stats">("inspector");
 
   const [logs, setLogs] = useState<string[]>([
@@ -129,6 +129,10 @@ export function BodyLabView() {
       );
     }
   };
+
+  useEffect(() => {
+    particlesRef.current = [];
+  }, [fitMode, selectedEffect]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -336,48 +340,76 @@ export function BodyLabView() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const hasVideo = video && video.readyState >= 2;
-      const cx = canvas.width / 2;
-      const cy = canvas.height / 2 - 20;
-      const scalePulsate = 1.0 + (playing ? Math.sin(performance.now() / 200) * 0.02 : 0);
+
+      let drawW = canvas.width,
+        drawH = canvas.height,
+        drawX = 0,
+        drawY = 0;
+      if (hasVideo) {
+        const videoRatio = video!.videoWidth / video!.videoHeight;
+        const canvasRatio = canvas.width / canvas.height;
+        if (fitMode === "crop") {
+          if (videoRatio > canvasRatio) {
+            drawW = canvas.height * videoRatio;
+            drawX = (canvas.width - drawW) / 2;
+          } else {
+            drawH = canvas.width / videoRatio;
+            drawY = (canvas.height - drawH) / 2;
+          }
+        } else if (fitMode === "fit") {
+          if (videoRatio > canvasRatio) {
+            drawH = canvas.width / videoRatio;
+            drawY = (canvas.height - drawH) / 2;
+          } else {
+            drawW = canvas.height * videoRatio;
+            drawX = (canvas.width - drawW) / 2;
+          }
+        }
+      }
+
+      const scaleFactor = drawH / canvas.height;
+      const cx = drawX + drawW / 2;
+      const cy = drawY + drawH / 2 - 20 * scaleFactor;
+      const scalePulsate = (1.0 + (playing ? Math.sin(performance.now() / 200) * 0.02 : 0)) * scaleFactor;
 
       ctx.save();
 
       if (hasVideo) {
         if (selectedEffect === "neon-outline") {
-          ctx.drawImage(video!, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
           ctx.save();
           drawHumanSilhouette(ctx, cx, cy, scalePulsate);
           ctx.strokeStyle = parameters.color ?? "#00FFFF";
-          ctx.lineWidth = parameters.thickness ?? 4;
+          ctx.lineWidth = (parameters.thickness ?? 4) * scaleFactor;
           ctx.shadowColor = parameters.color ?? "#00FFFF";
-          ctx.shadowBlur = (parameters.intensity ?? 1.0) * 16;
+          ctx.shadowBlur = (parameters.intensity ?? 1.0) * 16 * scaleFactor;
           ctx.stroke();
           ctx.restore();
         } else if (selectedEffect === "background-blur") {
           const blurAmount = parameters.blurAmount ?? 20;
           ctx.save();
-          ctx.filter = `blur(${blurAmount}px) brightness(0.8)`;
-          ctx.drawImage(video!, 0, 0, canvas.width, canvas.height);
+          ctx.filter = `blur(${blurAmount * scaleFactor}px) brightness(0.8)`;
+          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
           ctx.restore();
           ctx.save();
           drawHumanSilhouette(ctx, cx, cy, scalePulsate);
           ctx.clip();
-          ctx.drawImage(video!, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
           ctx.restore();
         } else if (selectedEffect === "spotlight") {
           const darkness = parameters.darkness ?? 0.7;
           const falloff = parameters.falloff ?? 1.0;
           const tint = parameters.tint ?? "#000000";
-          ctx.drawImage(video!, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
           ctx.save();
-          const grad = ctx.createRadialGradient(cx, cy, 30, cx, cy, 280 * falloff);
+          const grad = ctx.createRadialGradient(cx, cy, 30 * scaleFactor, cx, cy, 280 * falloff * scaleFactor);
           grad.addColorStop(0, "rgba(0,0,0,0)");
           grad.addColorStop(1, `rgba(${hexToRgb(tint)}, ${darkness})`);
           ctx.fillStyle = grad;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.restore();
         } else if (selectedEffect === "particle-aura") {
-          ctx.drawImage(video!, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
           const pColor = parameters.particleColor ?? "#FFFFFF";
           const pSize = parameters.particleSize ?? 3;
           const pSpeed = parameters.speed ?? 0.5;
@@ -386,11 +418,11 @@ export function BodyLabView() {
 
           if (particlesRef.current.length < (parameters.particleCount ?? 50)) {
             particlesRef.current.push({
-              x: cx + (Math.random() - 0.5) * 150,
-              y: cy + (Math.random() - 0.5) * 350,
-              vx: (Math.random() - 0.5) * pSpeed * 5,
-              vy: -Math.random() * pSpeed * 4 - 1,
-              size: Math.random() * pSize + 1,
+              x: cx + (Math.random() - 0.5) * 150 * scaleFactor,
+              y: cy + (Math.random() - 0.5) * 350 * scaleFactor,
+              vx: (Math.random() - 0.5) * pSpeed * 5 * scaleFactor,
+              vy: (-Math.random() * pSpeed * 4 - 1) * scaleFactor,
+              size: (Math.random() * pSize + 1) * scaleFactor,
               alpha: Math.random(),
               life: 1.0,
             });
@@ -398,7 +430,7 @@ export function BodyLabView() {
 
           ctx.save();
           ctx.shadowColor = pColor;
-          ctx.shadowBlur = glow * 12;
+          ctx.shadowBlur = glow * 12 * scaleFactor;
 
           particlesRef.current.forEach((p, idx) => {
             p.x += p.vx;
@@ -412,11 +444,11 @@ export function BodyLabView() {
 
             if (p.life <= 0) {
               particlesRef.current[idx] = {
-                x: cx + (Math.random() - 0.5) * (100 + pSpread * 5),
-                y: cy + 180,
-                vx: (Math.random() - 0.5) * pSpeed * 4,
-                vy: -Math.random() * pSpeed * 5 - 1.5,
-                size: Math.random() * pSize + 1,
+                x: cx + (Math.random() - 0.5) * (100 + pSpread * 5) * scaleFactor,
+                y: cy + 180 * scaleFactor,
+                vx: (Math.random() - 0.5) * pSpeed * 4 * scaleFactor,
+                vy: (-Math.random() * pSpeed * 5 - 1.5) * scaleFactor,
+                size: (Math.random() * pSize + 1) * scaleFactor,
                 alpha: Math.random(),
                 life: 1.0,
               };
@@ -427,7 +459,7 @@ export function BodyLabView() {
           const desat = parameters.desaturation ?? 1.0;
           ctx.save();
           ctx.filter = `grayscale(${desat * 100}%) contrast(1.1)`;
-          ctx.drawImage(video!, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
           ctx.restore();
           ctx.save();
           drawHumanSilhouette(ctx, cx, cy, scalePulsate);
@@ -435,7 +467,7 @@ export function BodyLabView() {
           if (parameters.colorBoost > 0) {
             ctx.filter = `saturate(${1.0 + parameters.colorBoost * 2})`;
           }
-          ctx.drawImage(video!, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
           ctx.restore();
         }
       } else {
