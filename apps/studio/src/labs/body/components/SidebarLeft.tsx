@@ -8,12 +8,12 @@ interface ProviderItem {
 
 interface SidebarLeftProps {
   videoFile: File | null;
-  fitMode: "stretch" | "crop";
+  fitMode: "stretch" | "fit" | "crop";
   selectedEffect: string;
   providers: ProviderItem[];
   activeProvider: string;
   onVideoImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSetFitMode: (mode: "stretch" | "crop") => void;
+  onSetFitMode: (mode: "stretch" | "fit" | "crop") => void;
   onSetActiveProvider: (id: string) => void;
   onSelectEffect: (effect: string) => void;
 }
@@ -62,12 +62,12 @@ export function SidebarLeft({
             {videoFile ? videoFile.name : "LOAD_SUBJECT.bin"}
           </p>
         </label>
-        <div className="grid grid-cols-2 gap-1 mt-1.5">
-          {(["stretch", "crop"] as const).map((mode) => (
+        <div className="grid grid-cols-3 gap-1 mt-1.5">
+          {(["stretch", "fit", "crop"] as const).map((mode) => (
             <button
               key={mode}
               onClick={() => onSetFitMode(mode)}
-              className={`py-0.5 rounded text-[10px] font-bold border transition-all ${
+              className={`py-0.5 rounded text-[9px] font-bold border transition-all ${
                 fitMode === mode
                   ? "bg-primary/20 text-primary border-primary/30"
                   : "bg-surface-container-highest text-on-surface-variant border-transparent"
