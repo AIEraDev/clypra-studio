@@ -7,6 +7,9 @@ export type GPUEffectTransitionCategory =
   | 'temporal'
   | 'particle-dissolve'
   | 'light-based'
+  | 'depth-based'
+  | 'physics-simulated'
+
 
 export interface TransitionContext {
   /** Outgoing clip texture — sampled as uFrom in the shader */
