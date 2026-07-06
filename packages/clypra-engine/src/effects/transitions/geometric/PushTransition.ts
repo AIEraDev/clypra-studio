@@ -4,7 +4,7 @@ import type { ParamValues } from '../../../videoEffects/EffectDefinition'
 import { defaultVertexShader } from '../defaultVertexShader'
 
 const fragment = `
-  in vec2 vTextureCoord;
+  in vec2 vNormalizedCoord;
   out vec4 finalColor;
 
   uniform sampler2D uFrom;
@@ -35,7 +35,7 @@ const fragment = `
   
   void main() {
     float t = applyEasing(uProgress, uEasing);
-    vec2 uv = vTextureCoord;
+    vec2 uv = vNormalizedCoord;
     
     // Calculate offset based on direction
     vec2 offsetFrom = vec2(0.0);
