@@ -4,7 +4,7 @@ import type { ParamValues } from '../../../videoEffects/EffectDefinition'
 import { defaultVertexShader } from '../defaultVertexShader'
 
 const fragment = `
-  in vec2 vTextureCoord;
+  in vec2 vNormalizedCoord;
   out vec4 finalColor;
 
   uniform sampler2D uFrom;
@@ -15,7 +15,7 @@ const fragment = `
   uniform vec2 uResolution;
 
   void main(void) {
-    vec2 uv = vTextureCoord;
+    vec2 uv = vNormalizedCoord;
     
     // Calculate bell curve for block size peaking at progress = 0.5
     float bellCurve = 0.0;
