@@ -4,7 +4,7 @@ import type { ParamValues } from '../../../videoEffects/EffectDefinition'
 import { defaultVertexShader } from '../defaultVertexShader'
 
 const fragment = `
-  in vec2 vTextureCoord;
+  in vec2 vNormalizedCoord;
   out vec4 finalColor;
 
   uniform sampler2D uFrom;
@@ -27,7 +27,7 @@ const fragment = `
   }
 
   void main(void) {
-    vec2 uv = vTextureCoord;
+    vec2 uv = vNormalizedCoord;
 
     // Procedural layered noise for organic melting outline
     float n = noise(uv * 6.0) * 0.7 + noise(uv * 12.0) * 0.3;

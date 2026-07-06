@@ -4,7 +4,7 @@ import type { ParamValues } from '../../../videoEffects/EffectDefinition'
 import { defaultVertexShader } from '../defaultVertexShader'
 
 const fragment = `
-  in vec2 vTextureCoord;
+  in vec2 vNormalizedCoord;
   out vec4 finalColor;
 
   uniform sampler2D uFrom;
@@ -54,7 +54,7 @@ const fragment = `
   }
   
   void main(void) {
-    vec2 uv = vTextureCoord;
+    vec2 uv = vNormalizedCoord;
     float t = applyEasing(uProgress, uEasing);
     
     float gradient = getGradient(uv, uGradient);
