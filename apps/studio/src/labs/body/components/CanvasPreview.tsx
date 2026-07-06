@@ -72,7 +72,8 @@ export function CanvasPreview({
         src={videoUrl}
         onTimeUpdate={onTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
-        className="hidden"
+        style={{ position: "absolute", width: "1px", height: "1px", opacity: 0, pointerEvents: "none" }}
+        preload="auto"
         loop
         muted
         playsInline
