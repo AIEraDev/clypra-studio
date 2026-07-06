@@ -84,7 +84,8 @@ export function CanvasPreview({
         onTimeUpdate={onTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
         onError={onVideoError}
-        className="hidden"
+        style={{ position: "absolute", width: "1px", height: "1px", opacity: 0, pointerEvents: "none" }}
+        preload="auto"
         loop
         muted
         playsInline

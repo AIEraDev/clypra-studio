@@ -108,6 +108,8 @@ interface SidebarRightProps {
   onResetContext: () => void;
   identityEffectId: string;
   terminalEndRef: React.RefObject<HTMLDivElement | null>;
+  onPublish?: () => void;
+  isRecording?: boolean;
 }
 
 export function SidebarRight({
@@ -131,6 +133,8 @@ export function SidebarRight({
   onResetContext,
   identityEffectId,
   terminalEndRef,
+  onPublish,
+  isRecording,
 }: SidebarRightProps) {
   return (
     <aside className="flex flex-col h-full w-[280px] min-w-[280px] bg-surface-container-low border-l border-outline-variant overflow-hidden select-none">
@@ -346,19 +350,38 @@ export function SidebarRight({
       </div>
 
       {/* Footer controls */}
-      <div className="p-1 border-t border-outline-variant bg-surface-container-low grid grid-cols-2 gap-1">
+      <div className="p-1 border-t border-outline-variant bg-surface-container-low space-y-1">
         <button
-          onClick={onDumpLog}
-          className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface"
+          onClick={onPublish}
+          disabled={isRecording || selectedEffectId === identityEffectId}
+          className="w-full py-1.5 bg-teal-500 text-black text-[10px] font-black hover:bg-teal-400 disabled:opacity-50 uppercase rounded transition-colors text-center flex items-center justify-center gap-1.5"
         >
-          Dump_Log
+          {isRecording ? (
+            <>
+              <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping shrink-0" />
+              Recording...
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-[12px]">cloud_upload</span>
+              Publish to API
+            </>
+          )}
         </button>
-        <button
-          onClick={onResetContext}
-          className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface"
-        >
-          Reset_Ctx
-        </button>
+        <div className="grid grid-cols-2 gap-1">
+          <button
+            onClick={onDumpLog}
+            className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface"
+          >
+            Dump_Log
+          </button>
+          <button
+            onClick={onResetContext}
+            className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface"
+          >
+            Reset_Ctx
+          </button>
+        </div>
       </div>
     </aside>
   );
