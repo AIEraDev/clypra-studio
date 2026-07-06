@@ -18,6 +18,7 @@ import { SidebarLeft } from "./components/SidebarLeft";
 import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
 import { usePixiRenderer } from "./hooks/usePixiRenderer";
+import { PublishTransitionModal } from "../../components/PublishTransitionModal";
 
 const DEFAULT_CLIP_A = "";
 const DEFAULT_CLIP_B = "";
@@ -62,6 +63,16 @@ export function TransitionLabView() {
   const playingRef = useRef(false);
   // Track which render phase we are in so mount/unmount only fires on boundary crossings
   const renderPhaseRef = useRef<"pre" | "transition" | "post">("pre");
+
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [thumbnailDataUrl, setThumbnailDataUrl] = useState("");
+  const [previewDataUrl, setPreviewDataUrl] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingStateRef = useRef<"idle" | "requested" | "recording">("idle");
+  const thumbnailCapturedRef = useRef<boolean>(false);
 
   // ── Diagnostics ──────────────────────────────────────────────────────────
   // Flip this to false to silence all diagnostic output once you've finished debugging
@@ -688,6 +699,75 @@ export function TransitionLabView() {
       // Run PixiJS rendering pass
       renderer.render();
 
+      // Hook for MediaRecorder and thumbnail capture
+      const totalRecordDuration = Math.max(3.0, duration + 1.0);
+      const startOffset = (totalRecordDuration - duration) / 2;
+      const recordStartTime = 5.0 - startOffset;
+      const recordEndTime = 5.0 + duration + startOffset;
+
+      if (recordingStateRef.current === "requested" && currentSec >= recordStartTime) {
+        const stream = canvas.captureStream(30);
+        let options = { mimeType: "video/webm;codecs=vp9" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options = { mimeType: "video/webm;codecs=vp8" };
+        }
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options = { mimeType: "video/webm" };
+        }
+        
+        try {
+          recordedChunksRef.current = [];
+          const recorder = new MediaRecorder(stream, {
+            mimeType: options.mimeType,
+            videoBitsPerSecond: 1500000
+          });
+          
+          recorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+              recordedChunksRef.current.push(event.data);
+            }
+          };
+          
+          recorder.onstop = () => {
+            const blob = new Blob(recordedChunksRef.current, { type: options.mimeType });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setPreviewDataUrl(reader.result as string);
+              setShowPublishModal(true);
+              setIsRecording(false);
+              addLog("[PUBLISH] Video recording completed! Form is ready.");
+            };
+            reader.readAsDataURL(blob);
+          };
+          
+          recorder.start();
+          mediaRecorderRef.current = recorder;
+          recordingStateRef.current = "recording";
+          addLog("[PUBLISH] MediaRecorder started recording canvas.");
+        } catch (e: any) {
+          console.error("Failed to start MediaRecorder", e);
+          recordingStateRef.current = "idle";
+          setIsRecording(false);
+          addLog(`[WARN] MediaRecorder start error: ${e.message}`);
+        }
+      }
+
+      // Capture thumbnail frame at exactly 50% progress
+      if (recordingStateRef.current === "recording" && mixProgress >= 0.5 && !thumbnailCapturedRef.current) {
+        thumbnailCapturedRef.current = true;
+        const thumbUrl = canvas.toDataURL("image/png");
+        setThumbnailDataUrl(thumbUrl);
+        addLog("[PUBLISH] Mid-transition thumbnail captured.");
+      }
+
+      // Stop recording once transition ends
+      if (recordingStateRef.current === "recording" && currentSec >= recordEndTime) {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+          mediaRecorderRef.current.stop();
+        }
+        recordingStateRef.current = "idle";
+      }
+
       const now = performance.now();
       const frameDelta = now - startGpuTime;
 
@@ -746,6 +826,28 @@ export function TransitionLabView() {
     a.download = `transition_lab_logs_${Date.now()}.txt`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleStartPublish = () => {
+    addLog("[PUBLISH] Preparing canvas and timeline for recording...");
+    setPlaying(false);
+    
+    // Reset recording status
+    thumbnailCapturedRef.current = false;
+    recordedChunksRef.current = [];
+    recordingStateRef.current = "requested";
+    setIsRecording(true);
+
+    const totalRecordDuration = Math.max(3.0, duration + 1.0);
+    const startOffset = (totalRecordDuration - duration) / 2;
+    const seekTime = 5.0 - startOffset - 0.3;
+
+    const totalDuration = 10.0 + duration;
+    setProgress(seekTime / totalDuration);
+    sequenceTimeRef.current = seekTime;
+    
+    // Start playing
+    setPlaying(true);
   };
 
   return (
@@ -876,8 +978,18 @@ export function TransitionLabView() {
           onParamChange={handleParamChange}
           onDumpLog={handleDumpLog}
           onResetContext={handleResetContext}
+          onPublish={handleStartPublish}
+          isRecording={isRecording}
         />
       </main>
+
+      <PublishTransitionModal
+        open={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        transitionDef={ALL_TRANSITIONS.find((t) => t.id === selectedTransition) || null}
+        thumbnailDataUrl={thumbnailDataUrl}
+        previewDataUrl={previewDataUrl}
+      />
     </div>
   );
 }
