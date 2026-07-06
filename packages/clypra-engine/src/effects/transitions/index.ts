@@ -14,6 +14,16 @@ import { LumaWipeTransition } from './light-based/LumaWipeTransition'
 import { LightLeakSweepTransition } from './light-based/LightLeakSweepTransition'
 import { FilmBurnWipeTransition } from './light-based/FilmBurnWipeTransition'
 
+// Depth-based Transitions
+import { DepthPushTransition } from './depth-based/DepthPushTransition'
+import { RackFocusBlendTransition } from './depth-based/RackFocusBlendTransition'
+import { ParallaxLayerSplitTransition } from './depth-based/ParallaxLayerSplitTransition'
+
+// Physics-simulated Transitions
+import { ShatterBurstTransition } from './physics-simulated/ShatterBurstTransition'
+import { ElasticSnapCutTransition } from './physics-simulated/ElasticSnapCutTransition'
+import { GravityDropTransition } from './physics-simulated/GravityDropTransition'
+
 import type { TransitionDefinition } from '../../types/TransitionDefinition'
 
 export * from './geometric/PushTransition'
@@ -32,6 +42,16 @@ export * from './light-based/LumaWipeTransition'
 export * from './light-based/LightLeakSweepTransition'
 export * from './light-based/FilmBurnWipeTransition'
 
+// Depth-based Transitions Export
+export * from './depth-based/DepthPushTransition'
+export * from './depth-based/RackFocusBlendTransition'
+export * from './depth-based/ParallaxLayerSplitTransition'
+
+// Physics-simulated Transitions Export
+export * from './physics-simulated/ShatterBurstTransition'
+export * from './physics-simulated/ElasticSnapCutTransition'
+export * from './physics-simulated/GravityDropTransition'
+
 export const ALL_TRANSITIONS: TransitionDefinition[] = [
   PushTransition,
   IrisRevealTransition,
@@ -47,7 +67,13 @@ export const ALL_TRANSITIONS: TransitionDefinition[] = [
   PixelateCollapseTransition,
   LumaWipeTransition,
   LightLeakSweepTransition,
-  FilmBurnWipeTransition
+  FilmBurnWipeTransition,
+  DepthPushTransition,
+  RackFocusBlendTransition,
+  ParallaxLayerSplitTransition,
+  ShatterBurstTransition,
+  ElasticSnapCutTransition,
+  GravityDropTransition
 ]
 
 // For backward compatibility in other indices/files
@@ -58,3 +84,4 @@ export const transitionEffectsById = Object.fromEntries(
 export function getTransitionEffect(id: string) {
   return transitionEffectsById[id]
 }
+
