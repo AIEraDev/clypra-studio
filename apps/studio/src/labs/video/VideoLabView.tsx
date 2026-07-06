@@ -19,6 +19,7 @@ import { TopNavBar } from "./components/TopNavBar";
 import { SidebarLeft } from "./components/SidebarLeft";
 import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
+import { PublishVideoEffectModal } from "../../components/PublishVideoEffectModal";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -112,6 +113,16 @@ export function VideoLabView() {
   const [gpuUsage, setGpuUsage] = useState(0);
   const [memUsage, setMemUsage] = useState("—");
   const [fps, setFps] = useState(0);
+
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [thumbnailDataUrl, setThumbnailDataUrl] = useState("");
+  const [previewDataUrl, setPreviewDataUrl] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingStateRef = useRef<"idle" | "requested" | "recording">("idle");
+  const thumbnailCapturedRef = useRef<boolean>(false);
   const [redHeight, setRedHeight] = useState(60);
   const [greenHeight, setGreenHeight] = useState(85);
   const [blueHeight, setBlueHeight] = useState(40);
@@ -299,6 +310,35 @@ export function VideoLabView() {
       setCurrentTime(duration);
     }
   };
+
+  const handleStartPublish = () => {
+    const video = videoRef.current;
+    if (!video) {
+      addLog("[WARN] Video element not initialized. Cannot publish.");
+      return;
+    }
+    if (selectedEffectId === IDENTITY_EFFECT_ID) {
+      addLog("[WARN] Cannot publish the Identity (none) effect. Please select a video effect first.");
+      return;
+    }
+
+    addLog("[PUBLISH] Preparing canvas and video timeline for recording...");
+    setPlaying(false);
+    
+    // Reset recording status
+    thumbnailCapturedRef.current = false;
+    recordedChunksRef.current = [];
+    recordingStateRef.current = "requested";
+    setIsRecording(true);
+
+    // Seek to 0.7 seconds (0.3s before recording window starts at 1.0)
+    video.currentTime = 0.7;
+    setCurrentTime(0.7);
+    
+    // Start playing
+    setPlaying(true);
+  };
+
   const handleRewind = () => {
     if (videoRef.current) {
       const t = Math.max(0, videoRef.current.currentTime - 2);
@@ -500,6 +540,70 @@ export function VideoLabView() {
             EffectRenderer.apply(ctx, selectedEffectId as any, parameters, 1.0, currentTime, bodyMaskRef.current ?? undefined);
           }
         }
+
+        // Hook for MediaRecorder and thumbnail capture
+        if (video && recordingStateRef.current === "requested" && video.currentTime >= 1.0) {
+          const stream = canvas.captureStream(30);
+          let options = { mimeType: "video/webm;codecs=vp9" };
+          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: "video/webm;codecs=vp8" };
+          }
+          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: "video/webm" };
+          }
+          
+          try {
+            recordedChunksRef.current = [];
+            const recorder = new MediaRecorder(stream, {
+              mimeType: options.mimeType,
+              videoBitsPerSecond: 1500000
+            });
+            
+            recorder.ondataavailable = (event) => {
+              if (event.data && event.data.size > 0) {
+                recordedChunksRef.current.push(event.data);
+              }
+            };
+            
+            recorder.onstop = () => {
+              const blob = new Blob(recordedChunksRef.current, { type: options.mimeType });
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                setPreviewDataUrl(reader.result as string);
+                setShowPublishModal(true);
+                setIsRecording(false);
+                addLog("[PUBLISH] Video recording completed! Form is ready.");
+              };
+              reader.readAsDataURL(blob);
+            };
+            
+            recorder.start();
+            mediaRecorderRef.current = recorder;
+            recordingStateRef.current = "recording";
+            addLog("[PUBLISH] MediaRecorder started recording canvas.");
+          } catch (e: any) {
+            console.error("Failed to start MediaRecorder", e);
+            recordingStateRef.current = "idle";
+            setIsRecording(false);
+            addLog(`[WARN] MediaRecorder start error: ${e.message}`);
+          }
+        }
+
+        // Capture thumbnail frame at exactly 2.5 seconds
+        if (video && recordingStateRef.current === "recording" && video.currentTime >= 2.5 && !thumbnailCapturedRef.current) {
+          thumbnailCapturedRef.current = true;
+          const thumbUrl = canvas.toDataURL("image/png");
+          setThumbnailDataUrl(thumbUrl);
+          addLog("[PUBLISH] Mid-effect thumbnail captured.");
+        }
+
+        // Stop recording at exactly 4.0 seconds
+        if (video && recordingStateRef.current === "recording" && video.currentTime >= 4.0) {
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop();
+          }
+          recordingStateRef.current = "idle";
+        }
       } else {
         drawSMPTEBars(ctx, canvas.width, canvas.height);
       }
@@ -637,8 +741,53 @@ export function VideoLabView() {
         <CanvasPreview videoRef={videoRef} canvasRef={canvasRef} timelineRef={timelineRef} videoUrl={videoUrl} playing={playing} currentTime={currentTime} duration={duration} fps={fps} latency={latency} cpuUsage={cpuUsage} gpuUsage={gpuUsage} memUsage={memUsage} redHeight={redHeight} greenHeight={greenHeight} blueHeight={blueHeight} bodyTrackingStatus={bodyTrackingStatus} selectedEffectId={selectedEffectId} selectedMeta={selectedMeta} identityEffectId={IDENTITY_EFFECT_ID} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onVideoError={handleVideoError} onSetPlaying={setPlaying} onSkipPrev={handleSkipPrev} onSkipNext={handleSkipNext} onRewind={handleRewind} onFastForward={handleFastForward} onMouseDown={handleMouseDown} onJogWheelMouseDown={handleJogWheelMouseDown} />
 
         {/* Right Sidebar Inspector panel */}
-        <SidebarRight activeTab={activeTab} onSetActiveTab={setActiveTab} selectedEffectId={selectedEffectId} selectedMeta={selectedMeta} parameters={parameters} onParamChange={handleParamChange} latency={latency} fps={fps} cpuUsage={cpuUsage} gpuUsage={gpuUsage} memUsage={memUsage} bodyTrackingStatus={bodyTrackingStatus} duration={duration} currentTime={currentTime} fitMode={fitMode} logs={logs} onDumpLog={handleDumpLog} onResetContext={handleResetContext} identityEffectId={IDENTITY_EFFECT_ID} terminalEndRef={terminalEndRef} />
+        <SidebarRight
+          activeTab={activeTab}
+          onSetActiveTab={setActiveTab}
+          selectedEffectId={selectedEffectId}
+          selectedMeta={selectedMeta}
+          parameters={parameters}
+          onParamChange={handleParamChange}
+          latency={latency}
+          fps={fps}
+          cpuUsage={cpuUsage}
+          gpuUsage={gpuUsage}
+          memUsage={memUsage}
+          bodyTrackingStatus={bodyTrackingStatus}
+          duration={duration}
+          currentTime={currentTime}
+          fitMode={fitMode}
+          logs={logs}
+          onDumpLog={handleDumpLog}
+          onResetContext={handleResetContext}
+          identityEffectId={IDENTITY_EFFECT_ID}
+          terminalEndRef={terminalEndRef}
+          onPublish={handleStartPublish}
+          isRecording={isRecording}
+        />
       </main>
+
+      <PublishVideoEffectModal
+        open={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        effectDef={
+          selectedMeta
+            ? {
+                id: selectedEffectId,
+                name: selectedMeta.name,
+                category: selectedMeta.category,
+                description: selectedMeta.description,
+                params: Object.entries(selectedMeta.parameterSchema).map(([k, s]) => ({
+                  key: k,
+                  value: parameters[k] ?? s.default,
+                })),
+                tags: selectedMeta.tags || [],
+              }
+            : null
+        }
+        thumbnailDataUrl={thumbnailDataUrl}
+        previewDataUrl={previewDataUrl}
+      />
     </div>
   );
 }
