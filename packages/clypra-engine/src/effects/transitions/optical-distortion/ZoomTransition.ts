@@ -4,7 +4,7 @@ import type { ParamValues } from '../../../videoEffects/EffectDefinition'
 import { defaultVertexShader } from '../defaultVertexShader'
 
 const fragment = `
-  in vec2 vTextureCoord;
+  in vec2 vNormalizedCoord;
   out vec4 finalColor;
 
   uniform sampler2D uFrom;
@@ -71,8 +71,8 @@ const fragment = `
     }
     
     // Apply zoom
-    vec2 uvA = (vTextureCoord - center) / scaleA + center;
-    vec2 uvB = (vTextureCoord - center) / scaleB + center;
+    vec2 uvA = (vNormalizedCoord - center) / scaleA + center;
+    vec2 uvB = (vNormalizedCoord - center) / scaleB + center;
     
     // Blur amount based on zoom speed
     float blurAmountA = abs(scaleA - 1.0) * 2.0;
