@@ -15,7 +15,7 @@
  * then the Desktop rasterizer reads the pixels for FFmpeg.
  */
 
-import { Application, Container, Sprite, Ticker, Texture, type Filter } from "pixi.js";
+import { Application, Container, Sprite, Ticker, Texture, Filter, RenderTexture } from "pixi.js";
 import type { TransitionDefinition } from "../types/TransitionDefinition";
 
 import type { EffectDefinition, PixiEffectDefinition, PixiEffectContext, ParamValues } from "./EffectDefinition";
@@ -53,6 +53,11 @@ export class PixiRenderer {
     filter: Filter;
     params: ParamValues;
   } | null = null;
+  private fromRenderTexture: RenderTexture | null = null;
+  private toRenderTexture: RenderTexture | null = null;
+  private blitSprite: Sprite | null = null;
+  private _transitionFromTex: Texture | null = null;
+  private _transitionToTex: Texture | null = null;
   private overlayContainer: Container | null = null;
   private mounted = new Map<string, MountedEffect>();
   private initialized = false;
@@ -313,8 +318,14 @@ export class PixiRenderer {
     if (this.videoSprite && this.videoSprite.texture) {
       this._resizeSprite(this.videoSprite, this.videoSprite.texture, this._fitMode);
     }
-    if (this.transitionSprite && this.transitionSprite.texture) {
-      this._resizeSprite(this.transitionSprite, this.transitionSprite.texture, this._fitMode);
+    if (this.transitionSprite) {
+      if (this._activeTransition) {
+        this.transitionSprite.width = this.app?.screen.width ?? 1280;
+        this.transitionSprite.height = this.app?.screen.height ?? 720;
+        this.transitionSprite.position.set(0, 0);
+      } else if (this.transitionSprite.texture) {
+        this._resizeSprite(this.transitionSprite, this.transitionSprite.texture, this._fitMode);
+      }
     }
   }
 
@@ -413,6 +424,18 @@ export class PixiRenderer {
     this.initialized = false;
     this._activeTransition = null;
     this._activeSource = null;
+    if (this.fromRenderTexture) {
+      this.fromRenderTexture.destroy(true);
+      this.fromRenderTexture = null;
+    }
+    if (this.toRenderTexture) {
+      this.toRenderTexture.destroy(true);
+      this.toRenderTexture = null;
+    }
+    if (this.blitSprite) {
+      this.blitSprite.destroy();
+      this.blitSprite = null;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -450,20 +473,96 @@ export class PixiRenderer {
     return this.initialized;
   }
 
+  private _ensureRenderTextures(width: number, height: number): void {
+    if (!this.fromRenderTexture || this.fromRenderTexture.width !== width || this.fromRenderTexture.height !== height) {
+      if (this.fromRenderTexture) this.fromRenderTexture.destroy(true);
+      this.fromRenderTexture = RenderTexture.create({ width, height });
+    }
+    if (!this.toRenderTexture || this.toRenderTexture.width !== width || this.toRenderTexture.height !== height) {
+      if (this.toRenderTexture) this.toRenderTexture.destroy(true);
+      this.toRenderTexture = RenderTexture.create({ width, height });
+    }
+    if (!this.blitSprite) {
+      this.blitSprite = new Sprite();
+    }
+  }
+
+  private _blitTransitionFrames(): void {
+    if (!this.app || !this._transitionFromTex || !this._transitionToTex || !this.fromRenderTexture || !this.toRenderTexture || !this.blitSprite) {
+      return;
+    }
+
+    const currentFitMode = this._fitMode;
+
+    // 1. Blit fromTexture
+    this.blitSprite.texture = this._transitionFromTex;
+    this._resizeSprite(this.blitSprite, this._transitionFromTex, currentFitMode);
+    this.app.renderer.render({
+      container: this.blitSprite,
+      target: this.fromRenderTexture,
+      clear: true,
+    });
+
+    // 2. Blit toTexture
+    this.blitSprite.texture = this._transitionToTex;
+    this._resizeSprite(this.blitSprite, this._transitionToTex, currentFitMode);
+    this.app.renderer.render({
+      container: this.blitSprite,
+      target: this.toRenderTexture,
+      clear: true,
+    });
+
+    // Reset blitSprite texture to release it
+    this.blitSprite.texture = Texture.EMPTY;
+  }
+
   mountTransition(definition: TransitionDefinition, fromTexture: Texture, toTexture: Texture, params: ParamValues): void {
-    if (!this.transitionSprite || !this.videoSprite) return;
+    if (!this.transitionSprite || !this.videoSprite || !this.app) return;
     this._activeSource = null;
 
     if (this._activeTransition?.filter) {
       this._activeTransition.filter.destroy();
     }
 
-    const filter = definition.create(params);
+    this._transitionFromTex = fromTexture;
+    this._transitionToTex = toTexture;
 
-    (filter as any).resources.uFrom = fromTexture.source;
-    (filter as any).resources.uTo = toTexture.source;
+    const canvasWidth = this.app.screen.width;
+    const canvasHeight = this.app.screen.height;
+    this._ensureRenderTextures(canvasWidth, canvasHeight);
 
-    this.transitionSprite.texture = fromTexture;
+    // Initial blit
+    this._blitTransitionFrames();
+
+    const fromRT = this.fromRenderTexture!;
+    const toRT = this.toRenderTexture!;
+
+    // Temporarily patch Filter.from to inject uFrom and uTo into resources
+    // so PixiJS v8 compiles the pipeline layout with bindings for these textures.
+    const originalFilterFrom = Filter.from;
+    Filter.from = function (options: any) {
+      if (options && options.resources) {
+        if (!options.resources.uFrom) {
+          options.resources.uFrom = fromRT.source;
+        }
+        if (!options.resources.uTo) {
+          options.resources.uTo = toRT.source;
+        }
+      }
+      return originalFilterFrom.call(this, options);
+    };
+
+    let filter: Filter;
+    try {
+      filter = definition.create(params);
+    } finally {
+      Filter.from = originalFilterFrom;
+    }
+
+    (filter as any).resources.uFrom = fromRT.source;
+    (filter as any).resources.uTo = toRT.source;
+
+    this.transitionSprite.texture = fromRT;
     this.transitionSprite.filters = [filter];
     this.transitionSprite.visible = true;
     this.videoSprite.visible = false;
@@ -481,6 +580,10 @@ export class PixiRenderer {
     if (params) {
       this._activeTransition.params = params;
     }
+
+    // Refresh intermediate render textures with latest video frames
+    this._blitTransitionFrames();
+
     this._activeTransition.definition.updateProgress(this._activeTransition.filter, progress, this._activeTransition.params);
   }
 
@@ -496,5 +599,7 @@ export class PixiRenderer {
       this._activeTransition.filter.destroy();
     }
     this._activeTransition = null;
+    this._transitionFromTex = null;
+    this._transitionToTex = null;
   }
 }
