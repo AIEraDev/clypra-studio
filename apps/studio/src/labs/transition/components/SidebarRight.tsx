@@ -17,6 +17,8 @@ interface SidebarRightProps {
   onParamChange: (key: string, value: any) => void;
   onDumpLog: () => void;
   onResetContext: () => void;
+  onPublish: () => void;
+  isRecording: boolean;
 }
 
 export function SidebarRight({
@@ -35,6 +37,8 @@ export function SidebarRight({
   onParamChange,
   onDumpLog,
   onResetContext,
+  onPublish,
+  isRecording,
 }: SidebarRightProps) {
   const activeTransition = ALL_TRANSITIONS.find((t) => t.id === selectedTransition);
 
@@ -202,19 +206,38 @@ export function SidebarRight({
         </div>
       </div>
 
-      <div className="p-1 border-t border-outline-variant bg-surface-container-low grid grid-cols-2 gap-1">
+      <div className="p-1 border-t border-outline-variant bg-surface-container-low space-y-1">
         <button
-          onClick={onDumpLog}
-          className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface"
+          onClick={onPublish}
+          disabled={isRecording}
+          className="w-full py-1.5 bg-teal-500 text-black text-[10px] font-black hover:bg-teal-400 disabled:opacity-50 uppercase rounded transition-colors text-center flex items-center justify-center gap-1.5"
         >
-          Dump_Log
+          {isRecording ? (
+            <>
+              <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping shrink-0" />
+              Recording...
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-[12px]">cloud_upload</span>
+              Publish to API
+            </>
+          )}
         </button>
-        <button
-          onClick={onResetContext}
-          className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface"
-        >
-          Reset_Ctx
-        </button>
+        <div className="grid grid-cols-2 gap-1">
+          <button
+            onClick={onDumpLog}
+            className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface"
+          >
+            Dump_Log
+          </button>
+          <button
+            onClick={onResetContext}
+            className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface"
+          >
+            Reset_Ctx
+          </button>
+        </div>
       </div>
     </aside>
   );
