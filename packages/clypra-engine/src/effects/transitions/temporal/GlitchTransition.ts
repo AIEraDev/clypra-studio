@@ -4,7 +4,7 @@ import type { ParamValues } from '../../../videoEffects/EffectDefinition'
 import { defaultVertexShader } from '../defaultVertexShader'
 
 const fragment = `
-  in vec2 vTextureCoord;
+  in vec2 vNormalizedCoord;
   out vec4 finalColor;
 
   uniform sampler2D uFrom;
@@ -26,7 +26,7 @@ const fragment = `
   }
 
   void main(void) {
-    vec2 uv = vTextureCoord;
+    vec2 uv = vNormalizedCoord;
     float t = uProgress;
     
     // Glitch intensity peaks at mid-transition
@@ -66,7 +66,7 @@ const fragment = `
       colorB = texture(uTo, uv);
     }
     
-    float blockSwitch = blockRand(vTextureCoord, uBlockSize * 0.5);
+    float blockSwitch = blockRand(vNormalizedCoord, uBlockSize * 0.5);
     float threshold = mix(t, 0.5, glitchAmount);
     
     vec4 color;
@@ -77,7 +77,7 @@ const fragment = `
     }
     
     if (uNoise > 0.5 && glitchAmount > 0.2) {
-      float noiseVal = rand(vTextureCoord * 500.0 + vec2(t * 100.0));
+      float noiseVal = rand(vNormalizedCoord * 500.0 + vec2(t * 100.0));
       if (noiseVal > 0.95) {
         color.rgb = vec3(noiseVal);
       }
