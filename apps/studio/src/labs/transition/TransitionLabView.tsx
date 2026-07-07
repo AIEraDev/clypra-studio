@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { initializeFontSystem, PixiRenderer } from "@clypra-studio/engine";
+import { initializeFontSystem } from "@clypra-studio/engine";
 import { ALL_TRANSITIONS } from "@clypra-studio/engine/transitions";
 import { Texture } from "pixi.js";
 
@@ -17,8 +17,11 @@ import { TopNavBar } from "./components/TopNavBar";
 import { SidebarLeft } from "./components/SidebarLeft";
 import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
-import { usePixiRenderer } from "./hooks/usePixiRenderer";
 import { PublishTransitionModal } from "../../components/PublishTransitionModal";
+
+// Choose which renderer to use
+import { usePixiRenderer } from "./hooks/usePixiRenderer"; // Current implementation
+// import { useVideoRenderer as usePixiRenderer } from "./hooks/useVideoRenderer";  // New implementation
 
 const DEFAULT_CLIP_A = "";
 const DEFAULT_CLIP_B = "";
@@ -79,22 +82,24 @@ export function TransitionLabView() {
   const DIAG_ENABLED = true;
 
   // Per-frame snapshot accumulator — kept outside React state to avoid re-renders
-  const diagRef = useRef<{
-    frame: number;
-    sec: number;
-    phase: string;
-    mixProgress: number;
-    activeTransitionId: string | null;
-    hasVideoA: boolean;
-    hasVideoB: boolean;
-    videoAReadyState: number;
-    videoBReadyState: number;
-    videoACurrentTime: number;
-    videoBCurrentTime: number;
-    sourceAType: string;
-    sourceBType: string;
-    event?: string;
-  }[]>([]);
+  const diagRef = useRef<
+    {
+      frame: number;
+      sec: number;
+      phase: string;
+      mixProgress: number;
+      activeTransitionId: string | null;
+      hasVideoA: boolean;
+      hasVideoB: boolean;
+      videoAReadyState: number;
+      videoBReadyState: number;
+      videoACurrentTime: number;
+      videoBCurrentTime: number;
+      sourceAType: string;
+      sourceBType: string;
+      event?: string;
+    }[]
+  >([]);
   const diagFrameRef = useRef(0);
 
   useEffect(() => {
@@ -108,11 +113,7 @@ export function TransitionLabView() {
     }
   }, [progress, playing, duration]);
 
-  const [logs, setLogs] = useState<string[]>([
-    "[INIT] Transition console starting...",
-    "[OK] Dual-channel video mixers ready.",
-    "[INFO] Ready. Load outgoing/incoming clips or adjust parameters.",
-  ]);
+  const [logs, setLogs] = useState<string[]>(["[INIT] Transition console starting...", "[OK] Dual-channel video mixers ready.", "[INFO] Ready. Load outgoing/incoming clips or adjust parameters."]);
 
   const [latency, setLatency] = useState(0.02);
   const [cpuUsage, setCpuUsage] = useState(14);
@@ -147,17 +148,19 @@ export function TransitionLabView() {
     (window as any).__clypraTransitionDiag = () => {
       const snaps = diagRef.current;
       if (!snaps || snaps.length === 0) {
-        console.log('[DIAG] No snapshots yet — start playback first.');
+        console.log("[DIAG] No snapshots yet — start playback first.");
         return;
       }
-      console.group('%c[TRANSITION DIAG] Live snapshot dump (' + snaps.length + ' entries)', 'color:#4edea3;font-weight:bold');
-      console.log('All frames (boundary events only):');
-      console.table(snaps.filter(s => s.event != null));
-      console.log('Last 10 ambient frames:');
-      console.table(snaps.filter(s => !s.event).slice(-10));
+      console.group("%c[TRANSITION DIAG] Live snapshot dump (" + snaps.length + " entries)", "color:#4edea3;font-weight:bold");
+      console.log("All frames (boundary events only):");
+      console.table(snaps.filter((s) => s.event != null));
+      console.log("Last 10 ambient frames:");
+      console.table(snaps.filter((s) => !s.event).slice(-10));
       console.groupEnd();
     };
-    return () => { delete (window as any).__clypraTransitionDiag; };
+    return () => {
+      delete (window as any).__clypraTransitionDiag;
+    };
   }, []);
 
   const pixiRendererRef = usePixiRenderer(
@@ -165,7 +168,7 @@ export function TransitionLabView() {
     1280,
     720,
     () => addLog("[INIT] WebGL PixiRenderer successfully initialized."),
-    (err) => addLog(`[WARN] WebGL initialization failed: ${err.message}`)
+    (err) => addLog(`[WARN] WebGL initialization failed: ${err.message}`),
   );
 
   const handleClipAImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -314,12 +317,7 @@ export function TransitionLabView() {
     return p;
   };
 
-  const drawSMPTEBars = (
-    ctx: CanvasRenderingContext2D,
-    w: number,
-    h: number,
-    label: string
-  ) => {
+  const drawSMPTEBars = (ctx: CanvasRenderingContext2D, w: number, h: number, label: string) => {
     ctx.fillStyle = "#0c101a";
     ctx.fillRect(0, 0, w, h);
     const colors = ["#c0c0c0", "#ffff00", "#00ffff", "#00ff00", "#ff00ff", "#ff0000", "#0000ff"];
@@ -355,8 +353,6 @@ export function TransitionLabView() {
     placeholderBRef.current = canvasB;
   }, []);
 
-
-
   // Main Preview Render loop
   useEffect(() => {
     let animId: number;
@@ -372,19 +368,7 @@ export function TransitionLabView() {
      * Fires a console.group summary at phase boundaries (event != null).
      * Batches frame snapshots into the ref so they can be dumped on demand.
      */
-    const logDiagnostic = (
-      sec: number,
-      phase: string,
-      mixProgress: number,
-      activeTransitionId: string | null,
-      hasVideoA: boolean,
-      hasVideoB: boolean,
-      videoA: HTMLVideoElement | null,
-      videoB: HTMLVideoElement | null,
-      sourceAType: string,
-      sourceBType: string,
-      event?: string
-    ) => {
+    const logDiagnostic = (sec: number, phase: string, mixProgress: number, activeTransitionId: string | null, hasVideoA: boolean, hasVideoB: boolean, videoA: HTMLVideoElement | null, videoB: HTMLVideoElement | null, sourceAType: string, sourceBType: string, event?: string) => {
       if (!DIAG_ENABLED) return;
       const frame = diagFrameRef.current++;
       const snap = {
@@ -407,21 +391,18 @@ export function TransitionLabView() {
 
       // Always log phase-boundary events to console
       if (event) {
-        console.group(
-          `%c[TRANSITION DIAG] ${event}`,
-          'color:#adc6ff;font-weight:bold;background:#060a14;padding:2px 6px;border-radius:3px'
-        );
-        console.log('⏱  seq time   :', sec.toFixed(4), 's  |  frame:', frame);
-        console.log('🎬 phase       :', phase, '|  mixProgress:', mixProgress.toFixed(4));
-        console.log('🔗 activeId    :', activeTransitionId ?? '(none)');
-        console.log('📹 videoA      : readyState=', videoA?.readyState ?? 'N/A', ' currentTime=', videoA?.currentTime?.toFixed(4) ?? 'N/A', ' paused=', videoA?.paused);
-        console.log('📹 videoB      : readyState=', videoB?.readyState ?? 'N/A', ' currentTime=', videoB?.currentTime?.toFixed(4) ?? 'N/A', ' paused=', videoB?.paused);
-        console.log('🖼  sourceA     :', sourceAType);
-        console.log('🖼  sourceB     :', sourceBType);
+        console.group(`%c[TRANSITION DIAG] ${event}`, "color:#adc6ff;font-weight:bold;background:#060a14;padding:2px 6px;border-radius:3px");
+        console.log("⏱  seq time   :", sec.toFixed(4), "s  |  frame:", frame);
+        console.log("🎬 phase       :", phase, "|  mixProgress:", mixProgress.toFixed(4));
+        console.log("🔗 activeId    :", activeTransitionId ?? "(none)");
+        console.log("📹 videoA      : readyState=", videoA?.readyState ?? "N/A", " currentTime=", videoA?.currentTime?.toFixed(4) ?? "N/A", " paused=", videoA?.paused);
+        console.log("📹 videoB      : readyState=", videoB?.readyState ?? "N/A", " currentTime=", videoB?.currentTime?.toFixed(4) ?? "N/A", " paused=", videoB?.paused);
+        console.log("🖼  sourceA     :", sourceAType);
+        console.log("🖼  sourceB     :", sourceBType);
         console.groupEnd();
 
         // Mirror to in-app log panel
-        addLog(`[DIAG:${frame}] ${event} | sec=${sec.toFixed(3)} phase=${phase} mix=${mixProgress.toFixed(3)} A.rs=${videoA?.readyState ?? '?'} B.rs=${videoB?.readyState ?? '?'} activeId=${activeTransitionId ?? 'none'}`);
+        addLog(`[DIAG:${frame}] ${event} | sec=${sec.toFixed(3)} phase=${phase} mix=${mixProgress.toFixed(3)} A.rs=${videoA?.readyState ?? "?"} B.rs=${videoB?.readyState ?? "?"} activeId=${activeTransitionId ?? "none"}`);
       }
     };
 
@@ -477,9 +458,7 @@ export function TransitionLabView() {
               // oscillates between "transition" and "post", causing
               // mount → unmount → blank flash → mount → unmount → …
               // ─────────────────────────────────────────────────────────────
-              currentSec = sequenceTimeRef.current >= transitionEnd
-                ? Math.max(transitionEnd, rawSec)
-                : rawSec;
+              currentSec = sequenceTimeRef.current >= transitionEnd ? Math.max(transitionEnd, rawSec) : rawSec;
             }
           } else {
             currentSec += delta;
@@ -595,8 +574,8 @@ export function TransitionLabView() {
       const sourceA = hasVideoA ? videoA : placeholderARef.current;
       const sourceB = hasVideoB ? videoB : placeholderBRef.current;
 
-      const sourceAType = hasVideoA ? `video(rs=${videoA!.readyState},t=${videoA!.currentTime.toFixed(3)})` : 'placeholder-canvas';
-      const sourceBType = hasVideoB ? `video(rs=${videoB!.readyState},t=${videoB!.currentTime.toFixed(3)})` : 'placeholder-canvas';
+      const sourceAType = hasVideoA ? `video(rs=${videoA!.readyState},t=${videoA!.currentTime.toFixed(3)})` : "placeholder-canvas";
+      const sourceBType = hasVideoB ? `video(rs=${videoB!.readyState},t=${videoB!.currentTime.toFixed(3)})` : "placeholder-canvas";
 
       // Log every 60 frames (~1 second) so we have ambient breadcrumbs without spam
       if (DIAG_ENABLED && diagFrameRef.current % 60 === 0) {
@@ -616,41 +595,34 @@ export function TransitionLabView() {
           const transDef = ALL_TRANSITIONS.find((t) => t.id === selectedTransition);
           if (transDef) {
             if (renderPhaseRef.current !== "transition" || renderer.getActiveTransitionId() !== selectedTransition) {
-              logDiagnostic(currentSec, 'transition', mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-                `ENTERING TRANSITION PHASE — mounting "${selectedTransition}" (prev phase: ${renderPhaseRef.current}, prevActiveId: ${renderer.getActiveTransitionId() ?? 'none'})`);
+              logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `ENTERING TRANSITION PHASE — mounting "${selectedTransition}" (prev phase: ${renderPhaseRef.current}, prevActiveId: ${renderer.getActiveTransitionId() ?? "none"})`);
 
               // Entering transition phase (or switching transition mid-flight):
               // Prime the video sprite with texB BEFORE mounting so it is never
               // textureless when unmountTransition() re-shows it later.
               if (hasVideoB) {
                 renderer.setVideoSource(videoB!);
-                logDiagnostic(currentSec, 'transition', mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-                  'PRE-PRIME: setVideoSource(videoB) called before mountTransition');
+                logDiagnostic(currentSec, "transition", mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "PRE-PRIME: setVideoSource(videoB) called before mountTransition");
               } else if (placeholderBRef.current) {
                 renderer.setImageSource(placeholderBRef.current);
-                logDiagnostic(currentSec, 'transition', mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-                  'PRE-PRIME: setImageSource(placeholderB) called — videoB not ready (readyState=' + (videoB?.readyState ?? 'N/A') + ')');
+                logDiagnostic(currentSec, "transition", mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "PRE-PRIME: setImageSource(placeholderB) called — videoB not ready (readyState=" + (videoB?.readyState ?? "N/A") + ")");
               } else {
-                logDiagnostic(currentSec, 'transition', mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-                  'WARNING: Neither videoB nor placeholderB available for pre-prime!');
+                logDiagnostic(currentSec, "transition", mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "WARNING: Neither videoB nor placeholderB available for pre-prime!");
               }
 
               renderer.mountTransition(transDef, texA, texB, parameters);
               renderPhaseRef.current = "transition";
 
-              logDiagnostic(currentSec, 'transition', mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-                `mountTransition() complete — activeId is now: ${renderer.getActiveTransitionId() ?? 'STILL NULL (mount failed?)'}`);
+              logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `mountTransition() complete — activeId is now: ${renderer.getActiveTransitionId() ?? "STILL NULL (mount failed?)"}`);
             }
             renderer.updateTransitionProgress(selectedTransition, easedP, parameters);
           } else {
-            logDiagnostic(currentSec, 'transition', mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-              `WARNING: No transDef found for id="${selectedTransition}" — transition skipped!`);
+            logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `WARNING: No transDef found for id="${selectedTransition}" — transition skipped!`);
           }
         } else if (currentSec < transitionStart) {
           // ── PRE-TRANSITION PHASE ──────────────────────────────────────────
           if (renderPhaseRef.current !== "pre") {
-            logDiagnostic(currentSec, 'pre', mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-              `ENTERING PRE PHASE — unmounting (prev phase: ${renderPhaseRef.current}, activeId: ${renderer.getActiveTransitionId() ?? 'none'})`);
+            logDiagnostic(currentSec, "pre", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `ENTERING PRE PHASE — unmounting (prev phase: ${renderPhaseRef.current}, activeId: ${renderer.getActiveTransitionId() ?? "none"})`);
             // Crossed back into pre phase — unmount any active transition
             if (renderer.getActiveTransitionId() !== null) {
               renderer.unmountTransition();
@@ -663,24 +635,20 @@ export function TransitionLabView() {
           } else if (placeholderARef.current) {
             renderer.setImageSource(placeholderARef.current);
           } else {
-            logDiagnostic(currentSec, 'pre', mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-              'WARNING: No sourceA available in pre phase!');
+            logDiagnostic(currentSec, "pre", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "WARNING: No sourceA available in pre phase!");
           }
         } else {
           // ── POST-TRANSITION PHASE ─────────────────────────────────────────
           if (renderPhaseRef.current !== "post") {
-            logDiagnostic(currentSec, 'post', mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-              `ENTERING POST PHASE — unmounting (prev phase: ${renderPhaseRef.current}, activeId: ${renderer.getActiveTransitionId() ?? 'none'})`);
+            logDiagnostic(currentSec, "post", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `ENTERING POST PHASE — unmounting (prev phase: ${renderPhaseRef.current}, activeId: ${renderer.getActiveTransitionId() ?? "none"})`);
             // Crossing the transitionEnd boundary: unmount the transition filter.
             // The video sprite was already primed with texB when we entered the
             // transition phase, so it will show the correct clip immediately.
             if (renderer.getActiveTransitionId() !== null) {
               renderer.unmountTransition();
-              logDiagnostic(currentSec, 'post', mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-                `unmountTransition() complete — activeId after unmount: ${renderer.getActiveTransitionId() ?? 'null (OK)'}`);
+              logDiagnostic(currentSec, "post", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `unmountTransition() complete — activeId after unmount: ${renderer.getActiveTransitionId() ?? "null (OK)"}`);
             } else {
-              logDiagnostic(currentSec, 'post', mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-                'POST PHASE: No active transition to unmount — transition may have never mounted?');
+              logDiagnostic(currentSec, "post", mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "POST PHASE: No active transition to unmount — transition may have never mounted?");
             }
             renderPhaseRef.current = "post";
           }
@@ -690,8 +658,7 @@ export function TransitionLabView() {
           } else if (placeholderBRef.current) {
             renderer.setImageSource(placeholderBRef.current);
           } else {
-            logDiagnostic(currentSec, 'post', mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType,
-              'WARNING: No sourceB available in post phase!');
+            logDiagnostic(currentSec, "post", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "WARNING: No sourceB available in post phase!");
           }
         }
       }
@@ -714,20 +681,20 @@ export function TransitionLabView() {
         if (!MediaRecorder.isTypeSupported(options.mimeType)) {
           options = { mimeType: "video/webm" };
         }
-        
+
         try {
           recordedChunksRef.current = [];
           const recorder = new MediaRecorder(stream, {
             mimeType: options.mimeType,
-            videoBitsPerSecond: 1500000
+            videoBitsPerSecond: 1500000,
           });
-          
+
           recorder.ondataavailable = (event) => {
             if (event.data && event.data.size > 0) {
               recordedChunksRef.current.push(event.data);
             }
           };
-          
+
           recorder.onstop = () => {
             const blob = new Blob(recordedChunksRef.current, { type: options.mimeType });
             const reader = new FileReader();
@@ -739,7 +706,7 @@ export function TransitionLabView() {
             };
             reader.readAsDataURL(blob);
           };
-          
+
           recorder.start();
           mediaRecorderRef.current = recorder;
           recordingStateRef.current = "recording";
@@ -794,8 +761,8 @@ export function TransitionLabView() {
       renderPhaseRef.current = "pre";
       // Dump full diagnostic snapshot to console on cleanup
       if (DIAG_ENABLED && diagRef.current.length > 0) {
-        console.group('%c[TRANSITION DIAG] Full session snapshot (' + diagRef.current.length + ' frames)', 'color:#4edea3;font-weight:bold');
-        console.table(diagRef.current.filter(s => s.event != null));
+        console.group("%c[TRANSITION DIAG] Full session snapshot (" + diagRef.current.length + " frames)", "color:#4edea3;font-weight:bold");
+        console.table(diagRef.current.filter((s) => s.event != null));
         console.groupEnd();
       }
     };
@@ -831,7 +798,7 @@ export function TransitionLabView() {
   const handleStartPublish = () => {
     addLog("[PUBLISH] Preparing canvas and timeline for recording...");
     setPlaying(false);
-    
+
     // Reset recording status
     thumbnailCapturedRef.current = false;
     recordedChunksRef.current = [];
@@ -845,7 +812,7 @@ export function TransitionLabView() {
     const totalDuration = 10.0 + duration;
     setProgress(seekTime / totalDuration);
     sequenceTimeRef.current = seekTime;
-    
+
     // Start playing
     setPlaying(true);
   };
@@ -915,16 +882,7 @@ export function TransitionLabView() {
 
       {/* Main Layout mixer workspace */}
       <main className="flex-1 flex overflow-hidden">
-        <SidebarLeft
-          clipAFile={clipAFile}
-          clipBFile={clipBFile}
-          selectedTransition={selectedTransition}
-          fitMode={fitMode}
-          onClipAImport={handleClipAImport}
-          onClipBImport={handleClipBImport}
-          onSelectTransition={handleSelectTransition}
-          onSetFitMode={setFitMode}
-        />
+        <SidebarLeft clipAFile={clipAFile} clipBFile={clipBFile} selectedTransition={selectedTransition} fitMode={fitMode} onClipAImport={handleClipAImport} onClipBImport={handleClipBImport} onSelectTransition={handleSelectTransition} onSetFitMode={setFitMode} />
 
         <CanvasPreview
           videoARef={videoARef}
@@ -962,34 +920,10 @@ export function TransitionLabView() {
           onClipBError={handleClipBError}
         />
 
-        <SidebarRight
-          activeTab={activeTab}
-          selectedTransition={selectedTransition}
-          parameters={parameters}
-          latency={latency}
-          cpuUsage={cpuUsage}
-          gpuUsage={gpuUsage}
-          memUsage={memUsage}
-          duration={duration}
-          progress={progress}
-          logs={logs}
-          terminalEndRef={terminalEndRef}
-          onSetActiveTab={setActiveTab}
-          onParamChange={handleParamChange}
-          onDumpLog={handleDumpLog}
-          onResetContext={handleResetContext}
-          onPublish={handleStartPublish}
-          isRecording={isRecording}
-        />
+        <SidebarRight activeTab={activeTab} selectedTransition={selectedTransition} parameters={parameters} latency={latency} cpuUsage={cpuUsage} gpuUsage={gpuUsage} memUsage={memUsage} duration={duration} progress={progress} logs={logs} terminalEndRef={terminalEndRef} onSetActiveTab={setActiveTab} onParamChange={handleParamChange} onDumpLog={handleDumpLog} onResetContext={handleResetContext} onPublish={handleStartPublish} isRecording={isRecording} />
       </main>
 
-      <PublishTransitionModal
-        open={showPublishModal}
-        onClose={() => setShowPublishModal(false)}
-        transitionDef={ALL_TRANSITIONS.find((t) => t.id === selectedTransition) || null}
-        thumbnailDataUrl={thumbnailDataUrl}
-        previewDataUrl={previewDataUrl}
-      />
+      <PublishTransitionModal open={showPublishModal} onClose={() => setShowPublishModal(false)} transitionDef={ALL_TRANSITIONS.find((t) => t.id === selectedTransition) || null} thumbnailDataUrl={thumbnailDataUrl} previewDataUrl={previewDataUrl} />
     </div>
   );
 }
