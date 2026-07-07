@@ -11,6 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@clypra/video-renderer": "workspace:*",
     "@clypra-studio/engine": "^0.1.2",
     "@clypra-studio/feature-providers": "^0.1.1",
     "@clypra-studio/runtime": "^0.1.1",
