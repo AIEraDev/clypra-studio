@@ -31,7 +31,7 @@ importers:
     dependencies:
       '@clypra-studio/engine':
         specifier: ^0.1.2
-        version: link:../../packages/clypra-engine
+        version: 0.1.2
       '@clypra-studio/feature-providers':
         specifier: ^0.1.1
         version: 0.1.1
@@ -41,6 +41,9 @@ importers:
       '@clypra-studio/ui':
         specifier: ^0.1.1
         version: 0.1.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@clypra/video-renderer':
+        specifier: workspace:*
+        version: link:../../packages/video-renderer
       '@google/genai':
         specifier: ^2.4.0
         version: 2.10.0
@@ -265,6 +268,25 @@ importers:
         specifier: ~5.8.2
         version: 5.8.3
 
+  packages/video-renderer:
+    dependencies:
+      lottie-web:
+        specifier: ^5.12.2
+        version: 5.13.0
+      pixi-filters:
+        specifier: ^6.0.0
+        version: 6.1.5(pixi.js@8.19.0)
+      pixi.js:
+        specifier: ^8.0.0
+        version: 8.19.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.43
+      typescript:
+        specifier: ^5.3.0
+        version: 5.8.3
+
 packages:
 
   '@adobe/css-tools@4.5.0':
@@ -411,6 +433,9 @@ packages:
 
   '@changesets/write@0.4.0':
     resolution: {integrity: sha512-CdTLvIOPiCNuH71pyDu3rA+Q0n65cmAbXnwWH84rKGiFumFzkmHNT8KHTMEchcxN+Kl8I54xGUhJ7l3E7X396Q==}
+
+  '@clypra-studio/engine@0.1.2':
+    resolution: {integrity: sha512-AussMwml8d22wo0NOytNlMFk+qU0OK530+7A3D3pFq7D6gWB/hLBLPOAksR5+YkUc/QSkboXAoRFyfZvRJVf8g==}
 
   '@clypra-studio/feature-providers@0.1.1':
     resolution: {integrity: sha512-YE6yIUPoB9ByaNSr9p9RcUvmhbl270w3OgciFV3j7ou81mo3kCv8uhr1mWzTfU90p+38N9bcnCx/zHErwog9ow==}
@@ -1677,6 +1702,9 @@ packages:
 
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
+
+  '@types/node@20.19.43':
+    resolution: {integrity: sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==}
 
   '@types/node@22.19.20':
     resolution: {integrity: sha512-6tELRwSDYWW9EdZhbeZmYGZ1/7Djkt+Ah3/ScEYT9cDord7UJzasR/4D3VONg9tQI5CDp+/CZC1AXj2pCFOvpw==}
@@ -4220,6 +4248,15 @@ snapshots:
       human-id: 4.2.0
       prettier: 2.8.8
 
+  '@clypra-studio/engine@0.1.2':
+    dependencies:
+      '@clypra-studio/types': 0.1.1
+      jszip: 3.10.1
+      lottie-web: 5.13.0
+      pixi-filters: 6.1.5(pixi.js@8.19.0)
+      pixi.js: 8.19.0
+      zod: 4.4.3
+
   '@clypra-studio/feature-providers@0.1.1': {}
 
   '@clypra-studio/runtime@0.1.1':
@@ -5237,6 +5274,10 @@ snapshots:
   '@types/gradient-parser@0.1.5': {}
 
   '@types/node@12.20.55': {}
+
+  '@types/node@20.19.43':
+    dependencies:
+      undici-types: 6.21.0
 
   '@types/node@22.19.20':
     dependencies:
