@@ -59,6 +59,7 @@ export class PixiRenderer {
   private _transitionFromTex: Texture | null = null;
   private _transitionToTex: Texture | null = null;
   private overlayContainer: Container | null = null;
+  private baseMediaContainer: Container | null = null;
   private mounted = new Map<string, MountedEffect>();
   private initialized = false;
   private initializing = false;
@@ -123,6 +124,11 @@ export class PixiRenderer {
 
     // Overlay container — motion effects add children here (particles, sweeps, etc.)
     this.overlayContainer = new Container();
+
+    // Base media container — sits at the very bottom of the stage
+    this.baseMediaContainer = new Container();
+    this.baseMediaContainer.sortableChildren = true;
+    this.app.stage.addChildAt(this.baseMediaContainer, 0);
 
     this.app.stage.addChild(this.videoSprite);
     this.app.stage.addChild(this.transitionSprite);
@@ -421,6 +427,7 @@ export class PixiRenderer {
     this.videoSprite = null;
     this.transitionSprite = null;
     this.overlayContainer = null;
+    this.baseMediaContainer = null;
     this.initialized = false;
     this._activeTransition = null;
     this._activeSource = null;
@@ -467,6 +474,14 @@ export class PixiRenderer {
 
   getVideoSprite(): Sprite | null {
     return this.videoSprite;
+  }
+
+  getBaseMediaContainer(): Container | null {
+    return this.baseMediaContainer;
+  }
+
+  getOverlayContainer(): Container | null {
+    return this.overlayContainer;
   }
 
   get isReady(): boolean {
@@ -566,6 +581,9 @@ export class PixiRenderer {
     this.transitionSprite.filters = [filter];
     this.transitionSprite.visible = true;
     this.videoSprite.visible = false;
+    if (this.baseMediaContainer) {
+      this.baseMediaContainer.visible = false;
+    }
 
     this._activeTransition = { definition, filter, params };
     this.resizeSprites();
@@ -594,6 +612,9 @@ export class PixiRenderer {
     }
     if (this.videoSprite) {
       this.videoSprite.visible = true;
+    }
+    if (this.baseMediaContainer) {
+      this.baseMediaContainer.visible = true;
     }
     if (this._activeTransition?.filter) {
       this._activeTransition.filter.destroy();
