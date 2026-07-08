@@ -69,3 +69,15 @@ export * from "./v2/validation/GraphValidator.js";
 export * from "./v2/runtime/CommandBufferBuilder.js";
 export { MPGFrameRenderer, type FrameSource } from "./v2/runtime/MPGFrameRenderer.js";
 export * from "./v2/backends/index.js";
+
+// Shared Preview/Compositor Utilities (NEW)
+export * from "./renderer/sharedPixiRenderer.js";
+export * from "./media/mediaLayout.js";
+export * from "./media/mediaSpriteFactory.js";
+export * from "./media/conform.js";
+export * from "./media/sourceCapture.js";
+export * from "./text/textBridge.js";
+export * from "./stickers/stickerBridge.js";
+export * from "./effects/body/bodyEffectFilters.js";
+export * from "./effects/body/bodyEffectMask.js";
+
