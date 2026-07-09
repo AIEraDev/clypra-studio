@@ -1,6 +1,27 @@
 import { Sprite, Texture, VideoSource } from "pixi.js";
 import { resolveConform, type ClipConform } from "./conform.js";
 
+/**
+ * Check if a video element has valid dimensions for texture creation.
+ * Pixi VideoSource requires non-zero intrinsic dimensions to properly initialize texture bounds.
+ */
+function canCreateVideoTexture(video: HTMLVideoElement): boolean {
+  return video.readyState >= HTMLMediaElement.HAVE_METADATA && video.videoWidth > 0 && video.videoHeight > 0;
+}
+
+/**
+ * Pending video layers that are waiting for metadata to become available.
+ * Maps clipId -> { video, container, setupListeners }
+ */
+const pendingVideoLayers = new Map<string, { video: HTMLVideoElement; container: import("pixi.js").Container; setupListeners: boolean }>();
+
+/**
+ * Clears all pending video layers (for cleanup).
+ */
+export function clearPendingVideoLayers(): void {
+  pendingVideoLayers.clear();
+}
+
 export interface MediaSpriteRecord {
   clipId: string;
   kind: "video" | "image";
@@ -104,7 +125,7 @@ export function releaseMediaSprite(clipId: string, container: import("pixi.js").
   }
 }
 
-export function getOrCreateMediaSprite(clipId: string, kind: "video" | "image", sourceElement: HTMLVideoElement | ImageBitmap | HTMLImageElement, container: import("pixi.js").Container): MediaSpriteRecord {
+export function getOrCreateMediaSprite(clipId: string, kind: "video" | "image", sourceElement: HTMLVideoElement | ImageBitmap | HTMLImageElement, container: import("pixi.js").Container): MediaSpriteRecord | null {
   let record = mediaRegistry.get(clipId);
 
   if (record) {
@@ -123,8 +144,39 @@ export function getOrCreateMediaSprite(clipId: string, kind: "video" | "image", 
     let texture: Texture;
 
     if (kind === "video") {
-      source = new VideoSource({ resource: sourceElement as HTMLVideoElement, autoPlay: false });
+      const video = sourceElement as HTMLVideoElement;
+
+      // CRITICAL: Do not create VideoSource until the video has valid intrinsic dimensions
+      if (!canCreateVideoTexture(video)) {
+        // Store pending video and set up listeners if not already done
+        const pending = pendingVideoLayers.get(clipId);
+        if (!pending || pending.video !== video) {
+          pendingVideoLayers.set(clipId, { video, container, setupListeners: false });
+        }
+
+        // Set up event listeners once per video element
+        if (!pending?.setupListeners) {
+          const onMetadataReady = () => {
+            pendingVideoLayers.delete(clipId);
+          };
+
+          video.addEventListener("loadedmetadata", onMetadataReady, { once: true });
+          video.addEventListener("loadeddata", onMetadataReady, { once: true });
+
+          if (pending) {
+            pending.setupListeners = true;
+          }
+        }
+
+        return null; // Signal compositor to skip this layer for now
+      }
+
+      // Video has valid dimensions, safe to create VideoSource
+      source = new VideoSource({ resource: video, autoPlay: false });
       texture = new Texture({ source });
+
+      // Clean up pending state if exists
+      pendingVideoLayers.delete(clipId);
     } else {
       source = null;
       const baseTexture = Texture.from(sourceElement as ImageBitmap | HTMLImageElement);
