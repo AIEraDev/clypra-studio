@@ -476,6 +476,10 @@ export class PixiRenderer {
     return this.videoSprite;
   }
 
+  getTransitionSprite(): Sprite | null {
+    return this.transitionSprite;
+  }
+
   getBaseMediaContainer(): Container | null {
     return this.baseMediaContainer;
   }
