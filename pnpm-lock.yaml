@@ -41,9 +41,6 @@ importers:
       '@clypra-studio/ui':
         specifier: ^0.1.2
         version: 0.1.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@clypra/video-renderer':
-        specifier: workspace:*
-        version: link:../../packages/video-renderer
       '@google/genai':
         specifier: ^2.4.0
         version: 2.10.0
@@ -266,25 +263,6 @@ importers:
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.8.3)
       typescript:
         specifier: ~5.8.2
-        version: 5.8.3
-
-  packages/video-renderer:
-    dependencies:
-      lottie-web:
-        specifier: ^5.12.2
-        version: 5.13.0
-      pixi-filters:
-        specifier: ^6.0.0
-        version: 6.1.5(pixi.js@8.19.0)
-      pixi.js:
-        specifier: ^8.0.0
-        version: 8.19.0
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.43
-      typescript:
-        specifier: ^5.3.0
         version: 5.8.3
 
 packages:
@@ -1702,9 +1680,6 @@ packages:
 
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
-
-  '@types/node@20.19.43':
-    resolution: {integrity: sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==}
 
   '@types/node@22.19.20':
     resolution: {integrity: sha512-6tELRwSDYWW9EdZhbeZmYGZ1/7Djkt+Ah3/ScEYT9cDord7UJzasR/4D3VONg9tQI5CDp+/CZC1AXj2pCFOvpw==}
@@ -5274,10 +5249,6 @@ snapshots:
   '@types/gradient-parser@0.1.5': {}
 
   '@types/node@12.20.55': {}
-
-  '@types/node@20.19.43':
-    dependencies:
-      undici-types: 6.21.0
 
   '@types/node@22.19.20':
     dependencies:

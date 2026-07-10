@@ -22,9 +22,7 @@ import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
 import { PublishTransitionModal } from "../../components/PublishTransitionModal";
 
-// Choose which renderer to use
-import { usePixiRenderer } from "./hooks/usePixiRenderer"; // Current implementation
-// import { useVideoRenderer as usePixiRenderer } from "./hooks/useVideoRenderer";  // New implementation
+import { usePixiRenderer } from "./hooks/usePixiRenderer";
 
 const DEFAULT_CLIP_A = "";
 const DEFAULT_CLIP_B = "";
@@ -40,20 +38,22 @@ export function TransitionLabView() {
   }, []);
 
   // ── API-driven transition library ───────────────────────────────────────────
-  const [apiTransitions, setApiTransitions] = useState<Array<{
-    id: string;
-    name: string;
-    category: string;
-    description: string;
-    renderer: string;
-    params?: Record<string, any>;
-    easing?: string;
-    duration?: { min: number; max: number; default: number; step?: number };
-    thumbnail?: string;
-    preview?: string;
-    tags?: string[];
-    isPremium?: boolean;
-  }>>([]);
+  const [apiTransitions, setApiTransitions] = useState<
+    Array<{
+      id: string;
+      name: string;
+      category: string;
+      description: string;
+      renderer: string;
+      params?: Record<string, any>;
+      easing?: string;
+      duration?: { min: number; max: number; default: number; step?: number };
+      thumbnail?: string;
+      preview?: string;
+      tags?: string[];
+      isPremium?: boolean;
+    }>
+  >([]);
 
   useEffect(() => {
     // Fetch all transition categories from the API on mount
@@ -75,7 +75,9 @@ export function TransitionLabView() {
       }
     }
     fetchAllTransitions();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // State Management
