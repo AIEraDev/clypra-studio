@@ -54,9 +54,10 @@ export async function renderStickerLayerBridged(
     }
 
     try {
+      const dpr = window.devicePixelRatio || 1;
       const htmlContainer = document.createElement("div");
-      htmlContainer.style.width = `${physW}px`;
-      htmlContainer.style.height = `${physH}px`;
+      htmlContainer.style.width = `${physW / dpr}px`;
+      htmlContainer.style.height = `${physH / dpr}px`;
       htmlContainer.style.position = "absolute";
       htmlContainer.style.left = "-9999px";
       htmlContainer.style.top = "-9999px";
@@ -100,8 +101,9 @@ export async function renderStickerLayerBridged(
     }
   } else {
     if (bridge.canvas.width !== physW || bridge.canvas.height !== physH) {
-      bridge.container.style.width = `${physW}px`;
-      bridge.container.style.height = `${physH}px`;
+      const dpr = window.devicePixelRatio || 1;
+      bridge.container.style.width = `${physW / dpr}px`;
+      bridge.container.style.height = `${physH / dpr}px`;
       bridge.anim.resize();
       if (bridge.sprite.texture) {
         bridge.sprite.texture.destroy(false);
