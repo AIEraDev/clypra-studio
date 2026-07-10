@@ -6,7 +6,6 @@ import { EffectGraphSandbox } from "./components/EffectGraphSandbox";
 import { MPGPlayground } from "./components/MPGPlayground";
 
 const TemplateWorkspace = lazy(() => import("./components/TemplateWorkspace").then((m) => ({ default: m.TemplateWorkspace })));
-const AdminEffectsPanel = lazy(() => import("./components/effects/video/AdminEffectsPanel").then((m) => ({ default: m.AdminEffectsPanel })));
 
 // Labs
 const VideoLabView = lazy(() => import("./labs/video").then((m) => ({ default: m.VideoLabView })));
@@ -40,11 +39,6 @@ const ROUTE_METADATA = {
     canonical: "https://clypra.abdulkabirmusa.com/studio/mpg",
     description: "MPG Filter Lab — design V2 effect stacks from scratch, test live, and publish to R2 for Clypra Editor.",
     title: "Clypra Studio - MPG Filter Lab",
-  },
-  adminEffects: {
-    canonical: "https://clypra.abdulkabirmusa.com/admin/effects",
-    description: "Moderator portal for reviewing generated AI effects.",
-    title: "AI Effects Moderator Portal",
   },
   videoLab: {
     canonical: "https://clypra.abdulkabirmusa.com/video-lab",
@@ -89,10 +83,6 @@ function isMPGRoute(pathname: string) {
   return pathname === "/studio/mpg" || pathname.startsWith("/studio/mpg");
 }
 
-function isAdminEffectsRoute(pathname: string) {
-  return pathname === "/admin/effects" || pathname.startsWith("/admin/effects");
-}
-
 function isVideoLabRoute(pathname: string) {
   return pathname === "/video-lab" || pathname.startsWith("/video-lab");
 }
@@ -132,15 +122,14 @@ export default function RootApp() {
   const { pathname } = window.location;
   const effectsRoute = isEffectsRoute(pathname);
   const mpgRoute = isMPGRoute(pathname);
-  const adminEffectsRoute = isAdminEffectsRoute(pathname);
   const videoLabRoute = isVideoLabRoute(pathname);
   const transitionLabRoute = isTransitionLabRoute(pathname);
   const bodyLabRoute = isBodyLabRoute(pathname);
   const filterLabRoute = isFilterLabRoute(pathname);
   const observatoryDemoRoute = isObservatoryDemoRoute(pathname);
-  const studioRoute = !effectsRoute && !mpgRoute && !adminEffectsRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && !filterLabRoute && !observatoryDemoRoute && isStudioRoute(pathname);
+  const studioRoute = !effectsRoute && !mpgRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && !filterLabRoute && !observatoryDemoRoute && isStudioRoute(pathname);
   const lottieRoute = isLottieRoute(pathname);
-  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : adminEffectsRoute ? ROUTE_METADATA.adminEffects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : filterLabRoute ? ROUTE_METADATA.filterLab : observatoryDemoRoute ? ROUTE_METADATA.observatoryDemo : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
+  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : filterLabRoute ? ROUTE_METADATA.filterLab : observatoryDemoRoute ? ROUTE_METADATA.observatoryDemo : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
 
   // Normalise /studio/* → /studio (preserve ?q= param) unless it's effects sandbox or mpg playground
   useEffect(() => {
@@ -231,32 +220,6 @@ export default function RootApp() {
       );
     }
     return <EffectGraphSandbox />;
-  }
-
-  if (adminEffectsRoute) {
-    if (!checkIsAdmin()) {
-      return (
-        <div className="flex flex-col h-screen bg-[#0E0E12] items-center justify-center text-white" style={{ fontFamily: "Inter, sans-serif" }}>
-          <div className="text-center space-y-4 max-w-sm px-6">
-            <h1 className="text-xl font-bold text-red-500">Access Denied</h1>
-            <p className="text-sm text-gray-400 font-medium">You must be logged in as an administrator to access this area.</p>
-            <button
-              onClick={() => {
-                window.location.href = "/studio";
-              }}
-              className="px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors"
-            >
-              Go to Studio
-            </button>
-          </div>
-        </div>
-      );
-    }
-    return (
-      <Suspense fallback={<div className="text-white p-6">Loading Portal...</div>}>
-        <AdminEffectsPanel />
-      </Suspense>
-    );
   }
 
   if (lottieRoute) {
