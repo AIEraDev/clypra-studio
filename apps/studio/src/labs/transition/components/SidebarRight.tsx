@@ -43,39 +43,39 @@ export function SidebarRight({ activeTab, selectedTransition, parameters, latenc
                 <span className="material-symbols-outlined text-[12px]">tune</span> SELECTED: {activeTransition ? activeTransition.name.toUpperCase() : selectedTransition.toUpperCase()}
               </h4>
               <div className="property-grid bg-surface-container border border-outline-variant rounded select-none">
-                {activeTransition?.params.map((param) => {
-                  const val = parameters[param.key] ?? param.value;
-                  return (
-                    <React.Fragment key={param.key}>
-                      <div className="text-outline text-xs">{param.label}</div>
-                      <div className="text-on-surface select-none">
-                        {param.type === "select" && (
-                          <select value={val} onChange={(e) => onParamChange(param.key, e.target.value)} className="bg-black/80 border border-outline-variant rounded text-[10px] px-1 py-0.5 text-on-surface outline-none">
-                            {param.options?.map((opt) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                        {param.type === "range" && (
-                          <div className="flex items-center gap-2">
-                            <input type="range" min={param.min ?? 0} max={param.max ?? 100} step={param.step ?? 1} value={val} onChange={(e) => onParamChange(param.key, parseFloat(e.target.value))} className="w-full accent-primary" />
-                            <span className="font-mono-data text-[10px]">{val}</span>
-                          </div>
-                        )}
-                        {param.type === "color" && (
-                          <div className="flex items-center gap-2">
-                            <input type="color" value={val} onChange={(e) => onParamChange(param.key, e.target.value)} className="w-6 h-4 bg-transparent border-0 cursor-pointer" />
-                            <span className="font-mono-data text-[9px] uppercase">{val}</span>
-                          </div>
-                        )}
-                        {param.type === "toggle" && <input type="checkbox" checked={!!val} onChange={(e) => onParamChange(param.key, e.target.checked)} className="accent-primary" />}
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-                {(!activeTransition || activeTransition.params.length === 0) && <div className="col-span-2 text-center text-on-surface-variant p-2 text-[10px]">No parameters configuration available</div>}
+                {activeTransition && Object.keys(activeTransition.params).length > 0 ? (
+                  Object.entries(activeTransition.params).map(([key, defaultValue]) => {
+                    const val = parameters[key] ?? defaultValue;
+                    // Auto-detect parameter type from value
+                    const isColor = typeof defaultValue === "string" && defaultValue.startsWith("#");
+                    const isBoolean = typeof defaultValue === "boolean";
+                    const isNumber = typeof defaultValue === "number";
+
+                    return (
+                      <React.Fragment key={key}>
+                        <div className="text-outline text-xs">{key.replace(/([A-Z])/g, " $1").trim()}</div>
+                        <div className="text-on-surface select-none">
+                          {isColor && (
+                            <div className="flex items-center gap-2">
+                              <input type="color" value={val} onChange={(e) => onParamChange(key, e.target.value)} className="w-6 h-4 bg-transparent border-0 cursor-pointer" />
+                              <span className="font-mono-data text-[9px] uppercase">{val}</span>
+                            </div>
+                          )}
+                          {isBoolean && <input type="checkbox" checked={!!val} onChange={(e) => onParamChange(key, e.target.checked)} className="accent-primary" />}
+                          {isNumber && (
+                            <div className="flex items-center gap-2">
+                              <input type="range" min={0} max={key.includes("angle") ? 360 : 100} step={key.includes("angle") ? 1 : 0.1} value={val} onChange={(e) => onParamChange(key, parseFloat(e.target.value))} className="w-full accent-primary" />
+                              <span className="font-mono-data text-[10px]">{typeof val === "number" ? val.toFixed(1) : val}</span>
+                            </div>
+                          )}
+                          {!isColor && !isBoolean && !isNumber && <span className="font-mono-data text-[10px]">{String(val)}</span>}
+                        </div>
+                      </React.Fragment>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-2 text-center text-on-surface-variant p-2 text-[10px]">No parameters available for this transition</div>
+                )}
               </div>
             </div>
 
@@ -102,11 +102,12 @@ export function SidebarRight({ activeTab, selectedTransition, parameters, latenc
             <p className="pl-2">└─ Node: buf_02_chan2 (RGBA_8888, size: 1280x720)</p>
             <p className="text-primary font-bold mt-1">[NODE] Mix Compositor Pass</p>
             <p className="pl-2">└─ Mix: {selectedTransition.toUpperCase()}</p>
-            {activeTransition?.params.map((p) => (
-              <p key={p.key} className="pl-4 text-on-surface-variant text-[9px]">
-                {p.key}: {String(parameters[p.key] ?? p.value)}
-              </p>
-            ))}
+            {activeTransition &&
+              Object.entries(activeTransition.params).map(([key, defaultValue]) => (
+                <p key={key} className="pl-4 text-on-surface-variant text-[9px]">
+                  {key}: {String(parameters[key] ?? defaultValue)}
+                </p>
+              ))}
           </div>
         )}
 
