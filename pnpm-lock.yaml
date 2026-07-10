@@ -36,11 +36,11 @@ importers:
         specifier: ^0.1.1
         version: 0.1.1
       '@clypra-studio/runtime':
-        specifier: ^0.1.1
-        version: 0.1.1
+        specifier: ^0.1.2
+        version: 0.1.2
       '@clypra-studio/ui':
-        specifier: ^0.1.1
-        version: 0.1.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: ^0.1.2
+        version: 0.1.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@clypra/video-renderer':
         specifier: workspace:*
         version: link:../../packages/video-renderer
@@ -437,14 +437,14 @@ packages:
   '@clypra-studio/feature-providers@0.1.1':
     resolution: {integrity: sha512-YE6yIUPoB9ByaNSr9p9RcUvmhbl270w3OgciFV3j7ou81mo3kCv8uhr1mWzTfU90p+38N9bcnCx/zHErwog9ow==}
 
-  '@clypra-studio/runtime@0.1.1':
-    resolution: {integrity: sha512-zXk0eeqlCJ7diDDLerbfKwyDZw+e/1lTzsXydtMpa2TwChdTBBSW3q7KYnEi7Uk1G/jLZ5nr6f8Vfxefn91lCw==}
+  '@clypra-studio/runtime@0.1.2':
+    resolution: {integrity: sha512-ngG4+L/XLGw9FgD8bVvvJf2iBvHPJzkbAd3sV9EtuRC29NO677Upl98A76DlslE7degYz6PMFK23n7ZUOaOGDQ==}
 
-  '@clypra-studio/types@0.1.1':
-    resolution: {integrity: sha512-1GVWsC/oWHspiR/EQPuMU4G7/cmd+b14zpWib4BmxWqSo6o9zd5+UhFWcnYun7Bszb9fRhrZkxWyJ7Se4asfDw==}
+  '@clypra-studio/types@0.2.0':
+    resolution: {integrity: sha512-03+d8BpuJsKD26NxZ0J+njiRBHeqZqyklavrtWYpa3fTl1A/WnjbG9kDxVvIzBpF0BIHZ+3FlBvzjcI5fZKa0w==}
 
-  '@clypra-studio/ui@0.1.1':
-    resolution: {integrity: sha512-mRIPzRNhbQNHtuc8IW3vmOCQRrcVry9TbwP9qTHizKtio4PgxfAx1dLEHAnP5aJC96JbLhFrKXcOFX7NdurQnQ==}
+  '@clypra-studio/ui@0.1.2':
+    resolution: {integrity: sha512-nWMePkSQ5hNUOpYeUhE5va/iUFOMZjasoJ+2/75922xCKXSYsMyjDTdNmMl8KzrftHY1gGxF++uy5ZYNJLcrcg==}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
@@ -4247,18 +4247,18 @@ snapshots:
 
   '@clypra-studio/feature-providers@0.1.1': {}
 
-  '@clypra-studio/runtime@0.1.1':
+  '@clypra-studio/runtime@0.1.2':
     dependencies:
-      '@clypra-studio/types': 0.1.1
+      '@clypra-studio/types': 0.2.0
       pixi-filters: 6.1.5(pixi.js@8.19.0)
       pixi.js: 8.19.0
 
-  '@clypra-studio/types@0.1.1': {}
+  '@clypra-studio/types@0.2.0': {}
 
-  '@clypra-studio/ui@0.1.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@clypra-studio/ui@0.1.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      '@clypra-studio/runtime': 0.1.1
-      '@clypra-studio/types': 0.1.1
+      '@clypra-studio/runtime': 0.1.2
+      '@clypra-studio/types': 0.2.0
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
