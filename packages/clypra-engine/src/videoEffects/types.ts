@@ -80,9 +80,9 @@ export type EffectRenderer =
   | "scanlines"
   | "crt"
   | "pixelate"
-  | "rgb-split"    // PixiJS variant
-  | "film-grain"   // PixiJS variant
-  | "glitch-band"  // PixiJS variant
+  | "rgb-split" // PixiJS variant
+  | "film-grain" // PixiJS variant
+  | "glitch-band" // PixiJS variant
   | "color-gradient"
   | "color-overlay"
   | "hsl-adjustment"
@@ -106,9 +106,9 @@ export type EffectRenderer =
   | "bulge"
   | "twist"
   | "fisheye"
-  | "shockwave"    // PixiJS variant
-  | "bulge-pinch"  // PixiJS variant
-  | "reflection"   // PixiJS variant
+  | "shockwave" // PixiJS variant
+  | "bulge-pinch" // PixiJS variant
+  | "reflection" // PixiJS variant
 
   // Light effects
   | "flash"
@@ -120,8 +120,8 @@ export type EffectRenderer =
   | "fire"
   | "particles"
   | "dust_particles"
-  | "light-leak"   // PixiJS variant
-  | "lens-flare"   // PixiJS variant
+  | "light-leak" // PixiJS variant
+  | "lens-flare" // PixiJS variant
 
   // Cinematic / other new variants
   | "tilt-shift"
@@ -246,7 +246,6 @@ export interface FilterAsset {
   category: string; // "vintage", "modern", "cinematic", "bw", "color"
   description: string;
   thumbnail: string;
-  swatch?: string;
   status?: string;
   intensity: {
     min: number;

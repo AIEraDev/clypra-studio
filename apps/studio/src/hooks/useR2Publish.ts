@@ -629,7 +629,6 @@ export function useR2Publish() {
         category,
         description: payload.metadata.description || "",
         intensity: intensityLabel,
-        swatch: "",
         published: payload.metadata.published ?? true,
         pipeline: "v2",
         effectStack: payload.metadata.effectStack,
