@@ -43,10 +43,27 @@ export function useTransitionR2Upload() {
     setUploadedUrls(null);
 
     try {
+      // Get auth token
+      const token = localStorage.getItem("clypra_auth_token");
+      if (!token) {
+        throw new Error("Authentication required. Please log in.");
+      }
+
+      // Validate admin status
+      try {
+        const tokenPayload = JSON.parse(atob(token.split(".")[1]));
+        if (!tokenPayload.isAdmin) {
+          throw new Error("Admin access required. Only administrators can publish transitions.");
+        }
+      } catch (e) {
+        throw new Error("Invalid authentication token. Please log in again.");
+      }
+
       const response = await fetch(`${API_BASE_URL}/transitions/upload`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
