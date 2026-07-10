@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@clypra/video-renderer": "workspace:*",
-    "@clypra-studio/engine": "workspace:*",
+    "@clypra-studio/engine": "^1.0.0",
     "@clypra-studio/feature-providers": "^0.1.1",
     "@clypra-studio/runtime": "^0.1.2",
     "@clypra-studio/ui": "^0.1.2",
