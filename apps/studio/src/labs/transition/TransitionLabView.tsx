@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { initializeFontSystem, TRANSITION_PRESETS } from "@clypra-studio/engine";
+import { initializeFontSystem, ALL_TRANSITIONS, transitionEffectsById } from "@clypra-studio/engine";
 import { Texture } from "pixi.js";
 
 import { TopNavBar } from "./components/TopNavBar";
@@ -49,7 +49,7 @@ export function TransitionLabView() {
   }, []);
 
   // ── Preset-driven transition library (matches Filter Lab pattern) ──────────
-  // Transitions are loaded from @clypra-studio/engine presets, not API
+  // Transitions are loaded from @clypra-studio/engine GPU implementations
   const [apiTransitions, setApiTransitions] = useState<
     Array<{
       id: string;
@@ -68,27 +68,27 @@ export function TransitionLabView() {
   >([]);
 
   useEffect(() => {
-    // Initialize transitions from engine presets (no API call needed)
-    console.log("[TransitionLab] Loading transitions from engine presets");
-    const formattedTransitions = TRANSITION_PRESETS.map((preset) => ({
-      id: preset.id,
-      name: preset.name,
-      category: preset.category,
-      description: preset.description,
-      renderer: preset.renderer,
-      params: preset.params,
+    // Initialize transitions from engine GPU implementations (not API)
+    console.log("[TransitionLab] Loading transitions from engine GPU implementations");
+    const formattedTransitions = ALL_TRANSITIONS.map((transition) => ({
+      id: transition.id,
+      name: transition.name,
+      category: transition.category,
+      description: transition.description,
+      renderer: transition.id, // Use ID as renderer reference
+      params: {}, // Params are managed through ParamSchema in the transition itself
       easing: "linear",
       duration: {
         min: 0.3,
         max: 5.0,
-        default: preset.defaultDuration,
+        default: transition.defaultDurationMs / 1000, // Convert ms to seconds
         step: 0.1,
       },
-      tags: preset.tags,
+      tags: transition.tags,
       isPremium: false,
     }));
     setApiTransitions(formattedTransitions);
-    console.log(`[TransitionLab] Loaded ${formattedTransitions.length} transition presets from engine`);
+    console.log(`[TransitionLab] Loaded ${formattedTransitions.length} GPU transition implementations`);
   }, []);
 
   // State Management
@@ -639,8 +639,9 @@ export function TransitionLabView() {
 
         if (currentSec >= transitionStart && currentSec < transitionEnd) {
           // ── TRANSITION PHASE ──────────────────────────────────────────────
-          const transDef = apiTransitions.find((t) => t.id === selectedTransition);
-          if (transDef) {
+          // Get the actual GPU TransitionDefinition from the engine registry
+          const gpuTransition = transitionEffectsById[selectedTransition];
+          if (gpuTransition) {
             if (renderPhaseRef.current !== "transition" || renderer.getActiveTransitionId() !== selectedTransition) {
               logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `ENTERING TRANSITION PHASE — mounting "${selectedTransition}" (prev phase: ${renderPhaseRef.current}, prevActiveId: ${renderer.getActiveTransitionId() ?? "none"})`);
 
@@ -657,14 +658,15 @@ export function TransitionLabView() {
                 logDiagnostic(currentSec, "transition", mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "WARNING: Neither videoB nor placeholderB available for pre-prime!");
               }
 
-              renderer.mountTransition(transDef, texA, texB, parameters);
+              // Mount the GPU transition with the actual TransitionDefinition
+              renderer.mountTransition(gpuTransition, texA, texB, parameters);
               renderPhaseRef.current = "transition";
 
               logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `mountTransition() complete — activeId is now: ${renderer.getActiveTransitionId() ?? "STILL NULL (mount failed?)"}`);
             }
             renderer.updateTransitionProgress(selectedTransition, easedP, parameters);
           } else {
-            logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `WARNING: No transDef found for id="${selectedTransition}" — transition skipped!`);
+            logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `WARNING: No GPU transition found for id="${selectedTransition}" — transition skipped!`);
           }
         } else if (currentSec < transitionStart) {
           // ── PRE-TRANSITION PHASE ──────────────────────────────────────────
