@@ -9,11 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { initializeFontSystem } from "@clypra-studio/engine";
-// Transitions are fetched from the Clypra API (source of truth: Cloudflare R2)
-// The engine package still provides the renderer/shader logic but no preset data.
-const TRANSITIONS_API_BASE = "https://clypra-worker-api.abdulkabirmusa.com";
-const TRANSITION_CATEGORIES = ["fade", "slide", "wipe", "zoom", "dissolve", "creative", "geometric", "optical-distortion", "temporal", "particle-dissolve", "light-based", "depth-based", "physics-simulated"];
+import { initializeFontSystem, TRANSITION_PRESETS } from "@clypra-studio/engine";
 import { Texture } from "pixi.js";
 
 import { TopNavBar } from "./components/TopNavBar";
@@ -52,7 +48,8 @@ export function TransitionLabView() {
     }
   }, []);
 
-  // ── API-driven transition library ───────────────────────────────────────────
+  // ── Preset-driven transition library (matches Filter Lab pattern) ──────────
+  // Transitions are loaded from @clypra-studio/engine presets, not API
   const [apiTransitions, setApiTransitions] = useState<
     Array<{
       id: string;
@@ -71,28 +68,27 @@ export function TransitionLabView() {
   >([]);
 
   useEffect(() => {
-    // Fetch all transition categories from the API on mount
-    let cancelled = false;
-    async function fetchAllTransitions() {
-      try {
-        const results = await Promise.all(
-          TRANSITION_CATEGORIES.map((cat) =>
-            fetch(`${TRANSITIONS_API_BASE}/transitions/${cat}`)
-              .then((r) => (r.ok ? r.json() : []))
-              .catch(() => []),
-          ),
-        );
-        if (!cancelled) {
-          setApiTransitions(results.flat());
-        }
-      } catch (err) {
-        console.warn("[TransitionLab] Failed to load transitions from API:", err);
-      }
-    }
-    fetchAllTransitions();
-    return () => {
-      cancelled = true;
-    };
+    // Initialize transitions from engine presets (no API call needed)
+    console.log("[TransitionLab] Loading transitions from engine presets");
+    const formattedTransitions = TRANSITION_PRESETS.map((preset) => ({
+      id: preset.id,
+      name: preset.name,
+      category: preset.category,
+      description: preset.description,
+      renderer: preset.renderer,
+      params: preset.params,
+      easing: "linear",
+      duration: {
+        min: 0.3,
+        max: 5.0,
+        default: preset.defaultDuration,
+        step: 0.1,
+      },
+      tags: preset.tags,
+      isPremium: false,
+    }));
+    setApiTransitions(formattedTransitions);
+    console.log(`[TransitionLab] Loaded ${formattedTransitions.length} transition presets from engine`);
   }, []);
 
   // State Management
