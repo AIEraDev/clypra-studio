@@ -1,9 +1,13 @@
 /**
  * R2 Publishing Hook
  *
- * Direct publishing to R2 bucket without GitHub intermediary
- * Supports all content types: effects, templates, audio, stickers, overlays, video effects
+ * Handles content publishing across all asset types:
+ * - Text effects, templates, audio, stickers, overlays, video effects → direct R2 via S3 API
+ * - Filters (GPU gradingParams) and MPG stacks (v2 pipeline) → Clypra API (POST /filters/upload)
+ *   The API handles R2 writes, index management, and KV cache invalidation in one atomic step.
  */
+
+const CLYPRA_API_BASE = "https://clypra-worker-api.abdulkabirmusa.com";
 
 import { type R2UploadConfig, getR2Config, saveR2Config, uploadFileFromDataUrl, uploadR2Json, getR2Json, upsertById, getPublicUrl, uploadBatch } from "../services/r2Service";
 
@@ -552,169 +556,112 @@ export function useR2Publish() {
   };
 
   /**
-   * Publish Filter to R2
+   * Publish Filter to API (POST /filters/upload)
+   * The API writes to R2, updates the category index, and invalidates KV cache.
+   * Requires an admin JWT token stored in localStorage as "clypra_auth_token".
    */
   const publishFilter = async (payload: FilterPublishPayload): Promise<R2PublishResult> => {
-    const config = getR2Config();
-    if (!config) throw new Error("R2 publishing is not configured.");
-
     const category = payload.category.toLowerCase();
-    const definitionKey = `filters/${category}/${payload.id}.json`;
-    const thumbnailKey = `filters/${category}/${payload.id}.png`;
-    const categoryIndexKey = `filters/${category}/index.json`;
-    const globalIndexKey = `filters/index.json`;
 
-    const thumbnailUrl = payload.thumbnailDataUrl ? getPublicUrl(config.bucketName, thumbnailKey) : "";
+    const adminToken = localStorage.getItem("clypra_auth_token");
+    if (!adminToken) throw new Error("Admin session required to publish filters. Please log in.");
 
-    const definition = {
-      id: payload.id,
-      name: payload.definition.name,
-      type: "filter",
-      category,
-      description: payload.definition.description || "",
-      thumbnail: thumbnailUrl,
-      swatch: payload.definition.swatch,
-      intensity: {
-        min: 0,
-        max: 100,
-        default: 100,
-        step: 1,
+    const body: Record<string, unknown> = {
+      filter: {
+        id: payload.id,
+        name: payload.definition.name,
+        category,
+        description: payload.definition.description || "",
+        intensity: "Medium",
+        gradingParams: payload.definition.gradingParams || null,
+        published: payload.definition.published ?? true,
+        creator: payload.definition.creator,
       },
-      creator: payload.definition.creator,
-      published: payload.definition.published,
+      thumbnailDataUrl: payload.thumbnailDataUrl || null,
     };
 
-    const files = [definitionKey, categoryIndexKey, globalIndexKey];
-    const urls: Record<string, string> = {
-      definition: getPublicUrl(config.bucketName, definitionKey),
-      index: getPublicUrl(config.bucketName, categoryIndexKey),
-    };
+    const response = await fetch(`${CLYPRA_API_BASE}/filters/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify(body),
+    });
 
-    // Upload thumbnail if provided
-    if (payload.thumbnailDataUrl) {
-      await uploadFileFromDataUrl(config, thumbnailKey, payload.thumbnailDataUrl, "image/png");
-      files.push(thumbnailKey);
-      urls.thumbnail = thumbnailUrl;
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).error || `Filter upload failed: ${response.statusText}`);
     }
 
-    // Upload full filter JSON
-    await uploadR2Json(config, definitionKey, definition);
-
-    // Load existing category and global indexes
-    const categoryIndex = await getR2Json<any[]>(config, categoryIndexKey, []);
-    const globalIndex = await getR2Json<any[]>(config, globalIndexKey, []);
-
-    const summary = {
-      id: definition.id,
-      name: definition.name,
-      type: "filter",
-      category,
-      description: definition.description,
-      thumbnail: definition.thumbnail,
-      url: urls.definition,
-      creator: definition.creator,
-    };
-
-    // Update indexes
-    const nextCategoryIndex = upsertById(categoryIndex, summary as any);
-    const nextGlobalIndex = upsertById(globalIndex, summary as any);
-
-    // Save indexes back to R2
-    await uploadR2Json(config, categoryIndexKey, nextCategoryIndex);
-    await uploadR2Json(config, globalIndexKey, nextGlobalIndex);
+    const result = await response.json();
+    const thumbnailUrl = `${CLYPRA_API_BASE}/media/filters/${category}/${payload.id}.png`;
 
     return {
-      files,
-      urls,
-      message: `Published filter: ${definition.name}`,
+      files: [`filters/${category}/${payload.id}.json`, `filters/${category}/index.json`],
+      urls: {
+        definition: `${CLYPRA_API_BASE}/filters/${category}/${payload.id}`,
+        ...(payload.thumbnailDataUrl ? { thumbnail: thumbnailUrl } : {}),
+      },
+      message: result.message || `Filter "${payload.definition.name}" published successfully`,
     };
   };
 
   /**
-   * Publish V2 MPG effect stack to R2 (filters/{category} — Clypra Editor Filters API)
+   * Publish V2 MPG effect stack via API (POST /filters/upload with pipeline:"v2")
+   * Centralises auth, index management, and KV cache invalidation in the API layer.
    */
   const publishMpgStack = async (payload: MpgStackPublishPayload): Promise<R2PublishResult> => {
-    const config = getR2Config();
-    if (!config) throw new Error("R2 publishing is not configured.");
-
     if (!payload.metadata.name.trim()) throw new Error("Effect name is required.");
     if (!payload.metadata.effectStack.length) throw new Error("Effect stack cannot be empty.");
 
-    const category = payload.category.toLowerCase();
-    const definitionKey = `filters/${category}/${payload.id}.json`;
-    const thumbnailKey = `filters/${category}/${payload.id}.png`;
-    const categoryIndexKey = `filters/${category}/index.json`;
-    const globalIndexKey = `filters/index.json`;
+    const adminToken = localStorage.getItem("clypra_auth_token");
+    if (!adminToken) throw new Error("Admin session required to publish filters. Please log in.");
 
-    const thumbnailUrl = payload.thumbnailDataUrl ? getPublicUrl(config.bucketName, thumbnailKey) : "";
+    const category = payload.category.toLowerCase();
     const intensityDefault = payload.metadata.intensity.default;
     const intensityLabel = intensityDefault >= 85 ? "Bold" : intensityDefault >= 65 ? "Medium" : "Light";
 
-    const indexEntry = {
-      id: payload.id,
-      name: payload.metadata.name,
-      category,
-      description: payload.metadata.description || "",
-      intensity: intensityLabel,
-      swatch: "",
-      published: payload.metadata.published ?? true,
-      pipeline: "v2",
-      effectStack: payload.metadata.effectStack,
-      tags: payload.metadata.tags || [],
+    const body: Record<string, unknown> = {
+      filter: {
+        id: payload.id,
+        name: payload.metadata.name,
+        category,
+        description: payload.metadata.description || "",
+        intensity: intensityLabel,
+        swatch: "",
+        published: payload.metadata.published ?? true,
+        pipeline: "v2",
+        effectStack: payload.metadata.effectStack,
+        tags: payload.metadata.tags || [],
+      },
+      thumbnailDataUrl: payload.thumbnailDataUrl || null,
     };
 
-    const definition = {
-      id: payload.id,
-      name: payload.metadata.name,
-      type: "filter" as const,
-      category,
-      description: payload.metadata.description || "",
-      thumbnail: thumbnailUrl,
-      swatch: "",
-      pipeline: "v2",
-      effectStack: payload.metadata.effectStack,
-      tags: payload.metadata.tags || [],
-      intensity: payload.metadata.intensity,
-      published: payload.metadata.published ?? true,
-    };
+    const response = await fetch(`${CLYPRA_API_BASE}/filters/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify(body),
+    });
 
-    const files = [definitionKey, categoryIndexKey, globalIndexKey];
-    const urls: Record<string, string> = {
-      definition: getPublicUrl(config.bucketName, definitionKey),
-      index: getPublicUrl(config.bucketName, categoryIndexKey),
-    };
-
-    if (payload.thumbnailDataUrl) {
-      await uploadFileFromDataUrl(config, thumbnailKey, payload.thumbnailDataUrl, "image/png");
-      files.push(thumbnailKey);
-      urls.thumbnail = thumbnailUrl;
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as any).error || `MPG stack upload failed: ${response.statusText}`);
     }
 
-    await uploadR2Json(config, definitionKey, definition);
-
-    const categoryIndex = await getR2Json<any[]>(config, categoryIndexKey, []);
-    const globalIndex = await getR2Json<any[]>(config, globalIndexKey, []);
-
-    const summary = {
-      id: definition.id,
-      name: definition.name,
-      type: "filter",
-      category,
-      description: definition.description,
-      thumbnail: definition.thumbnail,
-      url: urls.definition,
-      pipeline: "v2",
-      effectStack: definition.effectStack,
-      tags: definition.tags,
-    };
-
-    await uploadR2Json(config, categoryIndexKey, upsertById(categoryIndex, indexEntry as any));
-    await uploadR2Json(config, globalIndexKey, upsertById(globalIndex, summary as any));
+    const result = await response.json();
+    const thumbnailUrl = `${CLYPRA_API_BASE}/media/filters/${category}/${payload.id}.png`;
 
     return {
-      files,
-      urls,
-      message: `Published MPG filter: ${definition.name} → filters/${category}`,
+      files: [`filters/${category}/${payload.id}.json`, `filters/${category}/index.json`],
+      urls: {
+        definition: `${CLYPRA_API_BASE}/filters/${category}/${payload.id}`,
+        ...(payload.thumbnailDataUrl ? { thumbnail: thumbnailUrl } : {}),
+      },
+      message: result.message || `MPG filter "${payload.metadata.name}" published to filters/${category}`,
     };
   };
 

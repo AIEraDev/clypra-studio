@@ -10,7 +10,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { initializeFontSystem } from "@clypra-studio/engine";
-import { ALL_TRANSITIONS } from "@clypra-studio/engine/transitions";
+// Transitions are fetched from the Clypra API (source of truth: Cloudflare R2)
+// The engine package still provides the renderer/shader logic but no preset data.
+const TRANSITIONS_API_BASE = "https://clypra-worker-api.abdulkabirmusa.com";
+const TRANSITION_CATEGORIES = ["fade", "slide", "wipe", "zoom", "dissolve", "creative", "geometric", "optical-distortion", "temporal", "particle-dissolve", "light-based", "depth-based", "physics-simulated"];
 import { Texture } from "pixi.js";
 
 import { TopNavBar } from "./components/TopNavBar";
@@ -36,8 +39,44 @@ export function TransitionLabView() {
     }
   }, []);
 
-  // State & Config Mapping
-  const initialTransition = ALL_TRANSITIONS.find((t) => t.id === "cross-dissolve");
+  // ── API-driven transition library ───────────────────────────────────────────
+  const [apiTransitions, setApiTransitions] = useState<Array<{
+    id: string;
+    name: string;
+    category: string;
+    description: string;
+    renderer: string;
+    params?: Record<string, any>;
+    easing?: string;
+    duration?: { min: number; max: number; default: number; step?: number };
+    thumbnail?: string;
+    preview?: string;
+    tags?: string[];
+    isPremium?: boolean;
+  }>>([]);
+
+  useEffect(() => {
+    // Fetch all transition categories from the API on mount
+    let cancelled = false;
+    async function fetchAllTransitions() {
+      try {
+        const results = await Promise.all(
+          TRANSITION_CATEGORIES.map((cat) =>
+            fetch(`${TRANSITIONS_API_BASE}/transitions/${cat}`)
+              .then((r) => (r.ok ? r.json() : []))
+              .catch(() => []),
+          ),
+        );
+        if (!cancelled) {
+          setApiTransitions(results.flat());
+        }
+      } catch (err) {
+        console.warn("[TransitionLab] Failed to load transitions from API:", err);
+      }
+    }
+    fetchAllTransitions();
+    return () => { cancelled = true; };
+  }, []);
 
   // State Management
   const [clipAFile, setClipAFile] = useState<File | null>(null);
@@ -51,16 +90,9 @@ export function TransitionLabView() {
   const [fitMode, setFitMode] = useState<"stretch" | "fit" | "crop">("fit");
   const [activeTab, setActiveTab] = useState<"inspector" | "nodes" | "stats">("inspector");
 
-  const [parameters, setParameters] = useState<Record<string, any>>(() => {
-    if (initialTransition) {
-      return Object.fromEntries(initialTransition.params.map((p) => [p.key, p.value]));
-    }
-    return {};
-  });
-
-  const [duration, setDuration] = useState(() => {
-    return initialTransition ? initialTransition.defaultDurationMs / 1000 : 2.0;
-  });
+  // Parameters and duration are initialized empty and updated when the API list loads
+  const [parameters, setParameters] = useState<Record<string, any>>({});
+  const [duration, setDuration] = useState(2.0);
 
   const sequenceTimeRef = useRef(0.0);
   const playingRef = useRef(false);
@@ -261,12 +293,13 @@ export function TransitionLabView() {
 
   const handleSelectTransition = (id: string) => {
     setSelectedTransition(id);
-    const trans = ALL_TRANSITIONS.find((t) => t.id === id);
+    const trans = apiTransitions.find((t) => t.id === id);
     if (trans) {
-      const defaults = Object.fromEntries(trans.params.map((p) => [p.key, p.value]));
-      setParameters(defaults);
-      setDuration(trans.defaultDurationMs / 1000);
-      addLog(`[SYSTEM] Selected transition: ${trans.name} (${trans.defaultDurationMs}ms)`);
+      // API returns params as a flat Record<string,any> (not the engine's {key,value}[] array)
+      setParameters(trans.params ?? {});
+      const durationSec = trans.duration?.default ?? 2.0;
+      setDuration(durationSec);
+      addLog(`[SYSTEM] Selected transition: ${trans.name} (${Math.round(durationSec * 1000)}ms)`);
     }
   };
 
@@ -592,7 +625,7 @@ export function TransitionLabView() {
 
         if (currentSec >= transitionStart && currentSec < transitionEnd) {
           // ── TRANSITION PHASE ──────────────────────────────────────────────
-          const transDef = ALL_TRANSITIONS.find((t) => t.id === selectedTransition);
+          const transDef = apiTransitions.find((t) => t.id === selectedTransition);
           if (transDef) {
             if (renderPhaseRef.current !== "transition" || renderer.getActiveTransitionId() !== selectedTransition) {
               logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `ENTERING TRANSITION PHASE — mounting "${selectedTransition}" (prev phase: ${renderPhaseRef.current}, prevActiveId: ${renderer.getActiveTransitionId() ?? "none"})`);
@@ -773,11 +806,10 @@ export function TransitionLabView() {
   const handleResetContext = () => {
     const id = "cross-dissolve";
     setSelectedTransition(id);
-    const trans = ALL_TRANSITIONS.find((t) => t.id === id);
+    const trans = apiTransitions.find((t) => t.id === id);
     if (trans) {
-      const defaults = Object.fromEntries(trans.params.map((p) => [p.key, p.value]));
-      setParameters(defaults);
-      setDuration(trans.defaultDurationMs / 1000);
+      setParameters(trans.params ?? {});
+      setDuration(trans.duration?.default ?? 2.0);
     }
     setProgress(0.0);
     setPlaying(false);
@@ -882,7 +914,7 @@ export function TransitionLabView() {
 
       {/* Main Layout mixer workspace */}
       <main className="flex-1 flex overflow-hidden">
-        <SidebarLeft clipAFile={clipAFile} clipBFile={clipBFile} selectedTransition={selectedTransition} fitMode={fitMode} onClipAImport={handleClipAImport} onClipBImport={handleClipBImport} onSelectTransition={handleSelectTransition} onSetFitMode={setFitMode} />
+        <SidebarLeft clipAFile={clipAFile} clipBFile={clipBFile} selectedTransition={selectedTransition} fitMode={fitMode} onClipAImport={handleClipAImport} onClipBImport={handleClipBImport} onSelectTransition={handleSelectTransition} onSetFitMode={setFitMode} transitions={apiTransitions} />
 
         <CanvasPreview
           videoARef={videoARef}
@@ -923,7 +955,7 @@ export function TransitionLabView() {
         <SidebarRight activeTab={activeTab} selectedTransition={selectedTransition} parameters={parameters} latency={latency} cpuUsage={cpuUsage} gpuUsage={gpuUsage} memUsage={memUsage} duration={duration} progress={progress} logs={logs} terminalEndRef={terminalEndRef} onSetActiveTab={setActiveTab} onParamChange={handleParamChange} onDumpLog={handleDumpLog} onResetContext={handleResetContext} onPublish={handleStartPublish} isRecording={isRecording} />
       </main>
 
-      <PublishTransitionModal open={showPublishModal} onClose={() => setShowPublishModal(false)} transitionDef={ALL_TRANSITIONS.find((t) => t.id === selectedTransition) || null} thumbnailDataUrl={thumbnailDataUrl} previewDataUrl={previewDataUrl} />
+      <PublishTransitionModal open={showPublishModal} onClose={() => setShowPublishModal(false)} transitionDef={apiTransitions.find((t) => t.id === selectedTransition) || null} thumbnailDataUrl={thumbnailDataUrl} previewDataUrl={previewDataUrl} />
     </div>
   );
 }

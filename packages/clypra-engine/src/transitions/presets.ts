@@ -13,7 +13,7 @@ export const TRANSITION_CATEGORIES: TransitionCategory[] = ["fade", "slide", "wi
  * Professional Transition Preset Library
  * Maps UI-friendly presets to engine TransitionRenderer types
  */
-export const TRANSITION_PRESETS: TransitionPreset[] = [
+const PRESETS_RAW: Omit<TransitionPreset, "defaultDurationMs">[] = [
   // ========== FADE ==========
   {
     id: "simple-fade",
@@ -345,3 +345,8 @@ export const TRANSITION_PRESETS: TransitionPreset[] = [
     params: {},
   },
 ];
+
+export const TRANSITION_PRESETS: TransitionPreset[] = PRESETS_RAW.map((p) => ({
+  ...p,
+  defaultDurationMs: Math.round(p.defaultDuration * 1000),
+}));

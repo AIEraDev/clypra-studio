@@ -1,11 +1,27 @@
 import React from "react";
-import { ALL_TRANSITIONS } from "@clypra-studio/engine/transitions";
+
+// Inline type for the API-fetched transition shape
+interface TransitionItem {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  renderer: string;
+  params?: Record<string, any>;
+  duration?: { min: number; max: number; default: number; step?: number };
+  thumbnail?: string;
+  preview?: string;
+  tags?: string[];
+  isPremium?: boolean;
+}
 
 interface SidebarLeftProps {
   clipAFile: File | null;
   clipBFile: File | null;
   selectedTransition: string;
   fitMode: "stretch" | "fit" | "crop";
+  /** API-fetched transitions list — populated asynchronously on mount */
+  transitions: TransitionItem[];
   onClipAImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClipBImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSelectTransition: (transition: string) => void;
@@ -17,13 +33,14 @@ export function SidebarLeft({
   clipBFile,
   selectedTransition,
   fitMode,
+  transitions,
   onClipAImport,
   onClipBImport,
   onSelectTransition,
   onSetFitMode,
 }: SidebarLeftProps) {
-  // Extract categories dynamically
-  const categories = Array.from(new Set(ALL_TRANSITIONS.map((t) => t.category)));
+  // Extract categories dynamically from API-fetched transitions
+  const categories = Array.from(new Set(transitions.map((t) => t.category)));
 
   return (
     <aside className="flex flex-col h-full w-[280px] min-w-[280px] bg-surface-container-low border-r border-outline-variant p-1 gap-1 overflow-hidden select-none">
@@ -98,45 +115,51 @@ export function SidebarLeft({
         </div>
       </div>
 
-      {/* Transition Library */}
+      {/* Transition Library — populated from API */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <h3 className="text-[10px] font-bold text-outline-variant uppercase mb-1 px-1">
           Mix_Library
         </h3>
         <div className="flex-1 overflow-y-auto pr-1 space-y-3">
-          {categories.map((category) => {
-            const categoryTransitions = ALL_TRANSITIONS.filter((t) => t.category === category);
-            return (
-              <div key={category} className="space-y-1">
-                <div className="text-[9px] font-bold text-primary uppercase px-1 pb-0.5 border-b border-outline-variant/30">
-                  {category.replace("-", " ")}
-                </div>
-                {categoryTransitions.map((transition) => (
-                  <div
-                    key={transition.id}
-                    onClick={() => onSelectTransition(transition.id)}
-                    className={`p-1.5 cursor-pointer border-l-2 ${
-                      selectedTransition === transition.id
-                        ? "bg-surface-container-high border-primary text-primary"
-                        : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-                    } transition-all`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <span className="text-[11px] font-bold truncate max-w-[180px]">
-                        {transition.name.toUpperCase().replace(" ", "_")}
-                      </span>
-                      <span className="text-[8px] font-mono-data text-outline">
-                        {transition.defaultDurationMs}ms
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-                      {transition.description}
-                    </p>
+          {transitions.length === 0 ? (
+            <div className="text-[10px] text-on-surface-variant px-1 py-2 animate-pulse">
+              Loading transitions from API…
+            </div>
+          ) : (
+            categories.map((category) => {
+              const categoryTransitions = transitions.filter((t) => t.category === category);
+              return (
+                <div key={category} className="space-y-1">
+                  <div className="text-[9px] font-bold text-primary uppercase px-1 pb-0.5 border-b border-outline-variant/30">
+                    {category.replace(/-/g, " ")}
                   </div>
-                ))}
-              </div>
-            );
-          })}
+                  {categoryTransitions.map((transition) => (
+                    <div
+                      key={transition.id}
+                      onClick={() => onSelectTransition(transition.id)}
+                      className={`p-1.5 cursor-pointer border-l-2 ${
+                        selectedTransition === transition.id
+                          ? "bg-surface-container-high border-primary text-primary"
+                          : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                      } transition-all`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <span className="text-[11px] font-bold truncate max-w-[180px]">
+                          {transition.name.toUpperCase().replace(/ /g, "_")}
+                        </span>
+                        <span className="text-[8px] font-mono-data text-outline">
+                          {Math.round((transition.duration?.default ?? 2) * 1000)}ms
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+                        {transition.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </aside>

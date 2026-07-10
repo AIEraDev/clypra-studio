@@ -3,6 +3,8 @@
  * Types used across publishing workflows
  */
 
+import type { GradingParams } from "../components/effects/filter/types";
+
 export interface AudioPublishPayload {
   id: string;
   category: string;
@@ -154,7 +156,7 @@ export interface FilterPublishPayload {
     category: string;
     description: string;
     intensity: string;
-    swatch: string;
+    gradingParams?: GradingParams;
     creator?: {
       name: string;
       socialLink?: string;

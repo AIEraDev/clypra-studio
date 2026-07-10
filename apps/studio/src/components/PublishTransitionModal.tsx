@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, Image as ImageIcon, Video, Sparkles } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, Image as ImageIcon, Video, Sparkles, Code2, ChevronDown, ChevronUp } from "lucide-react";
 import { useTransitionR2Upload } from "../hooks/useTransitionR2Upload";
 
 export type TransitionCategory =
@@ -35,7 +35,7 @@ interface PublishTransitionModalProps {
     category: string;
     description: string;
     defaultDurationMs: number;
-    params: any[];
+    params: any;
     tags: string[];
     [key: string]: any;
   } | null;
@@ -61,6 +61,7 @@ export function PublishTransitionModal({
   const [isPremium, setIsPremium] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isAdmin, setIsAdmin] = useState(false);
+  const [jsonExpanded, setJsonExpanded] = useState(false);
 
   const { uploadTransition, status, message, reset } = useTransitionR2Upload();
 
@@ -110,6 +111,32 @@ export function PublishTransitionModal({
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
+
+  // Live R2 payload preview — mirrors exactly what uploadTransition sends
+  const r2Payload = useMemo(() => ({
+    transition: {
+      id: transitionId || "<id>",
+      name: transitionName || "<name>",
+      category,
+      description,
+      renderer: transitionDef ? transitionDef.id : "",
+      params: transitionDef ? transitionDef.params : [],
+      defaultDuration,
+      defaultEasing,
+      tags,
+      isPremium,
+    },
+    thumbnailDataUrl: thumbnailDataUrl ? "<base64 PNG — omitted for preview>" : null,
+    previewDataUrl: previewDataUrl ? "<base64 WebM — omitted for preview>" : null,
+  }), [transitionId, transitionName, category, description, transitionDef, defaultDuration, defaultEasing, tags, isPremium, thumbnailDataUrl, previewDataUrl]);
+
+  const r2Paths = useMemo(() => ({
+    apiEndpoint: `/transitions/upload  →  POST`,
+    indexFile: `transitions/${category}/index.json`,
+    thumbnail: thumbnailDataUrl ? `transitions/${category}/${transitionId || "<id>"}.png` : null,
+    preview: previewDataUrl ? `transitions/${category}/${transitionId || "<id>"}.webm` : null,
+    liveUrl: `https://clypra-worker-api.abdulkabirmusa.com/transitions/${category}/${transitionId || "<id>"}`,
+  }), [category, transitionId, thumbnailDataUrl, previewDataUrl]);
 
   const handlePublish = async () => {
     const errors: ValidationErrors = {};
@@ -367,11 +394,32 @@ export function PublishTransitionModal({
                 </div>
               </div>
 
+              {/* R2 / API Destinations */}
+              <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
+                <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
+                  <FileJson size={14} className="text-purple-300" /> R2 / API Destinations
+                </h4>
+                <div className="space-y-2">
+                  {([
+                    { label: "Endpoint", value: r2Paths.apiEndpoint, color: "text-orange-300" },
+                    { label: "Index file", value: r2Paths.indexFile, color: "text-teal-300" },
+                    ...(r2Paths.thumbnail ? [{ label: "Thumbnail", value: r2Paths.thumbnail, color: "text-amber-300" }] : []),
+                    ...(r2Paths.preview ? [{ label: "Preview", value: r2Paths.preview, color: "text-blue-300" }] : []),
+                    { label: "Live URL", value: r2Paths.liveUrl, color: "text-blue-300" },
+                  ] as { label: string; value: string; color: string }[]).map(({ label, value, color }) => (
+                    <div key={label} className="flex items-start gap-2 rounded bg-[#09090D] border border-[#1A1A24] px-3 py-2">
+                      <span className="text-[9px] font-bold uppercase text-[#888899] shrink-0 w-16">{label}</span>
+                      <code className={`flex-1 break-all font-mono text-[10px] ${color}`}>{value}</code>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* WebM Video Preview */}
               {previewDataUrl && (
                 <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
                   <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-                    <Video size={14} className="text-purple-300" /> Video Preview (WebM)
+                    <Video size={14} className="text-purple-300" /> Video Preview (WebM → R2)
                   </h4>
                   <div className="relative rounded overflow-hidden border border-[#2A2A38] bg-[#09090D]">
                     <video src={previewDataUrl} controls loop autoPlay muted className="w-full h-auto" />
@@ -383,13 +431,42 @@ export function PublishTransitionModal({
               {thumbnailDataUrl && (
                 <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
                   <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-                    <ImageIcon size={14} className="text-amber-300" /> Thumbnail Preview (PNG)
+                    <ImageIcon size={14} className="text-amber-300" /> Thumbnail Preview (PNG → R2)
                   </h4>
                   <div className="relative rounded overflow-hidden border border-[#2A2A38] bg-[#09090D]">
                     <img src={thumbnailDataUrl} alt="Thumbnail preview" className="w-full h-auto" />
                   </div>
                 </div>
               )}
+
+              {/* JSON Payload */}
+              <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
+                <button
+                  type="button"
+                  onClick={() => setJsonExpanded((v) => !v)}
+                  className="w-full flex items-center justify-between text-xs font-bold text-white mb-1 hover:text-teal-300 transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <Code2 size={14} className="text-teal-300" /> JSON Payload (POST /transitions/upload)
+                  </span>
+                  {jsonExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </button>
+                <p className="text-[10px] text-[#555566] mb-3">Exact body that will be sent to the API</p>
+                {jsonExpanded && (
+                  <pre className="overflow-x-auto rounded-lg border border-[#1A1A24] bg-[#09090D] p-3 font-mono text-[10px] text-teal-200 leading-relaxed whitespace-pre-wrap">
+                    {JSON.stringify(r2Payload, null, 2)}
+                  </pre>
+                )}
+                {!jsonExpanded && (
+                  <button
+                    type="button"
+                    onClick={() => setJsonExpanded(true)}
+                    className="w-full rounded-lg border border-dashed border-[#2A2A38] py-2 text-[10px] text-[#555566] hover:text-teal-300 hover:border-teal-500/30 transition-colors"
+                  >
+                    Click to expand payload JSON
+                  </button>
+                )}
+              </div>
 
               {hasErrors && (
                 <div className="rounded-xl border border-red-900/40 bg-red-950/30 p-4">

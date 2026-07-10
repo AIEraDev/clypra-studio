@@ -1,12 +1,12 @@
 /**
  * Labs Navigation Panel
  *
- * Shows navigation buttons to the three effect labs (Video, Transition, Body).
+ * Shows navigation buttons to the four effect labs (Video, Transition, Body, Filter).
  * Only visible to admin users.
  */
 
 import React from "react";
-import { Video, Zap, User, ExternalLink } from "lucide-react";
+import { Video, Zap, User, Palette, ExternalLink } from "lucide-react";
 
 interface LabCard {
   id: string;
@@ -46,6 +46,15 @@ const LABS: LabCard[] = [
     color: "#10b981",
     gradient: "linear-gradient(135deg, #10b981, #3b82f6)",
   },
+  {
+    id: "filter-lab",
+    name: "Filter Lab",
+    description: "Design and test color grading presets and looks with GPU rendering pipeline",
+    route: "/filter-lab",
+    icon: Palette,
+    color: "#7c6fff",
+    gradient: "linear-gradient(135deg, #7c6fff, #6366f1)",
+  },
 ];
 
 export function LabsPanel() {
@@ -59,7 +68,7 @@ export function LabsPanel() {
         {/* Header */}
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-white">Effect Labs</h1>
-          <p className="text-sm text-(--studio-muted)">Three specialized editors built on the unified runtime architecture. Design, test, and publish production-quality effects.</p>
+          <p className="text-sm text-(--studio-muted)">Four specialized editors built on the unified runtime architecture. Design, test, and publish production-quality effects.</p>
         </div>
 
         {/* Architecture Info */}
@@ -69,7 +78,7 @@ export function LabsPanel() {
             background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1))",
           }}
         >
-          <h2 className="text-sm font-semibold text-white mb-2">Three Labs, One Runtime</h2>
+          <h2 className="text-sm font-semibold text-white mb-2">Four Labs, One Runtime</h2>
           <p className="text-xs text-(--studio-muted) leading-relaxed">All labs share: graph compilation, render planning, GPU execution, performance monitoring, validation, and publishing pipeline. This architecture makes creating new effects "content work" rather than "architecture work".</p>
         </div>
 
@@ -138,6 +147,14 @@ export function LabsPanel() {
                       <span className="text-xs px-2 py-1 rounded bg-(--studio-control) text-(--studio-muted)">Neon Outline</span>
                       <span className="text-xs px-2 py-1 rounded bg-(--studio-control) text-(--studio-muted)">Background Blur</span>
                       <span className="text-xs px-2 py-1 rounded bg-(--studio-control) text-(--studio-muted)">Spotlight</span>
+                      <span className="text-xs px-2 py-1 rounded bg-(--studio-control) text-(--studio-muted)">+2 more</span>
+                    </>
+                  )}
+                  {lab.id === "filter-lab" && (
+                    <>
+                      <span className="text-xs px-2 py-1 rounded bg-(--studio-control) text-(--studio-muted)">Teal & Orange</span>
+                      <span className="text-xs px-2 py-1 rounded bg-(--studio-control) text-(--studio-muted)">Cyberpunk</span>
+                      <span className="text-xs px-2 py-1 rounded bg-(--studio-control) text-(--studio-muted)">Luminance Histogram</span>
                       <span className="text-xs px-2 py-1 rounded bg-(--studio-control) text-(--studio-muted)">+2 more</span>
                     </>
                   )}

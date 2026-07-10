@@ -12,6 +12,7 @@ const AdminEffectsPanel = lazy(() => import("./components/effects/video/AdminEff
 const VideoLabView = lazy(() => import("./labs/video").then((m) => ({ default: m.VideoLabView })));
 const TransitionLabView = lazy(() => import("./labs/transition").then((m) => ({ default: m.TransitionLabView })));
 const BodyLabView = lazy(() => import("./labs/body").then((m) => ({ default: m.BodyLabView })));
+const FilterLabView = lazy(() => import("./labs/filter").then((m) => ({ default: m.FilterLabView })));
 const RuntimeObservatoryDemo = lazy(() => import("./labs/RuntimeObservatoryDemo").then((m) => ({ default: m.RuntimeObservatoryDemo })));
 
 const ROUTE_METADATA = {
@@ -60,6 +61,11 @@ const ROUTE_METADATA = {
     description: "Body Lab - Design, test, and publish mask-based body effects with extensible feature providers.",
     title: "Clypra Studio - Body Lab",
   },
+  filterLab: {
+    canonical: "https://clypra.abdulkabirmusa.com/filter-lab",
+    description: "Filter Lab - Design, test, and publish color grading presets and looks with GPU rendering pipeline.",
+    title: "Clypra Studio - Filter Lab",
+  },
   observatoryDemo: {
     canonical: "https://clypra.abdulkabirmusa.com/observatory-demo",
     description: "Runtime Observatory Demo - Experience the V2 pipeline with snapshot-based observability and real-time performance monitoring.",
@@ -99,6 +105,10 @@ function isBodyLabRoute(pathname: string) {
   return pathname === "/body-lab" || pathname.startsWith("/body-lab");
 }
 
+function isFilterLabRoute(pathname: string) {
+  return pathname === "/filter-lab" || pathname.startsWith("/filter-lab");
+}
+
 function isObservatoryDemoRoute(pathname: string) {
   return pathname === "/observatory-demo" || pathname.startsWith("/observatory-demo");
 }
@@ -126,10 +136,11 @@ export default function RootApp() {
   const videoLabRoute = isVideoLabRoute(pathname);
   const transitionLabRoute = isTransitionLabRoute(pathname);
   const bodyLabRoute = isBodyLabRoute(pathname);
+  const filterLabRoute = isFilterLabRoute(pathname);
   const observatoryDemoRoute = isObservatoryDemoRoute(pathname);
-  const studioRoute = !effectsRoute && !mpgRoute && !adminEffectsRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && !observatoryDemoRoute && isStudioRoute(pathname);
+  const studioRoute = !effectsRoute && !mpgRoute && !adminEffectsRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && !filterLabRoute && !observatoryDemoRoute && isStudioRoute(pathname);
   const lottieRoute = isLottieRoute(pathname);
-  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : adminEffectsRoute ? ROUTE_METADATA.adminEffects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : observatoryDemoRoute ? ROUTE_METADATA.observatoryDemo : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
+  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : adminEffectsRoute ? ROUTE_METADATA.adminEffects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : filterLabRoute ? ROUTE_METADATA.filterLab : observatoryDemoRoute ? ROUTE_METADATA.observatoryDemo : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
 
   // Normalise /studio/* → /studio (preserve ?q= param) unless it's effects sandbox or mpg playground
   useEffect(() => {
@@ -141,7 +152,7 @@ export default function RootApp() {
 
   // Set page scroll styles based on current route
   useEffect(() => {
-    if (studioRoute || lottieRoute || mpgRoute || videoLabRoute || transitionLabRoute || bodyLabRoute) {
+    if (studioRoute || lottieRoute || mpgRoute || videoLabRoute || transitionLabRoute || bodyLabRoute || filterLabRoute) {
       window.scrollTo(0, 0);
       document.body.style.overflow = "hidden";
       document.body.style.overflowX = "hidden";
@@ -163,7 +174,7 @@ export default function RootApp() {
       document.documentElement.style.overflowX = "";
       document.documentElement.style.overflowY = "";
     };
-  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute, observatoryDemoRoute]);
+  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute, filterLabRoute, observatoryDemoRoute]);
 
   useEffect(() => {
     document.title = metadata.title;
@@ -315,6 +326,23 @@ export default function RootApp() {
         }
       >
         <BodyLabView />
+      </Suspense>
+    );
+  }
+
+  if (filterLabRoute) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-screen bg-[#020617] items-center justify-center text-white">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7c6fff] mx-auto mb-4" />
+              <p className="text-sm text-gray-400">Loading Filter Lab...</p>
+            </div>
+          </div>
+        }
+      >
+        <FilterLabView />
       </Suspense>
     );
   }

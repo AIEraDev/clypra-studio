@@ -1,5 +1,5 @@
 import React from "react";
-import { ALL_TRANSITIONS } from "@clypra-studio/engine/transitions";
+import { TRANSITION_PRESETS as ALL_TRANSITIONS } from "@clypra-studio/engine/transitions";
 
 interface SidebarRightProps {
   activeTab: "inspector" | "nodes" | "stats";

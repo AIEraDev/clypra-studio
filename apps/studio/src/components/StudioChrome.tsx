@@ -1,5 +1,5 @@
 import React from "react";
-import { Download, FileCode, Filter, Grid2X2, Layers, Music, Palette, Shield, Sparkles, Sticker, Type, Video, Wand2, Shuffle, Beaker, Play, Zap, User } from "lucide-react";
+import { Download, FileCode, Music, Shield, Sticker, Type, Beaker } from "lucide-react";
 
 export type RailItem = "text-effects" | "audio" | "stickers" | "overlays" | "video-effects" | "body-effects" | "filters" | "transitions" | "admin" | "labs";
 
@@ -12,11 +12,6 @@ const RAIL_ITEMS: Array<{
   { id: "text-effects", label: "Text Effects", icon: Type },
   { id: "audio", label: "Audio", icon: Music },
   { id: "stickers", label: "Stickers", icon: Sticker },
-  { id: "overlays", label: "Overlays", icon: Video },
-  { id: "video-effects", label: "Video Effects", icon: Wand2 },
-  { id: "body-effects", label: "Body Effects", icon: Sparkles },
-  { id: "filters", label: "Filters", icon: Filter, adminOnly: true },
-  { id: "transitions", label: "Transitions", icon: Shuffle },
   { id: "labs", label: "Labs", icon: Beaker, adminOnly: true },
   { id: "admin", label: "Admin Settings", icon: Shield, adminOnly: true },
 ];

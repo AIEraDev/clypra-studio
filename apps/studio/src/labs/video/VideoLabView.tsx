@@ -777,7 +777,7 @@ export function VideoLabView() {
                 name: selectedMeta.name,
                 category: selectedMeta.category,
                 description: selectedMeta.description,
-                params: Object.entries(selectedMeta.parameterSchema).map(([k, s]) => ({
+                params: Object.entries(selectedMeta.parameterSchema as Record<string, any>).map(([k, s]) => ({
                   key: k,
                   value: parameters[k] ?? s.default,
                 })),

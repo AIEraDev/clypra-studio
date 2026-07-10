@@ -104,6 +104,7 @@ export interface TransitionPreset {
 
   // Timing
   defaultDuration: number; // seconds
+  defaultDurationMs: number; // milliseconds (compatibility)
   durationConstraints?: {
     min: number;
     max: number;
