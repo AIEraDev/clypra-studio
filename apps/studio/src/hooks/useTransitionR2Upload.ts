@@ -18,6 +18,7 @@ export interface TransitionUploadPayload {
     defaultEasing?: string;
     tags?: string[];
     isPremium?: boolean;
+    published?: boolean; // Auto-publish if admin
   };
   thumbnailDataUrl: string;
   previewDataUrl: string;
