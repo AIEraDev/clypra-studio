@@ -19,42 +19,17 @@ interface SidebarRightProps {
   onResetContext: () => void;
   onPublish: () => void;
   isRecording: boolean;
+  isAdmin?: boolean;
 }
 
-export function SidebarRight({
-  activeTab,
-  selectedTransition,
-  parameters,
-  latency,
-  cpuUsage,
-  gpuUsage,
-  memUsage,
-  duration,
-  progress,
-  logs,
-  terminalEndRef,
-  onSetActiveTab,
-  onParamChange,
-  onDumpLog,
-  onResetContext,
-  onPublish,
-  isRecording,
-}: SidebarRightProps) {
+export function SidebarRight({ activeTab, selectedTransition, parameters, latency, cpuUsage, gpuUsage, memUsage, duration, progress, logs, terminalEndRef, onSetActiveTab, onParamChange, onDumpLog, onResetContext, onPublish, isRecording, isAdmin = false }: SidebarRightProps) {
   const activeTransition = ALL_TRANSITIONS.find((t) => t.id === selectedTransition);
 
   return (
     <aside className="flex flex-col h-full w-[280px] min-w-[280px] bg-surface-container-low border-l border-outline-variant overflow-hidden select-none">
       <div className="flex bg-surface-container-lowest border-b border-outline-variant">
         {(["inspector", "nodes", "stats"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => onSetActiveTab(tab)}
-            className={`flex-1 py-1.5 text-[10px] font-bold uppercase transition-all ${
-              activeTab === tab
-                ? "text-primary border-b border-primary"
-                : "text-on-surface-variant hover:bg-surface-container-high"
-            }`}
-          >
+          <button key={tab} onClick={() => onSetActiveTab(tab)} className={`flex-1 py-1.5 text-[10px] font-bold uppercase transition-all ${activeTab === tab ? "text-primary border-b border-primary" : "text-on-surface-variant hover:bg-surface-container-high"}`}>
             {tab}
           </button>
         ))}
@@ -65,8 +40,7 @@ export function SidebarRight({
           <>
             <div>
               <h4 className="text-[10px] font-bold text-primary uppercase mb-1 flex items-center gap-1">
-                <span className="material-symbols-outlined text-[12px]">tune</span> SELECTED:{" "}
-                {activeTransition ? activeTransition.name.toUpperCase() : selectedTransition.toUpperCase()}
+                <span className="material-symbols-outlined text-[12px]">tune</span> SELECTED: {activeTransition ? activeTransition.name.toUpperCase() : selectedTransition.toUpperCase()}
               </h4>
               <div className="property-grid bg-surface-container border border-outline-variant rounded select-none">
                 {activeTransition?.params.map((param) => {
@@ -76,11 +50,7 @@ export function SidebarRight({
                       <div className="text-outline text-xs">{param.label}</div>
                       <div className="text-on-surface select-none">
                         {param.type === "select" && (
-                          <select
-                            value={val}
-                            onChange={(e) => onParamChange(param.key, e.target.value)}
-                            className="bg-black/80 border border-outline-variant rounded text-[10px] px-1 py-0.5 text-on-surface outline-none"
-                          >
+                          <select value={val} onChange={(e) => onParamChange(param.key, e.target.value)} className="bg-black/80 border border-outline-variant rounded text-[10px] px-1 py-0.5 text-on-surface outline-none">
                             {param.options?.map((opt) => (
                               <option key={opt} value={opt}>
                                 {opt}
@@ -90,58 +60,28 @@ export function SidebarRight({
                         )}
                         {param.type === "range" && (
                           <div className="flex items-center gap-2">
-                            <input
-                              type="range"
-                              min={param.min ?? 0}
-                              max={param.max ?? 100}
-                              step={param.step ?? 1}
-                              value={val}
-                              onChange={(e) => onParamChange(param.key, parseFloat(e.target.value))}
-                              className="w-full accent-primary"
-                            />
-                            <span className="font-mono-data text-[10px]">
-                              {val}
-                            </span>
+                            <input type="range" min={param.min ?? 0} max={param.max ?? 100} step={param.step ?? 1} value={val} onChange={(e) => onParamChange(param.key, parseFloat(e.target.value))} className="w-full accent-primary" />
+                            <span className="font-mono-data text-[10px]">{val}</span>
                           </div>
                         )}
                         {param.type === "color" && (
                           <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={val}
-                              onChange={(e) => onParamChange(param.key, e.target.value)}
-                              className="w-6 h-4 bg-transparent border-0 cursor-pointer"
-                            />
-                            <span className="font-mono-data text-[9px] uppercase">
-                              {val}
-                            </span>
+                            <input type="color" value={val} onChange={(e) => onParamChange(param.key, e.target.value)} className="w-6 h-4 bg-transparent border-0 cursor-pointer" />
+                            <span className="font-mono-data text-[9px] uppercase">{val}</span>
                           </div>
                         )}
-                        {param.type === "toggle" && (
-                          <input
-                            type="checkbox"
-                            checked={!!val}
-                            onChange={(e) => onParamChange(param.key, e.target.checked)}
-                            className="accent-primary"
-                          />
-                        )}
+                        {param.type === "toggle" && <input type="checkbox" checked={!!val} onChange={(e) => onParamChange(param.key, e.target.checked)} className="accent-primary" />}
                       </div>
                     </React.Fragment>
                   );
                 })}
-                {(!activeTransition || activeTransition.params.length === 0) && (
-                  <div className="col-span-2 text-center text-on-surface-variant p-2 text-[10px]">
-                    No parameters configuration available
-                  </div>
-                )}
+                {(!activeTransition || activeTransition.params.length === 0) && <div className="col-span-2 text-center text-on-surface-variant p-2 text-[10px]">No parameters configuration available</div>}
               </div>
             </div>
 
             {/* Pipeline Context */}
             <div>
-              <h4 className="text-[10px] font-bold text-outline-variant uppercase mb-1 px-0.5">
-                Pipeline_Context
-              </h4>
+              <h4 className="text-[10px] font-bold text-outline-variant uppercase mb-1 px-0.5">Pipeline_Context</h4>
               <div className="property-grid bg-black/40 border border-outline-variant/50">
                 <div className="text-outline">Latency</div>
                 <div className="text-tertiary">{latency}ms</div>
@@ -183,21 +123,10 @@ export function SidebarRight({
 
         {/* Stream Monitor */}
         <div className="flex-1 flex flex-col min-h-0 select-text">
-          <h4 className="text-[10px] font-bold text-outline-variant uppercase mb-1 px-0.5">
-            Stream_Monitor
-          </h4>
+          <h4 className="text-[10px] font-bold text-outline-variant uppercase mb-1 px-0.5">Stream_Monitor</h4>
           <div className="flex-1 bg-black p-2 font-mono-data text-[9px] text-secondary/80 border border-outline-variant leading-tight overflow-y-auto max-h-[140px] flex flex-col gap-0.5">
             {logs.map((logStr, i) => (
-              <p
-                key={i}
-                className={
-                  logStr.includes("[WARN]")
-                    ? "text-tertiary"
-                    : logStr.includes("[IMPORT]")
-                      ? "text-primary font-bold"
-                      : ""
-                }
-              >
+              <p key={i} className={logStr.includes("[WARN]") ? "text-tertiary" : logStr.includes("[IMPORT]") ? "text-primary font-bold" : ""}>
                 {logStr}
               </p>
             ))}
@@ -207,15 +136,16 @@ export function SidebarRight({
       </div>
 
       <div className="p-1 border-t border-outline-variant bg-surface-container-low space-y-1">
-        <button
-          onClick={onPublish}
-          disabled={isRecording}
-          className="w-full py-1.5 bg-teal-500 text-black text-[10px] font-black hover:bg-teal-400 disabled:opacity-50 uppercase rounded transition-colors text-center flex items-center justify-center gap-1.5"
-        >
+        <button onClick={onPublish} disabled={isRecording || !isAdmin} className="w-full py-1.5 bg-teal-500 text-black text-[10px] font-black hover:bg-teal-400 disabled:opacity-50 uppercase rounded transition-colors text-center flex items-center justify-center gap-1.5" title={!isAdmin ? "Admin only" : ""}>
           {isRecording ? (
             <>
               <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping shrink-0" />
               Recording...
+            </>
+          ) : !isAdmin ? (
+            <>
+              <span className="material-symbols-outlined text-[12px]">lock</span>
+              Admin Only
             </>
           ) : (
             <>
@@ -225,16 +155,10 @@ export function SidebarRight({
           )}
         </button>
         <div className="grid grid-cols-2 gap-1">
-          <button
-            onClick={onDumpLog}
-            className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface"
-          >
+          <button onClick={onDumpLog} className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface">
             Dump_Log
           </button>
-          <button
-            onClick={onResetContext}
-            className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface"
-          >
+          <button onClick={onResetContext} className="py-1 bg-surface-container-highest text-[10px] font-bold hover:bg-outline-variant hover:text-white uppercase rounded transition-colors text-center text-on-surface">
             Reset_Ctx
           </button>
         </div>

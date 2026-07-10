@@ -37,6 +37,21 @@ export function TransitionLabView() {
     }
   }, []);
 
+  // Check admin status
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("clypra_auth_token");
+      if (!token) {
+        setIsAdmin(false);
+        return;
+      }
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setIsAdmin(!!payload.isAdmin);
+    } catch (e) {
+      setIsAdmin(false);
+    }
+  }, []);
+
   // ── API-driven transition library ───────────────────────────────────────────
   const [apiTransitions, setApiTransitions] = useState<
     Array<{
@@ -105,6 +120,7 @@ export function TransitionLabView() {
   const [thumbnailDataUrl, setThumbnailDataUrl] = useState("");
   const [previewDataUrl, setPreviewDataUrl] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -830,6 +846,10 @@ export function TransitionLabView() {
   };
 
   const handleStartPublish = () => {
+    if (!isAdmin) {
+      addLog("[ERROR] Only admin users can publish transitions.");
+      return;
+    }
     addLog("[PUBLISH] Preparing canvas and timeline for recording...");
     setPlaying(false);
 
@@ -954,7 +974,7 @@ export function TransitionLabView() {
           onClipBError={handleClipBError}
         />
 
-        <SidebarRight activeTab={activeTab} selectedTransition={selectedTransition} parameters={parameters} latency={latency} cpuUsage={cpuUsage} gpuUsage={gpuUsage} memUsage={memUsage} duration={duration} progress={progress} logs={logs} terminalEndRef={terminalEndRef} onSetActiveTab={setActiveTab} onParamChange={handleParamChange} onDumpLog={handleDumpLog} onResetContext={handleResetContext} onPublish={handleStartPublish} isRecording={isRecording} />
+        <SidebarRight activeTab={activeTab} selectedTransition={selectedTransition} parameters={parameters} latency={latency} cpuUsage={cpuUsage} gpuUsage={gpuUsage} memUsage={memUsage} duration={duration} progress={progress} logs={logs} terminalEndRef={terminalEndRef} onSetActiveTab={setActiveTab} onParamChange={handleParamChange} onDumpLog={handleDumpLog} onResetContext={handleResetContext} onPublish={handleStartPublish} isRecording={isRecording} isAdmin={isAdmin} />
       </main>
 
       <PublishTransitionModal open={showPublishModal} onClose={() => setShowPublishModal(false)} transitionDef={apiTransitions.find((t) => t.id === selectedTransition) || null} thumbnailDataUrl={thumbnailDataUrl} previewDataUrl={previewDataUrl} />

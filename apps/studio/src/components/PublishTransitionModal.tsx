@@ -2,24 +2,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, Image as ImageIcon, Video, Sparkles, Code2, ChevronDown, ChevronUp } from "lucide-react";
 import { useTransitionR2Upload } from "../hooks/useTransitionR2Upload";
 
-export type TransitionCategory =
-  | "geometric"
-  | "optical-distortion"
-  | "temporal"
-  | "particle-dissolve"
-  | "light-based"
-  | "depth-based"
-  | "physics-simulated";
+export type TransitionCategory = "geometric" | "optical-distortion" | "temporal" | "particle-dissolve" | "light-based" | "depth-based" | "physics-simulated";
 
-const TRANSITION_CATEGORIES: TransitionCategory[] = [
-  "geometric",
-  "optical-distortion",
-  "temporal",
-  "particle-dissolve",
-  "light-based",
-  "depth-based",
-  "physics-simulated",
-];
+const TRANSITION_CATEGORIES: TransitionCategory[] = ["geometric", "optical-distortion", "temporal", "particle-dissolve", "light-based", "depth-based", "physics-simulated"];
 
 interface ValidationErrors {
   id?: string;
@@ -43,13 +28,7 @@ interface PublishTransitionModalProps {
   previewDataUrl?: string;
 }
 
-export function PublishTransitionModal({
-  open,
-  onClose,
-  transitionDef,
-  thumbnailDataUrl,
-  previewDataUrl,
-}: PublishTransitionModalProps) {
+export function PublishTransitionModal({ open, onClose, transitionDef, thumbnailDataUrl, previewDataUrl }: PublishTransitionModalProps) {
   const [activeTab, setActiveTab] = useState<"metadata" | "preview">("metadata");
   const [transitionId, setTransitionId] = useState("");
   const [transitionName, setTransitionName] = useState("");
@@ -113,30 +92,36 @@ export function PublishTransitionModal({
     .filter(Boolean);
 
   // Live R2 payload preview — mirrors exactly what uploadTransition sends
-  const r2Payload = useMemo(() => ({
-    transition: {
-      id: transitionId || "<id>",
-      name: transitionName || "<name>",
-      category,
-      description,
-      renderer: transitionDef ? transitionDef.id : "",
-      params: transitionDef ? transitionDef.params : [],
-      defaultDuration,
-      defaultEasing,
-      tags,
-      isPremium,
-    },
-    thumbnailDataUrl: thumbnailDataUrl ? "<base64 PNG — omitted for preview>" : null,
-    previewDataUrl: previewDataUrl ? "<base64 WebM — omitted for preview>" : null,
-  }), [transitionId, transitionName, category, description, transitionDef, defaultDuration, defaultEasing, tags, isPremium, thumbnailDataUrl, previewDataUrl]);
+  const r2Payload = useMemo(
+    () => ({
+      transition: {
+        id: transitionId || "<id>",
+        name: transitionName || "<name>",
+        category,
+        description,
+        renderer: transitionDef ? transitionDef.id : "",
+        params: transitionDef ? transitionDef.params : [],
+        defaultDuration,
+        defaultEasing,
+        tags,
+        isPremium,
+      },
+      thumbnailDataUrl: thumbnailDataUrl ? "<base64 PNG — omitted for preview>" : null,
+      previewDataUrl: previewDataUrl ? "<base64 WebM — omitted for preview>" : null,
+    }),
+    [transitionId, transitionName, category, description, transitionDef, defaultDuration, defaultEasing, tags, isPremium, thumbnailDataUrl, previewDataUrl],
+  );
 
-  const r2Paths = useMemo(() => ({
-    apiEndpoint: `/transitions/upload  →  POST`,
-    indexFile: `transitions/${category}/index.json`,
-    thumbnail: thumbnailDataUrl ? `transitions/${category}/${transitionId || "<id>"}.png` : null,
-    preview: previewDataUrl ? `transitions/${category}/${transitionId || "<id>"}.webm` : null,
-    liveUrl: `https://clypra-worker-api.abdulkabirmusa.com/transitions/${category}/${transitionId || "<id>"}`,
-  }), [category, transitionId, thumbnailDataUrl, previewDataUrl]);
+  const r2Paths = useMemo(
+    () => ({
+      apiEndpoint: `/transitions/upload  →  POST`,
+      indexFile: `transitions/${category}/index.json`,
+      thumbnail: thumbnailDataUrl ? `transitions/${category}/${transitionId || "<id>"}.png` : null,
+      preview: previewDataUrl ? `transitions/${category}/${transitionId || "<id>"}.webm` : null,
+      liveUrl: `https://clypra-worker-api.abdulkabirmusa.com/transitions/${category}/${transitionId || "<id>"}`,
+    }),
+    [category, transitionId, thumbnailDataUrl, previewDataUrl],
+  );
 
   const handlePublish = async () => {
     const errors: ValidationErrors = {};
@@ -164,6 +149,7 @@ export function PublishTransitionModal({
           defaultEasing,
           tags,
           isPremium,
+          published: isAdmin, // Auto-publish if admin
         },
         thumbnailDataUrl: thumbnailDataUrl || "",
         previewDataUrl: previewDataUrl || "",
@@ -190,12 +176,7 @@ export function PublishTransitionModal({
                 <p className="mt-1 text-[11px] leading-relaxed text-[#9A9AAA]">Review metadata and upload directly to Cloudflare R2</p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isUploading}
-              className="rounded-lg border border-[#2A2A38] p-1.5 text-[#888899] hover:bg-[#2A2A38] hover:text-white disabled:opacity-50"
-            >
+            <button type="button" onClick={onClose} disabled={isUploading} className="rounded-lg border border-[#2A2A38] p-1.5 text-[#888899] hover:bg-[#2A2A38] hover:text-white disabled:opacity-50">
               <X size={14} />
             </button>
           </div>
@@ -203,20 +184,10 @@ export function PublishTransitionModal({
 
         {/* Tabs */}
         <div className="flex border-b border-[#2A2A38] bg-[#15151C] shrink-0">
-          <button
-            onClick={() => setActiveTab("metadata")}
-            className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-              activeTab === "metadata" ? "text-teal-300 bg-[#121219] border-b-2 border-teal-500" : "text-[#888899] hover:text-white"
-            }`}
-          >
+          <button onClick={() => setActiveTab("metadata")} className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${activeTab === "metadata" ? "text-teal-300 bg-[#121219] border-b-2 border-teal-500" : "text-[#888899] hover:text-white"}`}>
             <FileJson size={13} /> Metadata
           </button>
-          <button
-            onClick={() => setActiveTab("preview")}
-            className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-              activeTab === "preview" ? "text-teal-300 bg-[#121219] border-b-2 border-teal-500" : "text-[#888899] hover:text-white"
-            }`}
-          >
+          <button onClick={() => setActiveTab("preview")} className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${activeTab === "preview" ? "text-teal-300 bg-[#121219] border-b-2 border-teal-500" : "text-[#888899] hover:text-white"}`}>
             <Video size={13} /> Previews
           </button>
         </div>
@@ -282,11 +253,7 @@ export function PublishTransitionModal({
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">
                   Category <span className="text-red-400">*</span>
                 </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as TransitionCategory)}
-                  className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500"
-                >
+                <select value={category} onChange={(e) => setCategory(e.target.value as TransitionCategory)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500">
                   {TRANSITION_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat.replace("-", " ").toUpperCase()}
@@ -299,52 +266,28 @@ export function PublishTransitionModal({
               {/* Description */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="A physics-based shatter transition where the screen splits into 3D fragments."
-                  rows={3}
-                  className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500 resize-none"
-                />
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A physics-based shatter transition where the screen splits into 3D fragments." rows={3} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500 resize-none" />
                 <p className="mt-1.5 text-[10px] text-clypra-muted">Brief description of the visual behavior</p>
               </div>
 
               {/* Tags */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">Tags</label>
-                <input
-                  type="text"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  placeholder="shatter, slice, physics, creative"
-                  className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500"
-                />
+                <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="shatter, slice, physics, creative" className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none placeholder:text-[#555566] focus:border-teal-500" />
                 <p className="mt-1.5 text-[10px] text-clypra-muted">Comma-separated search tags</p>
               </div>
 
               {/* Default Duration */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">Default Duration (Seconds)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  max="5.0"
-                  value={defaultDuration}
-                  onChange={(e) => setDefaultDuration(parseFloat(e.target.value) || 1.0)}
-                  className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500"
-                />
+                <input type="number" step="0.1" min="0.1" max="5.0" value={defaultDuration} onChange={(e) => setDefaultDuration(parseFloat(e.target.value) || 1.0)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500" />
                 <p className="mt-1.5 text-[10px] text-clypra-muted">Initial duration when added to timeline</p>
               </div>
 
               {/* Easing */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1.5">Default Easing</label>
-                <select
-                  value={defaultEasing}
-                  onChange={(e) => setDefaultEasing(e.target.value)}
-                  className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500"
-                >
+                <select value={defaultEasing} onChange={(e) => setDefaultEasing(e.target.value)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500">
                   <option value="linear">Linear</option>
                   <option value="ease-in">Ease In</option>
                   <option value="ease-out">Ease Out</option>
@@ -355,13 +298,7 @@ export function PublishTransitionModal({
 
               {/* Premium Toggle */}
               <div className="flex items-center gap-2 p-3 rounded-lg border border-[#2A2A38] bg-[#0E0E12] select-none">
-                <input
-                  id="transition-premium-checkbox"
-                  type="checkbox"
-                  checked={isPremium}
-                  onChange={(e) => setIsPremium(e.target.checked)}
-                  className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-teal-500 focus:ring-teal-500 cursor-pointer"
-                />
+                <input id="transition-premium-checkbox" type="checkbox" checked={isPremium} onChange={(e) => setIsPremium(e.target.checked)} className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-teal-500 focus:ring-teal-500 cursor-pointer" />
                 <label htmlFor="transition-premium-checkbox" className="text-xs font-semibold text-white cursor-pointer">
                   Mark as Premium (Requires subscription)
                 </label>
@@ -400,13 +337,7 @@ export function PublishTransitionModal({
                   <FileJson size={14} className="text-purple-300" /> R2 / API Destinations
                 </h4>
                 <div className="space-y-2">
-                  {([
-                    { label: "Endpoint", value: r2Paths.apiEndpoint, color: "text-orange-300" },
-                    { label: "Index file", value: r2Paths.indexFile, color: "text-teal-300" },
-                    ...(r2Paths.thumbnail ? [{ label: "Thumbnail", value: r2Paths.thumbnail, color: "text-amber-300" }] : []),
-                    ...(r2Paths.preview ? [{ label: "Preview", value: r2Paths.preview, color: "text-blue-300" }] : []),
-                    { label: "Live URL", value: r2Paths.liveUrl, color: "text-blue-300" },
-                  ] as { label: string; value: string; color: string }[]).map(({ label, value, color }) => (
+                  {([{ label: "Endpoint", value: r2Paths.apiEndpoint, color: "text-orange-300" }, { label: "Index file", value: r2Paths.indexFile, color: "text-teal-300" }, ...(r2Paths.thumbnail ? [{ label: "Thumbnail", value: r2Paths.thumbnail, color: "text-amber-300" }] : []), ...(r2Paths.preview ? [{ label: "Preview", value: r2Paths.preview, color: "text-blue-300" }] : []), { label: "Live URL", value: r2Paths.liveUrl, color: "text-blue-300" }] as { label: string; value: string; color: string }[]).map(({ label, value, color }) => (
                     <div key={label} className="flex items-start gap-2 rounded bg-[#09090D] border border-[#1A1A24] px-3 py-2">
                       <span className="text-[9px] font-bold uppercase text-[#888899] shrink-0 w-16">{label}</span>
                       <code className={`flex-1 break-all font-mono text-[10px] ${color}`}>{value}</code>
@@ -441,28 +372,16 @@ export function PublishTransitionModal({
 
               {/* JSON Payload */}
               <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
-                <button
-                  type="button"
-                  onClick={() => setJsonExpanded((v) => !v)}
-                  className="w-full flex items-center justify-between text-xs font-bold text-white mb-1 hover:text-teal-300 transition-colors"
-                >
+                <button type="button" onClick={() => setJsonExpanded((v) => !v)} className="w-full flex items-center justify-between text-xs font-bold text-white mb-1 hover:text-teal-300 transition-colors">
                   <span className="flex items-center gap-2">
                     <Code2 size={14} className="text-teal-300" /> JSON Payload (POST /transitions/upload)
                   </span>
                   {jsonExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                 </button>
                 <p className="text-[10px] text-[#555566] mb-3">Exact body that will be sent to the API</p>
-                {jsonExpanded && (
-                  <pre className="overflow-x-auto rounded-lg border border-[#1A1A24] bg-[#09090D] p-3 font-mono text-[10px] text-teal-200 leading-relaxed whitespace-pre-wrap">
-                    {JSON.stringify(r2Payload, null, 2)}
-                  </pre>
-                )}
+                {jsonExpanded && <pre className="overflow-x-auto rounded-lg border border-[#1A1A24] bg-[#09090D] p-3 font-mono text-[10px] text-teal-200 leading-relaxed whitespace-pre-wrap">{JSON.stringify(r2Payload, null, 2)}</pre>}
                 {!jsonExpanded && (
-                  <button
-                    type="button"
-                    onClick={() => setJsonExpanded(true)}
-                    className="w-full rounded-lg border border-dashed border-[#2A2A38] py-2 text-[10px] text-[#555566] hover:text-teal-300 hover:border-teal-500/30 transition-colors"
-                  >
+                  <button type="button" onClick={() => setJsonExpanded(true)} className="w-full rounded-lg border border-dashed border-[#2A2A38] py-2 text-[10px] text-[#555566] hover:text-teal-300 hover:border-teal-500/30 transition-colors">
                     Click to expand payload JSON
                   </button>
                 )}
@@ -490,43 +409,19 @@ export function PublishTransitionModal({
         {/* Footer */}
         <div className="border-t border-[#2A2A38] bg-[#15151C] p-4 shrink-0 space-y-3">
           {message && (
-            <div
-              className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-[10px] ${
-                isFailed
-                  ? "border-red-900/40 bg-red-950/30 text-red-300"
-                  : isPublished
-                    ? "border-teal-900/40 bg-teal-950/30 text-teal-300"
-                    : "border-[#2A2A38] bg-[#0B0B10] text-[#9A9AAA]"
-              }`}
-            >
+            <div className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-[10px] ${isFailed ? "border-red-900/40 bg-red-950/30 text-red-300" : isPublished ? "border-teal-900/40 bg-teal-950/30 text-teal-300" : "border-[#2A2A38] bg-[#0B0B10] text-[#9A9AAA]"}`}>
               <div className="flex items-center gap-2 min-w-0">
-                {isFailed ? (
-                  <AlertTriangle size={14} className="shrink-0" />
-                ) : isPublished ? (
-                  <CheckCircle size={14} className="shrink-0" />
-                ) : (
-                  <Loader2 size={14} className="shrink-0 animate-spin" />
-                )}
+                {isFailed ? <AlertTriangle size={14} className="shrink-0" /> : isPublished ? <CheckCircle size={14} className="shrink-0" /> : <Loader2 size={14} className="shrink-0 animate-spin" />}
                 <span className="truncate">{message}</span>
               </div>
             </div>
           )}
 
           <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isUploading}
-              className="rounded-lg border border-[#2A2A38] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2A2A38] disabled:opacity-50"
-            >
+            <button type="button" onClick={onClose} disabled={isUploading} className="rounded-lg border border-[#2A2A38] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2A2A38] disabled:opacity-50">
               {isPublished ? "Close" : "Cancel"}
             </button>
-            <button
-              type="button"
-              onClick={handlePublish}
-              disabled={hasErrors || isUploading || isPublished}
-              className="rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2"
-            >
+            <button type="button" onClick={handlePublish} disabled={hasErrors || isUploading || isPublished} className="rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2">
               {isUploading ? (
                 <>
                   <Loader2 size={14} className="animate-spin" />
