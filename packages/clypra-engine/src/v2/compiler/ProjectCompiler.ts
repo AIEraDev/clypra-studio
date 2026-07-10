@@ -10,7 +10,7 @@
  */
 
 /**
- * @clypra/engine — Pipeline V2: Project Compiler
+ * @clypra-studio/engine — Pipeline V2: Project Compiler
  *
  * Compiles an NLE ProjectManifestV2 into a connected, dependency-resolved MediaProcessingGraph.
  * Handles clip segments alignment, active source generation, and effect stack chaining.

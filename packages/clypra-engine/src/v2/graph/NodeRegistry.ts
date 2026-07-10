@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Pipeline V2: Node Registry
+ * @clypra-studio/engine — Pipeline V2: Node Registry
  *
  * @deprecated This file has been moved to @clypra/runtime/graph/NodeRegistry
  * Import from @clypra/runtime instead:

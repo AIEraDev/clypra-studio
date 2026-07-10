@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Pipeline V2: Graph Definitions
+ * @clypra-studio/engine — Pipeline V2: Graph Definitions
  *
  * @deprecated Import from @clypra-studio/types instead
  * This file re-exports from @clypra-studio/types for backward compatibility.

@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Canvas 2D text effects, Lottie tooling, and animation engine.
+ * @clypra-studio/engine — Canvas 2D text effects, Lottie tooling, and animation engine.
  * @version 0.1.0
  * @packageDocumentation
  */
@@ -80,4 +80,3 @@ export * from "./text/textBridge.js";
 export * from "./stickers/stickerBridge.js";
 export * from "./effects/body/bodyEffectFilters.js";
 export * from "./effects/body/bodyEffectMask.js";
-

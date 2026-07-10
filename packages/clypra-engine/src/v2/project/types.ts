@@ -10,7 +10,7 @@
  */
 
 /**
- * @clypra/engine — Pipeline V2: Project Model
+ * @clypra-studio/engine — Pipeline V2: Project Model
  *
  * Defines immutable project manifests, clips, tracks, and asset handles.
  */

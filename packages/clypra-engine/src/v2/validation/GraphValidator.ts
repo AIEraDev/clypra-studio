@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Pipeline V2: Graph Validator
+ * @clypra-studio/engine — Pipeline V2: Graph Validator
  *
  * @deprecated This implementation should be merged into @clypra/runtime/graph/validator
  * This version has MORE COMPLETE functionality (NodeRegistry integration, detailed error types,

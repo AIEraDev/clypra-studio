@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Pipeline V2: MPG Frame Renderer
+ * @clypra-studio/engine — Pipeline V2: MPG Frame Renderer
  *
  * @deprecated Use @clypra/runtime/renderer instead
  * The runtime has a more complete Executor implementation.

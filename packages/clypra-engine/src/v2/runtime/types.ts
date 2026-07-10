@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Pipeline V2: Runtime Definitions
+ * @clypra-studio/engine — Pipeline V2: Runtime Definitions
  *
  * @deprecated These types are interfaces only. Full implementations exist in @clypra/runtime
  * Import from @clypra/runtime instead:

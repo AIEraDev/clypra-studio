@@ -9,7 +9,7 @@
  * - zoom_in: Scale up during fade
  * - wipe_left: Reveal next frame from left
  *
- * Part of @clypra/engine - shared between clypra-studio and clypra app
+ * Part of @clypra-studio/engine - shared between clypra-studio and clypra app
  */
 
 import type { TransitionRenderer as TransitionRendererType, TransitionParameters, EasingFunction } from "./types";

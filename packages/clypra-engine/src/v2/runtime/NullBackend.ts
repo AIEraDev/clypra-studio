@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Pipeline V2: Null Backend
+ * @clypra-studio/engine — Pipeline V2: Null Backend
  *
  * @deprecated Use @clypra/runtime/renderer instead
  * The runtime version (NullRenderer) is more complete and follows the same interface.

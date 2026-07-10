@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — EffectGraph
+ * @clypra-studio/engine — EffectGraph
  *
  * Directed Acyclic Graph evaluator for effect chains.
  * Uses Kahn's algorithm for topological ordering.
@@ -8,7 +8,7 @@
  * Unchanged public API from v1 — new PixiJS nodes slot in automatically.
  */
 
-import type { EffectDefinition } from './EffectDefinition'
+import type { EffectDefinition } from "./EffectDefinition";
 import { EasingFunction } from "./types.js";
 
 export interface KeyframePoint {
@@ -18,18 +18,18 @@ export interface KeyframePoint {
 }
 
 export interface GraphNode {
-  id: string
-  effect?: EffectDefinition
-  type?: string
-  params?: Record<string, any>
-  keyframes?: Record<string, KeyframePoint[]>
+  id: string;
+  effect?: EffectDefinition;
+  type?: string;
+  params?: Record<string, any>;
+  keyframes?: Record<string, KeyframePoint[]>;
   /** IDs of nodes this node depends on (must render before this one) */
-  dependencies?: string[]
+  dependencies?: string[];
 }
 
 export interface GraphEdge {
-  from: string
-  to: string
+  from: string;
+  to: string;
 }
 
 export interface GraphConnection {
@@ -51,9 +51,9 @@ export class EffectGraph {
   public schemaVersion?: string;
   public graphId?: string;
   public name?: string;
-  public nodes = new Map<string, GraphNode>()
-  public edges: GraphEdge[] = []
-  public connections: GraphConnection[] = []
+  public nodes = new Map<string, GraphNode>();
+  public edges: GraphEdge[] = [];
+  public connections: GraphConnection[] = [];
 
   constructor(definition?: GraphDefinition) {
     if (definition) {
@@ -69,24 +69,24 @@ export class EffectGraph {
 
   addNode(node: GraphNode): this {
     if (this.nodes.has(node.id)) {
-      throw new Error(`[EffectGraph] Node "${node.id}" already exists`)
+      throw new Error(`[EffectGraph] Node "${node.id}" already exists`);
     }
-    this.nodes.set(node.id, node)
-    return this
+    this.nodes.set(node.id, node);
+    return this;
   }
 
   addEdge(from: string, to: string): this {
-    if (!this.nodes.has(from)) throw new Error(`[EffectGraph] Unknown node "${from}"`)
-    if (!this.nodes.has(to))   throw new Error(`[EffectGraph] Unknown node "${to}"`)
-    this.edges.push({ from, to })
-    return this
+    if (!this.nodes.has(from)) throw new Error(`[EffectGraph] Unknown node "${from}"`);
+    if (!this.nodes.has(to)) throw new Error(`[EffectGraph] Unknown node "${to}"`);
+    this.edges.push({ from, to });
+    return this;
   }
 
   removeNode(id: string): this {
-    this.nodes.delete(id)
-    this.edges = this.edges.filter(e => e.from !== id && e.to !== id)
-    this.connections = this.connections.filter(c => c.fromNode !== id && c.toNode !== id)
-    return this
+    this.nodes.delete(id);
+    this.edges = this.edges.filter((e) => e.from !== id && e.to !== id);
+    this.connections = this.connections.filter((c) => c.fromNode !== id && c.toNode !== id);
+    return this;
   }
 
   /**
@@ -94,19 +94,19 @@ export class EffectGraph {
    * Returns nodes in render order or throws on circular dependency.
    */
   resolve(): GraphNode[] {
-    const inDegree = new Map<string, number>()
-    const adjList = new Map<string, string[]>()
+    const inDegree = new Map<string, number>();
+    const adjList = new Map<string, string[]>();
 
     // Initialize
     for (const id of this.nodes.keys()) {
-      inDegree.set(id, 0)
-      adjList.set(id, [])
+      inDegree.set(id, 0);
+      adjList.set(id, []);
     }
 
     // Process explicit edges
     for (const edge of this.edges) {
-      inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1)
-      adjList.get(edge.from)!.push(edge.to)
+      inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1);
+      adjList.get(edge.from)!.push(edge.to);
     }
 
     // Process connections (compatibility mode)
@@ -117,7 +117,7 @@ export class EffectGraph {
         if (!neighbors.includes(conn.toNode)) {
           neighbors.push(conn.toNode);
           adjList.set(conn.fromNode, neighbors);
-          inDegree.set(conn.toNode, (inDegree.get(conn.toNode) ?? 0) + 1)
+          inDegree.set(conn.toNode, (inDegree.get(conn.toNode) ?? 0) + 1);
         }
       }
     }
@@ -132,48 +132,46 @@ export class EffectGraph {
             if (!neighbors.includes(id)) {
               neighbors.push(id);
               adjList.set(depId, neighbors);
-              inDegree.set(id, (inDegree.get(id) ?? 0) + 1)
+              inDegree.set(id, (inDegree.get(id) ?? 0) + 1);
             }
           }
         }
       }
     }
 
-    const queue: string[] = []
+    const queue: string[] = [];
     for (const [id, degree] of inDegree) {
-      if (degree === 0) queue.push(id)
+      if (degree === 0) queue.push(id);
     }
 
-    const sorted: GraphNode[] = []
+    const sorted: GraphNode[] = [];
     while (queue.length > 0) {
-      const id = queue.shift()!
-      sorted.push(this.nodes.get(id)!)
+      const id = queue.shift()!;
+      sorted.push(this.nodes.get(id)!);
       for (const neighbour of adjList.get(id) ?? []) {
-        const deg = (inDegree.get(neighbour) ?? 1) - 1
-        inDegree.set(neighbour, deg)
-        if (deg === 0) queue.push(neighbour)
+        const deg = (inDegree.get(neighbour) ?? 1) - 1;
+        inDegree.set(neighbour, deg);
+        if (deg === 0) queue.push(neighbour);
       }
     }
 
     if (sorted.length !== this.nodes.size) {
-      const cycle = [...this.nodes.keys()].filter(id => (inDegree.get(id) ?? 0) > 0)
-      throw new Error(`[EffectGraph] Circular dependency detected in nodes: ${cycle.join(', ')}`)
+      const cycle = [...this.nodes.keys()].filter((id) => (inDegree.get(id) ?? 0) > 0);
+      throw new Error(`[EffectGraph] Circular dependency detected in nodes: ${cycle.join(", ")}`);
     }
 
-    return sorted
+    return sorted;
   }
 
   public getExecutionOrder(): string[] {
-    return this.resolve().map(node => node.id);
+    return this.resolve().map((node) => node.id);
   }
 
   public getUpstreamNodes(nodeId: string): string[] {
     const node = this.nodes.get(nodeId);
     const deps = node?.dependencies || [];
-    const connected = this.connections
-      .filter((conn) => conn.toNode === nodeId)
-      .map((conn) => conn.fromNode);
-    
+    const connected = this.connections.filter((conn) => conn.toNode === nodeId).map((conn) => conn.fromNode);
+
     return Array.from(new Set([...deps, ...connected]));
   }
 
@@ -182,7 +180,7 @@ export class EffectGraph {
    * Used by EffectRenderer to build the PixiJS filter + motion pipeline.
    */
   resolvePixi(): GraphNode[] {
-    return this.resolve().filter(n => n.effect?.backend === 'pixi')
+    return this.resolve().filter((n) => n.effect?.backend === "pixi");
   }
 
   /**
@@ -190,17 +188,17 @@ export class EffectGraph {
    * Used by EffectRenderer for text effect overlays.
    */
   resolveCanvas2D(): GraphNode[] {
-    return this.resolve().filter(n => n.effect?.backend === 'canvas2d')
+    return this.resolve().filter((n) => n.effect?.backend === "canvas2d");
   }
 
   get size(): number {
-    return this.nodes.size
+    return this.nodes.size;
   }
 
   clear(): this {
-    this.nodes.clear()
-    this.edges = []
-    this.connections = []
-    return this
+    this.nodes.clear();
+    this.edges = [];
+    this.connections = [];
+    return this;
   }
 }

@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Pipeline V2: Pixi Render Backend
+ * @clypra-studio/engine — Pipeline V2: Pixi Render Backend
  *
  * @deprecated Use @clypra/runtime/renderer instead
  * The runtime version (PixiRenderer) is more complete with better resource management.

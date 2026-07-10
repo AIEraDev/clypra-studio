@@ -2,7 +2,7 @@
  * Transition Presets
  * Professional transition definitions mapped to TransitionRenderer types
  *
- * Part of @clypra/engine - shared between clypra-studio and clypra app
+ * Part of @clypra-studio/engine - shared between clypra-studio and clypra app
  */
 
 import type { TransitionPreset, TransitionCategory } from "./types";

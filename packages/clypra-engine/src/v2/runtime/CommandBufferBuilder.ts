@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Pipeline V2: Command Buffer Builder
+ * @clypra-studio/engine — Pipeline V2: Command Buffer Builder
  *
  * @deprecated This is a helper utility. Consider using @clypra/runtime/renderer Executor instead.
  * This file will be removed in v3.0.0

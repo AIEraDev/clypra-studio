@@ -2,7 +2,7 @@
  * Transition Types
  * Type definitions for transition effects between video clips
  *
- * Part of @clypra/engine - shared between clypra-studio and clypra app
+ * Part of @clypra-studio/engine - shared between clypra-studio and clypra app
  */
 
 // ============================================================================

@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — PixiRenderer
+ * @clypra-studio/engine — PixiRenderer
  *
  * Manages a single shared PixiJS Application instance.
  * Handles three effect subtypes:
@@ -78,12 +78,12 @@ export class PixiRenderer {
     if (this.initialized || this.initializing) return;
     this.initializing = true;
 
-    canvas.addEventListener('webglcontextlost', (event) => {
+    canvas.addEventListener("webglcontextlost", (event) => {
       event.preventDefault(); // REQUIRED — without this, the browser will never attempt to restore it
-      console.warn('[PixiRenderer] WebGL context lost — attempting recovery');
+      console.warn("[PixiRenderer] WebGL context lost — attempting recovery");
     });
-    canvas.addEventListener('webglcontextrestored', () => {
-      console.log('[PixiRenderer] WebGL context restored');
+    canvas.addEventListener("webglcontextrestored", () => {
+      console.log("[PixiRenderer] WebGL context restored");
     });
 
     const app = new Application();
@@ -391,16 +391,13 @@ export class PixiRenderer {
     } else {
       const scaleX = canvasWidth / texWidth;
       const scaleY = canvasHeight / texHeight;
-      
+
       const scale = fitMode === "fit" ? Math.min(scaleX, scaleY) : Math.max(scaleX, scaleY);
-      
+
       sprite.width = texWidth * scale;
       sprite.height = texHeight * scale;
-      
-      sprite.position.set(
-        (canvasWidth - sprite.width) / 2,
-        (canvasHeight - sprite.height) / 2
-      );
+
+      sprite.position.set((canvasWidth - sprite.width) / 2, (canvasHeight - sprite.height) / 2);
     }
   }
 
@@ -418,7 +415,7 @@ export class PixiRenderer {
       try {
         const gl = (this.app.renderer as any).gl as WebGLRenderingContext | undefined;
         this.app.destroy(true, { children: true, texture: true });
-        gl?.getExtension('WEBGL_lose_context')?.loseContext();
+        gl?.getExtension("WEBGL_lose_context")?.loseContext();
       } catch (e) {
         console.warn("Error destroying Pixi application:", e);
       }

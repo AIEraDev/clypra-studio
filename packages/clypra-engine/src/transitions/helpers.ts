@@ -2,7 +2,7 @@
  * Transition Helpers
  * Utility functions for working with transition presets
  *
- * Part of @clypra/engine - shared between clypra-studio and clypra app
+ * Part of @clypra-studio/engine - shared between clypra-studio and clypra app
  */
 
 import type { TransitionPreset, TransitionCategory, TransitionRenderer } from "./types";

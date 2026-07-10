@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Pipeline V2: Frame Graph Builder
+ * @clypra-studio/engine — Pipeline V2: Frame Graph Builder
  *
  * @deprecated This implementation should be merged into @clypra/runtime/planner
  * This version has MORE COMPLETE functionality (NodeRegistry integration, clip activation)

@@ -2,7 +2,7 @@
  * Transitions Module
  *
  * Professional transition effects for video editing
- * Part of @clypra/engine - shared between clypra-studio and clypra app
+ * Part of @clypra-studio/engine - shared between clypra-studio and clypra app
  *
  * @module transitions
  */

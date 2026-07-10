@@ -1,5 +1,5 @@
 /**
- * @clypra/engine — Pipeline V2: Render Planner Definitions
+ * @clypra-studio/engine — Pipeline V2: Render Planner Definitions
  *
  * @deprecated This file has been superseded by @clypra/runtime/planner/types
  * Import from @clypra/runtime instead:
