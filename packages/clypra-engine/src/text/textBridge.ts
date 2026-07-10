@@ -67,7 +67,9 @@ export async function renderTextLayerBridged(layer: any, frameId: number, contai
     if (bridge.canvas.width !== physOffW || bridge.canvas.height !== physOffH) {
       bridge.canvas.width = physOffW;
       bridge.canvas.height = physOffH;
-      bridge.sprite.texture.destroy(false);
+      if (bridge.sprite.texture) {
+        bridge.sprite.texture.destroy(false);
+      }
       bridge.sprite.texture = Texture.from(bridge.canvas);
     }
     if (bridge.sprite.parent !== container) {
@@ -117,8 +119,10 @@ export function unmountTextLayerBridge(layerId: string, container: import("pixi.
   const bridge = bridges.get(layerId);
   if (bridge) {
     container.removeChild(bridge.sprite);
+    if (bridge.sprite.texture) {
+      bridge.sprite.texture.destroy(false);
+    }
     bridge.sprite.destroy();
-    bridge.sprite.texture.destroy(false);
     bridges.delete(layerId);
   }
 }
@@ -140,8 +144,10 @@ export function clearAllTextBridges(container?: import("pixi.js").Container): vo
     if (container && bridge.sprite.parent === container) {
       container.removeChild(bridge.sprite);
     }
+    if (bridge.sprite.texture) {
+      bridge.sprite.texture.destroy(false);
+    }
     bridge.sprite.destroy();
-    bridge.sprite.texture.destroy(false);
   }
   bridges.clear();
 }

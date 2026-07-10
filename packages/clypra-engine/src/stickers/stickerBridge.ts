@@ -103,7 +103,9 @@ export async function renderStickerLayerBridged(
       bridge.container.style.width = `${physW}px`;
       bridge.container.style.height = `${physH}px`;
       bridge.anim.resize();
-      bridge.sprite.texture.destroy(false);
+      if (bridge.sprite.texture) {
+        bridge.sprite.texture.destroy(false);
+      }
       bridge.sprite.texture = Texture.from(bridge.canvas);
     }
 
@@ -159,8 +161,10 @@ export function unmountStickerLayerBridge(layerId: string, container: import("pi
   const bridge = bridges.get(layerId);
   if (bridge) {
     container.removeChild(bridge.sprite);
+    if (bridge.sprite.texture) {
+      bridge.sprite.texture.destroy(false);
+    }
     bridge.sprite.destroy();
-    bridge.sprite.texture.destroy(false);
     try {
       bridge.anim.destroy();
     } catch {
@@ -188,8 +192,10 @@ export function clearAllStickerBridges(container?: import("pixi.js").Container):
     if (container && bridge.sprite.parent === container) {
       container.removeChild(bridge.sprite);
     }
+    if (bridge.sprite.texture) {
+      bridge.sprite.texture.destroy(false);
+    }
     bridge.sprite.destroy();
-    bridge.sprite.texture.destroy(false);
     try {
       bridge.anim.destroy();
     } catch {
