@@ -68,6 +68,10 @@ export function applyMediaTransform(
   },
   viewport: RenderViewport,
 ): void {
+  if (!sprite || sprite.destroyed || !sprite.anchor) {
+    console.warn('[clypra-engine] Skipping applyMediaTransform — sprite is null or destroyed');
+    return;
+  }
   const { projectWidth, projectHeight } = viewport;
 
   const conform = layer.conform || {
@@ -117,9 +121,27 @@ export function applyMediaTransform(
 export function releaseMediaSprite(clipId: string, container: import("pixi.js").Container): void {
   const record = mediaRegistry.get(clipId);
   if (record) {
-    container.removeChild(record.sprite);
-    record.sprite.destroy();
-    record.texture.destroy(false);
+    try {
+      if (record.sprite && !record.sprite.destroyed) {
+        if (record.sprite.parent) {
+          record.sprite.parent.removeChild(record.sprite);
+        } else {
+          container.removeChild(record.sprite);
+        }
+        record.sprite.destroy();
+      }
+    } catch (err) {
+      console.warn(`[clypra-engine] Error destroying sprite for clip ${clipId}:`, err);
+    }
+
+    try {
+      if (record.texture && !record.texture.destroyed) {
+        record.texture.destroy(false);
+      }
+    } catch (err) {
+      console.warn(`[clypra-engine] Error destroying texture for clip ${clipId}:`, err);
+    }
+
     record.destroyed = true;
     mediaRegistry.delete(clipId);
   }
@@ -127,6 +149,11 @@ export function releaseMediaSprite(clipId: string, container: import("pixi.js").
 
 export function getOrCreateMediaSprite(clipId: string, kind: "video" | "image", sourceElement: HTMLVideoElement | ImageBitmap | HTMLImageElement, container: import("pixi.js").Container): MediaSpriteRecord | null {
   let record = mediaRegistry.get(clipId);
+
+  if (record && (record.destroyed || record.sprite.destroyed)) {
+    mediaRegistry.delete(clipId);
+    record = undefined;
+  }
 
   if (record) {
     const isVideo = kind === "video";
