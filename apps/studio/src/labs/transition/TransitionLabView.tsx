@@ -69,7 +69,6 @@ export function TransitionLabView() {
 
   useEffect(() => {
     // Initialize transitions from engine GPU implementations (not API)
-    console.log("[TransitionLab] Loading transitions from engine GPU implementations");
     const formattedTransitions = ALL_TRANSITIONS.map((transition) => ({
       id: transition.id,
       name: transition.name,
@@ -88,7 +87,6 @@ export function TransitionLabView() {
       isPremium: false,
     }));
     setApiTransitions(formattedTransitions);
-    console.log(`[TransitionLab] Loaded ${formattedTransitions.length} GPU transition implementations`);
   }, []);
 
   // State Management
@@ -441,7 +439,6 @@ export function TransitionLabView() {
         console.group(`%c[TRANSITION DIAG] ${event}`, "color:#adc6ff;font-weight:bold;background:#060a14;padding:2px 6px;border-radius:3px");
         console.log("⏱  seq time   :", sec.toFixed(4), "s  |  frame:", frame);
         console.log("🎬 phase       :", phase, "|  mixProgress:", mixProgress.toFixed(4));
-        console.log("🔗 activeId    :", activeTransitionId ?? "(none)");
         console.log("📹 videoA      : readyState=", videoA?.readyState ?? "N/A", " currentTime=", videoA?.currentTime?.toFixed(4) ?? "N/A", " paused=", videoA?.paused);
         console.log("📹 videoB      : readyState=", videoB?.readyState ?? "N/A", " currentTime=", videoB?.currentTime?.toFixed(4) ?? "N/A", " paused=", videoB?.paused);
         console.log("🖼  sourceA     :", sourceAType);
