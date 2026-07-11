@@ -99,7 +99,7 @@ export function PublishTransitionModal({ open, onClose, transitionDef, thumbnail
         name: transitionName || "<name>",
         category,
         description,
-        renderer: transitionDef ? transitionDef.id : "",
+        renderer: transitionDef?.renderer || transitionDef?.id || "",
         params: transitionDef ? transitionDef.params : [],
         defaultDuration,
         defaultEasing,

@@ -74,8 +74,9 @@ export function TransitionLabView() {
       name: transition.name,
       category: transition.category,
       description: transition.description,
+      defaultDurationMs: transition.defaultDurationMs, // Keep original ms value for modal
       renderer: transition.id, // Use ID as renderer reference
-      params: {}, // Params are managed through ParamSchema in the transition itself
+      params: transition.params, // Pass ParamSchema array from GPU transition
       easing: "linear",
       duration: {
         min: 0.3,
