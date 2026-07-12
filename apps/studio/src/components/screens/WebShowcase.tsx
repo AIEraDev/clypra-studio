@@ -688,6 +688,179 @@ export const WebShowcase: React.FC = () => {
           </div>
         </section>
 
+        {/* ── Clypra Studio Platform Section ────────────────────────── */}
+        <section className="flex flex-col gap-12 animate-fade-up" style={{ animationDelay: "450ms" }}>
+          <div className="text-center flex flex-col gap-3">
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">Clypra Studio - Effect Development Platform</h3>
+            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-2xl mx-auto">Where every visual feature is designed, tested, benchmarked, validated, and published before reaching the editor. Three specialized labs, one unified runtime architecture.</p>
+          </div>
+
+          <div className="glass-panel rounded-3xl p-8 md:p-12 transition-all duration-500 border-[#6c63ff]/10 hover:border-[#6c63ff]/20 relative overflow-hidden group">
+            <div className="absolute -right-32 -top-32 w-96 h-96 bg-[#6c63ff]/5 rounded-full filter blur-3xl group-hover:bg-[#6c63ff]/10 transition-all duration-500" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+              {/* Video Effect Lab */}
+              <div className="flex flex-col gap-4 p-6 rounded-2xl bg-white/2 border border-white/5 hover:border-purple-500/30 hover:bg-white/3 transition-all duration-300">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                  <Layers className="w-6 h-6 text-purple-400" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-lg">Video Effect Lab</h4>
+                  <p className="text-xs text-[#666] mt-1">Single-input video effects</p>
+                </div>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed">Foundation for validating that effects render correctly with live parameter editing, frame stepper, and GPU profiling.</p>
+                <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
+                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">Film Grain</span>
+                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">VHS</span>
+                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">Bloom</span>
+                </div>
+              </div>
+
+              {/* Transition Lab */}
+              <div className="flex flex-col gap-4 p-6 rounded-2xl bg-white/2 border border-white/5 hover:border-blue-500/30 hover:bg-white/3 transition-all duration-300">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                  <Sparkles className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-lg">Transition Lab</h4>
+                  <p className="text-xs text-[#666] mt-1">Dual-input transitions</p>
+                </div>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed">Specialized editor for temporal effects with progress control, dual-input preview, and timeline scrubbing.</p>
+                <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
+                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Dissolve</span>
+                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Push</span>
+                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Glitch</span>
+                </div>
+              </div>
+
+              {/* Body Effect Lab */}
+              <div className="flex flex-col gap-4 p-6 rounded-2xl bg-white/2 border border-white/5 hover:border-emerald-500/30 hover:bg-white/3 transition-all duration-300">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                  <Shield className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-lg">Body Effect Lab</h4>
+                  <p className="text-xs text-[#666] mt-1">Feature provider effects</p>
+                </div>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed">Future-proof effects through extensible providers with pose tracking, segmentation, and mask overlays.</p>
+                <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Neon Outline</span>
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">BG Blur</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center relative z-10">
+              <a href="/studio" className="h-11 rounded-xl bg-[#6c63ff]/90 hover:bg-[#6c63ff] px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_8px_30px_rgba(108,99,255,0.3)]">
+                <Sparkles className="w-4 h-4" />
+                Launch Studio
+              </a>
+              <a href="https://github.com/AIEraDev/clypra-studio" target="_blank" rel="noopener noreferrer" className="h-11 rounded-xl border border-white/10 bg-white/3 hover:bg-white/5 px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300">
+                View Studio on GitHub
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Recent Achievements & Updates Section ──────────────────── */}
+        <section className="flex flex-col gap-12 animate-fade-up" style={{ animationDelay: "475ms" }}>
+          <div className="text-center flex flex-col gap-3">
+            <div className="inline-flex self-center items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 backdrop-blur-md">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[10px] font-semibold tracking-wider text-emerald-400 uppercase font-mono">Latest Updates</span>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">Recent Achievements</h3>
+            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-2xl mx-auto">Latest improvements across the Clypra ecosystem</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* Release Pipeline */}
+            <div className="glass-panel rounded-xl p-6 hover:border-white/8 transition-all duration-300 flex flex-col gap-3">
+              <div className="flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                  <CheckCircle2 className="w-5 h-5 text-purple-400" />
+                </div>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">DEPLOYED</span>
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Automated Release Pipeline</h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Complete CI/CD with GitHub Actions for multi-platform releases: Windows (.msi/.nsis), macOS Universal (.dmg), Linux (.AppImage). Tauri code signing enabled.</p>
+              </div>
+            </div>
+
+            {/* Export Pipeline Fixes */}
+            <div className="glass-panel rounded-xl p-6 hover:border-white/8 transition-all duration-300 flex flex-col gap-3">
+              <div className="flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">FIXED</span>
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Export Pipeline Overhaul</h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Fixed aspect-ratio preservation and frame accuracy in video exports. Includes aspect-correct dimension resolver, locked WebGL canvas sizing, and comprehensive unit tests.</p>
+              </div>
+            </div>
+
+            {/* Package Publishing */}
+            <div className="glass-panel rounded-xl p-6 hover:border-white/8 transition-all duration-300 flex flex-col gap-3">
+              <div className="flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                  <CheckCircle2 className="w-5 h-5 text-blue-400" />
+                </div>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">PUBLISHED</span>
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">@clypra-studio/engine v1.0.2</h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Published to npm registry with workspace dependencies resolved. Semantic versioning and auto-deployment via CLI for easy integration.</p>
+              </div>
+            </div>
+
+            {/* CI/CD Improvements */}
+            <div className="glass-panel rounded-xl p-6 hover:border-white/8 transition-all duration-300 flex flex-col gap-3">
+              <div className="flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                  <CheckCircle2 className="w-5 h-5 text-yellow-400" />
+                </div>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">ENHANCED</span>
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Enhanced CI/CD Workflows</h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Upgraded to Node.js 22, fixed vitest hanging issues, added frontend + Rust test coverage, and build verification checks.</p>
+              </div>
+            </div>
+
+            {/* Performance Monitoring */}
+            <div className="glass-panel rounded-xl p-6 hover:border-white/8 transition-all duration-300 flex flex-col gap-3">
+              <div className="flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
+                  <CheckCircle2 className="w-5 h-5 text-orange-400" />
+                </div>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">TRACKED</span>
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Performance Monitoring</h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Comprehensive tracking across video pipeline: decoder pool metrics, export profiling, render performance, 30+ tracked metrics.</p>
+              </div>
+            </div>
+
+            {/* Hardware Acceleration */}
+            <div className="glass-panel rounded-xl p-6 hover:border-white/8 transition-all duration-300 flex flex-col gap-3">
+              <div className="flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
+                  <CheckCircle2 className="w-5 h-5 text-cyan-400" />
+                </div>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">OPTIMIZED</span>
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Hardware Acceleration</h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Native GPU decode via FFmpeg (VideoToolbox/D3D11VA/VAAPI), decoder prewarming with sub-10ms latency, and parallel thumbnail generation.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── Meet the Creator & Socials Section ───────────────────── */}
         <section className="flex flex-col gap-12 animate-fade-up" style={{ animationDelay: "500ms" }}>
           <div className="text-center flex flex-col gap-3">
