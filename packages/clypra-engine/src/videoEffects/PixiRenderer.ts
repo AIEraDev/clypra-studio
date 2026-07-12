@@ -98,6 +98,13 @@ export class PixiRenderer {
         resolution: typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
         autoDensity: true,
         preserveDrawingBuffer: true,
+        // CRITICAL: disable the auto-render ticker.
+        // The compositor calls renderer.render() at the END of every composeFrame(),
+        // after all sprite states are finalized. If Pixi's own ticker fires between
+        // beginTextFrame() (which hides all sprites) and the awaited
+        // renderTextLayerBridged() / renderStickerLayerBridged() calls that re-show
+        // them, it renders a fully-invisible frame → visible blink of text and stickers.
+        autoStart: false,
       });
     } catch (e) {
       this.initializing = false;
