@@ -106,8 +106,8 @@ importers:
   packages/clypra-engine:
     dependencies:
       '@clypra-studio/shaders':
-        specifier: ^0.1.3
-        version: 0.1.3
+        specifier: ^0.1.5
+        version: 0.1.5
       '@clypra-studio/types':
         specifier: ^0.2.0
         version: 0.2.0
@@ -426,6 +426,9 @@ packages:
 
   '@clypra-studio/shaders@0.1.3':
     resolution: {integrity: sha512-8Md9PNuWMFWVWOXKNkE1ykk541mkuJ2WOozRM89qTgS9o4akwiOIMA3dT3i6mHXvbUgIrD/zjckrdUzCpRnOHQ==}
+
+  '@clypra-studio/shaders@0.1.5':
+    resolution: {integrity: sha512-HxaREVUzAbPqC4dq+VCKDQCdWdJIY/HDOJ3+k/Le6ReSrI8UN2OWPIbki2h/qrppIvfZFxCZ0Lcm/ZnQZEM6LA==}
 
   '@clypra-studio/types@0.2.0':
     resolution: {integrity: sha512-03+d8BpuJsKD26NxZ0J+njiRBHeqZqyklavrtWYpa3fTl1A/WnjbG9kDxVvIzBpF0BIHZ+3FlBvzjcI5fZKa0w==}
@@ -4204,6 +4207,8 @@ snapshots:
       pixi.js: 8.19.0
 
   '@clypra-studio/shaders@0.1.3': {}
+
+  '@clypra-studio/shaders@0.1.5': {}
 
   '@clypra-studio/types@0.2.0': {}
 
