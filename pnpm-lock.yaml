@@ -30,8 +30,8 @@ importers:
   apps/studio:
     dependencies:
       '@clypra-studio/engine':
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^1.0.4
+        version: 1.0.4
       '@clypra-studio/feature-providers':
         specifier: ^0.1.1
         version: 0.1.1
@@ -106,8 +106,8 @@ importers:
   packages/clypra-engine:
     dependencies:
       '@clypra-studio/shaders':
-        specifier: workspace:*
-        version: link:../shaders
+        specifier: ^0.1.3
+        version: 0.1.3
       '@clypra-studio/types':
         specifier: ^0.2.0
         version: 0.2.0
@@ -415,14 +415,17 @@ packages:
   '@changesets/write@0.4.0':
     resolution: {integrity: sha512-CdTLvIOPiCNuH71pyDu3rA+Q0n65cmAbXnwWH84rKGiFumFzkmHNT8KHTMEchcxN+Kl8I54xGUhJ7l3E7X396Q==}
 
-  '@clypra-studio/engine@1.0.0':
-    resolution: {integrity: sha512-dT2jN+GMkriYEgaJBKQypOslS9/5Wg1b0tfsMcueyvDx/P6+4PNaPXUgpAoDHeBLL1V+LLtyFrT3MoKxShdfAA==}
+  '@clypra-studio/engine@1.0.4':
+    resolution: {integrity: sha512-+AhhQwqok50iGwHSeanUnN6oS1SgebUQ5zPMbjZeNnM7lpknh3wJ+B+/VKUe8/xHaaHkPOukiB/bmtuvb8IhhA==}
 
   '@clypra-studio/feature-providers@0.1.1':
     resolution: {integrity: sha512-YE6yIUPoB9ByaNSr9p9RcUvmhbl270w3OgciFV3j7ou81mo3kCv8uhr1mWzTfU90p+38N9bcnCx/zHErwog9ow==}
 
   '@clypra-studio/runtime@0.1.2':
     resolution: {integrity: sha512-ngG4+L/XLGw9FgD8bVvvJf2iBvHPJzkbAd3sV9EtuRC29NO677Upl98A76DlslE7degYz6PMFK23n7ZUOaOGDQ==}
+
+  '@clypra-studio/shaders@0.1.3':
+    resolution: {integrity: sha512-8Md9PNuWMFWVWOXKNkE1ykk541mkuJ2WOozRM89qTgS9o4akwiOIMA3dT3i6mHXvbUgIrD/zjckrdUzCpRnOHQ==}
 
   '@clypra-studio/types@0.2.0':
     resolution: {integrity: sha512-03+d8BpuJsKD26NxZ0J+njiRBHeqZqyklavrtWYpa3fTl1A/WnjbG9kDxVvIzBpF0BIHZ+3FlBvzjcI5fZKa0w==}
@@ -4182,8 +4185,9 @@ snapshots:
       human-id: 4.2.0
       prettier: 2.8.8
 
-  '@clypra-studio/engine@1.0.0':
+  '@clypra-studio/engine@1.0.4':
     dependencies:
+      '@clypra-studio/shaders': 0.1.3
       '@clypra-studio/types': 0.2.0
       jszip: 3.10.1
       lottie-web: 5.13.0
@@ -4198,6 +4202,8 @@ snapshots:
       '@clypra-studio/types': 0.2.0
       pixi-filters: 6.1.5(pixi.js@8.19.0)
       pixi.js: 8.19.0
+
+  '@clypra-studio/shaders@0.1.3': {}
 
   '@clypra-studio/types@0.2.0': {}
 
