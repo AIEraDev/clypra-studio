@@ -11,7 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@clypra-studio/engine": "^1.0.0",
+    "@clypra-studio/engine": "^1.0.4",
     "@clypra-studio/feature-providers": "^0.1.1",
     "@clypra-studio/runtime": "^0.1.2",
     "@clypra-studio/ui": "^0.1.2",
