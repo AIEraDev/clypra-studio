@@ -443,6 +443,19 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ---
 
+## ⚖️ Open Core Model
+
+Clypra Studio is the open-source effects runtime and developer platform for Clypra. All packages within Clypra Studio are free and open-source (MIT License) forever.
+
+The studio packages integrate with the Clypra desktop editor and the proprietary **AI Intelligence Layer** (which powers advanced features like auto-captioning, smart reframing, and natural language editing).
+
+To learn more about the structure of our project, please refer to:
+- [OPEN_CORE_ARCHITECTURE.md](../clypra/OPEN_CORE_ARCHITECTURE.md) in the clypra repository
+- [FAQ.md](../clypra/FAQ.md) in the clypra repository for licensing and commercial use questions
+- [CONTRIBUTING.md](./CONTRIBUTING.md) for the Contributor License Agreement (CLA) process
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
