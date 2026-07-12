@@ -9,6 +9,39 @@ export const WebShowcase: React.FC = () => {
   // Mouse coordinate state to feed dynamic light highlights
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
+  // Detect user's OS for smart download
+  const [userOS, setUserOS] = useState<"mac" | "win" | "linux">("mac");
+  const [downloadUrl, setDownloadUrl] = useState("");
+
+  useEffect(() => {
+    const platform = window.navigator.platform.toLowerCase();
+    const userAgent = window.navigator.userAgent.toLowerCase();
+
+    let detectedOS: "mac" | "win" | "linux" = "mac";
+
+    if (platform.includes("win") || userAgent.includes("windows")) {
+      detectedOS = "win";
+    } else if (platform.includes("linux") || userAgent.includes("linux")) {
+      detectedOS = "linux";
+    } else if (platform.includes("mac") || userAgent.includes("mac")) {
+      detectedOS = "mac";
+    }
+
+    setUserOS(detectedOS);
+    setActiveTab(detectedOS);
+
+    // Set appropriate download URL
+    // These will redirect to the latest release assets
+    const baseUrl = "https://github.com/AIEraDev/Clypra/releases/latest/download";
+    if (detectedOS === "mac") {
+      setDownloadUrl(`${baseUrl}/Clypra_aarch64.dmg`);
+    } else if (detectedOS === "win") {
+      setDownloadUrl(`${baseUrl}/Clypra_x64_en-US.msi`);
+    } else {
+      setDownloadUrl(`${baseUrl}/Clypra_amd64.AppImage`);
+    }
+  }, []);
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({
@@ -314,20 +347,27 @@ export const WebShowcase: React.FC = () => {
 
           {/* Quick Platform Badges */}
           <div className="flex flex-wrap justify-center gap-3 mt-4 text-[10px] text-[#666] font-mono">
-            <span className="px-2.5 py-1 rounded bg-white/2 border border-white/4">macOS Universal</span>
-            <span className="px-2.5 py-1 rounded bg-white/2 border border-white/4">Windows x64</span>
-            <span className="px-2.5 py-1 rounded bg-white/2 border border-white/4">Linux AppImage</span>
+            <span className={`px-2.5 py-1 rounded border transition-all ${userOS === "mac" ? "bg-[#6c63ff]/10 border-[#6c63ff]/30 text-[#8b84ff]" : "bg-white/2 border-white/4"}`}>macOS Universal</span>
+            <span className={`px-2.5 py-1 rounded border transition-all ${userOS === "win" ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400" : "bg-white/2 border-white/4"}`}>Windows x64</span>
+            <span className={`px-2.5 py-1 rounded border transition-all ${userOS === "linux" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-white/2 border-white/4"}`}>Linux AppImage</span>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-center gap-3 mt-2">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 mt-2 items-center">
             <a href="/studio" className="h-12 rounded-xl bg-[#6c63ff] px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:bg-[#7b73ff] shadow-[0_10px_35px_rgba(108,99,255,0.28)]">
               Launch Clypra Studio
               <ArrowRight className="w-4 h-4" />
             </a>
-            <a href="https://github.com/AIEraDev/Clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="h-12 rounded-xl border border-white/8 bg-white/3 px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:bg-white/[0.07]">
-              Download Desktop
-              <Download className="w-4 h-4" />
-            </a>
+            <div className="flex flex-col gap-1.5 items-center">
+              <a href={downloadUrl} className="h-12 rounded-xl border border-white/8 bg-white/3 px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:bg-white/[0.07] group">
+                <Download className="w-4 h-4 group-hover:animate-bounce" />
+                <span>Download for {userOS === "mac" ? "macOS" : userOS === "win" ? "Windows" : "Linux"}</span>
+              </a>
+              <p className="text-[9px] text-[#666] text-center font-mono">
+                {userOS === "mac" && "Universal binary • Apple Silicon & Intel"}
+                {userOS === "win" && "MSI installer • x64 architecture"}
+                {userOS === "linux" && "AppImage • Portable executable"}
+              </p>
+            </div>
           </div>
         </section>
 
