@@ -105,9 +105,12 @@ importers:
 
   packages/clypra-engine:
     dependencies:
+      '@clypra-studio/shaders':
+        specifier: workspace:*
+        version: link:../shaders
       '@clypra-studio/types':
-        specifier: workspace:^
-        version: link:../types
+        specifier: ^0.2.0
+        version: 0.2.0
       jszip:
         specifier: ^3.10.1
         version: 3.10.1

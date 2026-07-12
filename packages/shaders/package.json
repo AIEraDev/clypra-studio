@@ -17,13 +17,34 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./color": "./dist/color/index.js",
-    "./blur": "./dist/blur/index.js",
-    "./distortion": "./dist/distortion/index.js",
-    "./composite": "./dist/composite/index.js",
-    "./noise": "./dist/noise/index.js",
-    "./utils": "./dist/utils/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./color": {
+      "types": "./dist/color/index.d.ts",
+      "import": "./dist/color/index.js"
+    },
+    "./blur": {
+      "types": "./dist/blur/index.d.ts",
+      "import": "./dist/blur/index.js"
+    },
+    "./distortion": {
+      "types": "./dist/distortion/index.d.ts",
+      "import": "./dist/distortion/index.js"
+    },
+    "./composite": {
+      "types": "./dist/composite/index.d.ts",
+      "import": "./dist/composite/index.js"
+    },
+    "./noise": {
+      "types": "./dist/noise/index.d.ts",
+      "import": "./dist/noise/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js"
+    }
   },
   "scripts": {
     "build": "tsup",
