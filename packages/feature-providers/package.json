@@ -1,6 +1,16 @@
 {
   "name": "@clypra-studio/feature-providers",
   "version": "0.1.1",
+  "license": "MIT",
+  "keywords": [
+    "clypra",
+    "clypra-studio",
+    "feature-providers",
+    "body-effects",
+    "chroma-key",
+    "segmentation",
+    "open-source"
+  ],
   "description": "Extensible feature providers for Body Effect Lab",
   "type": "module",
   "main": "./dist/index.js",

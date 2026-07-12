@@ -1,6 +1,15 @@
 {
   "name": "@clypra-studio/runtime",
   "version": "0.1.2",
+  "license": "MIT",
+  "keywords": [
+    "clypra",
+    "clypra-studio",
+    "runtime",
+    "video-effects-runtime",
+    "render-planner",
+    "open-source"
+  ],
   "description": "Shared runtime infrastructure for all Clypra Studio Labs",
   "type": "module",
   "main": "./dist/index.js",

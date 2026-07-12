@@ -1,6 +1,17 @@
 {
   "name": "@clypra-studio/engine",
   "version": "1.0.3",
+  "license": "MIT",
+  "keywords": [
+    "clypra",
+    "clypra-studio",
+    "video-effects",
+    "gpu-accelerated",
+    "pixijs",
+    "webgl",
+    "webgpu",
+    "open-source"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

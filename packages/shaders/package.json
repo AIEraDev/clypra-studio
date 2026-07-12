@@ -1,6 +1,17 @@
 {
   "name": "@clypra-studio/shaders",
   "version": "0.1.2",
+  "license": "MIT",
+  "keywords": [
+    "clypra",
+    "clypra-studio",
+    "shaders",
+    "glsl",
+    "webgl",
+    "webgpu",
+    "video-effects",
+    "open-source"
+  ],
   "description": "Reusable GLSL shader library for video effects",
   "type": "module",
   "main": "./dist/index.js",
@@ -33,9 +44,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/AIEraDev/clypra-studio.git",
-    "directory": "packages/shader-library"
+    "directory": "packages/shaders"
   },
-  "homepage": "https://github.com/AIEraDev/clypra-studio/tree/main/packages/shader-library#readme",
+  "homepage": "https://github.com/AIEraDev/clypra-studio/tree/main/packages/shaders#readme",
   "bugs": {
     "url": "https://github.com/AIEraDev/clypra-studio/issues"
   },
