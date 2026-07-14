@@ -1,6 +1,111 @@
 import { Filter } from 'pixi.js'
 import type { PixiEffectDefinition, ParamValues } from '../../videoEffects/EffectDefinition'
 
+export interface GradingParams {
+  exposure?:    number;
+  brightness?:  number;
+  contrast?:    number;
+  saturation?:  number;
+  temperature?: number;
+  tint?:        number;
+  sepia?:       number;
+  grayscale?:   number;
+  hueRotate?:   number;
+  vignette?:    number;
+  invert?:      number;
+  lift?: number;
+  splitTone?: {
+    shadowColor:       string;
+    shadowStrength:    number;
+    highlightColor:    string;
+    highlightStrength: number;
+    balance:           number;
+  };
+  grain?: {
+    intensity: number;
+    size:      number;
+  };
+  halation?: {
+    color:     string;
+    threshold: number;
+    intensity: number;
+  };
+  channelMix?: {
+    r: number;
+    g: number;
+    b: number;
+  };
+  duotone?: {
+    darkColor:  string;
+    lightColor: string;
+  };
+  vibrance?: {
+    amount:        number;
+    protectedHue?: string;
+  };
+  crossProcess?: {
+    amount: number;
+  };
+}
+
+export interface ColorAdjustments {
+  // Basic Adjustments — simple scalar values
+  exposure?: number
+  brightness?: number
+  contrast?: number
+  saturation?: number
+
+  // Color & White Balance — simple scalar values
+  temperature?: number
+  tint?: number
+  sepia?: number
+  grayscale?: number
+  hue?: number
+
+  // Creative — simple scalar/boolean values
+  vignette?: number
+  invert?: boolean
+
+  // Advanced Grading — structured primitives, reused verbatim from gradingParams
+  lift?: number
+  vibrance?: { amount: number; protectedHue?: string }
+  grain?: { intensity: number; size: number }
+  crossProcess?: { amount: number }
+}
+
+export function mergeGradingParams(
+  presetParams: GradingParams | undefined,
+  manualAdjustments: ColorAdjustments | undefined,
+): GradingParams {
+  if (!presetParams && !manualAdjustments) return {};
+
+  const merged: GradingParams = { ...presetParams };
+
+  if (manualAdjustments) {
+    if ('exposure' in manualAdjustments) merged.exposure = manualAdjustments.exposure;
+    if ('brightness' in manualAdjustments) merged.brightness = manualAdjustments.brightness;
+    if ('contrast' in manualAdjustments) merged.contrast = manualAdjustments.contrast;
+    if ('saturation' in manualAdjustments) merged.saturation = manualAdjustments.saturation;
+
+    if ('temperature' in manualAdjustments) merged.temperature = manualAdjustments.temperature;
+    if ('tint' in manualAdjustments) merged.tint = manualAdjustments.tint;
+    if ('sepia' in manualAdjustments) merged.sepia = manualAdjustments.sepia;
+    if ('grayscale' in manualAdjustments) merged.grayscale = manualAdjustments.grayscale;
+    if ('hue' in manualAdjustments) merged.hueRotate = (manualAdjustments.hue! * Math.PI) / 180;
+
+    if ('vignette' in manualAdjustments) merged.vignette = manualAdjustments.vignette;
+    if ('invert' in manualAdjustments) merged.invert = manualAdjustments.invert ? 1.0 : 0.0;
+
+    if ('lift' in manualAdjustments) merged.lift = manualAdjustments.lift;
+    if ('vibrance' in manualAdjustments) merged.vibrance = manualAdjustments.vibrance;
+    if ('grain' in manualAdjustments) merged.grain = manualAdjustments.grain;
+    if ('crossProcess' in manualAdjustments) merged.crossProcess = manualAdjustments.crossProcess;
+  }
+
+  return merged;
+}
+
+
 /** Pixi v8 default filter vertex — required for correct render-to-texture in MPG. */
 const ADJUSTMENTS_VERTEX_SHADER = `
   in vec2 aPosition;
