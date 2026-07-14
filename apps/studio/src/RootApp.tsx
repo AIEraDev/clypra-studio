@@ -13,6 +13,7 @@ const TransitionLabView = lazy(() => import("./labs/transition").then((m) => ({ 
 const BodyLabView = lazy(() => import("./labs/body").then((m) => ({ default: m.BodyLabView })));
 const FilterLabView = lazy(() => import("./labs/filter").then((m) => ({ default: m.FilterLabView })));
 const RuntimeObservatoryDemo = lazy(() => import("./labs/RuntimeObservatoryDemo").then((m) => ({ default: m.RuntimeObservatoryDemo })));
+const ColorGradingLabView = lazy(() => import("./labs/color-grading").then((m) => ({ default: m.ColorGradingLabView })));
 
 const ROUTE_METADATA = {
   showcase: {
@@ -65,6 +66,11 @@ const ROUTE_METADATA = {
     description: "Runtime Observatory Demo - Experience the V2 pipeline with snapshot-based observability and real-time performance monitoring.",
     title: "Clypra Studio - Runtime Observatory Demo",
   },
+  colorGrading: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/color-grading",
+    description: "Color Grading Lab - Design, test, and publish direct GPU-based color grading manual adjustments using PixiJS.",
+    title: "Clypra Studio - Color Grading Lab",
+  },
 };
 
 function isStudioRoute(pathname: string) {
@@ -103,6 +109,10 @@ function isObservatoryDemoRoute(pathname: string) {
   return pathname === "/observatory-demo" || pathname.startsWith("/observatory-demo");
 }
 
+function isColorGradingRoute(pathname: string) {
+  return pathname === "/studio/color-grading" || pathname.startsWith("/studio/color-grading");
+}
+
 function upsertMeta(selector: string, attr: "content" | "href", value: string) {
   document.head.querySelector(selector)?.setAttribute(attr, value);
 }
@@ -127,21 +137,22 @@ export default function RootApp() {
   const bodyLabRoute = isBodyLabRoute(pathname);
   const filterLabRoute = isFilterLabRoute(pathname);
   const observatoryDemoRoute = isObservatoryDemoRoute(pathname);
-  const studioRoute = !effectsRoute && !mpgRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && !filterLabRoute && !observatoryDemoRoute && isStudioRoute(pathname);
+  const colorGradingRoute = isColorGradingRoute(pathname);
+  const studioRoute = !effectsRoute && !mpgRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && !filterLabRoute && !observatoryDemoRoute && !colorGradingRoute && isStudioRoute(pathname);
   const lottieRoute = isLottieRoute(pathname);
-  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : filterLabRoute ? ROUTE_METADATA.filterLab : observatoryDemoRoute ? ROUTE_METADATA.observatoryDemo : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
+  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : filterLabRoute ? ROUTE_METADATA.filterLab : observatoryDemoRoute ? ROUTE_METADATA.observatoryDemo : colorGradingRoute ? ROUTE_METADATA.colorGrading : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
 
-  // Normalise /studio/* → /studio (preserve ?q= param) unless it's effects sandbox or mpg playground
+  // Normalise /studio/* → /studio (preserve ?q= param) unless it's effects sandbox or mpg playground or color grading
   useEffect(() => {
     const p = window.location.pathname;
-    if (p.startsWith("/studio") && p !== "/studio" && p !== "/studio/effects" && p !== "/studio/mpg") {
+    if (p.startsWith("/studio") && p !== "/studio" && p !== "/studio/effects" && p !== "/studio/mpg" && p !== "/studio/color-grading") {
       window.history.replaceState({}, "", `/studio${window.location.search}`);
     }
   }, []);
 
   // Set page scroll styles based on current route
   useEffect(() => {
-    if (studioRoute || lottieRoute || mpgRoute || videoLabRoute || transitionLabRoute || bodyLabRoute || filterLabRoute) {
+    if (studioRoute || lottieRoute || mpgRoute || videoLabRoute || transitionLabRoute || bodyLabRoute || filterLabRoute || colorGradingRoute) {
       window.scrollTo(0, 0);
       document.body.style.overflow = "hidden";
       document.body.style.overflowX = "hidden";
@@ -163,7 +174,7 @@ export default function RootApp() {
       document.documentElement.style.overflowX = "";
       document.documentElement.style.overflowY = "";
     };
-  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute, filterLabRoute, observatoryDemoRoute]);
+  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute, filterLabRoute, observatoryDemoRoute, colorGradingRoute]);
 
   useEffect(() => {
     document.title = metadata.title;
@@ -306,6 +317,23 @@ export default function RootApp() {
         }
       >
         <FilterLabView />
+      </Suspense>
+    );
+  }
+
+  if (colorGradingRoute) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-screen bg-[#020617] items-center justify-center text-white">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7c6fff] mx-auto mb-4" />
+              <p className="text-sm text-gray-400">Loading Color Grading...</p>
+            </div>
+          </div>
+        }
+      >
+        <ColorGradingLabView />
       </Suspense>
     );
   }
