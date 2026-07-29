@@ -50,4 +50,8 @@ export type { SnapshotObservatoryProps } from "./components/RuntimeObservatory";
 export { BezierCurveEditor, KeyframePropertyInspector } from "./components/BezierCurveEditor";
 export type { BezierCurveEditorProps } from "./components/BezierCurveEditor";
 
+// Multi-Keyframe Graph Editor & Timeline Inspector
+export { MultiKeyframeGraphEditor, VideoEditorInspector } from "./components/MultiKeyframeGraphEditor";
+export type { MultiKeyframeGraphEditorProps } from "./components/MultiKeyframeGraphEditor";
+
 export const UI_VERSION = "0.1.0";
