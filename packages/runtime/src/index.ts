@@ -47,6 +47,15 @@ export * from "./webgpu";
 // Host Plugin Bridge & SDK
 export * from "./bridge";
 
+// Keyframe Interpolation & Animation Engine
+export * from "./keyframe";
+
+// Built-in Shader Node Templates
+export * from "./nodes";
+
+// Audio Spectrum Binding Engine
+export * from "./audio";
+
 // Testing & Publishing (Phase 6)
 export * from "./testing/goldenTests";
 export * from "./testing/benchmarkRunner";
