@@ -59,6 +59,9 @@ export type {
   FrequencyBand,
   AudioBinding,
   BakedFrameSpectrum,
+  HandleMode,
+  KeyframePoint,
+  TimelineViewport,
 } from "./vefx";
 
 

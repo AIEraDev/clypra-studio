@@ -220,5 +220,25 @@ export interface BakedFrameSpectrum {
   readonly rawBins: Float32Array; // Full FFT magnitude spectrum
 }
 
+export type HandleMode = "aligned" | "mirrored" | "broken";
+
+export interface KeyframePoint {
+  readonly id: string;
+  readonly time: number;  // X-axis (Seconds)
+  readonly value: number; // Y-axis (Parameter Value)
+  readonly easing: "linear" | "cubic-bezier" | "hold";
+  readonly handleMode?: HandleMode; // Default: 'aligned'
+  readonly handleIn?: { dt: number; dv: number };
+  readonly handleOut?: { dt: number; dv: number };
+}
+
+export interface TimelineViewport {
+  readonly scrollX: number; // Viewport start time (seconds)
+  readonly zoomX: number;   // Pixels per second
+  readonly scrollY: number; // Viewport center value
+  readonly zoomY: number;   // Pixels per unit value
+}
+
+
 
 
