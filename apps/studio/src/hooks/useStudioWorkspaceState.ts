@@ -3,21 +3,44 @@ import type { RailItem } from "../components/StudioChrome";
 
 export type StudioPanelTab = "engine" | "definition" | "lab";
 
-// ─── URL helpers ─────────────────────────────────────────────────────────────
+// ─── Clean URL & Path Helpers ──────────────────────────────────────────────
 
-const VALID_RAIL_ITEMS: RailItem[] = ["text-effects", "audio", "stickers", "overlays", "video-effects", "body-effects", "filters", "admin"];
+const VALID_RAIL_ITEMS: RailItem[] = [
+  "text-effects",
+  "audio",
+  "stickers",
+  "overlays",
+  "video-effects",
+  "body-effects",
+  "filters",
+  "transitions",
+  "admin",
+  "labs",
+];
 
-function getRailItemFromQuery(): RailItem {
+function getRailItemFromLocation(): RailItem {
+  const pathname = window.location.pathname;
+
+  // 1. Match clean canonical path URLs (e.g. /studio/labs -> labs)
+  if (pathname.startsWith("/studio/")) {
+    const sub = pathname.replace(/^\/studio\//, "").split("/")[0] as RailItem;
+    if (VALID_RAIL_ITEMS.includes(sub)) return sub;
+  }
+
+  // 2. Transform legacy query parameters (e.g. /studio?q=labs) into clean path URLs without page refresh
   const q = new URLSearchParams(window.location.search).get("q") as RailItem | null;
-  if (q && VALID_RAIL_ITEMS.includes(q)) return q;
+  if (q && VALID_RAIL_ITEMS.includes(q)) {
+    const cleanUrl = q === "text-effects" ? "/studio" : `/studio/${q}`;
+    window.history.replaceState({}, "", cleanUrl);
+    return q;
+  }
+
   return "text-effects";
 }
 
-function buildQueryUrl(item: RailItem): string {
-  const url = new URL(window.location.href);
-  url.pathname = "/studio";
-  url.searchParams.set("q", item);
-  return url.pathname + url.search;
+function buildCleanUrl(item: RailItem): string {
+  if (item === "text-effects") return "/studio";
+  return `/studio/${item}`;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -25,32 +48,25 @@ function buildQueryUrl(item: RailItem): string {
 export function useStudioWorkspaceState() {
   const [uiMode, setUiMode] = useState<"basic" | "advanced">("basic");
 
-  const [activeRailItem, setActiveRailItemState] = useState<RailItem>(() => getRailItemFromQuery());
+  const [activeRailItem, setActiveRailItemState] = useState<RailItem>(() => getRailItemFromLocation());
 
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<StudioPanelTab>("engine");
 
-  // On mount: if ?q= is missing, write the default into the URL without a history entry
-  useEffect(() => {
-    if (!new URLSearchParams(window.location.search).get("q")) {
-      window.history.replaceState({ q: "text-effects" }, "", buildQueryUrl("text-effects"));
-    }
-  }, []);
-
-  // Sync state when user navigates back/forward
+  // Sync state when user navigates back/forward via browser history
   useEffect(() => {
     const handlePopState = () => {
-      const item = getRailItemFromQuery();
+      const item = getRailItemFromLocation();
       setActiveRailItemState(item);
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  // Write ?q= to URL and update state
+  // Write clean canonical path URL (e.g. /studio/labs) and update state
   const setActiveRailItem = useCallback((item: RailItem) => {
     setActiveRailItemState(item);
-    window.history.pushState({ q: item }, "", buildQueryUrl(item));
+    window.history.pushState({ railItem: item }, "", buildCleanUrl(item));
   }, []);
 
   return {

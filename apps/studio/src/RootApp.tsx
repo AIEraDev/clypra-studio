@@ -12,7 +12,6 @@ const VideoLabView = lazy(() => import("./labs/video").then((m) => ({ default: m
 const TransitionLabView = lazy(() => import("./labs/transition").then((m) => ({ default: m.TransitionLabView })));
 const BodyLabView = lazy(() => import("./labs/body").then((m) => ({ default: m.BodyLabView })));
 const FilterLabView = lazy(() => import("./labs/filter").then((m) => ({ default: m.FilterLabView })));
-const RuntimeObservatoryDemo = lazy(() => import("./labs/RuntimeObservatoryDemo").then((m) => ({ default: m.RuntimeObservatoryDemo })));
 const ColorGradingLabView = lazy(() => import("./labs/color-grading").then((m) => ({ default: m.ColorGradingLabView })));
 const StudioMasterLabView = lazy(() => import("./labs/studio-master").then((m) => ({ default: m.StudioMasterLabView })));
 
@@ -48,29 +47,24 @@ const ROUTE_METADATA = {
     title: "Clypra Studio - MPG Filter Lab",
   },
   videoLab: {
-    canonical: "https://clypra.abdulkabirmusa.com/video-lab",
+    canonical: "https://clypra.abdulkabirmusa.com/studio/video-lab",
     description: "Video Effects Lab - Design, test, and publish single-input video effects with the unified runtime.",
     title: "Clypra Studio - Video Lab",
   },
   transitionLab: {
-    canonical: "https://clypra.abdulkabirmusa.com/transition-lab",
+    canonical: "https://clypra.abdulkabirmusa.com/studio/transition-lab",
     description: "Transition Lab - Design, test, and publish dual-input transition effects with the unified runtime.",
     title: "Clypra Studio - Transition Lab",
   },
   bodyLab: {
-    canonical: "https://clypra.abdulkabirmusa.com/body-lab",
+    canonical: "https://clypra.abdulkabirmusa.com/studio/body-lab",
     description: "Body Lab - Design, test, and publish mask-based body effects with extensible feature providers.",
     title: "Clypra Studio - Body Lab",
   },
   filterLab: {
-    canonical: "https://clypra.abdulkabirmusa.com/filter-lab",
+    canonical: "https://clypra.abdulkabirmusa.com/studio/filter-lab",
     description: "Filter Lab - Design, test, and publish color grading presets and looks with GPU rendering pipeline.",
     title: "Clypra Studio - Filter Lab",
-  },
-  observatoryDemo: {
-    canonical: "https://clypra.abdulkabirmusa.com/observatory-demo",
-    description: "Runtime Observatory Demo - Experience the V2 pipeline with snapshot-based observability and real-time performance monitoring.",
-    title: "Clypra Studio - Runtime Observatory Demo",
   },
   colorGrading: {
     canonical: "https://clypra.abdulkabirmusa.com/studio/color-grading",
@@ -100,23 +94,19 @@ function isMPGRoute(pathname: string) {
 }
 
 function isVideoLabRoute(pathname: string) {
-  return pathname === "/video-lab" || pathname.startsWith("/video-lab");
+  return pathname === "/studio/video-lab" || pathname.startsWith("/studio/video-lab") || pathname === "/video-lab" || pathname.startsWith("/video-lab");
 }
 
 function isTransitionLabRoute(pathname: string) {
-  return pathname === "/transition-lab" || pathname.startsWith("/transition-lab");
+  return pathname === "/studio/transition-lab" || pathname.startsWith("/studio/transition-lab") || pathname === "/transition-lab" || pathname.startsWith("/transition-lab");
 }
 
 function isBodyLabRoute(pathname: string) {
-  return pathname === "/body-lab" || pathname.startsWith("/body-lab");
+  return pathname === "/studio/body-lab" || pathname.startsWith("/studio/body-lab") || pathname === "/body-lab" || pathname.startsWith("/body-lab");
 }
 
 function isFilterLabRoute(pathname: string) {
-  return pathname === "/filter-lab" || pathname.startsWith("/filter-lab");
-}
-
-function isObservatoryDemoRoute(pathname: string) {
-  return pathname === "/observatory-demo" || pathname.startsWith("/observatory-demo");
+  return pathname === "/studio/filter-lab" || pathname.startsWith("/studio/filter-lab") || pathname === "/filter-lab" || pathname.startsWith("/filter-lab");
 }
 
 function isColorGradingRoute(pathname: string) {
@@ -146,18 +136,14 @@ export default function RootApp() {
   const transitionLabRoute = isTransitionLabRoute(pathname);
   const bodyLabRoute = isBodyLabRoute(pathname);
   const filterLabRoute = isFilterLabRoute(pathname);
-  const observatoryDemoRoute = isObservatoryDemoRoute(pathname);
   const colorGradingRoute = isColorGradingRoute(pathname);
-  const studioRoute = !effectsRoute && !mpgRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && !filterLabRoute && !observatoryDemoRoute && !colorGradingRoute && isStudioRoute(pathname);
+  const studioRoute = !effectsRoute && !mpgRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && !filterLabRoute && !colorGradingRoute && isStudioRoute(pathname);
   const lottieRoute = isLottieRoute(pathname);
-  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : filterLabRoute ? ROUTE_METADATA.filterLab : observatoryDemoRoute ? ROUTE_METADATA.observatoryDemo : colorGradingRoute ? ROUTE_METADATA.colorGrading : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
+  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : filterLabRoute ? ROUTE_METADATA.filterLab : colorGradingRoute ? ROUTE_METADATA.colorGrading : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
 
-  // Normalise /studio/* → /studio (preserve ?q= param) unless it's effects sandbox or mpg playground or color grading
+  // Clean URL handling: preserve exact canonical route paths without unwanted redirects
   useEffect(() => {
-    const p = window.location.pathname;
-    if (p.startsWith("/studio") && p !== "/studio" && p !== "/studio/effects" && p !== "/studio/mpg" && p !== "/studio/color-grading") {
-      window.history.replaceState({}, "", `/studio${window.location.search}`);
-    }
+    // Keep clean canonical URLs
   }, []);
 
   // Set page scroll styles based on current route
@@ -184,7 +170,7 @@ export default function RootApp() {
       document.documentElement.style.overflowX = "";
       document.documentElement.style.overflowY = "";
     };
-  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute, filterLabRoute, observatoryDemoRoute, colorGradingRoute]);
+  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute, filterLabRoute, colorGradingRoute]);
 
   useEffect(() => {
     document.title = metadata.title;
@@ -344,23 +330,6 @@ export default function RootApp() {
         }
       >
         <ColorGradingLabView />
-      </Suspense>
-    );
-  }
-
-  if (observatoryDemoRoute) {
-    return (
-      <Suspense
-        fallback={
-          <div className="flex h-screen bg-[#020617] items-center justify-center text-white">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3b82f6] mx-auto mb-4" />
-              <p className="text-sm text-gray-400">Loading Runtime Observatory...</p>
-            </div>
-          </div>
-        }
-      >
-        <RuntimeObservatoryDemo />
       </Suspense>
     );
   }
