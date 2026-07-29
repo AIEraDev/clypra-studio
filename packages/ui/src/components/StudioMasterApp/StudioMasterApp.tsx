@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import type { KeyframePoint, EngineTelemetryStats, NodeGraph } from "@clypra-studio/types";
+import type { KeyframePoint, EngineTelemetryStats, NodeGraph, StudioTabMode, ColorWheelState, BodyEffectState } from "@clypra-studio/types";
 import {
   VefxPresetManager,
   WGSLGraphCompiler,
@@ -10,6 +10,9 @@ import {
 import { StudioControlPanel } from "../StudioControlPanel";
 import { StudioDiagnosticsOverlay } from "../StudioDiagnosticsOverlay";
 import { MultiKeyframeGraphEditor } from "../MultiKeyframeGraphEditor";
+import { ColorGradingStudioPanel } from "../ColorGradingStudio";
+import { BodyEffectsStudioPanel } from "../BodyEffectsStudio";
+import { WGSLCodeInspector } from "./WGSLCodeInspector";
 
 export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: externalDevice }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -18,9 +21,26 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
   const fallbackCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [device, setDevice] = useState<GPUDevice | undefined>(externalDevice);
+  const [activeTab, setActiveTab] = useState<StudioTabMode>("color");
   const [mediaType, setMediaType] = useState<"video" | "image" | "fallback">("fallback");
-  const [mediaName, setMediaName] = useState<string>("Procedural Test Bar");
+  const [mediaName, setMediaName] = useState<string>("Procedural Test Spectrum");
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+  // Studio States
+  const [colorState, setColorState] = useState<ColorWheelState>({
+    lift: [0, 0, 0],
+    gamma: [1, 1, 1],
+    gain: [1, 1, 1],
+    sat: 1.2,
+    exposure: 0.0,
+  });
+
+  const [bodyState, setBodyState] = useState<BodyEffectState>({
+    maskEnabled: true,
+    outlineGlow: 0.8,
+    auraHue: 210,
+    bgBlur: 6,
+  });
 
   const [keyframes, setKeyframes] = useState<KeyframePoint[]>([
     { id: "kf_1", time: 0.0, value: 0.2, easing: "cubic-bezier", handleMode: "aligned", handleOut: { dt: 0.5, dv: 0.0 } },
@@ -31,12 +51,13 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
   const [currentTime, setCurrentTime] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [compiledWgsl, setCompiledWgsl] = useState<string>("// Compiling WGSL Graph...");
 
   const [stats, setStats] = useState<EngineTelemetryStats>({
     uiFps: 144,
     gpuFrameTimeMs: 2.4,
     workerQueueLatencyMs: 0.8,
-    activeUniformBytes: 256,
+    activeUniformBytes: 512,
   });
 
   const evaluatorRef = useRef(new MultiKeyframeEvaluator());
@@ -61,7 +82,7 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
     }
   }, [device]);
 
-  // Create procedural fallback test pattern canvas
+  // Create fallback test pattern canvas
   useEffect(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 640;
@@ -69,7 +90,7 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
     const ctx = canvas.getContext("2d");
     if (ctx) {
       // Color bars
-      const colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#00FFFF", "#FF00FF", "#FFFFFF", "#111827"];
+      const colors = ["#FF3B30", "#34C759", "#007AFF", "#FFCC00", "#5AC8FA", "#AF52DE", "#FFFFFF", "#1C1C1E"];
       const colWidth = 640 / colors.length;
       colors.forEach((col, idx) => {
         ctx.fillStyle = col;
@@ -79,17 +100,33 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
       // Gradient bar below
       const grad = ctx.createLinearGradient(0, 240, 640, 360);
       grad.addColorStop(0, "#0F172A");
-      grad.addColorStop(0.5, "#3B82F6");
+      grad.addColorStop(0.5, "#2563EB");
       grad.addColorStop(1, "#EC4899");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 240, 640, 120);
 
       ctx.fillStyle = "#FFFFFF";
       ctx.font = "bold 20px monospace";
-      ctx.fillText("CLYPRA WEBGPU MEDIA ENGINE", 160, 300);
+      ctx.fillText("CLYPRA WORLD-CLASS ENGINE", 160, 300);
     }
     fallbackCanvasRef.current = canvas;
   }, []);
+
+  // Recompile WGSL Shader Pass
+  useEffect(() => {
+    const satNode = createSaturationNode("sat_01", colorState.sat);
+    const vigNode = createVignetteNode("vig_01", 0.4);
+
+    const graph: NodeGraph = {
+      nodes: [satNode, vigNode],
+      connections: [{ fromNodeId: "sat_01", fromPinId: "outColor", toNodeId: "vig_01", toPinId: "inColor" }],
+      outputNodeId: "vig_01",
+    };
+
+    const compiler = new WGSLGraphCompiler();
+    const compiled = compiler.compile(graph);
+    setCompiledWgsl(compiled.wgslCode);
+  }, [colorState.sat]);
 
   // Initialize WebGPU Render Pipeline when device and canvas are ready
   useEffect(() => {
@@ -105,40 +142,30 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST,
       });
 
-      // Compile Shader Graph: Saturation + Vignette
-      const satNode = createSaturationNode("sat_01", 1.0);
+      const compiler = new WGSLGraphCompiler();
+      const satNode = createSaturationNode("sat_01", colorState.sat);
       const vigNode = createVignetteNode("vig_01", 0.4);
-
       const graph: NodeGraph = {
         nodes: [satNode, vigNode],
-        connections: [
-          { fromNodeId: "sat_01", fromPinId: "outColor", toNodeId: "vig_01", toPinId: "inColor" },
-        ],
+        connections: [{ fromNodeId: "sat_01", fromPinId: "outColor", toNodeId: "vig_01", toPinId: "inColor" }],
         outputNodeId: "vig_01",
       };
-
-      const compiler = new WGSLGraphCompiler();
       const compiled = compiler.compile(graph);
 
       const shaderModule = device.createShaderModule({
-        label: "Studio Composite Shader",
+        label: "Studio Master Composite Shader",
         code: compiled.wgslCode,
       });
 
-      const sampler = device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear",
-      });
+      const sampler = device.createSampler({ magFilter: "linear", minFilter: "linear" });
       samplerRef.current = sampler;
 
-      // 16-byte aligned Uniform Buffer: time, u_sat_01_amount, u_vig_01_radius, padding
       const uniformBuffer = device.createBuffer({
-        size: 16,
+        size: 32,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
       uniformBufferRef.current = uniformBuffer;
 
-      // Create 2D texture from fallback canvas
       const fallbackCanvas = fallbackCanvasRef.current;
       if (fallbackCanvas) {
         const texture = device.createTexture({
@@ -148,11 +175,7 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
         });
 
         createImageBitmap(fallbackCanvas).then((bitmap) => {
-          device.queue.copyExternalImageToTexture(
-            { source: bitmap },
-            { texture },
-            [fallbackCanvas.width, fallbackCanvas.height]
-          );
+          device.queue.copyExternalImageToTexture({ source: bitmap }, { texture }, [fallbackCanvas.width, fallbackCanvas.height]);
         });
         textureRef.current = texture;
       }
@@ -165,21 +188,12 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
         ],
       });
 
-      const pipelineLayout = device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout],
-      });
+      const pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
 
       const pipeline = device.createRenderPipeline({
         layout: pipelineLayout,
-        vertex: {
-          module: shaderModule,
-          entryPoint: "vs_main",
-        },
-        fragment: {
-          module: shaderModule,
-          entryPoint: "fs_main",
-          targets: [{ format: "bgra8unorm" }],
-        },
+        vertex: { module: shaderModule, entryPoint: "vs_main" },
+        fragment: { module: shaderModule, entryPoint: "fs_main", targets: [{ format: "bgra8unorm" }] },
         primitive: { topology: "triangle-strip" },
       });
       pipelineRef.current = pipeline;
@@ -196,51 +210,46 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
         bindGroupRef.current = bindGroup;
       }
     } catch (e) {
-      console.warn("WebGPU setup error:", e);
+      console.warn("WebGPU setup warning:", e);
     }
-  }, [device]);
+  }, [device, colorState.sat]);
 
-  // Execute WebGPU Frame Render Pass
+  // Render Pass Loop
   const renderWebGPUFrame = useCallback(
     (t: number) => {
       if (!device || !canvasRef.current) return;
 
-      const evaluatedSat = evaluatorRef.current.evaluate(keyframes, t);
+      const evaluatedSat = evaluatorRef.current.evaluate(keyframes, t) * colorState.sat;
 
-      // Write uniform values: [t, evaluatedSat, vigRadius=0.4, padding]
       if (uniformBufferRef.current) {
-        const uData = new Float32Array([t, evaluatedSat, 0.4, 0.0]);
+        const uData = new Float32Array([
+          t,
+          evaluatedSat,
+          0.4,
+          colorState.lift[0],
+          colorState.gain[0],
+          bodyState.outlineGlow,
+          bodyState.auraHue,
+          0.0,
+        ]);
         device.queue.writeBuffer(uniformBufferRef.current, 0, uData.buffer, 0, uData.byteLength);
       }
 
-      // If playing video, upload current video frame to GPU texture
       if (mediaType === "video" && videoRef.current && textureRef.current) {
         if (videoRef.current.readyState >= 2) {
           createImageBitmap(videoRef.current).then((bitmap) => {
-            device.queue.copyExternalImageToTexture(
-              { source: bitmap },
-              { texture: textureRef.current! },
-              [videoRef.current!.videoWidth, videoRef.current!.videoHeight]
-            );
+            device.queue.copyExternalImageToTexture({ source: bitmap }, { texture: textureRef.current! }, [videoRef.current!.videoWidth, videoRef.current!.videoHeight]);
           });
         }
       }
 
-      // Render WebGPU frame onto canvas
       const gpuContext = canvasRef.current.getContext("webgpu") as GPUCanvasContext;
       if (gpuContext && pipelineRef.current && bindGroupRef.current) {
         const commandEncoder = device.createCommandEncoder();
         const textureView = gpuContext.getCurrentTexture().createView();
 
         const pass = commandEncoder.beginRenderPass({
-          colorAttachments: [
-            {
-              view: textureView,
-              clearValue: { r: 0.05, g: 0.08, b: 0.14, a: 1.0 },
-              loadOp: "clear",
-              storeOp: "store",
-            },
-          ],
+          colorAttachments: [{ view: textureView, clearValue: { r: 0.05, g: 0.08, b: 0.14, a: 1.0 }, loadOp: "clear", storeOp: "store" }],
         });
 
         pass.setPipeline(pipelineRef.current);
@@ -251,10 +260,10 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
         device.queue.submit([commandEncoder.finish()]);
       }
     },
-    [device, keyframes, mediaType]
+    [device, keyframes, mediaType, colorState, bodyState]
   );
 
-  // Playback Tick Loop
+  // Tick loop
   useEffect(() => {
     let animId: number;
     let lastT = performance.now();
@@ -274,11 +283,7 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
         });
       }
 
-      setStats((prev) => ({
-        ...prev,
-        uiFps: Math.min(144, Math.round(1 / Math.max(delta, 0.001))),
-      }));
-
+      setStats((prev) => ({ ...prev, uiFps: Math.min(144, Math.round(1 / Math.max(delta, 0.001))) }));
       renderWebGPUFrame(currentTime);
       animId = requestAnimationFrame(loop);
     };
@@ -287,7 +292,6 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
     return () => cancelAnimationFrame(animId);
   }, [isPlaying, currentTime, mediaType, renderWebGPUFrame]);
 
-  // Handle Media File Upload (Video or Image)
   const handleMediaUpload = (file: File) => {
     const isVideo = file.type.startsWith("video/");
     const isImage = file.type.startsWith("image/");
@@ -345,12 +349,12 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
   };
 
   const handleSavePreset = () => {
-    const jsonStr = VefxPresetManager.exportPreset("Master Studio Curve", keyframes);
+    const jsonStr = VefxPresetManager.exportPreset("World-Class Preset", keyframes);
     const blob = new Blob([jsonStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "master_preset.vefx";
+    a.download = "clypra_worldclass.vefx";
     a.click();
   };
 
@@ -377,30 +381,58 @@ export const StudioMasterApp: React.FC<{ device?: GPUDevice }> = ({ device: exte
         exportProgress={exportProgress}
       />
 
+      {/* Mode Navigation Bar */}
+      <div style={{ display: "flex", background: "#0F172A", borderBottom: "1px solid #1E293B", padding: "0 16px" }}>
+        {[
+          { id: "color", label: "🎨 Color Wheels & CDL" },
+          { id: "effects", label: "⚡ Video Effects & Curves" },
+          { id: "body", label: "👤 Body & Mask Studio" },
+          { id: "wgsl", label: "💻 WGSL Shader Inspector" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as StudioTabMode)}
+            style={{
+              padding: "10px 18px",
+              background: activeTab === tab.id ? "#1E293B" : "transparent",
+              color: activeTab === tab.id ? "#38BDF8" : "#94A3B8",
+              border: "none",
+              borderBottom: activeTab === tab.id ? "2px solid #38BDF8" : "2px solid transparent",
+              fontWeight: 600,
+              fontSize: "12px",
+              cursor: "pointer",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Main Studio Viewport */}
       <div style={{ flex: 1, display: "flex", gap: "16px", padding: "16px", position: "relative" }}>
-        {/* Real-time Diagnostics Telemetry */}
         <StudioDiagnosticsOverlay stats={stats} />
 
-        {/* Left: 2D Multi-Keyframe Curve Editor */}
+        {/* Left Panel: Active Studio Mode */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          <MultiKeyframeGraphEditor
-            keyframes={keyframes}
-            onChange={setKeyframes}
-            currentTime={currentTime}
-            width={840}
-            height={500}
-          />
+          {activeTab === "color" && <ColorGradingStudioPanel state={colorState} onChange={setColorState} />}
+
+          {activeTab === "effects" && (
+            <MultiKeyframeGraphEditor keyframes={keyframes} onChange={setKeyframes} currentTime={currentTime} width={800} height={480} />
+          )}
+
+          {activeTab === "body" && <BodyEffectsStudioPanel state={bodyState} onChange={setBodyState} />}
+
+          {activeTab === "wgsl" && <WGSLCodeInspector wgslCode={compiledWgsl} />}
         </div>
 
-        {/* Right: Live WebGPU Media Canvas Preview */}
+        {/* Right Panel: Live WebGPU Media Canvas Preview */}
         <div style={{ width: "480px", background: "#000", borderRadius: "12px", display: "flex", flexDirection: "column", border: "1px solid #1E293B", overflow: "hidden" }}>
           <div style={{ padding: "8px 12px", background: "#0F172A", borderBottom: "1px solid #1E293B", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "12px", fontWeight: 600, color: "#94A3B8" }}>Live WebGPU Render Canvas</span>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "#94A3B8" }}>Live WebGPU Media Canvas</span>
             <div style={{ display: "flex", gap: "6px" }}>
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                style={{ padding: "4px 10px", background: "#2563EB", color: "#FFF", border: "none", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                style={{ padding: "4px 10px", background: "#2563EB", color: "#FFF", border: "none", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: 600 }}
               >
                 {isPlaying ? "Pause" : "Play"}
               </button>

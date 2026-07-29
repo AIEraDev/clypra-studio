@@ -54,6 +54,14 @@ export type { BezierCurveEditorProps } from "./components/BezierCurveEditor";
 export { MultiKeyframeGraphEditor, VideoEditorInspector } from "./components/MultiKeyframeGraphEditor";
 export type { MultiKeyframeGraphEditorProps } from "./components/MultiKeyframeGraphEditor";
 
+// Color Grading & CDL Studio
+export { ColorWheel, ColorGradingStudioPanel } from "./components/ColorGradingStudio";
+export type { ColorWheelProps, ColorGradingStudioPanelProps } from "./components/ColorGradingStudio";
+
+// Body & Masking Effects Studio
+export { BodyEffectsStudioPanel } from "./components/BodyEffectsStudio";
+export type { BodyEffectsStudioPanelProps } from "./components/BodyEffectsStudio";
+
 // Studio Master Harness, Diagnostics, and Control Bar
 export { StudioDiagnosticsOverlay } from "./components/StudioDiagnosticsOverlay";
 export { StudioControlPanel } from "./components/StudioControlPanel";
