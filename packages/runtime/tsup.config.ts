@@ -13,6 +13,8 @@ export default defineConfig({
     "resources/index": "src/resources/index.ts",
     "validation/index": "src/validation/index.ts",
     "telemetry/index": "src/telemetry/index.ts",
+    "webgpu/index": "src/webgpu/index.ts",
+    "bridge/index": "src/bridge/index.ts",
   },
   format: ["esm"],
   dts: true,
