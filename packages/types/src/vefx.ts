@@ -132,3 +132,93 @@ export interface PluginIPCMessage<T = unknown> {
   readonly payload: T;
   readonly timestamp?: number;
 }
+
+// ==========================================
+// DAG Abstract Syntax Graph (AST) Types
+// ==========================================
+
+export type DataType = "f32" | "vec2f" | "vec3f" | "vec4f" | "texture_2d<f32>";
+
+export interface NodePin {
+  readonly id: string;
+  readonly label: string;
+  readonly type: DataType;
+}
+
+export interface ShaderNodeUniformSpec {
+  readonly type: DataType;
+  readonly defaultValue: any;
+  readonly min?: number;
+  readonly max?: number;
+}
+
+export interface ShaderNode {
+  readonly id: string;
+  readonly type: string;
+  readonly inputs: readonly NodePin[];
+  readonly outputs: readonly NodePin[];
+  readonly uniforms?: Record<string, ShaderNodeUniformSpec>;
+  readonly generateCode: (inputs: Record<string, string>, uniforms: Record<string, string>) => string;
+}
+
+export interface GraphConnection {
+  readonly fromNodeId: string;
+  readonly fromPinId: string;
+  readonly toNodeId: string;
+  readonly toPinId: string;
+}
+
+export interface NodeGraph {
+  readonly nodes: readonly ShaderNode[];
+  readonly connections: readonly GraphConnection[];
+  readonly outputNodeId: string; // Terminal node (e.g., Render Target Output)
+}
+
+export interface CompilationResult {
+  readonly wgslCode: string;
+  readonly uniformsLayout: Array<{ name: string; type: DataType }>;
+}
+
+// ==========================================
+// Keyframe Interpolation & Animation Engine Types
+// ==========================================
+
+export type EasingMode = "hold" | "linear" | "cubic-bezier";
+
+export interface Keyframe {
+  readonly time: number;          // Timestamp in seconds
+  readonly value: number | number[]; // Value or multi-channel array
+  readonly easing: EasingMode;
+  readonly controlPoints?: [number, number, number, number]; // Cubic Bezier handles [x1, y1, x2, y2]
+}
+
+export interface AnimatedProperty {
+  readonly id: string;
+  readonly type: "float" | "vec2f" | "vec3f" | "vec4f";
+  readonly defaultValue: number | number[];
+  readonly keyframes: readonly Keyframe[];
+}
+
+export type FrequencyBand = "bass" | "mids" | "treble" | "custom";
+
+export interface AudioBinding {
+  readonly propertyId: string;         // Target parameter (e.g. "u_sat_01_amount")
+  readonly band: FrequencyBand;
+  readonly customFreqRange?: [number, number]; // e.g. [20, 250] Hz for Sub-Bass
+  readonly sensitivity: number;        // Multiplier scale for audio reactivity
+  readonly minThreshold: number;       // Noise floor (ignore values below this 0-1)
+  readonly smoothing: number;          // Attack/Release smoothing (0.0 = raw, 0.9 = heavy lag)
+  readonly blendMode: "add" | "multiply" | "override"; // How audio combines with keyframe values
+}
+
+export interface BakedFrameSpectrum {
+  readonly frameIndex: number;
+  readonly timestamp: number;
+  readonly bass: number;     // 20 - 250 Hz
+  readonly mids: number;     // 250 - 4000 Hz
+  readonly treble: number;   // 4000 - 20000 Hz
+  readonly rawBins: Float32Array; // Full FFT magnitude spectrum
+}
+
+
+
