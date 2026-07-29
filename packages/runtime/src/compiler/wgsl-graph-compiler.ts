@@ -75,6 +75,7 @@ export class WGSLGraphCompiler {
 
     const has3DLut = sortedNodes.some((n) => n.type === "Lut3DNode");
     const hasWaveform = sortedNodes.some((n) => n.type === "WaveformVisualizerNode");
+    const hasHoloSpec = sortedNodes.some((n) => n.type === "HolographicSpectrogramNode");
 
     let extraBindings = "";
     if (has3DLut) {
@@ -82,6 +83,9 @@ export class WGSLGraphCompiler {
     }
     if (hasWaveform) {
       extraBindings += `@group(0) @binding(3) var audioWaveTexture_wave_viz_01: texture_1d<f32>;\n`;
+    }
+    if (hasHoloSpec) {
+      extraBindings += `@group(0) @binding(3) var audioWaveTexture_holo_spec_01: texture_1d<f32>;\n`;
     }
 
     const wgslCode = `
@@ -148,6 +152,28 @@ fn renderAudioWaveform(
   let finalAlpha = clamp(lineAlpha + (glowAlpha * 0.4), 0.0, 1.0);
   return vec4f(lineColor.rgb, lineColor.a * finalAlpha);
 }
+
+// Global WGSL Helper for 3D Holographic Waterfall Spectrogram
+fn renderHolographicSpectrogram(
+  uv: vec2f,
+  waveTexture: texture_1d<f32>,
+  waveSampler: sampler,
+  time: f32,
+  intensity: f32,
+  dispersion: f32,
+  speed: f32
+) -> vec4f {
+  let freqSample = textureSample(waveTexture, waveSampler, uv.x).r;
+  let wave = sin(uv.x * 30.0 + time * 5.0 * speed) * freqSample * dispersion;
+  let bandY = 0.5 + wave;
+  let dist = abs(uv.y - bandY);
+  let alpha = smoothstep(0.05, 0.0, dist);
+  let r = 0.5 + 0.5 * sin(uv.x * 10.0 + time);
+  let g = 0.5 + 0.5 * cos(uv.x * 15.0 + time * 0.5);
+  let b = 0.8 + 0.2 * sin(time * 2.0);
+  return vec4f(vec3f(r, g, b) * freqSample, alpha * intensity);
+}
+
 
 
 struct VertexOutput {
