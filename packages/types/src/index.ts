@@ -65,6 +65,8 @@ export type {
   ExportConfig,
   BakeTaskMessage,
   BakedFrameResult,
+  EngineTelemetryStats,
+  VefxPresetTemplate,
 } from "./vefx";
 
 

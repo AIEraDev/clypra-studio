@@ -264,6 +264,22 @@ export interface BakedFrameResult {
   readonly totalFrames: number;
 }
 
+export interface EngineTelemetryStats {
+  readonly uiFps: number;
+  readonly gpuFrameTimeMs: number;
+  readonly workerQueueLatencyMs: number;
+  readonly activeUniformBytes: number;
+}
+
+export interface VefxPresetTemplate {
+  readonly version: string;
+  readonly name: string;
+  readonly keyframes: readonly KeyframePoint[];
+  readonly audioBindings?: readonly AudioBinding[];
+  readonly nodeGraph?: NodeGraph;
+}
+
+
 
 
 
