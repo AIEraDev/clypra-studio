@@ -14,3 +14,7 @@ export type { VideoEffectDefinition } from "./effect-compiler";
 export { VefxCompiler } from "./vefx-compiler";
 export type { CompiledVefxPipeline } from "./vefx-compiler";
 
+// Single-pass DAG WGSL Graph Compiler
+export { WGSLGraphCompiler } from "./wgsl-graph-compiler";
+
+
