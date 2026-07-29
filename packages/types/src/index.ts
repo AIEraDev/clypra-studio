@@ -28,3 +28,7 @@ export type { RenderJob, PassDescriptor, ResourceReference, BlendMode, ResourceD
 
 // Snapshot types
 export type { RuntimeSnapshot, GraphSnapshot, PassDependencyGraph, PassNode, PassEdge, Optimization, ExecutionSnapshot, PassResult, ResourceBinding, SchedulingState, BackendInfo, ResourceSnapshot, LogicalResource, PhysicalAllocation, AliasingInfo, AliasMappingentry, PerformanceSnapshot, CachePerformance, DiagnosticSnapshot, DiagnosticMessage, FrameHistory, ResourceLifetimeTimeline, ResourceLifetimeBar, ExecutionTimeline, TimelineStage } from "./snapshot";
+
+// .vefx & Plugin Bridge types
+export type { VefxInputType, VefxInputOption, VefxExposedInput, VefxNode, VefxConnection, VefxGraph, VefxEffectSpec, FrameContext, RenderTarget, ParameterValues, ClypraPluginEngineConfig, ClypraPluginManifest, ClypraVideoPlugin, PluginIPCMessageType, PluginIPCMessage } from "./vefx";
+
