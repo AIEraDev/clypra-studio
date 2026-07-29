@@ -54,4 +54,10 @@ export type { BezierCurveEditorProps } from "./components/BezierCurveEditor";
 export { MultiKeyframeGraphEditor, VideoEditorInspector } from "./components/MultiKeyframeGraphEditor";
 export type { MultiKeyframeGraphEditorProps } from "./components/MultiKeyframeGraphEditor";
 
+// Studio Master Harness, Diagnostics, and Control Bar
+export { StudioDiagnosticsOverlay } from "./components/StudioDiagnosticsOverlay";
+export { StudioControlPanel } from "./components/StudioControlPanel";
+export type { StudioControlPanelProps } from "./components/StudioControlPanel";
+export { StudioMasterApp } from "./components/StudioMasterApp";
+
 export const UI_VERSION = "0.1.0";

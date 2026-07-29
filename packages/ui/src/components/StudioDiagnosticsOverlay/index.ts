@@ -1,0 +1,1 @@
+export { StudioDiagnosticsOverlay } from "./StudioDiagnosticsOverlay";
