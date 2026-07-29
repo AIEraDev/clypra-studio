@@ -279,6 +279,24 @@ export interface VefxPresetTemplate {
   readonly nodeGraph?: NodeGraph;
 }
 
+export type StudioTabMode = "color" | "effects" | "body" | "wgsl";
+
+export interface ColorWheelState {
+  lift: [number, number, number];  // RGB offset [-1, 1]
+  gamma: [number, number, number]; // RGB gamma [0.1, 3.0]
+  gain: [number, number, number];  // RGB multiplier [0, 4]
+  sat: number;                     // Saturation [0, 3]
+  exposure: number;                // Exposure [-3, 3]
+}
+
+export interface BodyEffectState {
+  maskEnabled: boolean;
+  outlineGlow: number; // Glow intensity [0, 2]
+  auraHue: number;     // Hue shift [0, 360]
+  bgBlur: number;      // Blur radius [0, 20]
+}
+
+
 
 
 

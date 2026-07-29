@@ -67,6 +67,9 @@ export type {
   BakedFrameResult,
   EngineTelemetryStats,
   VefxPresetTemplate,
+  StudioTabMode,
+  ColorWheelState,
+  BodyEffectState,
 } from "./vefx";
 
 
