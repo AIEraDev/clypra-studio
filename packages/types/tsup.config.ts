@@ -8,6 +8,7 @@ export default defineConfig({
     frame: "src/frame.ts",
     job: "src/job.ts",
     snapshot: "src/snapshot.ts",
+    vefx: "src/vefx.ts",
   },
   format: ["esm"],
   dts: true,
