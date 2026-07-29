@@ -239,6 +239,32 @@ export interface TimelineViewport {
   readonly zoomY: number;   // Pixels per unit value
 }
 
+export interface ExportConfig {
+  readonly width: number;
+  readonly height: number;
+  readonly fps: number;
+  readonly bitrate: number;
+  readonly durationSeconds: number;
+  readonly bakedSpectrum: readonly BakedFrameSpectrum[];
+  readonly audioBuffer?: unknown;
+}
+
+export interface BakeTaskMessage {
+  readonly type: "BAKE_AUDIO";
+  readonly taskId: string;
+  readonly pcmBuffer: Float32Array;
+  readonly sampleRate: number;
+  readonly fps: number;
+  readonly fftSize: number;
+}
+
+export interface BakedFrameResult {
+  readonly taskId: string;
+  readonly resultBuffer: ArrayBuffer;
+  readonly totalFrames: number;
+}
+
+
 
 
 

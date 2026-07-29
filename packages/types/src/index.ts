@@ -62,6 +62,9 @@ export type {
   HandleMode,
   KeyframePoint,
   TimelineViewport,
+  ExportConfig,
+  BakeTaskMessage,
+  BakedFrameResult,
 } from "./vefx";
 
 
