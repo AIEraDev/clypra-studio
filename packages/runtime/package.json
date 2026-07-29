@@ -29,7 +29,10 @@
     "./validation": "./dist/validation/index.js",
     "./telemetry": "./dist/telemetry/index.js",
     "./webgpu": "./dist/webgpu/index.js",
-    "./bridge": "./dist/bridge/index.js"
+    "./bridge": "./dist/bridge/index.js",
+    "./keyframe": "./dist/keyframe/index.js",
+    "./nodes": "./dist/nodes/index.js",
+    "./audio": "./dist/audio/index.js"
   },
   "scripts": {
     "build": "tsup",
