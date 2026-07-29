@@ -41,6 +41,12 @@ export * from "./validation";
 // Telemetry (event-oriented, complementary to state)
 export * from "./telemetry";
 
+// WebGPU execution pipeline
+export * from "./webgpu";
+
+// Host Plugin Bridge & SDK
+export * from "./bridge";
+
 // Testing & Publishing (Phase 6)
 export * from "./testing/goldenTests";
 export * from "./testing/benchmarkRunner";
