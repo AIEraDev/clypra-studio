@@ -46,4 +46,8 @@ export type { RuntimeObservatoryProps } from "./components/RuntimeObservatory";
 export { SnapshotObservatory } from "./components/RuntimeObservatory";
 export type { SnapshotObservatoryProps } from "./components/RuntimeObservatory";
 
+// SVG Bezier Curve Editor & Keyframe Easing Inspector
+export { BezierCurveEditor, KeyframePropertyInspector } from "./components/BezierCurveEditor";
+export type { BezierCurveEditorProps } from "./components/BezierCurveEditor";
+
 export const UI_VERSION = "0.1.0";
