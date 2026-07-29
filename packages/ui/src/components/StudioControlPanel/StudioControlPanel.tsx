@@ -3,19 +3,23 @@ import React, { useState } from "react";
 export interface StudioControlPanelProps {
   onExportTrigger: (fps: number, bitrate: number) => void;
   onAudioUpload: (file: File) => void;
+  onMediaUpload?: (file: File) => void;
   onSavePreset?: () => void;
   onLoadPreset?: (jsonStr: string) => void;
   isExporting: boolean;
   exportProgress: number;
+  activeMediaName?: string;
 }
 
 export const StudioControlPanel: React.FC<StudioControlPanelProps> = ({
   onExportTrigger,
   onAudioUpload,
+  onMediaUpload,
   onSavePreset,
   onLoadPreset,
   isExporting,
   exportProgress,
+  activeMediaName,
 }) => {
   const [fps, setFps] = useState<number>(60);
   const [bitrate, setBitrate] = useState<number>(15000000);
@@ -32,8 +36,30 @@ export const StudioControlPanel: React.FC<StudioControlPanelProps> = ({
         userSelect: "none",
       }}
     >
-      {/* Audio Ingestion & Preset Controls */}
+      {/* Media & Audio Ingestion & Preset Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        {onMediaUpload && (
+          <label
+            style={{
+              padding: "6px 12px",
+              background: "#2563EB",
+              color: "#F8FAFC",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "12px",
+              fontWeight: 600,
+            }}
+          >
+            Load Video / Image
+            <input
+              type="file"
+              accept="video/*,image/*"
+              style={{ display: "none" }}
+              onChange={(e) => e.target.files?.[0] && onMediaUpload(e.target.files[0])}
+            />
+          </label>
+        )}
+
         <label
           style={{
             padding: "6px 12px",
@@ -53,6 +79,12 @@ export const StudioControlPanel: React.FC<StudioControlPanelProps> = ({
             onChange={(e) => e.target.files?.[0] && onAudioUpload(e.target.files[0])}
           />
         </label>
+
+        {activeMediaName && (
+          <span style={{ fontSize: "12px", color: "#94A3B8", fontFamily: "monospace" }}>
+            Media: <strong style={{ color: "#60A5FA" }}>{activeMediaName}</strong>
+          </span>
+        )}
 
         {onSavePreset && (
           <button
