@@ -14,6 +14,7 @@ const BodyLabView = lazy(() => import("./labs/body").then((m) => ({ default: m.B
 const FilterLabView = lazy(() => import("./labs/filter").then((m) => ({ default: m.FilterLabView })));
 const RuntimeObservatoryDemo = lazy(() => import("./labs/RuntimeObservatoryDemo").then((m) => ({ default: m.RuntimeObservatoryDemo })));
 const ColorGradingLabView = lazy(() => import("./labs/color-grading").then((m) => ({ default: m.ColorGradingLabView })));
+const StudioMasterLabView = lazy(() => import("./labs/studio-master").then((m) => ({ default: m.StudioMasterLabView })));
 
 const ROUTE_METADATA = {
   showcase: {
@@ -25,6 +26,11 @@ const ROUTE_METADATA = {
     canonical: "https://clypra.abdulkabirmusa.com/studio",
     description: "Design, generate, preview, animate, and export high-performance Canvas 2D text effects with gradients, bevels, glow stacks, shadows, procedural engines, and Clypra editor-ready code.",
     title: "Clypra Studio - AI Text Effects & Creative Editor",
+  },
+  studioMaster: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/master",
+    description: "Clypra Studio Master Harness - High-performance WebGPU rendering, Wasm SIMD audio spectrum baking, multi-segment keyframe curves, and 144Hz WebCodecs MP4 exporter.",
+    title: "Clypra Studio Master Laboratory",
   },
   lottie: {
     canonical: "https://clypra.abdulkabirmusa.com/lottie",
@@ -73,8 +79,12 @@ const ROUTE_METADATA = {
   },
 };
 
+function isStudioMasterRoute(pathname: string) {
+  return pathname === "/studio/master" || pathname.startsWith("/studio/master") || pathname === "/studio-master" || pathname.startsWith("/studio-master");
+}
+
 function isStudioRoute(pathname: string) {
-  return pathname === "/studio" || pathname.startsWith("/studio");
+  return (pathname === "/studio" || pathname.startsWith("/studio")) && !isStudioMasterRoute(pathname);
 }
 
 function isLottieRoute(pathname: string) {
@@ -351,6 +361,23 @@ export default function RootApp() {
         }
       >
         <RuntimeObservatoryDemo />
+      </Suspense>
+    );
+  }
+
+  if (isStudioMasterRoute(pathname)) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-screen bg-[#090D16] items-center justify-center text-white">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2563eb] mx-auto mb-4" />
+              <p className="text-sm text-gray-400">Loading Studio Master Laboratory...</p>
+            </div>
+          </div>
+        }
+      >
+        <StudioMasterLabView />
       </Suspense>
     );
   }
