@@ -194,6 +194,9 @@ importers:
       '@types/node':
         specifier: ^22.14.0
         version: 22.20.1
+      '@webgpu/types':
+        specifier: ^0.1.71
+        version: 0.1.71
       happy-dom:
         specifier: ^20.10.6
         version: 20.10.6
@@ -230,6 +233,9 @@ importers:
 
   packages/types:
     devDependencies:
+      '@webgpu/types':
+        specifier: ^0.1.71
+        version: 0.1.71
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.16)(tsx@4.23.0)(typescript@5.8.3)
