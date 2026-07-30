@@ -34,10 +34,30 @@ export const ENGINE_ID_TO_LEGACY: Record<CustomEngineId, string> = {
   ink: "InkBrushEngine",
 };
 
+export interface CanvasBackgroundConfig {
+  type: "solid" | "gradient" | "shader" | "media";
+  color?: string;
+  gradient?: {
+    type: "linear" | "radial";
+    stops: GradientStop[];
+    angle?: number;
+  };
+  shader?: {
+    presetId: "liquid_aurora" | "neon_grid" | "particle_dust" | "gradient_wave";
+    speed?: number;
+    intensity?: number;
+    colors?: string[];
+  };
+  mediaUrl?: string;
+  opacity?: number;
+  isTransparent?: boolean;
+}
+
 export interface SceneCanvas {
   width: number;
   height: number;
   background: string;
+  backgroundConfig?: CanvasBackgroundConfig;
 }
 
 export interface SceneText {
