@@ -137,9 +137,10 @@ export default function RootApp() {
   const bodyLabRoute = isBodyLabRoute(pathname);
   const filterLabRoute = isFilterLabRoute(pathname);
   const colorGradingRoute = isColorGradingRoute(pathname);
+  const studioMasterRoute = isStudioMasterRoute(pathname);
   const studioRoute = !effectsRoute && !mpgRoute && !videoLabRoute && !transitionLabRoute && !bodyLabRoute && !filterLabRoute && !colorGradingRoute && isStudioRoute(pathname);
   const lottieRoute = isLottieRoute(pathname);
-  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : filterLabRoute ? ROUTE_METADATA.filterLab : colorGradingRoute ? ROUTE_METADATA.colorGrading : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
+  const metadata = lottieRoute ? ROUTE_METADATA.lottie : mpgRoute ? ROUTE_METADATA.mpg : effectsRoute ? ROUTE_METADATA.effects : videoLabRoute ? ROUTE_METADATA.videoLab : transitionLabRoute ? ROUTE_METADATA.transitionLab : bodyLabRoute ? ROUTE_METADATA.bodyLab : filterLabRoute ? ROUTE_METADATA.filterLab : colorGradingRoute ? ROUTE_METADATA.colorGrading : studioMasterRoute ? ROUTE_METADATA.studioMaster : studioRoute ? ROUTE_METADATA.studio : ROUTE_METADATA.showcase;
 
   // Clean URL handling: preserve exact canonical route paths without unwanted redirects
   useEffect(() => {
@@ -148,7 +149,7 @@ export default function RootApp() {
 
   // Set page scroll styles based on current route
   useEffect(() => {
-    if (studioRoute || lottieRoute || mpgRoute || videoLabRoute || transitionLabRoute || bodyLabRoute || filterLabRoute || colorGradingRoute) {
+    if (studioRoute || lottieRoute || mpgRoute || videoLabRoute || transitionLabRoute || bodyLabRoute || filterLabRoute || colorGradingRoute || studioMasterRoute) {
       window.scrollTo(0, 0);
       document.body.style.overflow = "hidden";
       document.body.style.overflowX = "hidden";
@@ -170,7 +171,7 @@ export default function RootApp() {
       document.documentElement.style.overflowX = "";
       document.documentElement.style.overflowY = "";
     };
-  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute, filterLabRoute, colorGradingRoute]);
+  }, [studioRoute, lottieRoute, mpgRoute, videoLabRoute, transitionLabRoute, bodyLabRoute, filterLabRoute, colorGradingRoute, studioMasterRoute]);
 
   useEffect(() => {
     document.title = metadata.title;
@@ -334,7 +335,7 @@ export default function RootApp() {
     );
   }
 
-  if (isStudioMasterRoute(pathname)) {
+  if (studioMasterRoute) {
     return (
       <Suspense
         fallback={
