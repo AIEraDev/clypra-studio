@@ -57,7 +57,11 @@ export * from "./templates/presets.js";
 export * from "./templates/keyframes.js";
 
 // Pipeline V2 (Media Processing Graph & Render Planner)
-export * from "./v2/project/types.js";
+// Note: AssetKind is already exported from ./smartOverlays/index.js (overlayDocumentSchema).
+// Exclude it here to resolve DTS ambiguity; the v2 AssetKind variant ("lut"|"model") is
+// more extensive but not used in the smart-overlay runtime path.
+export type { AssetHandle, ClipSegment, EffectInstance, TrackDefinition, ProjectManifestV2 } from "./v2/project/types.js";
+export { ProjectHelper } from "./v2/project/types.js";
 export * from "./v2/graph/types.js";
 export * from "./v2/graph/NodeRegistry.js";
 export * from "./v2/planner/types.js";
@@ -80,3 +84,5 @@ export * from "./text/textBridge.js";
 export * from "./stickers/stickerBridge.js";
 export * from "./effects/body/bodyEffectFilters.js";
 export * from "./effects/body/bodyEffectMask.js";
+export * from "./overlays/index.js";
+export * from "./smartOverlays/index.js";
