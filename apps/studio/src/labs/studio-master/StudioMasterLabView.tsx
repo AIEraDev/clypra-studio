@@ -17,7 +17,7 @@ import {
   Maximize2,
 } from "lucide-react";
 import { Container, Filter, Graphics, Sprite, Texture } from "pixi.js";
-import { usePixiRenderer } from "../transition/hooks/usePixiRenderer";
+import { usePixiRenderer } from "@clypra-studio/ui";
 import { CanvasPreview } from "./components/CanvasPreview";
 
 type FitMode = "contain" | "cover" | "stretch";

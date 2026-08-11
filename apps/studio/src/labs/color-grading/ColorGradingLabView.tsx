@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { initializeFontSystem, ColorAdjustmentsEffect, PixiRenderer, EffectGraph } from "@clypra-studio/engine";
 import { Sprite, Graphics } from "pixi.js";
-import { usePixiRenderer } from "../filter/hooks/usePixiRenderer"; // reuse existing renderer hook
+import { usePixiRenderer } from "@clypra-studio/ui";
 
 // Types and presets
 import { ColorAdjustments, GradingParams } from "../../components/effects/filter/types";

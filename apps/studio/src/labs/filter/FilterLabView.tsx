@@ -11,7 +11,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { initializeFontSystem, ColorAdjustmentsEffect, HalationEffect, GaussianBlurEffect, PixiRenderer, EffectGraph } from "@clypra-studio/engine";
 import { Sprite, Graphics, Texture } from "pixi.js";
-import { usePixiRenderer } from "./hooks/usePixiRenderer";
+import { usePixiRenderer } from "@clypra-studio/ui";
 
 // Services, hooks and presets
 import { FilterPreset, INITIAL_MANUAL_ADJUSTMENTS } from "../../components/effects/filter/types";

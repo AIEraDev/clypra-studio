@@ -18,7 +18,7 @@ import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
 import { PublishTransitionModal } from "../../components/PublishTransitionModal";
 
-import { usePixiRenderer } from "./hooks/usePixiRenderer";
+import { usePixiRenderer } from "@clypra-studio/ui";
 
 const DEFAULT_CLIP_A = "";
 const DEFAULT_CLIP_B = "";
