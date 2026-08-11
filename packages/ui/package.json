@@ -28,6 +28,7 @@
   "dependencies": {
     "@clypra-studio/types": "workspace:^",
     "@clypra-studio/runtime": "workspace:^",
+    "@clypra-studio/engine": "workspace:^",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

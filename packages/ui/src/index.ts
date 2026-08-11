@@ -68,4 +68,7 @@ export { StudioControlPanel } from "./components/StudioControlPanel";
 export type { StudioControlPanelProps } from "./components/StudioControlPanel";
 export { StudioMasterApp } from "./components/StudioMasterApp";
 
+// Reusable Hooks
+export { usePixiRenderer } from "./hooks/usePixiRenderer";
+
 export const UI_VERSION = "0.1.0";
