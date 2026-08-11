@@ -9,6 +9,8 @@ export default defineConfig({
     job: "src/job.ts",
     snapshot: "src/snapshot.ts",
     vefx: "src/vefx.ts",
+    overlay: "src/overlay.ts",
+    export: "src/export.ts",
   },
   format: ["esm"],
   dts: true,

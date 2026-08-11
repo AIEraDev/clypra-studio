@@ -72,4 +72,65 @@ export type {
   BodyEffectState,
 } from "./vefx";
 
+// Overlay Document & Authoring Schema types
+export type {
+  SceneNodeType,
+  LayoutMode,
+  SizingMode,
+  ShapePrimitiveType,
+  MediaKind,
+  NodePadding,
+  NodeConstraints,
+  NodeLayout,
+  NodeDropShadow,
+  NodeFillGradient,
+  NodeStyle,
+  NodePropertyBinding,
+  NodeAnimationStart,
+  NodeEntranceAnimation,
+  NodeExitAnimation,
+  SemanticAnimationConfig,
+  NodeAnimationConfig,
+  ResponsiveNodeOverride,
+  SceneNodeBase,
+  PrimitiveTextNode,
+  PrimitiveShapeNode,
+  PrimitiveMediaNode,
+  ComponentNode,
+  FrameNode,
+  RepeaterNode,
+  SceneNode,
+  DocumentVariable,
+  DataPreviewSet,
+  TimelineMarker,
+  AssetRef,
+  AssetManifest,
+  FontRef,
+  FontManifest,
+  Breakpoint,
+  BreakpointSet,
+  CanvasConfig,
+  OverlayDocument,
+} from "./overlay";
+
+// Production Export Pipeline Contract types
+export type {
+  ExportProfile,
+  ProfileCanvasDimensions,
+  ExportFormat,
+  ExportConfig as SmartOverlayExportConfig,
+  ExportDiagnosticSeverity,
+  ExportDiagnosticCode,
+  ExportValidationDiagnostic,
+  EvaluatedExportFrame,
+  ExportFrameDescriptor,
+  ExportProgress,
+  JobStatus,
+  EncodedFileEntry,
+  EncodedOutput,
+  MediaEncoder,
+  ExportJobRecord,
+} from "./export";
+
+
 

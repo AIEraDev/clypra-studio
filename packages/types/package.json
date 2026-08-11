@@ -42,6 +42,14 @@
     "./vefx": {
       "types": "./dist/vefx.d.ts",
       "import": "./dist/vefx.js"
+    },
+    "./overlay": {
+      "types": "./dist/overlay.d.ts",
+      "import": "./dist/overlay.js"
+    },
+    "./export": {
+      "types": "./dist/export.d.ts",
+      "import": "./dist/export.js"
     }
   },
   "scripts": {
