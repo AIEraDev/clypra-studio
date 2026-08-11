@@ -12,6 +12,7 @@ import { PresetChip } from "./components/PresetChip";
 import { DrawerIntro, LeftRail } from "./components/StudioChrome";
 import { AudioPublishPanel } from "./components/AudioPublishPanel";
 import { StickerPublishPanel } from "./components/StickerPublishPanel";
+import { OverlayStudioWorkspace } from "./components/OverlayStudioWorkspace";
 import { AdminPurgeSettings } from "./components/settings/AdminPurgeSettings";
 import { AdminTransitionsSettings } from "./components/settings/AdminTransitionsSettings";
 import { LabsPanel } from "./components/LabsPanel";
@@ -1400,6 +1401,14 @@ export default function App() {
     );
     modifyConfig({ fontSize: layout.fontSize, autoFitText: true, wrapText: true });
   };
+
+  // ── Overlay Studio: full-screen breakout — render completely outside the
+  //    StudioChrome wrapper so nothing clips or constrains the workspace.
+  if (activeRailItem === "overlays") {
+    return (
+      <OverlayStudioWorkspace onExit={() => setActiveRailItem("text-effects")} />
+    );
+  }
 
   return (
     <div id="studio-workspace-wrapper" className="flex flex-col h-screen bg-[#0E0E12]" style={{ fontFamily: "Inter, sans-serif" }}>
