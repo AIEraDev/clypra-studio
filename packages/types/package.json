@@ -47,6 +47,10 @@
       "types": "./dist/overlay.d.ts",
       "import": "./dist/overlay.js"
     },
+    "./primitives": {
+      "types": "./dist/primitives.d.ts",
+      "import": "./dist/primitives.js"
+    },
     "./export": {
       "types": "./dist/export.d.ts",
       "import": "./dist/export.js"

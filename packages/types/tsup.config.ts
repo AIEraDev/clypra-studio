@@ -10,6 +10,7 @@ export default defineConfig({
     snapshot: "src/snapshot.ts",
     vefx: "src/vefx.ts",
     overlay: "src/overlay.ts",
+    primitives: "src/primitives.ts",
     export: "src/export.ts",
   },
   format: ["esm"],
