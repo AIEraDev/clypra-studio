@@ -5,6 +5,7 @@ export * from "./scratchBuilder.js";
 export * from "./smartOverlayRegistry.js";
 export * from "./overlayDocumentSchema.js";
 export * from "./componentRegistry.js";
+export * from "./primitiveRegistry.js";
 export * from "./dataBindingEngine.js";
 export * from "./animationRuntime.js";
 export * from "./pixiSceneProjection.js";

@@ -59,7 +59,18 @@ export type SceneNodeType =
   | "shape"
   | "media"
   | "repeater"
-  | "component";
+  | "component"
+  | "rich-text"
+  | "gradient"
+  | "icon"
+  | "divider"
+  | "metric"
+  | "progress"
+  | "chart"
+  | "table"
+  | "container"
+  | "callout"
+  | "avatar";
 
 export type LayoutMode = "none" | "flex-row" | "flex-column" | "grid" | "space-between";
 export type AlignmentMode = "start" | "center" | "end" | "stretch";
@@ -246,9 +257,28 @@ export interface PrimitiveTextNode extends SceneNodeBase {
   text: string;
 }
 
+export type ShapeKind =
+  | "rectangle"
+  | "rounded-rectangle"
+  | "circle"
+  | "ellipse"
+  | "triangle"
+  | "polygon"
+  | "star"
+  | "arrow"
+  | "chevron"
+  | "hexagon"
+  | "diamond"
+  | "line"
+  | "divider"
+  | "custom-path";
+
 export interface PrimitiveShapeNode extends SceneNodeBase {
   type: "shape";
-  shapeType: "rectangle" | "circle" | "line" | "divider";
+  shapeType: ShapeKind;
+  svgPath?: string;
+  points?: number[];
+  cornerRadius?: number;
 }
 
 export interface PrimitiveMediaNode extends SceneNodeBase {
@@ -277,13 +307,137 @@ export interface ComponentNode extends SceneNodeBase {
   children?: SceneNode[];
 }
 
+export interface RichTextSpan {
+  text: string;
+  style?: Partial<NodeStyleRules>;
+}
+
+export interface RichTextNode extends SceneNodeBase {
+  type: "rich-text";
+  spans: RichTextSpan[];
+}
+
+import type { GradientStop } from "../types.js";
+export type { GradientStop };
+
+export interface GradientNode extends SceneNodeBase {
+  type: "gradient";
+  gradientType: "linear" | "radial";
+  angle?: number; // degrees
+  stops: GradientStop[];
+}
+
+export interface IconNode extends SceneNodeBase {
+  type: "icon";
+  iconName: string;
+  assetId?: string;
+  svgPath?: string;
+}
+
+export interface DividerNode extends SceneNodeBase {
+  type: "divider";
+  orientation: "horizontal" | "vertical";
+  lineStyle?: "solid" | "dashed" | "dotted" | "gradient";
+  thickness?: number;
+}
+
+export interface MetricNode extends SceneNodeBase {
+  type: "metric";
+  value: number | string;
+  prefix?: string;
+  suffix?: string;
+  label?: string;
+  decimals?: number;
+  format?: "number" | "currency" | "percent";
+  locale?: string;
+  trend?: number;
+  trendDirection?: "up" | "down" | "neutral";
+}
+
+export interface ProgressNode extends SceneNodeBase {
+  type: "progress";
+  value: number; // 0 to 1 or 0 to max
+  max?: number;
+  trackColor?: string;
+  fillColor?: string;
+  showLabel?: boolean;
+  styleType?: "bar" | "circle";
+}
+
+export type ChartType = "line" | "bar" | "area" | "donut" | "pie" | "radar" | "scatter";
+
+export interface ChartSeries {
+  name: string;
+  color: string;
+  data?: number[];
+}
+
+export interface ChartNode extends SceneNodeBase {
+  type: "chart";
+  chartType: ChartType;
+  dataSource?: string;
+  xField?: string;
+  yFields?: string[];
+  series?: ChartSeries[];
+  showGrid?: boolean;
+  showLegend?: boolean;
+}
+
+export interface TableColumn {
+  key: string;
+  label: string;
+  width?: number;
+  format?: string;
+}
+
+export interface TableNode extends SceneNodeBase {
+  type: "table";
+  columns: TableColumn[];
+  dataSource?: string;
+  rows?: Array<Record<string, any>>;
+}
+
+export interface ContainerNode extends SceneNodeBase {
+  type: "container";
+  children: SceneNode[];
+  clipContent?: boolean;
+}
+
+export interface CalloutNode extends SceneNodeBase {
+  type: "callout";
+  title: string;
+  body: string;
+  iconName?: string;
+  calloutType?: "info" | "warning" | "success" | "danger";
+}
+
+export interface AvatarNode extends SceneNodeBase {
+  type: "avatar";
+  src?: string;
+  initials?: string;
+  assetId?: string;
+  shape?: "circle" | "rounded" | "square";
+  badgeStatus?: "online" | "offline" | "busy";
+}
+
 export type SceneNode =
   | FrameNode
   | PrimitiveTextNode
   | PrimitiveShapeNode
   | PrimitiveMediaNode
   | RepeaterNode
-  | ComponentNode;
+  | ComponentNode
+  | RichTextNode
+  | GradientNode
+  | IconNode
+  | DividerNode
+  | MetricNode
+  | ProgressNode
+  | ChartNode
+  | TableNode
+  | ContainerNode
+  | CalloutNode
+  | AvatarNode;
 
 export interface DocumentVariable {
   key: string;

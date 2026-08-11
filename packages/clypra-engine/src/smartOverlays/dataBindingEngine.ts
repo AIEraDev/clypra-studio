@@ -123,6 +123,45 @@ export class DataBindingEngine {
 
     if (node.type === "text") {
       node.text = this.evaluateString(node.text, context);
+    } else if (node.type === "rich-text") {
+      const richNode = node as any;
+      if (Array.isArray(richNode.spans)) {
+        for (const span of richNode.spans) {
+          if (span.text) span.text = this.evaluateString(span.text, context);
+        }
+      }
+    } else if (node.type === "metric") {
+      const m = node as any;
+      if (typeof m.value === "string") m.value = this.evaluateExpression(m.value, context);
+      if (m.label) m.label = this.evaluateString(m.label, context);
+      if (m.prefix) m.prefix = this.evaluateString(m.prefix, context);
+      if (m.suffix) m.suffix = this.evaluateString(m.suffix, context);
+    } else if (node.type === "progress") {
+      const p = node as any;
+      if (typeof p.value === "string") p.value = Number(this.evaluateExpression(p.value, context));
+      if (typeof p.max === "string") p.max = Number(this.evaluateExpression(p.max, context));
+    } else if (node.type === "callout") {
+      const c = node as any;
+      if (c.title) c.title = this.evaluateString(c.title, context);
+      if (c.body) c.body = this.evaluateString(c.body, context);
+    } else if (node.type === "avatar") {
+      const a = node as any;
+      if (a.src) a.src = this.evaluateString(a.src, context);
+      if (a.initials) a.initials = this.evaluateString(a.initials, context);
+    } else if (node.type === "chart") {
+      const ch = node as any;
+      if (ch.dataSource) {
+        const data = this.evaluateExpression(ch.dataSource, context);
+        if (Array.isArray(data) && ch.series && ch.series.length > 0 && ch.yFields && ch.yFields.length > 0) {
+          ch.series[0].data = data.map((d: any) => Number(d[ch.yFields[0]] ?? 0));
+        }
+      }
+    } else if (node.type === "table") {
+      const tbl = node as any;
+      if (tbl.dataSource) {
+        const rows = this.evaluateExpression(tbl.dataSource, context);
+        if (Array.isArray(rows)) tbl.rows = rows;
+      }
     } else if (node.type === "component") {
       for (const key of Object.keys(node.props)) {
         if (typeof node.props[key] === "string") {

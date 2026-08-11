@@ -152,6 +152,28 @@ export class PixiSceneProjection {
       );
     } else if (node.type === "text") {
       this.renderTextNode(node, nodeContainer, absW, absH, animState.typewriterProgress);
+    } else if (node.type === "rich-text") {
+      this.renderRichTextNode(node as any, nodeContainer, absW, absH);
+    } else if (node.type === "gradient") {
+      this.renderGradientNode(node as any, nodeContainer, absW, absH);
+    } else if (node.type === "icon") {
+      this.renderIconNode(node as any, nodeContainer, absW, absH);
+    } else if (node.type === "divider") {
+      this.renderDividerNode(node as any, nodeContainer, absW, absH);
+    } else if (node.type === "metric") {
+      this.renderMetricNode(node as any, nodeContainer, absW, absH, animState.numericValueOverride);
+    } else if (node.type === "progress") {
+      this.renderProgressNode(node as any, nodeContainer, absW, absH);
+    } else if (node.type === "chart") {
+      this.renderChartNode(node as any, nodeContainer, absW, absH);
+    } else if (node.type === "table") {
+      this.renderTableNode(node as any, nodeContainer, absW, absH);
+    } else if (node.type === "container") {
+      this.renderContainerNode(node as any, nodeContainer, absW, absH);
+    } else if (node.type === "callout") {
+      this.renderCalloutNode(node as any, nodeContainer, absW, absH);
+    } else if (node.type === "avatar") {
+      this.renderAvatarNode(node as any, nodeContainer, absW, absH);
     } else if (node.type === "shape" || node.type === "frame") {
       this.renderShapeNode(node, nodeContainer, absW, absH);
     } else if (node.type === "media") {
@@ -477,6 +499,292 @@ export class PixiSceneProjection {
       letterSpacing,
     });
   }
+
+  // ---------------------------------------------------------------------------
+  // Render: Primitive Implementations (Phase 4O)
+  // ---------------------------------------------------------------------------
+
+  private renderRichTextNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number
+  ): void {
+    const spans = node.spans || [];
+    let currentX = 0;
+
+    spans.forEach((span: any, idx: number) => {
+      const fontSize = span.style?.fontSize || node.style?.fontSize || 20;
+      const color = span.style?.textColor || node.style?.textColor || "#FFFFFF";
+      const bold = span.style?.fontWeight === "bold";
+      this.renderLabel(container, `span_${idx}`, span.text || "", currentX, 0, fontSize, color, bold);
+      currentX += (span.text || "").length * fontSize * 0.55;
+    });
+  }
+
+  private renderGradientNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number
+  ): void {
+    let graphics = container.getChildByName("GradientGraphics") as PixiGraphics;
+    if (!graphics) {
+      graphics = new PixiGraphics();
+      graphics.name = "GradientGraphics";
+      container.addChildAt(graphics, 0);
+    }
+
+    graphics.clear();
+    const stops = node.stops || [{ offset: 0, color: "#8B5CF6" }, { offset: 1, color: "#3B82F6" }];
+    const firstColor = stops[0]?.color || "#8B5CF6";
+    const radius = node.style?.borderRadius || 8;
+
+    graphics.roundRect(0, 0, width, height, radius);
+    graphics.fill({ color: hexToNumber(firstColor), alpha: node.style?.opacity ?? 1 });
+  }
+
+  private renderIconNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number
+  ): void {
+    let graphics = container.getChildByName("IconGraphics") as PixiGraphics;
+    if (!graphics) {
+      graphics = new PixiGraphics();
+      graphics.name = "IconGraphics";
+      container.addChild(graphics);
+    }
+
+    graphics.clear();
+    const color = node.style?.fillColor || "#10B981";
+    const size = Math.min(width, height);
+    graphics.circle(size / 2, size / 2, size / 2);
+    graphics.fill({ color: hexToNumber(color) });
+  }
+
+  private renderDividerNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number
+  ): void {
+    let graphics = container.getChildByName("DividerGraphics") as PixiGraphics;
+    if (!graphics) {
+      graphics = new PixiGraphics();
+      graphics.name = "DividerGraphics";
+      container.addChild(graphics);
+    }
+
+    graphics.clear();
+    const strokeColor = node.style?.strokeColor || "#374151";
+    const thickness = node.thickness || 2;
+
+    if (node.orientation === "vertical") {
+      graphics.rect(0, 0, thickness, height);
+    } else {
+      graphics.rect(0, 0, width, thickness);
+    }
+    graphics.fill({ color: hexToNumber(strokeColor) });
+  }
+
+  private renderMetricNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number,
+    numericOverride?: number
+  ): void {
+    const val = numericOverride !== undefined ? numericOverride : node.value;
+    const formattedVal = `${node.prefix || ""}${val ?? ""}${node.suffix || ""}`;
+    const textColor = node.style?.textColor || "#FFFFFF";
+    const fontSize = node.style?.fontSize || 28;
+
+    this.renderLabel(container, "value", formattedVal, 0, 0, fontSize, textColor, true);
+    if (node.label) {
+      this.renderLabel(container, "label", node.label, 0, fontSize + 4, 14, "#9CA3AF", false);
+    }
+  }
+
+  private renderProgressNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number
+  ): void {
+    let graphics = container.getChildByName("ProgressGraphics") as PixiGraphics;
+    if (!graphics) {
+      graphics = new PixiGraphics();
+      graphics.name = "ProgressGraphics";
+      container.addChildAt(graphics, 0);
+    }
+
+    graphics.clear();
+    const val = typeof node.value === "number" ? node.value : 0;
+    const max = typeof node.max === "number" ? node.max : 100;
+    const ratio = Math.min(1, Math.max(0, val / max));
+
+    const trackColor = node.trackColor || "#1F2937";
+    const fillColor = node.fillColor || "#3B82F6";
+
+    // Track
+    graphics.roundRect(0, 0, width, height, height / 2);
+    graphics.fill({ color: hexToNumber(trackColor) });
+
+    // Fill
+    if (ratio > 0) {
+      graphics.roundRect(0, 0, width * ratio, height, height / 2);
+      graphics.fill({ color: hexToNumber(fillColor) });
+    }
+
+    if (node.showLabel) {
+      const pctText = `${Math.round(ratio * 100)}%`;
+      this.renderLabel(container, "pct", pctText, width + 8, 0, 14, "#FFFFFF", true);
+    }
+  }
+
+  private renderChartNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number
+  ): void {
+    let graphics = container.getChildByName("ChartGraphics") as PixiGraphics;
+    if (!graphics) {
+      graphics = new PixiGraphics();
+      graphics.name = "ChartGraphics";
+      container.addChildAt(graphics, 0);
+    }
+
+    graphics.clear();
+    // Chart bounding box
+    graphics.roundRect(0, 0, width, height, 8);
+    graphics.fill({ color: hexToNumber("#111827") });
+    graphics.stroke({ color: hexToNumber("#1F2937"), width: 1 });
+
+    // Render series bars / lines
+    const seriesList = node.series || [];
+    if (seriesList.length > 0 && seriesList[0].data) {
+      const data = seriesList[0].data as number[];
+      const maxVal = Math.max(1, ...data);
+      const barWidth = Math.max(8, (width - 40) / data.length - 8);
+
+      data.forEach((val, i) => {
+        const barH = (val / maxVal) * (height - 60);
+        const bx = 20 + i * (barWidth + 8);
+        const by = height - 30 - barH;
+
+        graphics.roundRect(bx, by, barWidth, barH, 4);
+        graphics.fill({ color: hexToNumber(seriesList[0].color || "#6366F1") });
+      });
+    }
+
+    this.renderLabel(container, "title", node.name || "Chart", 12, 10, 14, "#9CA3AF", true);
+  }
+
+  private renderTableNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number
+  ): void {
+    let graphics = container.getChildByName("TableGraphics") as PixiGraphics;
+    if (!graphics) {
+      graphics = new PixiGraphics();
+      graphics.name = "TableGraphics";
+      container.addChildAt(graphics, 0);
+    }
+
+    graphics.clear();
+    graphics.roundRect(0, 0, width, height, 8);
+    graphics.fill({ color: hexToNumber("#111827") });
+
+    const cols = node.columns || [];
+    let curX = 12;
+    cols.forEach((col: any, idx: number) => {
+      this.renderLabel(container, `col_${idx}`, col.label || col.key, curX, 10, 14, "#9CA3AF", true);
+      curX += col.width || 120;
+    });
+  }
+
+  private renderContainerNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number
+  ): void {
+    let graphics = container.getChildByName("ContainerGraphics") as PixiGraphics;
+    if (!graphics) {
+      graphics = new PixiGraphics();
+      graphics.name = "ContainerGraphics";
+      container.addChildAt(graphics, 0);
+    }
+
+    graphics.clear();
+    const bg = node.style?.backgroundColor || "#111827";
+    const radius = node.style?.borderRadius || 12;
+    const stroke = node.style?.strokeColor;
+
+    graphics.roundRect(0, 0, width, height, radius);
+    graphics.fill({ color: hexToNumber(bg) });
+
+    if (stroke) {
+      graphics.stroke({ color: hexToNumber(stroke), width: node.style?.strokeWidth || 1 });
+    }
+  }
+
+  private renderCalloutNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number
+  ): void {
+    let graphics = container.getChildByName("CalloutGraphics") as PixiGraphics;
+    if (!graphics) {
+      graphics = new PixiGraphics();
+      graphics.name = "CalloutGraphics";
+      container.addChildAt(graphics, 0);
+    }
+
+    graphics.clear();
+    const bg = node.style?.backgroundColor || "#1E1B4B";
+    const stroke = node.style?.strokeColor || "#4338CA";
+    const radius = node.style?.borderRadius || 12;
+
+    graphics.roundRect(0, 0, width, height, radius);
+    graphics.fill({ color: hexToNumber(bg) });
+    graphics.stroke({ color: hexToNumber(stroke), width: 1 });
+
+    this.renderLabel(container, "title", node.title || "Callout", 16, 12, 16, "#FFFFFF", true);
+    this.renderLabel(container, "body", node.body || "", 16, 36, 13, "#94A3B8", false);
+  }
+
+  private renderAvatarNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number
+  ): void {
+    let graphics = container.getChildByName("AvatarGraphics") as PixiGraphics;
+    if (!graphics) {
+      graphics = new PixiGraphics();
+      graphics.name = "AvatarGraphics";
+      container.addChildAt(graphics, 0);
+    }
+
+    graphics.clear();
+    const size = Math.min(width, height);
+    const radius = node.shape === "circle" ? size / 2 : node.shape === "rounded" ? 8 : 0;
+
+    graphics.roundRect(0, 0, size, size, radius);
+    graphics.fill({ color: hexToNumber("#4B5563") });
+
+    if (node.initials) {
+      this.renderLabel(container, "initials", node.initials, size / 4, size / 4, Math.floor(size / 2.5), "#FFFFFF", true);
+    }
+  }
 }
 
 export const pixiSceneProjection = new PixiSceneProjection();
+

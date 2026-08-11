@@ -66,9 +66,19 @@ export class LayoutEngine {
     let width = node.width <= 100 && node.width > 0 ? (node.width / 100) * doc.canvas.width : node.width;
     let height = node.height <= 100 && node.height > 0 ? (node.height / 100) * doc.canvas.height : node.height;
 
-    // 2. Measure text intrinsic dimensions if primitive text
-    if (node.type === "text") {
-      const rawText = (node as any).text || "";
+    // 2. Measure text intrinsic dimensions if primitive text or rich-text or metric
+    if (node.type === "text" || node.type === "rich-text" || node.type === "metric") {
+      let rawText = "";
+      if (node.type === "text") {
+        rawText = (node as any).text || "";
+      } else if (node.type === "rich-text") {
+        const spans = (node as any).spans || [];
+        rawText = spans.map((s: any) => s.text).join("");
+      } else if (node.type === "metric") {
+        const m = node as any;
+        rawText = `${m.prefix || ""}${m.value ?? ""}${m.suffix || ""} ${m.label || ""}`;
+      }
+
       const textVal = dataBindingEngine.evaluateExpression(rawText, context);
       const fontSize = node.style?.fontSize || 24;
       const strLen = String(textVal ?? "").length;
