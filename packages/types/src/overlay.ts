@@ -4,11 +4,47 @@
  * Single source of truth for OverlayDocument, SceneNode, Breakpoints, and Assets.
  */
 
-export type SceneNodeType = "text" | "shape" | "media" | "component" | "frame" | "repeater";
+import type {
+  SceneNodeType,
+  ShapeKind,
+  RichTextNode,
+  GradientNode,
+  IconNode,
+  DividerNode,
+  MetricNode,
+  ProgressNode,
+  ChartNode,
+  TableNode,
+  ContainerNode,
+  CalloutNode,
+  AvatarNode,
+} from "./primitives.js";
+
+export type {
+  SceneNodeType,
+  ShapeKind,
+  RichTextSpan,
+  RichTextNode,
+  GradientStop,
+  GradientNode,
+  IconNode,
+  DividerNode,
+  MetricNode,
+  ProgressNode,
+  ChartType,
+  ChartSeries,
+  ChartNode,
+  TableColumn,
+  TableNode,
+  ContainerNode,
+  CalloutNode,
+  AvatarNode,
+  PrimitiveDefinition,
+} from "./primitives.js";
 
 export type LayoutMode = "none" | "flex-row" | "flex-column" | "grid";
 export type SizingMode = "fixed" | "hug" | "fill";
-export type ShapePrimitiveType = "rectangle" | "circle" | "ellipse" | "triangle" | "star" | "polygon";
+export type ShapePrimitiveType = ShapeKind;
 export type MediaKind = "image" | "video" | "audio" | "lottie";
 
 export interface NodePadding {
@@ -211,7 +247,18 @@ export type SceneNode =
   | PrimitiveMediaNode
   | ComponentNode
   | FrameNode
-  | RepeaterNode;
+  | RepeaterNode
+  | RichTextNode
+  | GradientNode
+  | IconNode
+  | DividerNode
+  | MetricNode
+  | ProgressNode
+  | ChartNode
+  | TableNode
+  | ContainerNode
+  | CalloutNode
+  | AvatarNode;
 
 export interface DocumentVariable {
   key: string;
