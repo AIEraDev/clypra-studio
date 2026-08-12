@@ -697,3 +697,18 @@ export interface OverlayDocument {
   /** Responsive breakpoint definitions and active selection */
   breakpoints?: BreakpointSet;
 }
+
+/**
+ * Envelope for a Published Overlay Artifact.
+ * Connecting Studio (Authoring) to Clypra Desktop (Execution).
+ */
+export interface PublishedOverlayArtifact {
+  documentId: string;
+  revision: number;
+  schemaVersion: string;
+  updatedAt: string;
+  publishedAt?: string;
+  author?: string;
+  document: OverlayDocument;
+}
+
