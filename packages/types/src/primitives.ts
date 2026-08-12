@@ -138,21 +138,57 @@ export interface ProgressNode extends PrimitiveBase {
 
 export type ChartType = "line" | "bar" | "area" | "donut" | "pie" | "radar" | "scatter";
 
+export interface AxisConfig {
+  min?: number;
+  max?: number;
+  tickCount?: number;
+  showGrid?: boolean;
+  showLabels?: boolean;
+  labelFormat?: string;
+}
+
+export interface ChartBarStyle {
+  rounded?: number;
+  glow?: boolean;
+  glowColor?: string;
+  gradient?: boolean;
+  groupGap?: number;
+}
+
+export interface ChartAnimationConfig {
+  mode: "grow" | "fade" | "none";
+  duration?: number;
+  stagger?: number;
+  easing?: "linear" | "easeInCubic" | "easeOutCubic" | "easeInOutCubic" | "easeOutQuart" | "easeOutElastic";
+  countUpLabels?: boolean;
+}
+
 export interface ChartSeries {
+  id: string;
   name: string;
   color: string;
   data?: number[];
+  stackGroup?: string;
 }
 
 export interface ChartNode extends PrimitiveBase {
   type: "chart";
   chartType: ChartType;
-  dataSource?: string;
+  stacked?: boolean;
+  orientation?: "vertical" | "horizontal";
+  xLabels?: string[];
   xField?: string;
   yFields?: string[];
   series?: ChartSeries[];
+  axis?: AxisConfig;
+  barStyle?: ChartBarStyle;
+  chartAnimation?: ChartAnimationConfig;
+  colorPalette?: string[];
+  title?: string;
   showGrid?: boolean;
   showLegend?: boolean;
+  legendPosition?: "bottom" | "right" | "top";
+  dataSource?: string;
 }
 
 export interface TableColumn {
