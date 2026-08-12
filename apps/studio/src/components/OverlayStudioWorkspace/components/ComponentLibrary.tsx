@@ -47,13 +47,22 @@ export function ComponentLibrary({ onExecuteCommand }: ComponentLibraryProps) {
   const primitives = filtered.filter((c) => PRIMITIVE_TYPES.has(c.type));
   const templates = filtered.filter((c) => !PRIMITIVE_TYPES.has(c.type));
 
+  const centerNodeOnCanvas = <T extends { x: number; y: number; width?: number; height?: number }>(node: T): T => {
+    const w = node.width || 400;
+    const h = node.height || 300;
+    // Auto-center node initially on canvas (1280x720 base resolution)
+    node.x = Math.round((1280 - w) / 2);
+    node.y = Math.round((720 - h) / 2);
+    return node;
+  };
+
   const handleInsert = (comp: (typeof allComponents)[number]) => {
-    const node = comp.createDefaultNode();
+    const node = centerNodeOnCanvas(comp.createDefaultNode());
     onExecuteCommand({ type: "ADD_NODE", node });
   };
 
   const handleInsertVisualization = (type: string) => {
-    const node = primitiveRegistry.createDefaultNode(type as any);
+    const node = centerNodeOnCanvas(primitiveRegistry.createDefaultNode(type as any));
     onExecuteCommand({ type: "ADD_NODE", node });
   };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Sparkles, Undo2, Redo2, Save, Monitor, CheckCircle,
-  ZoomIn, ZoomOut, Maximize2, Eye, Play, Pause, Database, FlaskConical, Download
+  ZoomIn, ZoomOut, Maximize2, Eye, Play, Pause, Database, FlaskConical, Download, Video, X
 } from "lucide-react";
 import {
   type SceneNode,
@@ -46,6 +46,11 @@ export function OverlayStudioWorkspace({ onExit }: OverlayStudioWorkspaceProps =
   const [previewContext, setPreviewContext] = useState<Record<string, any>>({});
   const [showDataPreview, setShowDataPreview] = useState(false);
 
+  // Background Reference Video context layer (ephemeral, design-time only, never saved to doc)
+  const [referenceVideo, setReferenceVideo] = useState<HTMLVideoElement | null>(null);
+  const [referenceVideoMeta, setReferenceVideoMeta] = useState<{ sourceWidth: number; sourceHeight: number; duration: number } | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
+
   // Active breakpoint — null = canonical / base layout
   const [activeBreakpointId, setActiveBreakpointId] = useState<string | null>(null);
 
@@ -70,6 +75,46 @@ export function OverlayStudioWorkspace({ onExit }: OverlayStudioWorkspaceProps =
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
+
+  // Import background reference video (captures width/height on loadedmetadata)
+  const handleImportReferenceVideo = (file: File) => {
+    if (!file.type.startsWith("video/")) return;
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.src = url;
+    video.loop = true;
+    video.muted = true; // design reference only — no audio needed
+    video.playsInline = true;
+
+    video.onloadedmetadata = () => {
+      setReferenceVideoMeta({
+        sourceWidth: video.videoWidth,
+        sourceHeight: video.videoHeight,
+        duration: video.duration
+      });
+      setReferenceVideo(video);
+      setNoticeMessage(`Reference video loaded: ${video.videoWidth}×${video.videoHeight}`);
+      setTimeout(() => setNoticeMessage(null), 3000);
+    };
+  };
+
+  // Sync reference video playback state and playhead currentTime
+  useEffect(() => {
+    if (!referenceVideo) return;
+    if (isPlaying) {
+      referenceVideo.play().catch(() => {});
+    } else {
+      referenceVideo.pause();
+    }
+  }, [isPlaying, referenceVideo]);
+
+  useEffect(() => {
+    if (!referenceVideo || !referenceVideoMeta) return;
+    const targetTime = referenceVideo.duration > 0 ? currentTime % referenceVideo.duration : currentTime;
+    if (Math.abs(referenceVideo.currentTime - targetTime) > 0.15) {
+      referenceVideo.currentTime = targetTime;
+    }
+  }, [currentTime, referenceVideo, referenceVideoMeta]);
 
   // 60 FPS Playhead (completely outside React — only reads/writes refs)
   useEffect(() => {
@@ -121,6 +166,37 @@ export function OverlayStudioWorkspace({ onExit }: OverlayStudioWorkspaceProps =
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo, canUndo, canRedo, selectedNodeIds, selectedNode, doc.nodes, executeCommand]);
+
+  const handleExportDocument = () => {
+    try {
+      const artifact = {
+        documentId: doc.id || `doc-${Date.now()}`,
+        revision: doc.schemaVersion || 1,
+        schemaVersion: "2.0",
+        updatedAt: doc.updatedAt || new Date().toISOString(),
+        publishedAt: new Date().toISOString(),
+        author: "Clypra Studio",
+        document: doc,
+      };
+
+      const jsonStr = JSON.stringify(artifact, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const fileName = `${doc.title.toLowerCase().replace(/\s+/g, "-") || "overlay-document"}.clypra-overlay`;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setNoticeMessage(`Artifact published as ${fileName}`);
+      setTimeout(() => setNoticeMessage(null), 2500);
+    } catch (err: any) {
+      setNoticeMessage(`Export document failed: ${err.message}`);
+      setTimeout(() => setNoticeMessage(null), 3000);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -199,16 +275,55 @@ export function OverlayStudioWorkspace({ onExit }: OverlayStudioWorkspaceProps =
           </button>
         </div>
 
-        {/* Right — Save, Export & Exit */}
+        {/* Right — Reference Video, Save, Export & Exit */}
         <div className="flex items-center gap-2">
           {noticeMessage && (
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 animate-pulse">
               <CheckCircle size={12} /> {noticeMessage}
             </div>
           )}
+          <input
+            type="file"
+            accept="video/*"
+            ref={videoInputRef}
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.[0]) {
+                handleImportReferenceVideo(e.target.files[0]);
+              }
+            }}
+          />
+          {referenceVideoMeta ? (
+            <div className="flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-bold text-cyan-300">
+              <Video size={12} />
+              <span>Ref: {referenceVideoMeta.sourceWidth}×{referenceVideoMeta.sourceHeight}</span>
+              <button
+                type="button"
+                onClick={() => { setReferenceVideo(null); setReferenceVideoMeta(null); }}
+                title="Remove Reference Video"
+                className="ml-1 text-cyan-400 hover:text-white cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => videoInputRef.current?.click()}
+              title="Import background reference video clip to align overlays against moving footage"
+              className="flex items-center gap-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-1.5 text-[11px] font-bold text-sky-300 hover:bg-sky-500/20 transition-all cursor-pointer"
+            >
+              <Video size={12} /> Import Video
+            </button>
+          )}
+          <button type="button" onClick={handleExportDocument}
+            title="Export full OverlayDocument schema (.clypra-overlay JSON)"
+            className="flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-[11px] font-bold text-indigo-300 hover:bg-indigo-500/20 transition-all cursor-pointer">
+            <Download size={12} /> .clypra-overlay
+          </button>
           <button type="button" onClick={() => setShowExportModal(true)}
             className="flex items-center gap-1.5 rounded-lg border border-violet-500/40 bg-violet-500/15 px-3 py-1.5 text-[11px] font-bold text-violet-300 hover:bg-violet-500/25 transition-all cursor-pointer shadow-md shadow-violet-500/10">
-            <Download size={12} /> Export
+            <Download size={12} /> Export Video
           </button>
           <button type="button" onClick={handleSave}
             className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer">
@@ -237,7 +352,7 @@ export function OverlayStudioWorkspace({ onExit }: OverlayStudioWorkspaceProps =
           {/* Tab switcher */}
           <div className="flex border-b border-white/[0.05] shrink-0">
             {LEFT_TABS.map((tab) => (
-              <button key={tab.id} type="button" onClick={() => setLeftTab(tab.id)}
+              <button key={tab.id} type="button" onClick={() => setLeftTab(tab.id as LeftTab)}
                 className={`flex-1 py-2.5 text-[11px] font-bold tracking-wider uppercase transition-all cursor-pointer ${
                   leftTab === tab.id
                     ? "text-white border-b-2 border-violet-500 bg-violet-500/5"
@@ -303,6 +418,8 @@ export function OverlayStudioWorkspace({ onExit }: OverlayStudioWorkspaceProps =
             selectedNodeIds={selectedNodeIds}
             currentTime={currentTime}
             viewport={viewport}
+            referenceVideo={referenceVideo}
+            referenceVideoMeta={referenceVideoMeta}
             onSelectNodeIds={setSelectedNodeIds}
             onExecuteCommand={executeCommand}
           />

@@ -2,6 +2,10 @@ import React, { useRef, useState, useEffect } from "react";
 import {
   viewportTransform,
   snapEngine,
+  resolveConform,
+  hitTestTransformHandles,
+  calculateResizeBounds,
+  calculateRotationAngle,
   type OverlayDocument,
   type SceneNode,
   type ViewportState,
@@ -24,6 +28,8 @@ interface CanvasViewportProps {
   currentTime: number;
   viewport: ViewportState;
   showHud?: boolean;
+  referenceVideo?: HTMLVideoElement | null;
+  referenceVideoMeta?: { sourceWidth: number; sourceHeight: number; duration: number } | null;
   onSelectNodeIds: (ids: string[]) => void;
   onExecuteCommand: (command: DocumentCommand) => void;
 }
@@ -35,11 +41,50 @@ export function CanvasViewport({
   currentTime,
   viewport,
   showHud = true,
+  referenceVideo,
+  referenceVideoMeta,
   onSelectNodeIds,
   onExecuteCommand
 }: CanvasViewportProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoRefContainer = useRef<HTMLDivElement | null>(null);
   const [isInsertPaletteOpen, setIsInsertPaletteOpen] = useState(false);
+
+  // Video Conform calculation — reuse resolveConform from @clypra-studio/engine
+  const videoConform = referenceVideoMeta && referenceVideoMeta.sourceWidth > 0 && referenceVideoMeta.sourceHeight > 0
+    ? resolveConform(
+        {
+          mode: "fit",
+          sourceWidth: referenceVideoMeta.sourceWidth,
+          sourceHeight: referenceVideoMeta.sourceHeight,
+          userScale: 1,
+          userOffsetX: 0,
+          userOffsetY: 0
+        },
+        doc.canvas.width,
+        doc.canvas.height
+      )
+    : null;
+
+  useEffect(() => {
+    if (!videoRefContainer.current) return;
+    videoRefContainer.current.innerHTML = "";
+    if (referenceVideo) {
+      referenceVideo.className = "absolute pointer-events-none";
+      if (videoConform) {
+        referenceVideo.style.left = `${videoConform.x}px`;
+        referenceVideo.style.top = `${videoConform.y}px`;
+        referenceVideo.style.width = `${videoConform.width}px`;
+        referenceVideo.style.height = `${videoConform.height}px`;
+      } else {
+        referenceVideo.style.left = "0px";
+        referenceVideo.style.top = "0px";
+        referenceVideo.style.width = "100%";
+        referenceVideo.style.height = "100%";
+      }
+      videoRefContainer.current.appendChild(referenceVideo);
+    }
+  }, [referenceVideo, videoConform?.x, videoConform?.y, videoConform?.width, videoConform?.height]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -475,12 +520,26 @@ export function CanvasViewport({
 
       {/* Canvas wrapper — zoom via CSS scale, positioned at center */}
       <div
-        style={{ transform: `scale(${scale})`, transformOrigin: "center", willChange: "transform" }}
+        style={{
+          width: doc.canvas.width,
+          height: doc.canvas.height,
+          transform: `scale(${scale})`,
+          transformOrigin: "center",
+          willChange: "transform"
+        }}
         className="relative"
       >
+        {/* Background reference video container — conformed underneath WebGL canvas */}
+        {referenceVideo && (
+          <div
+            ref={videoRefContainer}
+            className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none z-0 bg-black/50"
+          />
+        )}
+
         {/* Outer glow ring when something is selected */}
         <div
-          className="absolute -inset-0.5 rounded-2xl transition-all duration-300 pointer-events-none"
+          className="absolute -inset-0.5 rounded-2xl transition-all duration-300 pointer-events-none z-10"
           style={{
             boxShadow: selectedNodeIds.length > 0
               ? "0 0 0 2px rgba(124,111,255,0.5), 0 0 60px rgba(124,111,255,0.15)"
@@ -496,7 +555,7 @@ export function CanvasViewport({
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          className="block rounded-2xl overflow-hidden"
+          className="block rounded-2xl overflow-hidden relative z-20"
           style={{
             width: doc.canvas.width,
             height: doc.canvas.height,
