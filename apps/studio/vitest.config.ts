@@ -19,6 +19,8 @@ export default defineConfig({
         find: /^@clypra-studio\/ui(\/.*)?$/,
         replacement: path.resolve(__dirname, "../../packages/ui/src$1"),
       },
+      { find: "react", replacement: path.resolve(__dirname, "./node_modules/react") },
+      { find: "react-dom", replacement: path.resolve(__dirname, "./node_modules/react-dom") },
       { find: "@", replacement: path.resolve(__dirname, "src") },
     ],
   },

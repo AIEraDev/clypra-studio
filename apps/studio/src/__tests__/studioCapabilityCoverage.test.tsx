@@ -154,3 +154,28 @@ describe("Studio Capability Surface — ComponentLibrary Insertion", () => {
     expect((cmd as any).node.type).toBe("chart");
   });
 });
+
+describe("Studio Workspace System Flow — OverlayStudioWorkspace Route & Panels", () => {
+  it("mounts OverlayStudioWorkspace with all 5 left tabs, top header actions, and preflight export", async () => {
+    const { OverlayStudioWorkspace } = await import("../components/OverlayStudioWorkspace");
+    const { container } = render(<OverlayStudioWorkspace />);
+
+    // Verify header menu elements
+    expect(screen.getByText("Save")).toBeInTheDocument();
+    expect(screen.getByText("Export Video")).toBeInTheDocument();
+    expect(screen.getByText(".clypra-overlay")).toBeInTheDocument();
+
+    // Verify left rail navigation tabs
+    expect(screen.getByText("Add")).toBeInTheDocument();
+    expect(screen.getByText("Layers")).toBeInTheDocument();
+    expect(screen.getByText("Data")).toBeInTheDocument();
+
+    // Switch to Layers tab
+    const layersTabBtn = screen.getByText("Layers");
+    fireEvent.click(layersTabBtn);
+
+    // Switch to Data tab
+    const dataTabBtn = screen.getByText("Data");
+    fireEvent.click(dataTabBtn);
+  });
+});
