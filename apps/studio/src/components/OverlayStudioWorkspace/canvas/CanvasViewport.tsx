@@ -14,7 +14,7 @@ import {
 } from "@clypra-studio/engine";
 import {
   AlignLeft, AlignCenter, AlignRight, AlignVerticalSpaceAround, AlignHorizontalSpaceAround,
-  MoveHorizontal, MoveVertical, RotateCw
+  MoveHorizontal, MoveVertical, RotateCw, Layers, ArrowUp, ArrowDown
 } from "lucide-react";
 import { usePixiApp } from "../hooks/usePixiApp";
 import { InsertPalette } from "./InsertPalette";
@@ -106,6 +106,22 @@ export function CanvasViewport({
 
   const [marqueeBox, setMarqueeBox] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [activeGuides, setActiveGuides] = useState<AlignmentGuide[]>([]);
+  const [hoverCursor, setHoverCursor] = useState<string>("default");
+
+  const getHandleCursor = (handle: HandleType): string => {
+    switch (handle) {
+      case "rot": return "grab";
+      case "tl":
+      case "br": return "nwse-resize";
+      case "tr":
+      case "bl": return "nesw-resize";
+      case "t":
+      case "b": return "ns-resize";
+      case "l":
+      case "r": return "ew-resize";
+      default: return "default";
+    }
+  };
 
   // Drag Start Snapshot
   const dragStartRef = useRef<{
@@ -165,6 +181,7 @@ export function CanvasViewport({
     if (handle) {
       activeHandleRef.current = handle;
       dragModeRef.current = handle === "rot" ? "rotate" : "resize";
+      setHoverCursor(handle === "rot" ? "grabbing" : getHandleCursor(handle));
       dragStartRef.current = {
         startX: docPt.x,
         startY: docPt.y,
@@ -197,6 +214,7 @@ export function CanvasViewport({
       onSelectNodeIds(nextIds);
 
       dragModeRef.current = "move";
+      setHoverCursor("grabbing");
       const currentSelected = doc.nodes.filter((n) => nextIds.includes(n.id));
       dragStartRef.current = {
         startX: docPt.x,
@@ -209,6 +227,7 @@ export function CanvasViewport({
     } else {
       if (!e.shiftKey) onSelectNodeIds([]);
       dragModeRef.current = "marquee";
+      setHoverCursor("crosshair");
       dragStartRef.current = { startX: docPt.x, startY: docPt.y, nodeStarts: [] };
       setMarqueeBox({ x: docPt.x, y: docPt.y, width: 0, height: 0 });
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
@@ -217,7 +236,26 @@ export function CanvasViewport({
 
   // Pointer Move Handler (Transient update — zero command emission during drag)
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!dragStartRef.current || !dragModeRef.current) return;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const scale = viewport.zoom / 100;
+    const screenX = (e.clientX - rect.left) / scale;
+    const screenY = (e.clientY - rect.top) / scale;
+    const docPt = viewportTransform.screenToDocument({ x: screenX, y: screenY }, viewport);
+
+    if (!dragStartRef.current || !dragModeRef.current) {
+      const handle = hitTestHandles(docPt.x, docPt.y);
+      if (handle) {
+        setHoverCursor(getHandleCursor(handle));
+      } else {
+        const hitNode = doc.nodes.find((n) => {
+          return docPt.x >= n.x && docPt.x <= n.x + n.width && docPt.y >= n.y && docPt.y <= n.y + n.height;
+        });
+        setHoverCursor(hitNode ? "grab" : (selectedNodeIds.length > 0 ? "default" : "crosshair"));
+      }
+      return;
+    }
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -426,6 +464,21 @@ export function CanvasViewport({
     if (cmds.length > 0) onExecuteCommand({ type: "BATCH_COMMANDS", commands: cmds });
   };
 
+  const reorderSelected = (direction: "up" | "down") => {
+    if (selectedNodeIds.length !== 1) return;
+    const targetId = selectedNodeIds[0];
+    const sourceIndex = doc.nodes.findIndex((n) => n.id === targetId);
+    if (sourceIndex === -1) return;
+
+    const destinationIndex = direction === "up"
+      ? Math.min(doc.nodes.length - 1, sourceIndex + 1)
+      : Math.max(0, sourceIndex - 1);
+
+    if (destinationIndex !== sourceIndex) {
+      onExecuteCommand({ type: "REORDER_NODES", sourceIndex, destinationIndex });
+    }
+  };
+
   // Keyboard Shortcuts (Nudge, Delete, Duplicate, Deselect)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -508,6 +561,14 @@ export function CanvasViewport({
           <button type="button" onClick={() => alignSelected("middle")} title="Align Middle" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignHorizontalSpaceAround size={14} /></button>
           <button type="button" onClick={() => alignSelected("bottom")} title="Align Bottom" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignVerticalSpaceAround size={14} className="rotate-180" /></button>
 
+          {selectedNodes.length === 1 && (
+            <>
+              <div className="w-px h-4 bg-white/10 mx-0.5" />
+              <button type="button" onClick={() => reorderSelected("up")} title="Bring Forward" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><ArrowUp size={14} /></button>
+              <button type="button" onClick={() => reorderSelected("down")} title="Send Backward" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><ArrowDown size={14} /></button>
+            </>
+          )}
+
           {selectedNodes.length >= 3 && (
             <>
               <div className="w-px h-4 bg-white/10 mx-0.5" />
@@ -559,7 +620,7 @@ export function CanvasViewport({
           style={{
             width: doc.canvas.width,
             height: doc.canvas.height,
-            cursor: selectedNodeIds.length > 0 ? "default" : "crosshair"
+            cursor: hoverCursor
           }}
         />
 
