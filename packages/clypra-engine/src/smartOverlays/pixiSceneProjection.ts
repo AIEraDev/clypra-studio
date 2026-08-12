@@ -597,14 +597,54 @@ export class PixiSceneProjection {
     height: number,
     numericOverride?: number
   ): void {
-    const val = numericOverride !== undefined ? numericOverride : node.value;
-    const formattedVal = `${node.prefix || ""}${val ?? ""}${node.suffix || ""}`;
+    const rawValue = typeof node.value === "number" ? node.value : Number(node.value) || 0;
+    const displayValue = numericOverride !== undefined ? numericOverride : rawValue;
     const textColor = node.style?.textColor || "#FFFFFF";
     const fontSize = node.style?.fontSize || 28;
+    const format: string = node.format ?? "number";
+    const decimals: number = node.decimals ?? (format === "currency" ? 2 : 0);
 
-    this.renderLabel(container, "value", formattedVal, 0, 0, fontSize, textColor, true);
+    // ── Format primary value ────────────────────────────────────────────────────────
+    let formattedVal: string;
+    if (format === "compact") {
+      if (Math.abs(displayValue) >= 1_000_000) formattedVal = `${(displayValue / 1_000_000).toFixed(1)}M`;
+      else if (Math.abs(displayValue) >= 1_000) formattedVal = `${(displayValue / 1_000).toFixed(1)}K`;
+      else formattedVal = displayValue.toFixed(decimals);
+    } else if (format === "percent") {
+      formattedVal = `${displayValue.toFixed(decimals)}%`;
+    } else {
+      formattedVal = displayValue.toFixed(decimals);
+    }
+    const displayStr = `${node.prefix || ""}${formattedVal}${node.suffix || ""}`;
+
+    this.renderLabel(container, "value", displayStr, 0, 0, fontSize, textColor, true);
+
+    // ── Label ──────────────────────────────────────────────────────────────────────
     if (node.label) {
-      this.renderLabel(container, "label", node.label, 0, fontSize + 4, 14, "#9CA3AF", false);
+      this.renderLabel(container, "label", node.label, 0, fontSize + 6, 12, "#9CA3AF", false);
+    }
+
+    // ── Delta / trend (Phase 4Q) ───────────────────────────────────────────────────
+    const labelOffset = node.label ? fontSize + 26 : fontSize + 10;
+    if (node.showDelta || node.showTrend) {
+      let deltaPct: number;
+      if (node.trend !== undefined) {
+        deltaPct = node.trend;
+      } else if (node.previousValue !== undefined && node.previousValue !== 0) {
+        deltaPct = ((rawValue - node.previousValue) / Math.abs(node.previousValue)) * 100;
+      } else {
+        deltaPct = 0;
+      }
+
+      const dir: string = node.trendDirection ?? (deltaPct >= 0 ? "up" : "down");
+      const arrow = dir === "up" ? "▲" : dir === "down" ? "▼" : "►";
+      const deltaColor = dir === "up" ? "#45FF72" : dir === "down" ? "#FF4141" : "#9CA3AF";
+      const sign = deltaPct >= 0 ? "+" : "";
+      const deltaStr = node.showDelta
+        ? `${arrow} ${sign}${deltaPct.toFixed(1)}%`
+        : arrow;
+
+      this.renderLabel(container, "delta", deltaStr, 0, labelOffset, 14, deltaColor, false);
     }
   }
 
@@ -653,125 +693,162 @@ export class PixiSceneProjection {
     currentTime: number,
     docDuration: number
   ): void {
-    // ── Animation t [0,1] ───────────────────────────────────────────────────
+    // ── Animation t [0,1] ────────────────────────────────────────────────────────
     const animConf = node.chartAnimation;
-    let t = 1; // fully drawn by default (export / no animation)
+    let t = 1;
     if (animConf && animConf.mode !== "none") {
       const duration = animConf.duration ?? 1.2;
-      // Chart animation starts at time 0 relative to node entrance
-      // Use currentTime directly; clamp to [0,1]
       t = Math.min(1, Math.max(0, currentTime / duration));
     }
 
     // ── Geometry from VisualizationEngine ───────────────────────────────────
     const geo = visualizationEngine.evaluate(node, width, height, t);
-    const barStyle = node.barStyle ?? {};
-    const roundedR = barStyle.rounded ?? 4;
+    const chartType: string = node.chartType ?? "bar";
+    const isPieFamily = chartType === "pie" || chartType === "donut";
 
-    // ── Background ──────────────────────────────────────────────────────────
+    // ── Background (shared) ──────────────────────────────────────────────────
     let bgGfx = container.getChildByName("ChartBg") as PixiGraphics;
-    if (!bgGfx) {
-      bgGfx = new PixiGraphics();
-      bgGfx.name = "ChartBg";
-      container.addChildAt(bgGfx, 0);
-    }
+    if (!bgGfx) { bgGfx = new PixiGraphics(); bgGfx.name = "ChartBg"; container.addChildAt(bgGfx, 0); }
     bgGfx.clear();
     bgGfx.roundRect(0, 0, width, height, 8);
     bgGfx.fill({ color: hexToNumber(node.style?.fillColor ?? "#111827") });
     bgGfx.stroke({ color: hexToNumber("#1F2937"), width: 1 });
 
-    // ── Grid lines ──────────────────────────────────────────────────────────
-    const showGrid = node.showGrid ?? node.axis?.showGrid ?? true;
-    let gridGfx = container.getChildByName("ChartGrid") as PixiGraphics;
-    if (!gridGfx) {
-      gridGfx = new PixiGraphics();
-      gridGfx.name = "ChartGrid";
-      container.addChild(gridGfx);
-    }
-    gridGfx.clear();
-    if (showGrid) {
-      for (const gl of geo.gridLines) {
-        gridGfx.moveTo(geo.plotArea.x, gl.y);
-        gridGfx.lineTo(geo.plotArea.x + geo.plotArea.w, gl.y);
-        gridGfx.stroke({ color: hexToNumber("#1F2937"), width: 1, alpha: 0.6 });
-      }
-    }
+    if (isPieFamily) {
+      // ── Pie / Donut ─────────────────────────────────────────────────────────
+      let arcGfx = container.getChildByName("ChartArcs") as PixiGraphics;
+      if (!arcGfx) { arcGfx = new PixiGraphics(); arcGfx.name = "ChartArcs"; container.addChild(arcGfx); }
+      arcGfx.clear();
 
-    // ── Bars ────────────────────────────────────────────────────────────────
-    // Group bars by seriesId for separate Graphics objects (enables per-series glow)
-    const seriesIds = [...new Set(geo.bars.map((b) => b.seriesId))];
-    for (const sid of seriesIds) {
-      const gfxName = `ChartBars-${sid}`;
-      let barGfx = container.getChildByName(gfxName) as PixiGraphics;
-      if (!barGfx) {
-        barGfx = new PixiGraphics();
-        barGfx.name = gfxName;
-        container.addChild(barGfx);
-      }
-      barGfx.clear();
+      const cx = geo.centerX;
+      const cy = geo.centerY;
 
-      const seriesBars = geo.bars.filter((b) => b.seriesId === sid && b.active && b.h > 0);
-      for (const bar of seriesBars) {
-        barGfx.roundRect(bar.x, bar.y, bar.w, bar.h, roundedR);
-        barGfx.fill({ color: hexToNumber(bar.color) });
-      }
-    }
+      for (const arc of geo.arcs) {
+        if (arc.endAngle <= arc.startAngle) continue;
+        arcGfx.moveTo(cx, cy);
+        arcGfx.arc(cx, cy, arc.outerRadius, arc.startAngle, arc.endAngle);
+        arcGfx.lineTo(cx, cy);
+        arcGfx.fill({ color: hexToNumber(arc.color) });
 
-    // ── Y-axis labels ────────────────────────────────────────────────────────
-    const showLabels = node.axis?.showLabels !== false;
-    if (showLabels) {
-      geo.yAxisLabels.forEach((lbl, i) => {
-        this.renderLabel(
-          container,
-          `yLbl_${i}`,
-          lbl.text,
-          lbl.x - 40,
-          lbl.y - 7,
-          11,
-          "#6B7280",
-          false
-        );
+        // Inner hole for donut
+        if (arc.innerRadius > 0) {
+          arcGfx.moveTo(cx + arc.innerRadius, cy);
+          arcGfx.arc(cx, cy, arc.innerRadius, 0, Math.PI * 2);
+          arcGfx.fill({ color: hexToNumber(node.style?.fillColor ?? "#111827") });
+        }
+
+        // Percentage labels
+        if (node.showPercentageLabels !== false && arc.rawValue > 0) {
+          this.renderLabel(
+            container, `arcLbl_${arc.seriesId}`,
+            arc.labelText,
+            arc.labelX - 12, arc.labelY - 7,
+            11, "#FFFFFF", true
+          );
+        }
+      }
+    } else {
+      // ── Grid lines (bar / line / area) ────────────────────────────────────────
+      const showGrid = node.showGrid ?? node.axis?.showGrid ?? true;
+      let gridGfx = container.getChildByName("ChartGrid") as PixiGraphics;
+      if (!gridGfx) { gridGfx = new PixiGraphics(); gridGfx.name = "ChartGrid"; container.addChild(gridGfx); }
+      gridGfx.clear();
+      if (showGrid) {
+        for (const gl of geo.gridLines) {
+          gridGfx.moveTo(geo.plotArea.x, gl.y);
+          gridGfx.lineTo(geo.plotArea.x + geo.plotArea.w, gl.y);
+          gridGfx.stroke({ color: hexToNumber("#1F2937"), width: 1, alpha: 0.6 });
+        }
+      }
+
+      // ── Axis labels ─────────────────────────────────────────────────────────────
+      if (node.axis?.showLabels !== false) {
+        geo.yAxisLabels.forEach((lbl, i) => {
+          this.renderLabel(container, `yLbl_${i}`, lbl.text, lbl.x - 40, lbl.y - 7, 11, "#6B7280", false);
+        });
+      }
+      geo.xAxisLabels.forEach((lbl, i) => {
+        this.renderLabel(container, `xLbl_${i}`, lbl.text, lbl.x - 30, lbl.y, 11, "#9CA3AF", false);
       });
+
+      if (chartType === "bar") {
+        // ── Bars ──────────────────────────────────────────────────────────────────
+        const roundedR = (node.barStyle?.rounded ?? 4);
+        const seriesIds = [...new Set(geo.bars.map((b) => b.seriesId))];
+        for (const sid of seriesIds) {
+          const gfxName = `ChartBars-${sid}`;
+          let barGfx = container.getChildByName(gfxName) as PixiGraphics;
+          if (!barGfx) { barGfx = new PixiGraphics(); barGfx.name = gfxName; container.addChild(barGfx); }
+          barGfx.clear();
+          for (const bar of geo.bars.filter((b) => b.seriesId === sid && b.active && b.h > 0)) {
+            barGfx.roundRect(bar.x, bar.y, bar.w, bar.h, roundedR);
+            barGfx.fill({ color: hexToNumber(bar.color) });
+          }
+        }
+
+        // Bar value labels (count-up)
+        const countUp = animConf?.countUpLabels ?? true;
+        geo.bars.forEach((bar) => {
+          if (!bar.active || bar.h < 4) return;
+          const lv = countUp ? bar.labelText : String(Math.round(bar.rawValue));
+          this.renderLabel(container, `barLbl_${bar.seriesId}_${bar.categoryIndex}`,
+            lv, bar.x + bar.w / 2 - 15, bar.y - 18, 12, "#FFFFFF", true);
+        });
+      } else if (chartType === "line" || chartType === "area") {
+        // ── Area fill (rendered first, below line) ───────────────────────────
+        const showArea = chartType === "area" || node.showAreaFill;
+        const areaOpacity = node.areaFillOpacity ?? 0.25;
+        if (showArea) {
+          const seriesIds = [...new Set(geo.linePoints.map((p) => p.seriesId))];
+          // Render in reverse order so first series is on top
+          [...seriesIds].reverse().forEach((sid, ri) => {
+            const aName = `ChartArea-${sid}`;
+            let aGfx = container.getChildByName(aName) as PixiGraphics;
+            if (!aGfx) { aGfx = new PixiGraphics(); aGfx.name = aName; container.addChild(aGfx); }
+            aGfx.clear();
+            const pts = geo.linePoints.filter((p) => p.seriesId === sid && p.active)
+              .sort((a, b) => a.categoryIndex - b.categoryIndex);
+            if (pts.length < 2) return;
+            aGfx.moveTo(pts[0].x, pts[0].baseY);
+            pts.forEach((p) => aGfx.lineTo(p.x, p.y));
+            aGfx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].baseY);
+            aGfx.closePath();
+            aGfx.fill({ color: hexToNumber(pts[0].color), alpha: areaOpacity });
+          });
+        }
+
+        // ── Line paths ────────────────────────────────────────────────────────
+        const lineSeriesIds = [...new Set(geo.linePoints.map((p) => p.seriesId))];
+        for (const sid of lineSeriesIds) {
+          const lName = `ChartLine-${sid}`;
+          let lGfx = container.getChildByName(lName) as PixiGraphics;
+          if (!lGfx) { lGfx = new PixiGraphics(); lGfx.name = lName; container.addChild(lGfx); }
+          lGfx.clear();
+          const pts = geo.linePoints.filter((p) => p.seriesId === sid && p.active)
+            .sort((a, b) => a.categoryIndex - b.categoryIndex);
+          if (pts.length === 0) continue;
+          lGfx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) lGfx.lineTo(pts[i].x, pts[i].y);
+          lGfx.stroke({ color: hexToNumber(pts[0].color), width: 2.5 });
+        }
+
+        // ── Data point dots ──────────────────────────────────────────────────
+        const pointR = node.pointRadius ?? 4;
+        let dotGfx = container.getChildByName("ChartDots") as PixiGraphics;
+        if (!dotGfx) { dotGfx = new PixiGraphics(); dotGfx.name = "ChartDots"; container.addChild(dotGfx); }
+        dotGfx.clear();
+        for (const p of geo.linePoints.filter((p) => p.active)) {
+          dotGfx.circle(p.x, p.y, pointR);
+          dotGfx.fill({ color: hexToNumber(p.color) });
+          dotGfx.circle(p.x, p.y, pointR - 1.5);
+          dotGfx.fill({ color: hexToNumber("#111827") });
+        }
+      }
     }
 
-    // ── X-axis (category) labels ─────────────────────────────────────────────
-    geo.xAxisLabels.forEach((lbl, i) => {
-      this.renderLabel(
-        container,
-        `xLbl_${i}`,
-        lbl.text,
-        lbl.x - 30,
-        lbl.y,
-        11,
-        "#9CA3AF",
-        false
-      );
-    });
-
-    // ── Bar value labels (count-up) ──────────────────────────────────────────
-    const countUp = animConf?.countUpLabels ?? true;
-    geo.bars.forEach((bar, i) => {
-      if (!bar.active || bar.h < 4) return;
-      const labelVal = countUp ? bar.labelText : String(Math.round(bar.rawValue));
-      this.renderLabel(
-        container,
-        `barLbl_${bar.seriesId}_${bar.categoryIndex}`,
-        labelVal,
-        bar.x + bar.w / 2 - 15,
-        bar.y - 18,
-        12,
-        "#FFFFFF",
-        true
-      );
-    });
-
-    // ── Legend ───────────────────────────────────────────────────────────────
+    // ── Legend (shared) ────────────────────────────────────────────────────────
     let legendGfx = container.getChildByName("ChartLegend") as PixiGraphics;
-    if (!legendGfx) {
-      legendGfx = new PixiGraphics();
-      legendGfx.name = "ChartLegend";
-      container.addChild(legendGfx);
-    }
+    if (!legendGfx) { legendGfx = new PixiGraphics(); legendGfx.name = "ChartLegend"; container.addChild(legendGfx); }
     legendGfx.clear();
     geo.legendEntries.forEach((entry, i) => {
       legendGfx.rect(entry.x, entry.y - 6, 12, 12);
@@ -779,9 +856,9 @@ export class PixiSceneProjection {
       this.renderLabel(container, `legend_${i}`, entry.label, entry.x + 16, entry.y - 7, 11, "#D1D5DB", false);
     });
 
-    // ── Chart title ──────────────────────────────────────────────────────────
+    // ── Chart title (shared) ──────────────────────────────────────────────────
     const chartTitle = node.title || node.name || "";
-    if (chartTitle) {
+    if (chartTitle && !isPieFamily) {
       this.renderLabel(container, "chartTitle", chartTitle, geo.plotArea.x, 10, 13, "#9CA3AF", false);
     }
   }

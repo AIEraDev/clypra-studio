@@ -348,10 +348,23 @@ export interface MetricNode extends SceneNodeBase {
   suffix?: string;
   label?: string;
   decimals?: number;
-  format?: "number" | "currency" | "percent";
+  /** Number formatting style */
+  format?: "number" | "currency" | "percent" | "compact";
   locale?: string;
+  /** Manual trend percentage (overrides auto-calculated delta) */
   trend?: number;
   trendDirection?: "up" | "down" | "neutral";
+  // Phase 4Q — semantic KPI fields
+  /** Previous period value — delta and percentage change are auto-calculated */
+  previousValue?: number;
+  /** Show the delta/percentage change label below the primary value */
+  showDelta?: boolean;
+  /** Show the trend direction arrow (▲/▼) */
+  showTrend?: boolean;
+  /** Animate value counting up from 0. Uses existing semanticAnimation hook. */
+  countUp?: boolean;
+  /** Count-up animation duration in seconds. Default: 1.2 */
+  countUpDuration?: number;
 }
 
 export interface ProgressNode extends SceneNodeBase {
@@ -457,6 +470,19 @@ export interface ChartNode extends SceneNodeBase {
   legendPosition?: "bottom" | "right" | "top";
   /** Bound data source expression */
   dataSource?: string;
+  // Phase 4Q — chart-type-specific visual options
+  /** Donut inner radius as fraction of outer radius. Default: 0.55 */
+  donutHoleRatio?: number;
+  /** Show percentage labels on pie/donut arcs */
+  showPercentageLabels?: boolean;
+  /** Area chart: fill the area below the line */
+  showAreaFill?: boolean;
+  /** Area chart: fill opacity 0–1. Default: 0.25 */
+  areaFillOpacity?: number;
+  /** Line chart: radius of data point dots (px). Default: 4 */
+  pointRadius?: number;
+  /** Line chart: animate as progressive path draw (left-to-right reveal) */
+  drawProgress?: boolean;
 }
 
 

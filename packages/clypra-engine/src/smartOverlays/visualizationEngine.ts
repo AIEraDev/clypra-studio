@@ -1,10 +1,15 @@
 /**
- * Phase 4P — VisualizationEngine
+ * Phase 4Q — VisualizationEngine (refactored)
  *
- * Pure geometry generator: (ChartNode, width, height, t) → EvaluatedChartGeometry.
+ * Pure geometry generator registry: (ChartNode, width, height, t) → EvaluatedChartGeometry.
+ *
+ * Architecture:
+ *   evaluate() — shared infrastructure + dispatcher
+ *     ├── computeBars()       → "bar"
+ *     ├── computeLinePaths()  → "line" | "area"
+ *     └── computeArcs()       → "pie" | "donut"
  *
  * No Pixi, no DOM, no async. Deterministic and fully testable.
- * Called every frame by PixiSceneProjection with the current animation t ∈ [0,1].
  */
 
 import type {
@@ -16,42 +21,68 @@ import type {
 } from "./overlayDocumentSchema.js";
 
 // ---------------------------------------------------------------------------
-// Internal geometry types (Pixi projection consumes these)
+// Geometry output types
 // ---------------------------------------------------------------------------
 
 export interface BarGeometry {
-  /** Series id (matches ChartSeries.id) */
   seriesId: string;
-  /** Category index (0-based) */
   categoryIndex: number;
-  /** Absolute pixel x within chart node bounds */
   x: number;
-  /** Absolute pixel y within chart node bounds (top of bar) */
   y: number;
-  /** Bar width (px) */
   w: number;
-  /** Animated bar height (px) — 0 at t=0, full at t=1 */
+  /** Animated bar height at current t */
   h: number;
-  /** Full bar height at t=1 (px) */
+  /** Full bar height at t=1 */
   fullH: number;
-  /** Hex fill color */
   color: string;
-  /** Raw data value */
   rawValue: number;
-  /** Animated data value at current t (for count-up labels) */
   animatedValue: number;
-  /** Formatted label string */
   labelText: string;
-  /** Whether this bar's stagger window has started */
   active: boolean;
 }
 
-export interface GridLineGeometry {
-  /** Pixel y position within chart node bounds */
+export interface LinePoint {
+  seriesId: string;
+  categoryIndex: number;
+  /** Pixel x for this category */
+  x: number;
+  /** Animated pixel y (baseline at t=0, data position at t=1) */
   y: number;
-  /** Formatted tick label */
+  /** Full pixel y at t=1 */
+  fullY: number;
+  /** Bottom of plot (baseline y — used for area fill) */
+  baseY: number;
+  color: string;
+  rawValue: number;
+  animatedValue: number;
+  labelText: string;
+  active: boolean;
+}
+
+export interface ArcGeometry {
+  seriesId: string;
+  /** Animated start angle (radians) */
+  startAngle: number;
+  /** Animated end angle (radians) — equals startAngle at t=0 */
+  endAngle: number;
+  /** Final end angle at t=1 */
+  fullEndAngle: number;
+  /** 0 for pie, >0 for donut */
+  innerRadius: number;
+  outerRadius: number;
+  color: string;
+  rawValue: number;
+  animatedValue: number;
+  percentage: number;
+  labelText: string;
+  /** Midpoint of arc — for label placement */
+  labelX: number;
+  labelY: number;
+}
+
+export interface GridLineGeometry {
+  y: number;
   label: string;
-  /** Raw numeric value of this tick */
   value: number;
 }
 
@@ -77,18 +108,25 @@ export interface PlotArea {
 }
 
 export interface EvaluatedChartGeometry {
+  // Bar chart
   bars: BarGeometry[];
+  // Line / area chart
+  linePoints: LinePoint[];
+  // Pie / donut
+  arcs: ArcGeometry[];
+  centerX: number;
+  centerY: number;
+  // Shared
   gridLines: GridLineGeometry[];
   xAxisLabels: AxisLabel[];
   yAxisLabels: AxisLabel[];
   legendEntries: LegendEntry[];
   plotArea: PlotArea;
-  /** Normalized animation progress [0,1] after stagger/easing */
   t: number;
 }
 
 // ---------------------------------------------------------------------------
-// Easing library (pure functions)
+// Easing library
 // ---------------------------------------------------------------------------
 
 function applyEasing(
@@ -125,7 +163,6 @@ function applyEasing(
 
 function formatValue(v: number, labelFormat?: string): string {
   if (!labelFormat) {
-    // Smart defaults: compact large numbers
     if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
     if (Math.abs(v) >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
     return Number.isInteger(v) ? String(v) : v.toFixed(1);
@@ -134,32 +171,41 @@ function formatValue(v: number, labelFormat?: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Default palette
+// Stagger helper — shared across generators
+// ---------------------------------------------------------------------------
+
+function computeLocalT(
+  globalT: number,
+  itemIndex: number,
+  staggerStep: number,
+  animMode: ChartAnimationConfig["mode"],
+  easing: ChartAnimationConfig["easing"]
+): { localT: number; active: boolean } {
+  if (animMode === "none") return { localT: 1, active: true };
+  const offset = itemIndex * staggerStep;
+  const active = globalT > offset;
+  const window = Math.max(0.001, 1 - offset);
+  const localT = active ? Math.min(1, (globalT - offset) / window) : 0;
+  return { localT: applyEasing(localT, easing), active };
+}
+
+// ---------------------------------------------------------------------------
+// Constants
 // ---------------------------------------------------------------------------
 
 const DEFAULT_PALETTE = [
-  "#45FF72",
-  "#FF4141",
-  "#4ECDC4",
-  "#FFE66D",
-  "#A78BFA",
-  "#F97316",
-  "#06B6D4",
-  "#EC4899",
+  "#45FF72", "#FF4141", "#4ECDC4", "#FFE66D", "#A78BFA",
+  "#F97316", "#06B6D4", "#EC4899",
 ];
 
-// ---------------------------------------------------------------------------
-// Layout constants
-// ---------------------------------------------------------------------------
-
 const PADDING = {
-  top: 40,    // chart title + top breathing room
+  top: 40,
   right: 20,
-  bottom: 44, // x-axis labels
-  left: 52,   // y-axis labels
+  bottom: 44,
+  left: 52,
 };
 
-const LEGEND_HEIGHT = 32; // per row when legendPosition === "bottom"
+const LEGEND_HEIGHT = 32;
 const LEGEND_RIGHT_WIDTH = 120;
 
 // ---------------------------------------------------------------------------
@@ -170,72 +216,92 @@ export class VisualizationEngine {
   /**
    * Evaluate a ChartNode into flat geometry at normalized time t ∈ [0,1].
    *
-   * @param node   The fully data-bound ChartNode (series[].data already populated)
-   * @param width  Absolute pixel width of the chart node
-   * @param height Absolute pixel height of the chart node
-   * @param t      Normalized animation time 0=start, 1=complete
+   * @param node   Fully data-bound ChartNode (series[].data populated by DataBindingEngine)
+   * @param width  Absolute pixel width
+   * @param height Absolute pixel height
+   * @param t      Normalized animation time [0,1]
    */
-  evaluate(
-    node: ChartNode,
-    width: number,
-    height: number,
-    t: number
-  ): EvaluatedChartGeometry {
+  evaluate(node: ChartNode, width: number, height: number, t: number): EvaluatedChartGeometry {
     const series = this.normalizeSeries(node);
-    const categories = this.resolveCategories(node, series);
-    const catCount = categories.length;
-    const seriesCount = series.length;
+    const catCount = Math.max(1, ...series.map((s) => (s.data ?? []).length));
 
-    if (catCount === 0 || seriesCount === 0) {
+    if (series.length === 0 || catCount === 0) {
       return this.emptyGeometry(width, height, t);
     }
 
-    // ── Plot area ──────────────────────────────────────────────────────────
+    // ── Shared: plot area ──────────────────────────────────────────────────
+    const isPieFamily = node.chartType === "pie" || node.chartType === "donut";
     const legendH =
-      node.showLegend && node.legendPosition !== "right"
-        ? LEGEND_HEIGHT
-        : 0;
+      node.showLegend && node.legendPosition !== "right" ? LEGEND_HEIGHT : 0;
     const legendW =
-      node.showLegend && node.legendPosition === "right"
-        ? LEGEND_RIGHT_WIDTH
-        : 0;
+      node.showLegend && node.legendPosition === "right" ? LEGEND_RIGHT_WIDTH : 0;
 
     const plot: PlotArea = {
-      x: PADDING.left,
-      y: PADDING.top,
-      w: width - PADDING.left - PADDING.right - legendW,
-      h: height - PADDING.top - PADDING.bottom - legendH,
+      x: isPieFamily ? 0 : PADDING.left,
+      y: isPieFamily ? 0 : PADDING.top,
+      w: width - (isPieFamily ? 0 : PADDING.left + PADDING.right) - legendW,
+      h: height - (isPieFamily ? 0 : PADDING.top + PADDING.bottom) - legendH,
     };
 
-    // ── Domain ─────────────────────────────────────────────────────────────
-    const axisConf: AxisConfig = node.axis ?? {};
-    const { domainMin, domainMax } = this.computeDomain(series, axisConf, node.stacked ?? false);
-
-    // ── Grid lines & Y-axis labels ─────────────────────────────────────────
-    const tickCount = axisConf.tickCount ?? 5;
-    const gridLines = this.computeGridLines(domainMin, domainMax, tickCount, plot, axisConf);
-    const yAxisLabels = this.computeYAxisLabels(gridLines, plot, axisConf);
-
-    // ── Bar geometry ───────────────────────────────────────────────────────
-    const barStyle: ChartBarStyle = node.barStyle ?? {};
-    const animConf: ChartAnimationConfig = node.chartAnimation ?? { mode: "none" };
-    const bars = this.computeBars(
-      series, categories, catCount, seriesCount,
-      plot, domainMin, domainMax, barStyle, animConf, t
-    );
-
-    // ── X-axis labels ──────────────────────────────────────────────────────
-    const xAxisLabels = this.computeXAxisLabels(categories, catCount, plot);
-
-    // ── Legend ─────────────────────────────────────────────────────────────
+    // ── Shared: legend ─────────────────────────────────────────────────────
     const legendEntries = node.showLegend
       ? this.computeLegend(series, node.legendPosition ?? "bottom", plot, width, height, legendH)
       : [];
 
-    return { bars, gridLines, xAxisLabels, yAxisLabels, legendEntries, plotArea: plot, t };
+    // ── Per-type geometry dispatch ─────────────────────────────────────────
+    const animConf: ChartAnimationConfig = node.chartAnimation ?? { mode: "none" };
+    const axisConf: AxisConfig = node.axis ?? {};
+
+    if (isPieFamily) {
+      const arcs = this.computeArcs(node, series, width, height, legendH, animConf, t);
+      const cx = plot.w / 2 + (legendW > 0 ? 0 : 0);
+      const cy = (height - legendH) / 2;
+      return {
+        bars: [], linePoints: [], arcs,
+        centerX: cx, centerY: cy,
+        gridLines: [], xAxisLabels: [], yAxisLabels: [],
+        legendEntries, plotArea: plot, t,
+      };
+    }
+
+    // Shared: domain, grid, axes (bar + line + area)
+    const categories = this.resolveCategories(node, series);
+    const { domainMin, domainMax } = this.computeDomain(series, axisConf, node.stacked ?? false);
+    const tickCount = axisConf.tickCount ?? 5;
+    const gridLines = this.computeGridLines(domainMin, domainMax, tickCount, plot, axisConf);
+    const yAxisLabels = this.computeYAxisLabels(gridLines, plot);
+    const xAxisLabels = this.computeXAxisLabels(categories, plot);
+
+    if (node.chartType === "bar") {
+      const barStyle: ChartBarStyle = node.barStyle ?? {};
+      const bars = this.computeBars(
+        series, categories, plot, domainMin, domainMax, barStyle, animConf, t
+      );
+      return {
+        bars, linePoints: [], arcs: [],
+        centerX: 0, centerY: 0,
+        gridLines, xAxisLabels, yAxisLabels,
+        legendEntries, plotArea: plot, t,
+      };
+    }
+
+    if (node.chartType === "line" || node.chartType === "area") {
+      const linePoints = this.computeLinePaths(
+        series, categories, plot, domainMin, domainMax, animConf, t
+      );
+      return {
+        bars: [], linePoints, arcs: [],
+        centerX: 0, centerY: 0,
+        gridLines, xAxisLabels, yAxisLabels,
+        legendEntries, plotArea: plot, t,
+      };
+    }
+
+    // Fallback: empty (radar, scatter — future generators)
+    return this.emptyGeometry(width, height, t);
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
+  // ── Series normalisation ──────────────────────────────────────────────────
 
   private normalizeSeries(node: ChartNode): ChartSeries[] {
     const palette = node.colorPalette ?? DEFAULT_PALETTE;
@@ -254,17 +320,18 @@ export class VisualizationEngine {
     return Array.from({ length: maxLen }, (_, i) => `Cat ${i + 1}`);
   }
 
+  // ── Domain ────────────────────────────────────────────────────────────────
+
   private computeDomain(
     series: ChartSeries[],
     axis: AxisConfig,
     stacked: boolean
   ): { domainMin: number; domainMax: number } {
-    let domainMin = axis.min ?? 0;
+    const domainMin = axis.min ?? 0;
     let domainMax = axis.max;
 
     if (domainMax === undefined) {
       if (stacked) {
-        // Max = max sum of all series for any category
         const catCount = Math.max(...series.map((s) => (s.data ?? []).length));
         let stackMax = 0;
         for (let i = 0; i < catCount; i++) {
@@ -273,25 +340,18 @@ export class VisualizationEngine {
         }
         domainMax = stackMax;
       } else {
-        // Max = max value across all series
-        domainMax = Math.max(
-          1,
-          ...series.flatMap((s) => s.data ?? [])
-        );
+        domainMax = Math.max(1, ...series.flatMap((s) => s.data ?? []));
       }
-      // Round up to a nice number
       domainMax = this.niceMax(domainMax);
     }
 
     return { domainMin, domainMax };
   }
 
-  /** Round up to a visually clean ceiling value */
   private niceMax(v: number): number {
     if (v <= 0) return 1;
     const magnitude = Math.pow(10, Math.floor(Math.log10(v)));
-    const niceFractions = [1, 2, 2.5, 5, 10];
-    for (const f of niceFractions) {
+    for (const f of [1, 2, 2.5, 5, 10]) {
       const candidate = f * magnitude;
       if (candidate >= v) return candidate;
     }
@@ -303,6 +363,8 @@ export class VisualizationEngine {
     return plot.y + plot.h - pct * plot.h;
   }
 
+  // ── Grid & Axes ───────────────────────────────────────────────────────────
+
   private computeGridLines(
     domainMin: number,
     domainMax: number,
@@ -310,99 +372,20 @@ export class VisualizationEngine {
     plot: PlotArea,
     axis: AxisConfig
   ): GridLineGeometry[] {
-    const lines: GridLineGeometry[] = [];
-    for (let i = 0; i <= tickCount; i++) {
+    return Array.from({ length: tickCount + 1 }, (_, i) => {
       const value = domainMin + ((domainMax - domainMin) * i) / tickCount;
-      const y = this.valueToY(value, domainMin, domainMax, plot);
-      lines.push({ y, value, label: formatValue(value, axis.labelFormat) });
-    }
-    return lines;
+      return { y: this.valueToY(value, domainMin, domainMax, plot), value, label: formatValue(value, axis.labelFormat) };
+    });
   }
 
-  private computeYAxisLabels(
-    gridLines: GridLineGeometry[],
-    plot: PlotArea,
-    _axis: AxisConfig
-  ): AxisLabel[] {
+  private computeYAxisLabels(gridLines: GridLineGeometry[], plot: PlotArea): AxisLabel[] {
     return gridLines.map((gl) => ({
-      x: plot.x - 8,
-      y: gl.y,
-      text: gl.label,
-      anchor: "end" as const,
+      x: plot.x - 8, y: gl.y, text: gl.label, anchor: "end" as const,
     }));
   }
 
-  private computeBars(
-    series: ChartSeries[],
-    categories: string[],
-    catCount: number,
-    seriesCount: number,
-    plot: PlotArea,
-    domainMin: number,
-    domainMax: number,
-    barStyle: ChartBarStyle,
-    animConf: ChartAnimationConfig,
-    t: number
-  ): BarGeometry[] {
-    const bars: BarGeometry[] = [];
-    const groupGap = barStyle.groupGap ?? 6;
-    const catPad = Math.max(8, plot.w * 0.04);
-    const catW = (plot.w - catPad * 2) / catCount;
-    const groupW = catW - 8;
-    const barW = Math.max(4, (groupW - (seriesCount - 1) * groupGap) / seriesCount);
-    const totalBars = catCount * seriesCount;
-    const staggerStep = animConf.stagger ?? 0.08;
-
-    series.forEach((s, si) => {
-      const data = s.data ?? [];
-      categories.forEach((_, ci) => {
-        const rawValue = data[ci] ?? 0;
-        const barIndex = ci * seriesCount + si;
-
-        // Compute per-bar t with stagger
-        const staggerOffset = barIndex * staggerStep;
-        const staggerWindow = 1 - staggerOffset;
-        let localT = 0;
-        if (t > staggerOffset && staggerWindow > 0) {
-          localT = Math.min(1, (t - staggerOffset) / staggerWindow);
-        }
-        const easedT = animConf.mode === "none" ? 1 : applyEasing(localT, animConf.easing);
-
-        const fullH = Math.max(
-          0,
-          ((rawValue - domainMin) / Math.max(1, domainMax - domainMin)) * plot.h
-        );
-        const animH = fullH * easedT;
-        const animatedValue = rawValue * easedT;
-
-        const bx = plot.x + catPad + ci * catW + si * (barW + groupGap);
-        const by = plot.y + plot.h - animH;
-
-        bars.push({
-          seriesId: s.id,
-          categoryIndex: ci,
-          x: bx,
-          y: by,
-          w: barW,
-          h: animH,
-          fullH,
-          color: s.color,
-          rawValue,
-          animatedValue,
-          labelText: formatValue(animatedValue),
-          active: t > staggerOffset,
-        });
-      });
-    });
-
-    return bars;
-  }
-
-  private computeXAxisLabels(
-    categories: string[],
-    catCount: number,
-    plot: PlotArea
-  ): AxisLabel[] {
+  private computeXAxisLabels(categories: string[], plot: PlotArea): AxisLabel[] {
+    const catCount = categories.length;
     const catPad = Math.max(8, plot.w * 0.04);
     const catW = (plot.w - catPad * 2) / catCount;
     return categories.map((label, ci) => ({
@@ -413,6 +396,164 @@ export class VisualizationEngine {
     }));
   }
 
+  // ── Bar geometry generator ────────────────────────────────────────────────
+
+  private computeBars(
+    series: ChartSeries[],
+    categories: string[],
+    plot: PlotArea,
+    domainMin: number,
+    domainMax: number,
+    barStyle: ChartBarStyle,
+    animConf: ChartAnimationConfig,
+    t: number
+  ): BarGeometry[] {
+    const bars: BarGeometry[] = [];
+    const catCount = categories.length;
+    const seriesCount = series.length;
+    const groupGap = barStyle.groupGap ?? 6;
+    const catPad = Math.max(8, plot.w * 0.04);
+    const catW = (plot.w - catPad * 2) / catCount;
+    const groupW = catW - 8;
+    const barW = Math.max(4, (groupW - (seriesCount - 1) * groupGap) / seriesCount);
+    const staggerStep = animConf.stagger ?? 0.08;
+
+    series.forEach((s, si) => {
+      const data = s.data ?? [];
+      categories.forEach((_, ci) => {
+        const rawValue = data[ci] ?? 0;
+        const barIndex = ci * seriesCount + si;
+        const { localT: easedT, active } = computeLocalT(t, barIndex, staggerStep, animConf.mode, animConf.easing);
+        const fullH = Math.max(0, ((rawValue - domainMin) / Math.max(1, domainMax - domainMin)) * plot.h);
+        const animH = fullH * easedT;
+        const bx = plot.x + catPad + ci * catW + si * (barW + groupGap);
+        bars.push({
+          seriesId: s.id,
+          categoryIndex: ci,
+          x: bx, y: plot.y + plot.h - animH,
+          w: barW, h: animH, fullH,
+          color: s.color,
+          rawValue,
+          animatedValue: rawValue * easedT,
+          labelText: formatValue(rawValue * easedT),
+          active,
+        });
+      });
+    });
+
+    return bars;
+  }
+
+  // ── Line / Area geometry generator ────────────────────────────────────────
+
+  private computeLinePaths(
+    series: ChartSeries[],
+    categories: string[],
+    plot: PlotArea,
+    domainMin: number,
+    domainMax: number,
+    animConf: ChartAnimationConfig,
+    t: number
+  ): LinePoint[] {
+    const points: LinePoint[] = [];
+    const catCount = categories.length;
+    const catPad = Math.max(8, plot.w * 0.04);
+    const catW = (plot.w - catPad * 2) / catCount;
+    const staggerStep = animConf.stagger ?? 0.06;
+    const baseY = plot.y + plot.h;
+
+    series.forEach((s, si) => {
+      const data = s.data ?? [];
+      categories.forEach((_, ci) => {
+        const rawValue = data[ci] ?? 0;
+        // Stagger per point (left-to-right within each series, series offset)
+        const pointIndex = si * catCount + ci;
+        const { localT: easedT, active } = computeLocalT(t, pointIndex, staggerStep, animConf.mode, animConf.easing);
+        const fullY = this.valueToY(rawValue, domainMin, domainMax, plot);
+        // At t=0: point is at baseline; at t=1: at data position
+        const animY = baseY - (baseY - fullY) * easedT;
+        const px = plot.x + catPad + ci * catW + catW / 2;
+        points.push({
+          seriesId: s.id,
+          categoryIndex: ci,
+          x: px, y: animY, fullY,
+          baseY,
+          color: s.color,
+          rawValue,
+          animatedValue: rawValue * easedT,
+          labelText: formatValue(rawValue * easedT),
+          active,
+        });
+      });
+    });
+
+    return points;
+  }
+
+  // ── Pie / Donut arc geometry generator ────────────────────────────────────
+
+  private computeArcs(
+    node: ChartNode,
+    series: ChartSeries[],
+    width: number,
+    height: number,
+    legendH: number,
+    animConf: ChartAnimationConfig,
+    t: number
+  ): ArcGeometry[] {
+    const arcs: ArcGeometry[] = [];
+    const isDonut = node.chartType === "donut";
+    const holeRatio = (node as any).donutHoleRatio ?? 0.55;
+
+    const cx = width / 2;
+    const cy = (height - legendH) / 2;
+    const outerR = Math.min(cx, cy) * 0.85;
+    const innerR = isDonut ? outerR * holeRatio : 0;
+
+    // Sum for percentage
+    const total = series.reduce((sum, s) => sum + ((s.data ?? [])[0] ?? 0), 0) || 1;
+    const staggerStep = animConf.stagger ?? 0.1;
+
+    let cumulativeAngle = -Math.PI / 2; // Start at 12 o'clock
+
+    series.forEach((s, i) => {
+      const rawValue = (s.data ?? [])[0] ?? 0;
+      const percentage = rawValue / total;
+      const fullSweep = percentage * 2 * Math.PI;
+      const startAngle = cumulativeAngle;
+      const fullEndAngle = startAngle + fullSweep;
+
+      // Animate each sector sweeping from startAngle outward
+      const { localT: easedT, active } = computeLocalT(t, i, staggerStep, animConf.mode, animConf.easing);
+      const animSweep = fullSweep * easedT;
+      const endAngle = startAngle + animSweep;
+
+      // Label at arc midpoint
+      const midAngle = startAngle + fullSweep / 2;
+      const labelR = (innerR + outerR) / 2;
+      const labelX = cx + Math.cos(midAngle) * labelR;
+      const labelY = cy + Math.sin(midAngle) * labelR;
+
+      arcs.push({
+        seriesId: s.id,
+        startAngle, endAngle, fullEndAngle,
+        innerRadius: innerR, outerRadius: outerR,
+        color: s.color,
+        rawValue,
+        animatedValue: rawValue * easedT,
+        percentage: percentage * 100,
+        labelText: `${Math.round(percentage * 100)}%`,
+        labelX, labelY,
+      });
+
+      cumulativeAngle = fullEndAngle;
+    });
+
+    return arcs;
+  }
+
+  // ── Legend ────────────────────────────────────────────────────────────────
+
   private computeLegend(
     series: ChartSeries[],
     position: "bottom" | "right" | "top",
@@ -422,42 +563,33 @@ export class VisualizationEngine {
     legendH: number
   ): LegendEntry[] {
     const entries: LegendEntry[] = [];
-    const swatchW = 14;
-    const itemSpacing = 110;
+    const itemSpacing = 120;
 
     if (position === "bottom") {
       const startX = (chartWidth - series.length * itemSpacing) / 2;
       const y = chartHeight - legendH / 2;
-      series.forEach((s, i) => {
-        entries.push({ x: startX + i * itemSpacing, y, color: s.color, label: s.name });
-      });
+      series.forEach((s, i) => entries.push({ x: startX + i * itemSpacing, y, color: s.color, label: s.name }));
     } else if (position === "right") {
       const x = plot.x + plot.w + 16;
-      series.forEach((s, i) => {
-        entries.push({ x, y: plot.y + 20 + i * 28, color: s.color, label: s.name });
-      });
+      series.forEach((s, i) => entries.push({ x, y: plot.y + 20 + i * 28, color: s.color, label: s.name }));
     } else {
-      // top
       const startX = plot.x;
-      const y = 12;
-      series.forEach((s, i) => {
-        entries.push({ x: startX + i * itemSpacing, y, color: s.color, label: s.name });
-      });
+      series.forEach((s, i) => entries.push({ x: startX + i * itemSpacing, y: 12, color: s.color, label: s.name }));
     }
 
     return entries;
   }
 
+  // ── Empty geometry ────────────────────────────────────────────────────────
+
   private emptyGeometry(width: number, height: number, t: number): EvaluatedChartGeometry {
     return {
-      bars: [],
-      gridLines: [],
-      xAxisLabels: [],
-      yAxisLabels: [],
+      bars: [], linePoints: [], arcs: [],
+      centerX: width / 2, centerY: height / 2,
+      gridLines: [], xAxisLabels: [], yAxisLabels: [],
       legendEntries: [],
       plotArea: {
-        x: PADDING.left,
-        y: PADDING.top,
+        x: PADDING.left, y: PADDING.top,
         w: Math.max(0, width - PADDING.left - PADDING.right),
         h: Math.max(0, height - PADDING.top - PADDING.bottom),
       },
