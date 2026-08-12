@@ -23,6 +23,10 @@ import type {
   ContainerNode,
   CalloutNode,
   AvatarNode,
+  GaugeNode,
+  TimelineNode,
+  AnnotationNode,
+  ConnectorNode,
 } from "./overlayDocumentSchema.js";
 
 export interface PrimitiveDefinition {
@@ -392,6 +396,103 @@ export class PrimitiveRegistry {
           shape: "circle",
           badgeStatus: "online",
         } as AvatarNode),
+    });
+
+    // 16. Gauge
+    this.register({
+      type: "gauge",
+      label: "Gauge Meter",
+      category: "data",
+      createDefaultNode: (id = `gauge-${Date.now()}`) =>
+        ({
+          id,
+          name: "Gauge Meter",
+          type: "gauge",
+          x: 0,
+          y: 0,
+          width: 240,
+          height: 180,
+          value: 72,
+          min: 0,
+          max: 100,
+          gaugeStyle: "semicircle",
+          trackColor: "#1F2937",
+          fillColor: "#3B82F6",
+          showValue: true,
+          showLabel: true,
+          label: "Performance",
+        } as GaugeNode),
+    });
+
+    // 17. Timeline
+    this.register({
+      type: "timeline",
+      label: "Timeline Axis",
+      category: "data",
+      createDefaultNode: (id = `timeline-${Date.now()}`) =>
+        ({
+          id,
+          name: "Timeline Axis",
+          type: "timeline",
+          x: 0,
+          y: 0,
+          width: 500,
+          height: 120,
+          events: [
+            { id: "e1", label: "Kickoff", time: 0, color: "#45FF72" },
+            { id: "e2", label: "Beta", time: 50, color: "#FFE66D" },
+            { id: "e3", label: "Launch", time: 100, color: "#FF4141" },
+          ],
+          orientation: "horizontal",
+          trackColor: "#374151",
+          showLabels: true,
+        } as TimelineNode),
+    });
+
+    // 18. Annotation
+    this.register({
+      type: "annotation",
+      label: "Annotation",
+      category: "graphics",
+      createDefaultNode: (id = `ann-${Date.now()}`) =>
+        ({
+          id,
+          name: "Annotation Callout",
+          type: "annotation",
+          x: 0,
+          y: 0,
+          width: 140,
+          height: 40,
+          text: "+42% Growth",
+          offsetX: 0,
+          offsetY: -30,
+          showLeader: true,
+          leaderColor: "#A78BFA",
+          pointerStyle: "dot",
+        } as AnnotationNode),
+    });
+
+    // 19. Connector
+    this.register({
+      type: "connector",
+      label: "Connector Arrow",
+      category: "graphics",
+      createDefaultNode: (id = `conn-${Date.now()}`) =>
+        ({
+          id,
+          name: "Connector Arrow",
+          type: "connector",
+          x: 0,
+          y: 0,
+          width: 150,
+          height: 80,
+          fromNodeId: "",
+          toNodeId: "",
+          lineStyle: "straight",
+          arrowHead: "end",
+          strokeColor: "#3B82F6",
+          strokeWidth: 2,
+        } as ConnectorNode),
     });
   }
 }

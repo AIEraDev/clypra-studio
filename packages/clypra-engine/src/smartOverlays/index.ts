@@ -40,3 +40,11 @@ export * from "./export/renderEngine.js";
 export * from "./export/streamingFramePipeline.js";
 export * from "./export/mediaEncoder.js";
 export * from "./export/exportJob.js";
+
+// Phase 4R — Visual Primitive System & Visualization Registry
+export * from "./visualizationRegistry.js";
+export * from "./visualizationProjection.js";
+export * from "./visualizationEngine.js";
+export * from "./gaugeVisualization.js";
+export * from "./timelineVisualization.js";
+export * from "./annotationVisualization.js";

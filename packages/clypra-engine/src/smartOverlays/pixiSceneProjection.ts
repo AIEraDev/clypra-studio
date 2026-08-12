@@ -11,6 +11,11 @@ import { animationRuntime } from "./animationRuntime.js";
 import { componentRegistry } from "./componentRegistry.js";
 import { runtimeAssetResolver } from "./assets/runtimeAssetResolver.js";
 import { visualizationEngine } from "./visualizationEngine.js";
+import { visualizationRegistry } from "./visualizationRegistry.js";
+import { visualizationRendererRegistry } from "./visualizationProjection.js";
+import "./gaugeVisualization.js";
+import "./timelineVisualization.js";
+import "./annotationVisualization.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -167,6 +172,8 @@ export class PixiSceneProjection {
       this.renderProgressNode(node as any, nodeContainer, absW, absH);
     } else if (node.type === "chart") {
       this.renderChartNode(node as any, nodeContainer, absW, absH, currentTime, doc.duration);
+    } else if (visualizationRegistry.has(node.type) && visualizationRendererRegistry.has(node.type)) {
+      this.renderVisualizationNode(node as any, nodeContainer, absW, absH, currentTime, doc);
     } else if (node.type === "table") {
       this.renderTableNode(node as any, nodeContainer, absW, absH);
     } else if (node.type === "container") {
@@ -938,6 +945,32 @@ export class PixiSceneProjection {
 
     this.renderLabel(container, "title", node.title || "Callout", 16, 12, 16, "#FFFFFF", true);
     this.renderLabel(container, "body", node.body || "", 16, 36, 13, "#94A3B8", false);
+  }
+
+  private renderVisualizationNode(
+    node: any,
+    container: Container,
+    width: number,
+    height: number,
+    currentTime: number,
+    doc?: OverlayDocument
+  ): void {
+    const def = visualizationRegistry.get(node.type)!;
+    const renderer = visualizationRendererRegistry.get(node.type)!;
+    const animConf = node.chartAnimation;
+    let t = 1;
+    if (animConf && animConf.mode !== "none") {
+      const duration = animConf.duration ?? 1.2;
+      t = Math.min(1, Math.max(0, currentTime / duration));
+    }
+    const geo = def.evaluate(node, { width, height, t, doc });
+    const ctx = {
+      container,
+      hexToNumber,
+      renderLabel: (p: Container, n: string, txt: string, x: number, y: number, s?: number, c?: string, b?: boolean, f?: string) =>
+        this.renderLabel(p, n, txt, x, y, s, c, b, f),
+    };
+    renderer.render(geo, ctx);
   }
 
   private renderAvatarNode(

@@ -107,6 +107,33 @@ export interface PlotArea {
   h: number;
 }
 
+export interface GeometryAnchor {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label: string;
+}
+
+export interface AnchorMap {
+  /** bar[seriesId][categoryIndex] → bounding box of top of bar */
+  bars: Record<string, Record<number, GeometryAnchor>>;
+  /** point[seriesId][categoryIndex] → point center coordinate */
+  points: Record<string, Record<number, GeometryAnchor>>;
+  /** arc[seriesId] → midpoint coordinate of arc */
+  arcs: Record<string, GeometryAnchor>;
+}
+
+export interface HighlightRegionGeometry {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color: string;
+  opacity: number;
+  label?: string;
+}
+
 export interface EvaluatedChartGeometry {
   // Bar chart
   bars: BarGeometry[];
@@ -123,6 +150,8 @@ export interface EvaluatedChartGeometry {
   legendEntries: LegendEntry[];
   plotArea: PlotArea;
   t: number;
+  anchors: AnchorMap;
+  highlights: HighlightRegionGeometry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -261,6 +290,8 @@ export class VisualizationEngine {
         centerX: cx, centerY: cy,
         gridLines: [], xAxisLabels: [], yAxisLabels: [],
         legendEntries, plotArea: plot, t,
+        anchors: this.computeAnchors([], [], arcs),
+        highlights: [],
       };
     }
 
@@ -271,6 +302,7 @@ export class VisualizationEngine {
     const gridLines = this.computeGridLines(domainMin, domainMax, tickCount, plot, axisConf);
     const yAxisLabels = this.computeYAxisLabels(gridLines, plot);
     const xAxisLabels = this.computeXAxisLabels(categories, plot);
+    const highlights = this.computeHighlights(node, categories, plot);
 
     if (node.chartType === "bar") {
       const barStyle: ChartBarStyle = node.barStyle ?? {};
@@ -282,6 +314,8 @@ export class VisualizationEngine {
         centerX: 0, centerY: 0,
         gridLines, xAxisLabels, yAxisLabels,
         legendEntries, plotArea: plot, t,
+        anchors: this.computeAnchors(bars, [], []),
+        highlights,
       };
     }
 
@@ -294,6 +328,8 @@ export class VisualizationEngine {
         centerX: 0, centerY: 0,
         gridLines, xAxisLabels, yAxisLabels,
         legendEntries, plotArea: plot, t,
+        anchors: this.computeAnchors([], linePoints, []),
+        highlights,
       };
     }
 
@@ -580,6 +616,80 @@ export class VisualizationEngine {
     return entries;
   }
 
+  private computeAnchors(
+    bars: BarGeometry[],
+    linePoints: LinePoint[],
+    arcs: ArcGeometry[]
+  ): AnchorMap {
+    const barAnchors: Record<string, Record<number, GeometryAnchor>> = {};
+    const pointAnchors: Record<string, Record<number, GeometryAnchor>> = {};
+    const arcAnchors: Record<string, GeometryAnchor> = {};
+
+    bars.forEach((b) => {
+      if (!barAnchors[b.seriesId]) barAnchors[b.seriesId] = {};
+      barAnchors[b.seriesId][b.categoryIndex] = {
+        x: b.x + b.w / 2,
+        y: b.y,
+        w: b.w,
+        h: b.h,
+        label: b.labelText,
+      };
+    });
+
+    linePoints.forEach((pt) => {
+      if (!pointAnchors[pt.seriesId]) pointAnchors[pt.seriesId] = {};
+      pointAnchors[pt.seriesId][pt.categoryIndex] = {
+        x: pt.x,
+        y: pt.y,
+        w: 0,
+        h: 0,
+        label: pt.labelText,
+      };
+    });
+
+    arcs.forEach((a) => {
+      arcAnchors[a.seriesId] = {
+        x: a.labelX,
+        y: a.labelY,
+        w: 0,
+        h: 0,
+        label: a.labelText,
+      };
+    });
+
+    return { bars: barAnchors, points: pointAnchors, arcs: arcAnchors };
+  }
+
+  private computeHighlights(
+    node: ChartNode,
+    categories: string[],
+    plot: PlotArea
+  ): HighlightRegionGeometry[] {
+    if (!node.highlights || node.highlights.length === 0) return [];
+    const catCount = Math.max(1, categories.length);
+    const catPad = Math.max(8, plot.w * 0.04);
+    const catW = (plot.w - catPad * 2) / catCount;
+
+    return node.highlights.map((h) => {
+      const [startIdx, endIdx] = h.dataIndexRange ?? [0, catCount - 1];
+      const sIdx = Math.max(0, Math.min(catCount - 1, startIdx));
+      const eIdx = Math.max(sIdx, Math.min(catCount - 1, endIdx));
+
+      const hx = plot.x + catPad + sIdx * catW;
+      const hw = (eIdx - sIdx + 1) * catW;
+
+      return {
+        x: hx,
+        y: plot.y,
+        w: hw,
+        h: plot.h,
+        color: h.color || "#FFE66D",
+        opacity: h.opacity ?? 0.15,
+        label: h.label,
+      };
+    });
+  }
+
   // ── Empty geometry ────────────────────────────────────────────────────────
 
   private emptyGeometry(width: number, height: number, t: number): EvaluatedChartGeometry {
@@ -594,6 +704,8 @@ export class VisualizationEngine {
         h: Math.max(0, height - PADDING.top - PADDING.bottom),
       },
       t,
+      anchors: { bars: {}, points: {}, arcs: {} },
+      highlights: [],
     };
   }
 }
