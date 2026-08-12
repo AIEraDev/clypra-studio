@@ -70,7 +70,11 @@ export type SceneNodeType =
   | "table"
   | "container"
   | "callout"
-  | "avatar";
+  | "avatar"
+  | "annotation"
+  | "connector"
+  | "gauge"
+  | "timeline";
 
 export type LayoutMode = "none" | "flex-row" | "flex-column" | "grid" | "space-between";
 export type AlignmentMode = "start" | "center" | "end" | "stretch";
@@ -483,8 +487,85 @@ export interface ChartNode extends SceneNodeBase {
   pointRadius?: number;
   /** Line chart: animate as progressive path draw (left-to-right reveal) */
   drawProgress?: boolean;
+  /** Phase 4R — Region highlights spotlighting specific category ranges */
+  highlights?: Array<{
+    seriesId?: string;
+    dataIndexRange?: [number, number];
+    color?: string;
+    opacity?: number;
+    label?: string;
+  }>;
 }
 
+export interface AnnotationNode extends SceneNodeBase {
+  type: "annotation";
+  text: string;
+  anchor?: {
+    nodeId: string;
+    seriesId?: string;
+    dataIndex?: number;
+    element?: "bar-top" | "bar-center" | "point" | "arc-mid" | "absolute";
+  };
+  offsetX?: number;
+  offsetY?: number;
+  showLeader?: boolean;
+  leaderColor?: string;
+  pointerStyle?: "dot" | "arrow" | "none";
+}
+
+export interface ConnectorNode extends SceneNodeBase {
+  type: "connector";
+  fromNodeId: string;
+  toNodeId: string;
+  fromElement?: "bar-top" | "point" | "arc-mid" | "center";
+  toElement?: "bar-top" | "point" | "arc-mid" | "center";
+  lineStyle?: "straight" | "curved" | "elbow";
+  arrowHead?: "none" | "start" | "end" | "both";
+  strokeColor?: string;
+  strokeWidth?: number;
+  dashPattern?: number[];
+}
+
+export interface GaugeThreshold {
+  value: number;
+  color: string;
+}
+
+export interface GaugeNode extends SceneNodeBase {
+  type: "gauge";
+  value: number;
+  min?: number;
+  max?: number;
+  gaugeStyle?: "semicircle" | "full" | "arc";
+  sweepAngle?: number;
+  trackColor?: string;
+  fillColor?: string;
+  showValue?: boolean;
+  showLabel?: boolean;
+  label?: string;
+  thresholds?: GaugeThreshold[];
+  chartAnimation?: ChartAnimationConfig;
+}
+
+export interface TimelineEvent {
+  id: string;
+  label: string;
+  time: number;
+  description?: string;
+  color?: string;
+  icon?: string;
+}
+
+export interface TimelineNode extends SceneNodeBase {
+  type: "timeline";
+  events: TimelineEvent[];
+  orientation?: "horizontal" | "vertical";
+  trackColor?: string;
+  eventColor?: string;
+  showLabels?: boolean;
+  animationMode?: "sequential" | "simultaneous";
+  chartAnimation?: Pick<ChartAnimationConfig, "mode" | "stagger" | "easing">;
+}
 
 export interface TableColumn {
   key: string;
@@ -540,7 +621,11 @@ export type SceneNode =
   | TableNode
   | ContainerNode
   | CalloutNode
-  | AvatarNode;
+  | AvatarNode
+  | AnnotationNode
+  | ConnectorNode
+  | GaugeNode
+  | TimelineNode;
 
 export interface DocumentVariable {
   key: string;

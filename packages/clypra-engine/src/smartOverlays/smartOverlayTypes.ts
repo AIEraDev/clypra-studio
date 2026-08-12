@@ -49,7 +49,7 @@ export interface QuoteOverlayContent {
   avatarUrl?: string;
 }
 
-export interface TimelineNode {
+export interface TimelineOverlayNode {
   id: string;
   label: string;
   date?: string;
@@ -59,7 +59,7 @@ export interface TimelineNode {
 
 export interface TimelineOverlayContent {
   title: string;
-  nodes: TimelineNode[];
+  nodes: TimelineOverlayNode[];
 }
 
 export interface CodeOverlayContent {
