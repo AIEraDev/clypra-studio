@@ -54,10 +54,10 @@ visualizationRendererRegistry.register<EvaluatedChartGeometry>("chart", {
 
     // 1. Highlight regions (under grid/bars)
     if (geo.highlights && geo.highlights.length > 0) {
-      let hlGfx = container.getChildByName("ChartHighlights") as PixiGraphics;
+      let hlGfx = container.getChildByLabel("ChartHighlights") as PixiGraphics;
       if (!hlGfx) {
         hlGfx = new PixiGraphics();
-        hlGfx.name = "ChartHighlights";
+        hlGfx.label = "ChartHighlights";
         container.addChildAt(hlGfx, 0);
       }
       hlGfx.clear();
@@ -68,10 +68,10 @@ visualizationRendererRegistry.register<EvaluatedChartGeometry>("chart", {
     }
 
     // 2. Grid lines
-    let gridGfx = container.getChildByName("ChartGrid") as PixiGraphics;
+    let gridGfx = container.getChildByLabel("ChartGrid") as PixiGraphics;
     if (!gridGfx) {
       gridGfx = new PixiGraphics();
-      gridGfx.name = "ChartGrid";
+      gridGfx.label = "ChartGrid";
       container.addChild(gridGfx);
     }
     gridGfx.clear();
@@ -94,10 +94,10 @@ visualizationRendererRegistry.register<EvaluatedChartGeometry>("chart", {
       const seriesIds = [...new Set(geo.bars.map((b) => b.seriesId))];
       for (const sid of seriesIds) {
         const gfxName = `ChartBars-${sid}`;
-        let barGfx = container.getChildByName(gfxName) as PixiGraphics;
+        let barGfx = container.getChildByLabel(gfxName) as PixiGraphics;
         if (!barGfx) {
           barGfx = new PixiGraphics();
-          barGfx.name = gfxName;
+          barGfx.label = gfxName;
           container.addChild(barGfx);
         }
         barGfx.clear();
@@ -131,10 +131,10 @@ visualizationRendererRegistry.register<EvaluatedChartGeometry>("chart", {
         if (pts.length < 2) continue;
 
         // Area fill
-        let areaGfx = container.getChildByName(`ChartArea-${sid}`) as PixiGraphics;
+        let areaGfx = container.getChildByLabel(`ChartArea-${sid}`) as PixiGraphics;
         if (!areaGfx) {
           areaGfx = new PixiGraphics();
-          areaGfx.name = `ChartArea-${sid}`;
+          areaGfx.label = `ChartArea-${sid}`;
           container.addChild(areaGfx);
         }
         areaGfx.clear();
@@ -145,10 +145,10 @@ visualizationRendererRegistry.register<EvaluatedChartGeometry>("chart", {
         areaGfx.fill({ color: hexToNumber(pts[0].color), alpha: 0.25 });
 
         // Line path
-        let lineGfx = container.getChildByName(`ChartLine-${sid}`) as PixiGraphics;
+        let lineGfx = container.getChildByLabel(`ChartLine-${sid}`) as PixiGraphics;
         if (!lineGfx) {
           lineGfx = new PixiGraphics();
-          lineGfx.name = `ChartLine-${sid}`;
+          lineGfx.label = `ChartLine-${sid}`;
           container.addChild(lineGfx);
         }
         lineGfx.clear();
@@ -168,10 +168,10 @@ visualizationRendererRegistry.register<EvaluatedChartGeometry>("chart", {
 
     // 6. Arcs (Pie / Donut)
     if (geo.arcs.length > 0) {
-      let arcGfx = container.getChildByName("ChartArcs") as PixiGraphics;
+      let arcGfx = container.getChildByLabel("ChartArcs") as PixiGraphics;
       if (!arcGfx) {
         arcGfx = new PixiGraphics();
-        arcGfx.name = "ChartArcs";
+        arcGfx.label = "ChartArcs";
         container.addChild(arcGfx);
       }
       arcGfx.clear();
@@ -208,10 +208,10 @@ visualizationRendererRegistry.register<EvaluatedChartGeometry>("chart", {
 
     // 7. Legend entries
     geo.legendEntries.forEach((leg, i) => {
-      let dotGfx = container.getChildByName(`legDot_${i}`) as PixiGraphics;
+      let dotGfx = container.getChildByLabel(`legDot_${i}`) as PixiGraphics;
       if (!dotGfx) {
         dotGfx = new PixiGraphics();
-        dotGfx.name = `legDot_${i}`;
+        dotGfx.label = `legDot_${i}`;
         container.addChild(dotGfx);
       }
       dotGfx.clear();

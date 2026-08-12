@@ -51,10 +51,10 @@ visualizationRendererRegistry.register<EvaluatedAnnotationGeometry>("annotation"
   render(geo: EvaluatedAnnotationGeometry, ctx: VisualizationRenderContext) {
     const { container, hexToNumber, renderLabel } = ctx;
 
-    let gfx = container.getChildByName("AnnotationGfx") as PixiGraphics;
+    let gfx = container.getChildByLabel("AnnotationGfx") as PixiGraphics;
     if (!gfx) {
       gfx = new PixiGraphics();
-      gfx.name = "AnnotationGfx";
+      gfx.label = "AnnotationGfx";
       container.addChild(gfx);
     }
     gfx.clear();
@@ -115,10 +115,10 @@ visualizationRendererRegistry.register<EvaluatedConnectorGeometry>("connector", 
   render(geo: EvaluatedConnectorGeometry, ctx: VisualizationRenderContext) {
     const { container, hexToNumber } = ctx;
 
-    let gfx = container.getChildByName("ConnectorGfx") as PixiGraphics;
+    let gfx = container.getChildByLabel("ConnectorGfx") as PixiGraphics;
     if (!gfx) {
       gfx = new PixiGraphics();
-      gfx.name = "ConnectorGfx";
+      gfx.label = "ConnectorGfx";
       container.addChild(gfx);
     }
     gfx.clear();

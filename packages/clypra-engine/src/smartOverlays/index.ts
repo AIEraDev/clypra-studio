@@ -50,3 +50,20 @@ export * from "./gaugeVisualization.js";
 export * from "./timelineVisualization.js";
 export * from "./annotationVisualization.js";
 export * from "./capabilityRegistry.js";
+
+// Ticket 2 — Runtime Evaluation & EvaluatedScene Contract
+export * from "./runtime/evaluatedScene.js";
+export * from "./runtime/evaluator.js";
+
+// Ticket 3 — Semantic Overlay Layer & Composition Compiler
+export * from "./semantic/semanticTypes.js";
+export * from "./semantic/semanticCompiler.js";
+
+// Ticket 4 — VideoContext Abstraction & Temporal Sampling
+export * from "./context/videoContext.js";
+
+// Ticket 5 — Semantic Spatial Constraints
+export * from "./spatial/spatialConstraints.js";
+
+// Ticket 6 — Behavioral Motion System
+export * from "./animation/behavioralMotion.js";

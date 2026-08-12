@@ -96,10 +96,10 @@ visualizationRendererRegistry.register<EvaluatedGaugeGeometry>("gauge", {
   render(geo: EvaluatedGaugeGeometry, ctx: VisualizationRenderContext) {
     const { container, hexToNumber, renderLabel } = ctx;
 
-    let gfx = container.getChildByName("GaugeGfx") as PixiGraphics;
+    let gfx = container.getChildByLabel("GaugeGfx") as PixiGraphics;
     if (!gfx) {
       gfx = new PixiGraphics();
-      gfx.name = "GaugeGfx";
+      gfx.label = "GaugeGfx";
       container.addChild(gfx);
     }
     gfx.clear();

@@ -6,6 +6,8 @@ import {
   type ColorSource,
 } from "pixi.js";
 import type { OverlayDocument, SceneNode, ComponentNode } from "./overlayDocumentSchema.js";
+import { evaluateOverlayDocument } from "./runtime/evaluator.js";
+import type { EvaluatedScene, EvaluatedNode } from "./runtime/evaluatedScene.js";
 import { dataBindingEngine } from "./dataBindingEngine.js";
 import { animationRuntime } from "./animationRuntime.js";
 import { componentRegistry } from "./componentRegistry.js";
@@ -48,7 +50,8 @@ export class PixiSceneProjection {
   }
 
   /**
-   * Sync and project an OverlayDocument onto PixiJS display tree at currentTime
+   * Sync and project an OverlayDocument onto PixiJS display tree at currentTime.
+   * Evaluates document via evaluateOverlayDocument to maintain single semantic runtime authority.
    */
   public project(
     doc: OverlayDocument,
@@ -63,29 +66,50 @@ export class PixiSceneProjection {
       ...previewContext,
     };
 
+    // Single Runtime Evaluator Authority — evaluate doc at explicit currentTime t
+    const evaluatedScene = evaluateOverlayDocument(
+      doc,
+      { variables: fullContext, activeBreakpointId: doc.breakpoints?.activeId },
+      currentTime
+    );
+
+    return this.projectEvaluatedScene(evaluatedScene, doc, currentTime, fullContext);
+  }
+
+  /**
+   * Directly project a renderer-neutral EvaluatedScene onto PixiJS display objects.
+   */
+  public projectEvaluatedScene(
+    evaluatedScene: EvaluatedScene,
+    doc?: OverlayDocument,
+    currentTime = 0,
+    context: Record<string, any> = {}
+  ): Container {
     // Clear stale containers if document ID changed
-    if (this.rootContainer.label !== `OverlayDoc-${doc.id}`) {
+    if (this.rootContainer.label !== `OverlayDoc-${evaluatedScene.metadata.documentId}`) {
       this.rootContainer.removeChildren();
       this.nodeMap.clear();
-      this.rootContainer.label = `OverlayDoc-${doc.id}`;
+      this.rootContainer.label = `OverlayDoc-${evaluatedScene.metadata.documentId}`;
     }
 
     // Render Canvas Backdrop
-    if (doc.canvas.backgroundColor) {
-      let bgGraphics = this.rootContainer.getChildByName("CanvasBackground") as PixiGraphics;
+    if (evaluatedScene.canvas.backgroundColor && evaluatedScene.canvas.backgroundColor !== "transparent") {
+      let bgGraphics = this.rootContainer.getChildByLabel("CanvasBackground") as PixiGraphics;
       if (!bgGraphics) {
         bgGraphics = new PixiGraphics();
-        bgGraphics.name = "CanvasBackground";
+        bgGraphics.label = "CanvasBackground";
         this.rootContainer.addChildAt(bgGraphics, 0);
       }
       bgGraphics.clear();
-      bgGraphics.rect(0, 0, doc.canvas.width, doc.canvas.height);
-      bgGraphics.fill({ color: doc.canvas.backgroundColor });
+      bgGraphics.rect(0, 0, evaluatedScene.canvas.width, evaluatedScene.canvas.height);
+      bgGraphics.fill({ color: evaluatedScene.canvas.backgroundColor });
     }
 
-    // Project root scene nodes
-    for (const node of doc.nodes) {
-      this.projectNode(node, this.rootContainer, doc, currentTime, fullContext, 0);
+    // Project root nodes
+    if (doc) {
+      for (const node of doc.nodes) {
+        this.projectNode(node, this.rootContainer, doc, currentTime, context, 0);
+      }
     }
 
     return this.rootContainer;
@@ -214,10 +238,10 @@ export class PixiSceneProjection {
     height: number,
     typewriterProgress: number
   ): void {
-    let graphics = container.getChildByName("CardBox") as PixiGraphics;
+    let graphics = container.getChildByLabel("CardBox") as PixiGraphics;
     if (!graphics) {
       graphics = new PixiGraphics();
-      graphics.name = "CardBox";
+      graphics.label = "CardBox";
       container.addChild(graphics);
     }
 
@@ -313,17 +337,7 @@ export class PixiSceneProjection {
     if (textTransform === "uppercase") displayText = displayText.toUpperCase();
     else if (textTransform === "lowercase") displayText = displayText.toLowerCase();
 
-    let pixiText = container.getChildByName("Text_main") as PixiText;
-    if (!pixiText) {
-      pixiText = new PixiText({ text: "" });
-      pixiText.name = "Text_main";
-      container.addChild(pixiText);
-    }
-
-    pixiText.text = displayText;
-    pixiText.x = 0;
-    pixiText.y = 0;
-    pixiText.style = new TextStyle({
+    const textStyle = new TextStyle({
       fontFamily,
       fontSize,
       fill: color as ColorSource,
@@ -337,13 +351,24 @@ export class PixiSceneProjection {
         ? {
             color: style.shadow.color || "#000000",
             blur: style.shadow.blur ?? 0,
-            // Pixi v8 uses angle (radians) + distance instead of offsetX/offsetY
             angle: Math.atan2(style.shadow.y ?? 0, style.shadow.x ?? 0),
             distance: Math.hypot(style.shadow.x ?? 0, style.shadow.y ?? 0),
             alpha: 0.6,
           }
         : false,
     });
+
+    let pixiText = container.getChildByLabel("Text_main") as PixiText;
+    if (!pixiText) {
+      pixiText = new PixiText({ text: "", style: textStyle });
+      pixiText.label = "Text_main";
+      container.addChild(pixiText);
+    }
+
+    pixiText.text = displayText;
+    pixiText.x = 0;
+    pixiText.y = 0;
+    pixiText.style = textStyle;
   }
 
   // ---------------------------------------------------------------------------
@@ -357,10 +382,10 @@ export class PixiSceneProjection {
     width: number,
     height: number
   ): void {
-    let placeholder = container.getChildByName("MediaPlaceholder") as PixiGraphics;
+    let placeholder = container.getChildByLabel("MediaPlaceholder") as PixiGraphics;
     if (!placeholder) {
       placeholder = new PixiGraphics();
-      placeholder.name = "MediaPlaceholder";
+      placeholder.label = "MediaPlaceholder";
       container.addChild(placeholder);
     }
 
@@ -411,10 +436,10 @@ export class PixiSceneProjection {
     width: number,
     height: number
   ): void {
-    let graphics = container.getChildByName("ShapeGraphics") as PixiGraphics;
+    let graphics = container.getChildByLabel("ShapeGraphics") as PixiGraphics;
     if (!graphics) {
       graphics = new PixiGraphics();
-      graphics.name = "ShapeGraphics";
+      graphics.label = "ShapeGraphics";
       container.addChild(graphics);
     }
 
@@ -464,10 +489,10 @@ export class PixiSceneProjection {
   ): void {
     // PixiJS v8 uses filter-based shadows; apply via CSS-like filter if available
     // For now, use a semi-transparent drop shadow Graphics underneath
-    let shadowG = container.getChildByName("ShadowGraphics") as PixiGraphics;
+    let shadowG = container.getChildByLabel("ShadowGraphics") as PixiGraphics;
     if (!shadowG) {
       shadowG = new PixiGraphics();
-      shadowG.name = "ShadowGraphics";
+      shadowG.label = "ShadowGraphics";
       shadowG.alpha = 0.35;
       container.addChildAt(shadowG, 0);
     }
@@ -489,10 +514,17 @@ export class PixiSceneProjection {
     fontFamily = "Inter",
     letterSpacing = 0
   ): void {
-    let pixiText = container.getChildByName(`Text_${name}`) as PixiText;
+    const textStyle = new TextStyle({
+      fontFamily,
+      fontSize,
+      fill: color as ColorSource,
+      fontWeight: bold ? "bold" : "normal",
+      letterSpacing,
+    });
+    let pixiText = container.getChildByLabel(`Text_${name}`) as PixiText;
     if (!pixiText) {
-      pixiText = new PixiText({ text: "" });
-      pixiText.name = `Text_${name}`;
+      pixiText = new PixiText({ text: "", style: textStyle });
+      pixiText.label = `Text_${name}`;
       container.addChild(pixiText);
     }
 
@@ -536,10 +568,10 @@ export class PixiSceneProjection {
     width: number,
     height: number
   ): void {
-    let graphics = container.getChildByName("GradientGraphics") as PixiGraphics;
+    let graphics = container.getChildByLabel("GradientGraphics") as PixiGraphics;
     if (!graphics) {
       graphics = new PixiGraphics();
-      graphics.name = "GradientGraphics";
+      graphics.label = "GradientGraphics";
       container.addChildAt(graphics, 0);
     }
 
@@ -558,10 +590,10 @@ export class PixiSceneProjection {
     width: number,
     height: number
   ): void {
-    let graphics = container.getChildByName("IconGraphics") as PixiGraphics;
+    let graphics = container.getChildByLabel("IconGraphics") as PixiGraphics;
     if (!graphics) {
       graphics = new PixiGraphics();
-      graphics.name = "IconGraphics";
+      graphics.label = "IconGraphics";
       container.addChild(graphics);
     }
 
@@ -578,10 +610,10 @@ export class PixiSceneProjection {
     width: number,
     height: number
   ): void {
-    let graphics = container.getChildByName("DividerGraphics") as PixiGraphics;
+    let graphics = container.getChildByLabel("DividerGraphics") as PixiGraphics;
     if (!graphics) {
       graphics = new PixiGraphics();
-      graphics.name = "DividerGraphics";
+      graphics.label = "DividerGraphics";
       container.addChild(graphics);
     }
 
@@ -661,10 +693,10 @@ export class PixiSceneProjection {
     width: number,
     height: number
   ): void {
-    let graphics = container.getChildByName("ProgressGraphics") as PixiGraphics;
+    let graphics = container.getChildByLabel("ProgressGraphics") as PixiGraphics;
     if (!graphics) {
       graphics = new PixiGraphics();
-      graphics.name = "ProgressGraphics";
+      graphics.label = "ProgressGraphics";
       container.addChildAt(graphics, 0);
     }
 
@@ -714,8 +746,8 @@ export class PixiSceneProjection {
     const isPieFamily = chartType === "pie" || chartType === "donut";
 
     // ── Background (shared) ──────────────────────────────────────────────────
-    let bgGfx = container.getChildByName("ChartBg") as PixiGraphics;
-    if (!bgGfx) { bgGfx = new PixiGraphics(); bgGfx.name = "ChartBg"; container.addChildAt(bgGfx, 0); }
+    let bgGfx = container.getChildByLabel("ChartBg") as PixiGraphics;
+    if (!bgGfx) { bgGfx = new PixiGraphics(); bgGfx.label = "ChartBg"; container.addChildAt(bgGfx, 0); }
     bgGfx.clear();
     bgGfx.roundRect(0, 0, width, height, 8);
     bgGfx.fill({ color: hexToNumber(node.style?.fillColor ?? "#111827") });
@@ -723,8 +755,8 @@ export class PixiSceneProjection {
 
     if (isPieFamily) {
       // ── Pie / Donut ─────────────────────────────────────────────────────────
-      let arcGfx = container.getChildByName("ChartArcs") as PixiGraphics;
-      if (!arcGfx) { arcGfx = new PixiGraphics(); arcGfx.name = "ChartArcs"; container.addChild(arcGfx); }
+      let arcGfx = container.getChildByLabel("ChartArcs") as PixiGraphics;
+      if (!arcGfx) { arcGfx = new PixiGraphics(); arcGfx.label = "ChartArcs"; container.addChild(arcGfx); }
       arcGfx.clear();
 
       const cx = geo.centerX;
@@ -757,8 +789,8 @@ export class PixiSceneProjection {
     } else {
       // ── Grid lines (bar / line / area) ────────────────────────────────────────
       const showGrid = node.showGrid ?? node.axis?.showGrid ?? true;
-      let gridGfx = container.getChildByName("ChartGrid") as PixiGraphics;
-      if (!gridGfx) { gridGfx = new PixiGraphics(); gridGfx.name = "ChartGrid"; container.addChild(gridGfx); }
+      let gridGfx = container.getChildByLabel("ChartGrid") as PixiGraphics;
+      if (!gridGfx) { gridGfx = new PixiGraphics(); gridGfx.label = "ChartGrid"; container.addChild(gridGfx); }
       gridGfx.clear();
       if (showGrid) {
         for (const gl of geo.gridLines) {
@@ -784,8 +816,8 @@ export class PixiSceneProjection {
         const seriesIds = [...new Set(geo.bars.map((b) => b.seriesId))];
         for (const sid of seriesIds) {
           const gfxName = `ChartBars-${sid}`;
-          let barGfx = container.getChildByName(gfxName) as PixiGraphics;
-          if (!barGfx) { barGfx = new PixiGraphics(); barGfx.name = gfxName; container.addChild(barGfx); }
+          let barGfx = container.getChildByLabel(gfxName) as PixiGraphics;
+          if (!barGfx) { barGfx = new PixiGraphics(); barGfx.label = gfxName; container.addChild(barGfx); }
           barGfx.clear();
           for (const bar of geo.bars.filter((b) => b.seriesId === sid && b.active && b.h > 0)) {
             barGfx.roundRect(bar.x, bar.y, bar.w, bar.h, roundedR);
@@ -810,8 +842,8 @@ export class PixiSceneProjection {
           // Render in reverse order so first series is on top
           [...seriesIds].reverse().forEach((sid, ri) => {
             const aName = `ChartArea-${sid}`;
-            let aGfx = container.getChildByName(aName) as PixiGraphics;
-            if (!aGfx) { aGfx = new PixiGraphics(); aGfx.name = aName; container.addChild(aGfx); }
+            let aGfx = container.getChildByLabel(aName) as PixiGraphics;
+            if (!aGfx) { aGfx = new PixiGraphics(); aGfx.label = aName; container.addChild(aGfx); }
             aGfx.clear();
             const pts = geo.linePoints.filter((p) => p.seriesId === sid && p.active)
               .sort((a, b) => a.categoryIndex - b.categoryIndex);
@@ -828,8 +860,8 @@ export class PixiSceneProjection {
         const lineSeriesIds = [...new Set(geo.linePoints.map((p) => p.seriesId))];
         for (const sid of lineSeriesIds) {
           const lName = `ChartLine-${sid}`;
-          let lGfx = container.getChildByName(lName) as PixiGraphics;
-          if (!lGfx) { lGfx = new PixiGraphics(); lGfx.name = lName; container.addChild(lGfx); }
+          let lGfx = container.getChildByLabel(lName) as PixiGraphics;
+          if (!lGfx) { lGfx = new PixiGraphics(); lGfx.label = lName; container.addChild(lGfx); }
           lGfx.clear();
           const pts = geo.linePoints.filter((p) => p.seriesId === sid && p.active)
             .sort((a, b) => a.categoryIndex - b.categoryIndex);
@@ -841,8 +873,8 @@ export class PixiSceneProjection {
 
         // ── Data point dots ──────────────────────────────────────────────────
         const pointR = node.pointRadius ?? 4;
-        let dotGfx = container.getChildByName("ChartDots") as PixiGraphics;
-        if (!dotGfx) { dotGfx = new PixiGraphics(); dotGfx.name = "ChartDots"; container.addChild(dotGfx); }
+        let dotGfx = container.getChildByLabel("ChartDots") as PixiGraphics;
+        if (!dotGfx) { dotGfx = new PixiGraphics(); dotGfx.label = "ChartDots"; container.addChild(dotGfx); }
         dotGfx.clear();
         for (const p of geo.linePoints.filter((p) => p.active)) {
           dotGfx.circle(p.x, p.y, pointR);
@@ -854,8 +886,8 @@ export class PixiSceneProjection {
     }
 
     // ── Legend (shared) ────────────────────────────────────────────────────────
-    let legendGfx = container.getChildByName("ChartLegend") as PixiGraphics;
-    if (!legendGfx) { legendGfx = new PixiGraphics(); legendGfx.name = "ChartLegend"; container.addChild(legendGfx); }
+    let legendGfx = container.getChildByLabel("ChartLegend") as PixiGraphics;
+    if (!legendGfx) { legendGfx = new PixiGraphics(); legendGfx.label = "ChartLegend"; container.addChild(legendGfx); }
     legendGfx.clear();
     geo.legendEntries.forEach((entry, i) => {
       legendGfx.rect(entry.x, entry.y - 6, 12, 12);
@@ -876,10 +908,10 @@ export class PixiSceneProjection {
     width: number,
     height: number
   ): void {
-    let graphics = container.getChildByName("TableGraphics") as PixiGraphics;
+    let graphics = container.getChildByLabel("TableGraphics") as PixiGraphics;
     if (!graphics) {
       graphics = new PixiGraphics();
-      graphics.name = "TableGraphics";
+      graphics.label = "TableGraphics";
       container.addChildAt(graphics, 0);
     }
 
@@ -901,10 +933,10 @@ export class PixiSceneProjection {
     width: number,
     height: number
   ): void {
-    let graphics = container.getChildByName("ContainerGraphics") as PixiGraphics;
+    let graphics = container.getChildByLabel("ContainerGraphics") as PixiGraphics;
     if (!graphics) {
       graphics = new PixiGraphics();
-      graphics.name = "ContainerGraphics";
+      graphics.label = "ContainerGraphics";
       container.addChildAt(graphics, 0);
     }
 
@@ -927,10 +959,10 @@ export class PixiSceneProjection {
     width: number,
     height: number
   ): void {
-    let graphics = container.getChildByName("CalloutGraphics") as PixiGraphics;
+    let graphics = container.getChildByLabel("CalloutGraphics") as PixiGraphics;
     if (!graphics) {
       graphics = new PixiGraphics();
-      graphics.name = "CalloutGraphics";
+      graphics.label = "CalloutGraphics";
       container.addChildAt(graphics, 0);
     }
 
@@ -979,10 +1011,10 @@ export class PixiSceneProjection {
     width: number,
     height: number
   ): void {
-    let graphics = container.getChildByName("AvatarGraphics") as PixiGraphics;
+    let graphics = container.getChildByLabel("AvatarGraphics") as PixiGraphics;
     if (!graphics) {
       graphics = new PixiGraphics();
-      graphics.name = "AvatarGraphics";
+      graphics.label = "AvatarGraphics";
       container.addChildAt(graphics, 0);
     }
 

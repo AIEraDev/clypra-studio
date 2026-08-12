@@ -90,10 +90,10 @@ visualizationRendererRegistry.register<EvaluatedTimelineGeometry>("timeline", {
   render(geo: EvaluatedTimelineGeometry, ctx: VisualizationRenderContext) {
     const { container, hexToNumber, renderLabel } = ctx;
 
-    let gfx = container.getChildByName("TimelineGfx") as PixiGraphics;
+    let gfx = container.getChildByLabel("TimelineGfx") as PixiGraphics;
     if (!gfx) {
       gfx = new PixiGraphics();
-      gfx.name = "TimelineGfx";
+      gfx.label = "TimelineGfx";
       container.addChild(gfx);
     }
     gfx.clear();

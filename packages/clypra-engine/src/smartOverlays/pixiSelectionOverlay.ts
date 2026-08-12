@@ -38,39 +38,56 @@ export class PixiSelectionOverlay {
     const absW = maxX - minX;
     const absH = maxY - minY;
 
-    // 1. Draw Primary Bounding Box Line
-    this.selectionGraphics.roundRect(minX - 4, minY - 4, absW + 8, absH + 8, 4);
-    this.selectionGraphics.stroke({ color: 0x7c6fff, width: 2, alpha: 0.95 });
+    // 1. Draw Outer Glow Bounding Box Line
+    this.selectionGraphics.roundRect(minX - 5, minY - 5, absW + 10, absH + 10, 6);
+    this.selectionGraphics.stroke({ color: 0x7c6fff, width: 1, alpha: 0.35 });
 
-    // 2. Draw 8 Resize Handles (4 Corners + 4 Edge Midpoints)
-    const handleSize = 8;
+    // 2. Draw Primary Bounding Box Line
+    this.selectionGraphics.roundRect(minX - 3, minY - 3, absW + 6, absH + 6, 4);
+    if (nodesToRender.length > 1) {
+      this.selectionGraphics.stroke({ color: 0x8b5cf6, width: 2, alpha: 0.95 });
+    } else {
+      this.selectionGraphics.stroke({ color: 0x7c6fff, width: 2, alpha: 0.95 });
+    }
+
+    // 3. Draw 8 Circular Resize Handle Knobs (4 Corners + 4 Edge Midpoints)
+    const handleRadius = 5;
     const handles = [
-      { x: minX - 4, y: minY - 4 },                 // tl
-      { x: minX + absW / 2, y: minY - 4 },          // t
-      { x: minX + absW + 4, y: minY - 4 },          // tr
-      { x: minX + absW + 4, y: minY + absH / 2 },   // r
-      { x: minX + absW + 4, y: minY + absH + 4 },   // br
-      { x: minX + absW / 2, y: minY + absH + 4 },   // b
-      { x: minX - 4, y: minY + absH + 4 },          // bl
-      { x: minX - 4, y: minY + absH / 2 }           // l
+      { x: minX - 3, y: minY - 3 },                 // tl
+      { x: minX + absW / 2, y: minY - 3 },          // t
+      { x: minX + absW + 3, y: minY - 3 },          // tr
+      { x: minX + absW + 3, y: minY + absH / 2 },   // r
+      { x: minX + absW + 3, y: minY + absH + 3 },   // br
+      { x: minX + absW / 2, y: minY + absH + 3 },   // b
+      { x: minX - 3, y: minY + absH + 3 },          // bl
+      { x: minX - 3, y: minY + absH / 2 }           // l
     ];
 
     for (const h of handles) {
-      this.selectionGraphics.rect(h.x - handleSize / 2, h.y - handleSize / 2, handleSize, handleSize);
+      // Dark halo backdrop for high contrast over any background
+      this.selectionGraphics.circle(h.x, h.y, handleRadius + 1.5);
+      this.selectionGraphics.fill({ color: 0x09090d, alpha: 0.6 });
+
+      // Solid crisp white handle circle with violet accent border
+      this.selectionGraphics.circle(h.x, h.y, handleRadius);
       this.selectionGraphics.fill({ color: 0xffffff });
-      this.selectionGraphics.stroke({ color: 0x7c6fff, width: 1.5 });
+      this.selectionGraphics.stroke({ color: 0x7c6fff, width: 2 });
     }
 
-    // 3. Draw Top Rotation Handle Knob (for single selection)
+    // 4. Draw Top Rotation Handle Knob (for single selection)
     if (nodesToRender.length === 1) {
       const rotX = minX + absW / 2;
-      const rotY = minY - 24;
+      const rotY = minY - 28;
 
-      this.selectionGraphics.moveTo(rotX, minY - 4);
+      this.selectionGraphics.moveTo(rotX, minY - 3);
       this.selectionGraphics.lineTo(rotX, rotY);
       this.selectionGraphics.stroke({ color: 0x7c6fff, width: 1.5, alpha: 0.8 });
 
-      this.selectionGraphics.circle(rotX, rotY, 5);
+      this.selectionGraphics.circle(rotX, rotY, 7);
+      this.selectionGraphics.fill({ color: 0x12121a });
+      this.selectionGraphics.stroke({ color: 0x7c6fff, width: 2 });
+
+      this.selectionGraphics.circle(rotX, rotY, 3);
       this.selectionGraphics.fill({ color: 0x7c6fff });
     }
 
