@@ -1,5 +1,12 @@
 # @clypra-studio/runtime
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [090c4ed]
+  - @clypra-studio/types@0.4.0
+
 ## 0.2.0
 
 ### Minor Changes
