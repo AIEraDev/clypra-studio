@@ -8,8 +8,9 @@ import {
   type DocumentCommand,
 } from "@clypra-studio/engine";
 import {
-  Layers, Move, Palette, Sliders, SlidersHorizontal, Layout, Type, Eye, Wand2, Database, ChevronDown, ChevronRight, Play
+  Layers, Move, Palette, Sliders, SlidersHorizontal, Layout, Type, Eye, Wand2, Database, ChevronDown, ChevronRight, Play, BarChart3
 } from "lucide-react";
+import { VisualizationControl } from "./controls/VisualizationControl";
 import { TypographyControl, type TypographyValue } from "./controls/TypographyControl";
 import { AppearanceControl, type AppearanceValue } from "./controls/AppearanceControl";
 import { ConstraintControl, type ConstraintValue } from "./controls/ConstraintControl";
@@ -176,6 +177,13 @@ function StyleTab({
           onChange={(expr) => execProp("visibilityExpression", expr)}
         />
       </Section>
+
+      {/* Visualization Inspector */}
+      {["chart", "gauge", "timeline", "annotation", "connector"].includes(selectedNode.type) && (
+        <Section title="Visualization" icon={<BarChart3 size={12} />}>
+          <VisualizationControl node={selectedNode} onExecuteCommand={onExecuteCommand} />
+        </Section>
+      )}
 
       {/* Component Schema Properties — Schema-Driven via PropertyRow */}
       {isComponent && compDef && compDef.schema.length > 0 && (

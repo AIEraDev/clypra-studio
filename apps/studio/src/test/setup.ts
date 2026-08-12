@@ -7,8 +7,7 @@ import { vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
 
 // Mock HTMLCanvasElement methods that aren't available in happy-dom
-beforeEach(() => {
-  // Mock canvas context
+if (typeof HTMLCanvasElement !== "undefined") {
   HTMLCanvasElement.prototype.getContext = vi.fn((contextType: string) => {
     if (contextType === "2d") {
       return {
@@ -78,7 +77,10 @@ beforeEach(() => {
       } as unknown as WebGLRenderingContext;
     }
     return null;
-  }) as any; // Type assertion to bypass strict type checking
+  }) as any;
+}
+
+beforeEach(() => { // Type assertion to bypass strict type checking
 
   // Mock canvas toDataURL
   HTMLCanvasElement.prototype.toDataURL = vi.fn(() => "data:image/png;base64,mock");

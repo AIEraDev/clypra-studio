@@ -1,6 +1,14 @@
 import React, { useState } from "react";
-import { Search, Plus, Sparkles, Layers, Box, Type, Square, Circle, Image, List } from "lucide-react";
-import { componentRegistry, type DocumentCommand } from "@clypra-studio/engine";
+import { Search, Plus, Sparkles, Layers, Box, Type, Square, Circle, Image, List, BarChart3, Gauge, Clock, MessageSquare, ArrowUpRight } from "lucide-react";
+import { primitiveRegistry, componentRegistry, type DocumentCommand } from "@clypra-studio/engine";
+
+const VISUALIZATION_PRIMITIVES = [
+  { type: "chart", name: "Animated Bar Chart", icon: <BarChart3 size={14} className="text-emerald-400" /> },
+  { type: "gauge", name: "Gauge Meter", icon: <Gauge size={14} className="text-sky-400" /> },
+  { type: "timeline", name: "Timeline Axis", icon: <Clock size={14} className="text-amber-400" /> },
+  { type: "annotation", name: "Geometry Annotation", icon: <MessageSquare size={14} className="text-violet-400" /> },
+  { type: "connector", name: "Connector Arrow", icon: <ArrowUpRight size={14} className="text-pink-400" /> },
+];
 
 const PRIMITIVE_TYPES = new Set([
   "text-primitive",
@@ -29,7 +37,7 @@ interface ComponentLibraryProps {
 export function ComponentLibrary({ onExecuteCommand }: ComponentLibraryProps) {
   const [search, setSearch] = useState("");
 
-  const allComponents = componentRegistry.getAll();
+  const allComponents = componentRegistry?.getAll() ?? [];
   const filtered = allComponents.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,6 +49,11 @@ export function ComponentLibrary({ onExecuteCommand }: ComponentLibraryProps) {
 
   const handleInsert = (comp: (typeof allComponents)[number]) => {
     const node = comp.createDefaultNode();
+    onExecuteCommand({ type: "ADD_NODE", node });
+  };
+
+  const handleInsertVisualization = (type: string) => {
+    const node = primitiveRegistry.createDefaultNode(type as any);
     onExecuteCommand({ type: "ADD_NODE", node });
   };
 
@@ -56,6 +69,33 @@ export function ComponentLibrary({ onExecuteCommand }: ComponentLibraryProps) {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg pl-7 pr-3 py-1.5 text-[12px] text-white placeholder-gray-600 focus:border-violet-500/50 focus:outline-none transition-colors"
         />
+      </div>
+
+      {/* Visualizations Section */}
+      <div>
+        <div className="flex items-center gap-1.5 px-1 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+          <BarChart3 size={11} className="text-emerald-400" />
+          <span>Visualizations</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-1.5 mb-3">
+          {VISUALIZATION_PRIMITIVES.map((item) => (
+            <button
+              key={item.type}
+              type="button"
+              onClick={() => handleInsertVisualization(item.type)}
+              className="group flex flex-col items-start gap-1 p-2 rounded-lg bg-[#15151A] hover:bg-emerald-500/10 border border-white/[0.05] hover:border-emerald-500/30 transition-all cursor-pointer text-left"
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="p-1 rounded bg-white/[0.04]">{item.icon}</span>
+                <Plus size={12} className="text-gray-500 group-hover:text-emerald-400 opacity-0 group-hover:opacity-100 transition-all" />
+              </div>
+              <span className="text-[11px] font-semibold text-gray-200 group-hover:text-white truncate w-full">
+                {item.name}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Primitives Section */}
