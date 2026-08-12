@@ -138,6 +138,37 @@ export interface ProgressNode extends PrimitiveBase {
 
 export type ChartType = "line" | "bar" | "area" | "donut" | "pie" | "radar" | "scatter";
 
+// Phase 4Q — Visualization Engine geometry output types (consumed by Pixi projection and tests)
+export interface LinePoint {
+  seriesId: string;
+  categoryIndex: number;
+  x: number;
+  y: number;
+  fullY: number;
+  baseY: number;
+  color: string;
+  rawValue: number;
+  animatedValue: number;
+  labelText: string;
+  active: boolean;
+}
+
+export interface ArcGeometry {
+  seriesId: string;
+  startAngle: number;
+  endAngle: number;
+  fullEndAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  color: string;
+  rawValue: number;
+  animatedValue: number;
+  percentage: number;
+  labelText: string;
+  labelX: number;
+  labelY: number;
+}
+
 export interface AxisConfig {
   min?: number;
   max?: number;

@@ -69,7 +69,7 @@ export type {
 } from "./overlay.js";
 
 // ---------------------------------------------------------------------------
-// Second Generation Compositional Primitives (Phase 4O/4P)
+// Second Generation Compositional Primitives (Phase 4O/4P/4Q)
 // ---------------------------------------------------------------------------
 export type {
   ShapeKind,
@@ -82,6 +82,10 @@ export type {
   MetricNode,
   ProgressNode,
   ChartType,
+  // Phase 4Q — visualization geometry output types
+  LinePoint,
+  ArcGeometry,
+  // Chart config
   ChartSeries,
   AxisConfig,
   ChartBarStyle,
