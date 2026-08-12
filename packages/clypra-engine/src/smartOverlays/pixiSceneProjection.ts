@@ -10,6 +10,7 @@ import { dataBindingEngine } from "./dataBindingEngine.js";
 import { animationRuntime } from "./animationRuntime.js";
 import { componentRegistry } from "./componentRegistry.js";
 import { runtimeAssetResolver } from "./assets/runtimeAssetResolver.js";
+import { visualizationEngine } from "./visualizationEngine.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -165,7 +166,7 @@ export class PixiSceneProjection {
     } else if (node.type === "progress") {
       this.renderProgressNode(node as any, nodeContainer, absW, absH);
     } else if (node.type === "chart") {
-      this.renderChartNode(node as any, nodeContainer, absW, absH);
+      this.renderChartNode(node as any, nodeContainer, absW, absH, currentTime, doc.duration);
     } else if (node.type === "table") {
       this.renderTableNode(node as any, nodeContainer, absW, absH);
     } else if (node.type === "container") {
@@ -648,39 +649,141 @@ export class PixiSceneProjection {
     node: any,
     container: Container,
     width: number,
-    height: number
+    height: number,
+    currentTime: number,
+    docDuration: number
   ): void {
-    let graphics = container.getChildByName("ChartGraphics") as PixiGraphics;
-    if (!graphics) {
-      graphics = new PixiGraphics();
-      graphics.name = "ChartGraphics";
-      container.addChildAt(graphics, 0);
+    // ── Animation t [0,1] ───────────────────────────────────────────────────
+    const animConf = node.chartAnimation;
+    let t = 1; // fully drawn by default (export / no animation)
+    if (animConf && animConf.mode !== "none") {
+      const duration = animConf.duration ?? 1.2;
+      // Chart animation starts at time 0 relative to node entrance
+      // Use currentTime directly; clamp to [0,1]
+      t = Math.min(1, Math.max(0, currentTime / duration));
     }
 
-    graphics.clear();
-    // Chart bounding box
-    graphics.roundRect(0, 0, width, height, 8);
-    graphics.fill({ color: hexToNumber("#111827") });
-    graphics.stroke({ color: hexToNumber("#1F2937"), width: 1 });
+    // ── Geometry from VisualizationEngine ───────────────────────────────────
+    const geo = visualizationEngine.evaluate(node, width, height, t);
+    const barStyle = node.barStyle ?? {};
+    const roundedR = barStyle.rounded ?? 4;
 
-    // Render series bars / lines
-    const seriesList = node.series || [];
-    if (seriesList.length > 0 && seriesList[0].data) {
-      const data = seriesList[0].data as number[];
-      const maxVal = Math.max(1, ...data);
-      const barWidth = Math.max(8, (width - 40) / data.length - 8);
+    // ── Background ──────────────────────────────────────────────────────────
+    let bgGfx = container.getChildByName("ChartBg") as PixiGraphics;
+    if (!bgGfx) {
+      bgGfx = new PixiGraphics();
+      bgGfx.name = "ChartBg";
+      container.addChildAt(bgGfx, 0);
+    }
+    bgGfx.clear();
+    bgGfx.roundRect(0, 0, width, height, 8);
+    bgGfx.fill({ color: hexToNumber(node.style?.fillColor ?? "#111827") });
+    bgGfx.stroke({ color: hexToNumber("#1F2937"), width: 1 });
 
-      data.forEach((val, i) => {
-        const barH = (val / maxVal) * (height - 60);
-        const bx = 20 + i * (barWidth + 8);
-        const by = height - 30 - barH;
+    // ── Grid lines ──────────────────────────────────────────────────────────
+    const showGrid = node.showGrid ?? node.axis?.showGrid ?? true;
+    let gridGfx = container.getChildByName("ChartGrid") as PixiGraphics;
+    if (!gridGfx) {
+      gridGfx = new PixiGraphics();
+      gridGfx.name = "ChartGrid";
+      container.addChild(gridGfx);
+    }
+    gridGfx.clear();
+    if (showGrid) {
+      for (const gl of geo.gridLines) {
+        gridGfx.moveTo(geo.plotArea.x, gl.y);
+        gridGfx.lineTo(geo.plotArea.x + geo.plotArea.w, gl.y);
+        gridGfx.stroke({ color: hexToNumber("#1F2937"), width: 1, alpha: 0.6 });
+      }
+    }
 
-        graphics.roundRect(bx, by, barWidth, barH, 4);
-        graphics.fill({ color: hexToNumber(seriesList[0].color || "#6366F1") });
+    // ── Bars ────────────────────────────────────────────────────────────────
+    // Group bars by seriesId for separate Graphics objects (enables per-series glow)
+    const seriesIds = [...new Set(geo.bars.map((b) => b.seriesId))];
+    for (const sid of seriesIds) {
+      const gfxName = `ChartBars-${sid}`;
+      let barGfx = container.getChildByName(gfxName) as PixiGraphics;
+      if (!barGfx) {
+        barGfx = new PixiGraphics();
+        barGfx.name = gfxName;
+        container.addChild(barGfx);
+      }
+      barGfx.clear();
+
+      const seriesBars = geo.bars.filter((b) => b.seriesId === sid && b.active && b.h > 0);
+      for (const bar of seriesBars) {
+        barGfx.roundRect(bar.x, bar.y, bar.w, bar.h, roundedR);
+        barGfx.fill({ color: hexToNumber(bar.color) });
+      }
+    }
+
+    // ── Y-axis labels ────────────────────────────────────────────────────────
+    const showLabels = node.axis?.showLabels !== false;
+    if (showLabels) {
+      geo.yAxisLabels.forEach((lbl, i) => {
+        this.renderLabel(
+          container,
+          `yLbl_${i}`,
+          lbl.text,
+          lbl.x - 40,
+          lbl.y - 7,
+          11,
+          "#6B7280",
+          false
+        );
       });
     }
 
-    this.renderLabel(container, "title", node.name || "Chart", 12, 10, 14, "#9CA3AF", true);
+    // ── X-axis (category) labels ─────────────────────────────────────────────
+    geo.xAxisLabels.forEach((lbl, i) => {
+      this.renderLabel(
+        container,
+        `xLbl_${i}`,
+        lbl.text,
+        lbl.x - 30,
+        lbl.y,
+        11,
+        "#9CA3AF",
+        false
+      );
+    });
+
+    // ── Bar value labels (count-up) ──────────────────────────────────────────
+    const countUp = animConf?.countUpLabels ?? true;
+    geo.bars.forEach((bar, i) => {
+      if (!bar.active || bar.h < 4) return;
+      const labelVal = countUp ? bar.labelText : String(Math.round(bar.rawValue));
+      this.renderLabel(
+        container,
+        `barLbl_${bar.seriesId}_${bar.categoryIndex}`,
+        labelVal,
+        bar.x + bar.w / 2 - 15,
+        bar.y - 18,
+        12,
+        "#FFFFFF",
+        true
+      );
+    });
+
+    // ── Legend ───────────────────────────────────────────────────────────────
+    let legendGfx = container.getChildByName("ChartLegend") as PixiGraphics;
+    if (!legendGfx) {
+      legendGfx = new PixiGraphics();
+      legendGfx.name = "ChartLegend";
+      container.addChild(legendGfx);
+    }
+    legendGfx.clear();
+    geo.legendEntries.forEach((entry, i) => {
+      legendGfx.rect(entry.x, entry.y - 6, 12, 12);
+      legendGfx.fill({ color: hexToNumber(entry.color) });
+      this.renderLabel(container, `legend_${i}`, entry.label, entry.x + 16, entry.y - 7, 11, "#D1D5DB", false);
+    });
+
+    // ── Chart title ──────────────────────────────────────────────────────────
+    const chartTitle = node.title || node.name || "";
+    if (chartTitle) {
+      this.renderLabel(container, "chartTitle", chartTitle, geo.plotArea.x, 10, 13, "#9CA3AF", false);
+    }
   }
 
   private renderTableNode(

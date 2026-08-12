@@ -270,10 +270,10 @@ export class PrimitiveRegistry {
         } as ProgressNode),
     });
 
-    // 11. Chart
+    // 11. Chart (Phase 4P — full VisualizationEngine config)
     this.register({
       type: "chart",
-      label: "Data Chart",
+      label: "Animated Bar Chart",
       category: "data",
       createDefaultNode: (id = `chart-${Date.now()}`) =>
         ({
@@ -282,18 +282,27 @@ export class PrimitiveRegistry {
           type: "chart",
           x: 0,
           y: 0,
-          width: 400,
-          height: 250,
+          width: 560,
+          height: 340,
           chartType: "bar",
-          xField: "month",
-          yFields: ["sales"],
+          orientation: "vertical",
+          stacked: false,
+          xField: "category",
+          xLabels: ["Company A", "Company B"],
           series: [
-            { name: "Sales", color: "#6366F1", data: [120, 200, 150, 300, 250, 400] },
+            { id: "retained", name: "Retained Customers", color: "#45FF72", data: [84, 62] },
+            { id: "new",      name: "New Customers",       color: "#FF4141", data: [21, 38] },
           ],
-          showGrid: true,
+          axis: { min: 0, tickCount: 5, showGrid: true, showLabels: true },
+          barStyle: { rounded: 6, glow: false, gradient: false, groupGap: 6 },
+          chartAnimation: { mode: "grow", duration: 1.2, stagger: 0.08, easing: "easeOutCubic", countUpLabels: true },
+          colorPalette: ["#45FF72", "#FF4141", "#4ECDC4", "#FFE66D", "#A78BFA"],
           showLegend: true,
+          legendPosition: "bottom",
+          style: { fillColor: "#111827" },
         } as ChartNode),
     });
+
 
     // 12. Table
     this.register({

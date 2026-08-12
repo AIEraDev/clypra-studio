@@ -366,22 +366,99 @@ export interface ProgressNode extends SceneNodeBase {
 
 export type ChartType = "line" | "bar" | "area" | "donut" | "pie" | "radar" | "scatter";
 
+// ---------------------------------------------------------------------------
+// Phase 4P — Visualization Engine configuration types
+// ---------------------------------------------------------------------------
+
+export interface AxisConfig {
+  /** Fixed minimum value. Undefined = auto from data. */
+  min?: number;
+  /** Fixed maximum value. Undefined = auto from data. */
+  max?: number;
+  /** Number of tick marks / grid lines. Default: 5 */
+  tickCount?: number;
+  /** Show horizontal grid lines across plot area */
+  showGrid?: boolean;
+  /** Show axis tick labels */
+  showLabels?: boolean;
+  /** Label format template e.g. "{{value}}%" or "${{value}}" */
+  labelFormat?: string;
+}
+
+export interface ChartBarStyle {
+  /** Border radius on bar corners (px). Default: 4 */
+  rounded?: number;
+  /** Enable glow (rendered as DropShadowFilter with zero offset) */
+  glow?: boolean;
+  /** Glow/shadow color (RGBA hex). Default: series color at 40% opacity */
+  glowColor?: string;
+  /** Enable vertical gradient fill on each bar */
+  gradient?: boolean;
+  /** Spacing between grouped series bars within a category (px) */
+  groupGap?: number;
+}
+
+export interface ChartAnimationConfig {
+  /** Animation style for bar entrance */
+  mode: "grow" | "fade" | "none";
+  /** Total animation duration in seconds. Default: 1.2 */
+  duration?: number;
+  /** Per-bar stagger delay in seconds. Default: 0.08 */
+  stagger?: number;
+  /** CSS easing name used for bar grow curve. Default: "easeOutCubic" */
+  easing?: "linear" | "easeInCubic" | "easeOutCubic" | "easeInOutCubic" | "easeOutQuart" | "easeOutElastic";
+  /** Animate the numeric label above each bar as a count-up */
+  countUpLabels?: boolean;
+}
+
 export interface ChartSeries {
+  /** Unique key used as yField when populating from dataSource objects */
+  id: string;
+  /** Display name shown in legend */
   name: string;
+  /** Bar fill color (hex) */
   color: string;
+  /** Raw data values, one per category */
   data?: number[];
+  /** Stack group key — bars sharing the same stackGroup are stacked (requires stacked: true) */
+  stackGroup?: string;
 }
 
 export interface ChartNode extends SceneNodeBase {
   type: "chart";
   chartType: ChartType;
-  dataSource?: string;
+  /** Stack series within each category (grouped otherwise) */
+  stacked?: boolean;
+  /** Bar orientation. Default: "vertical" */
+  orientation?: "vertical" | "horizontal";
+  /** Explicit category labels (X-axis). Populated from xField when dataSource is bound. */
+  xLabels?: string[];
+  /** Key in dataSource objects used to extract category labels */
   xField?: string;
+  /** Keys in dataSource objects used for each series (deprecated: prefer series[].id) */
   yFields?: string[];
+  /** Series definitions — color, label, and data */
   series?: ChartSeries[];
+  /** Y-axis configuration */
+  axis?: AxisConfig;
+  /** Bar visual styling */
+  barStyle?: ChartBarStyle;
+  /** Chart-level animation, independent of NodeAnimationConfig entrance */
+  chartAnimation?: ChartAnimationConfig;
+  /** Default color palette — auto-assigned to series without explicit color */
+  colorPalette?: string[];
+  /** Chart title displayed above plot area (distinct from node.name) */
+  title?: string;
+  /** Show grid lines (shorthand for axis.showGrid) */
   showGrid?: boolean;
+  /** Show legend */
   showLegend?: boolean;
+  /** Legend placement. Default: "bottom" */
+  legendPosition?: "bottom" | "right" | "top";
+  /** Bound data source expression */
+  dataSource?: string;
 }
+
 
 export interface TableColumn {
   key: string;

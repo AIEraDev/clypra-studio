@@ -152,8 +152,33 @@ export class DataBindingEngine {
       const ch = node as any;
       if (ch.dataSource) {
         const data = this.evaluateExpression(ch.dataSource, context);
-        if (Array.isArray(data) && ch.series && ch.series.length > 0 && ch.yFields && ch.yFields.length > 0) {
-          ch.series[0].data = data.map((d: any) => Number(d[ch.yFields[0]] ?? 0));
+        if (Array.isArray(data)) {
+          // Extract category labels from xField
+          if (ch.xField) {
+            ch.xLabels = data.map((d: any) => String(d[ch.xField] ?? ""));
+          }
+          // Populate each series using its id (or name) as the yField key
+          if (ch.series && ch.series.length > 0) {
+            const palette = ch.colorPalette ?? [
+              "#45FF72", "#FF4141", "#4ECDC4", "#FFE66D", "#A78BFA",
+            ];
+            ch.series.forEach((series: any, i: number) => {
+              // Auto-assign color from palette if not specified
+              if (!series.color) series.color = palette[i % palette.length];
+              const key = series.id ?? series.name ?? ch.yFields?.[i];
+              if (key) {
+                series.data = data.map((d: any) => Number(d[key] ?? 0));
+              }
+            });
+          } else if (ch.yFields && ch.yFields.length > 0) {
+            // Legacy yFields fallback: auto-create series from yFields
+            ch.series = ch.yFields.map((field: string, i: number) => ({
+              id: field,
+              name: field,
+              color: (ch.colorPalette ?? ["#45FF72", "#FF4141", "#4ECDC4"])[i % 3],
+              data: data.map((d: any) => Number(d[field] ?? 0)),
+            }));
+          }
         }
       }
     } else if (node.type === "table") {
