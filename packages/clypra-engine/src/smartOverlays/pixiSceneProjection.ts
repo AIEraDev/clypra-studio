@@ -93,7 +93,12 @@ export class PixiSceneProjection {
     }
 
     // Render Canvas Backdrop
-    if (evaluatedScene.canvas.backgroundColor && evaluatedScene.canvas.backgroundColor !== "transparent") {
+    if (
+      evaluatedScene.canvas.backgroundColor &&
+      evaluatedScene.canvas.backgroundColor !== "transparent" &&
+      !context.hasReferenceVideo &&
+      !context.hideCanvasBackground
+    ) {
       let bgGraphics = this.rootContainer.getChildByLabel("CanvasBackground") as PixiGraphics;
       if (!bgGraphics) {
         bgGraphics = new PixiGraphics();
@@ -103,12 +108,17 @@ export class PixiSceneProjection {
       bgGraphics.clear();
       bgGraphics.rect(0, 0, evaluatedScene.canvas.width, evaluatedScene.canvas.height);
       bgGraphics.fill({ color: evaluatedScene.canvas.backgroundColor });
+    } else {
+      let bgGraphics = this.rootContainer.getChildByLabel("CanvasBackground") as PixiGraphics;
+      if (bgGraphics) {
+        bgGraphics.clear();
+      }
     }
 
     // Project root nodes
     if (doc) {
-      for (const node of doc.nodes) {
-        this.projectNode(node, this.rootContainer, doc, currentTime, context, 0);
+      for (let i = 0; i < doc.nodes.length; i++) {
+        this.projectNode(doc.nodes[i], this.rootContainer, doc, currentTime, context, 0, i);
       }
     }
 
@@ -121,7 +131,8 @@ export class PixiSceneProjection {
     doc: OverlayDocument,
     currentTime: number,
     context: Record<string, any>,
-    inheritedDelay = 0
+    inheritedDelay = 0,
+    targetIndex = -1
   ): void {
     // 1. Evaluate visibilityExpression — hide node entirely if falsy
     if (node.visibilityExpression) {
@@ -158,11 +169,19 @@ export class PixiSceneProjection {
 
     nodeContainer.visible = true;
 
-    // Convert relative % to absolute px if required
-    const absX = node.x < 100 ? (node.x / 100) * doc.canvas.width : node.x;
-    const absY = node.y < 100 ? (node.y / 100) * doc.canvas.height : node.y;
-    const absW = node.width <= 100 ? (node.width / 100) * doc.canvas.width : node.width;
-    const absH = node.height <= 100 ? (node.height / 100) * doc.canvas.height : node.height;
+    // Ensure display list z-order matches document node order
+    if (targetIndex >= 0 && parentContainer.children.length > 0) {
+      const bgOffset = parentContainer.getChildByLabel("CanvasBackground") ? 1 : 0;
+      const desiredIndex = Math.min(targetIndex + bgOffset, parentContainer.children.length - 1);
+      if (parentContainer.children[desiredIndex] !== nodeContainer) {
+        parentContainer.setChildIndex(nodeContainer, desiredIndex);
+      }
+    }
+
+    const absX = node.x;
+    const absY = node.y;
+    const absW = node.width;
+    const absH = node.height;
 
     nodeContainer.x = absX + animState.translateX;
     nodeContainer.y = absY + animState.translateY;

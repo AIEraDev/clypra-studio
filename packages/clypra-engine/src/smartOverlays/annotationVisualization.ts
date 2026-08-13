@@ -13,7 +13,9 @@ export interface EvaluatedAnnotationGeometry {
   text: string;
   x: number; // Final absolute pixel position of annotation box
   y: number;
-  anchorX?: number; // Point being pointed at (e.g. bar top)
+  width: number;
+  height: number;
+  anchorX?: number; // Point being pointed at
   anchorY?: number;
   showLeader: boolean;
   leaderColor: string;
@@ -29,12 +31,14 @@ export class AnnotationVisualizationDefinition implements VisualizationDefinitio
 
   public evaluate(node: AnnotationNode, context: { width: number; height: number; t: number }): EvaluatedAnnotationGeometry {
     const offsetX = node.offsetX ?? 0;
-    const offsetY = node.offsetY ?? -30;
+    const offsetY = node.offsetY ?? 0;
 
     return {
-      text: node.text ?? "",
+      text: node.text ?? "+42% Growth",
       x: node.x + offsetX,
       y: node.y + offsetY,
+      width: node.width || 140,
+      height: node.height || 70,
       anchorX: node.x,
       anchorY: node.y,
       showLeader: node.showLeader !== false,
@@ -59,18 +63,54 @@ visualizationRendererRegistry.register<EvaluatedAnnotationGeometry>("annotation"
     }
     gfx.clear();
 
-    if (geo.showLeader && geo.anchorX !== undefined && geo.anchorY !== undefined) {
-      gfx.moveTo(geo.x, geo.y);
-      gfx.lineTo(geo.anchorX, geo.anchorY);
-      gfx.stroke({ color: hexToNumber(geo.leaderColor), width: 1.5 });
+    const w = Math.max(100, geo.width);
+    const h = Math.max(40, geo.height);
+    const color = hexToNumber(geo.leaderColor);
+
+    const anchorX = geo.anchorX ?? geo.x;
+    const anchorY = geo.anchorY ?? geo.y;
+    const localCardX = geo.x - anchorX;
+    const localCardY = geo.y - anchorY;
+
+    // 1. Sleek Glassmorphic Pill Card Background at localCard (0, 0, w, 30)
+    const cardH = 30;
+    gfx.roundRect(localCardX, localCardY, w, cardH, 15);
+    gfx.fill({ color: 0x141424, alpha: 0.92 });
+    gfx.stroke({ color, width: 1.5, alpha: 0.9 });
+
+    // 2. Render Text Label centered in Pill Card
+    renderLabel(container, "annText", geo.text, localCardX + w / 2, localCardY + cardH / 2, 11, "#FFFFFF", true);
+
+    // 3. Accent Leader Line & Target Pointer Dot
+    if (geo.showLeader) {
+      const midX = localCardX + w / 2;
+      const targetY = localCardY + h - 6;
+
+      gfx.moveTo(midX, localCardY + cardH);
+      gfx.lineTo(midX, targetY);
+      gfx.stroke({ color, width: 1.5, alpha: 0.9 });
 
       if (geo.pointerStyle === "dot") {
-        gfx.circle(geo.anchorX, geo.anchorY, 3);
-        gfx.fill({ color: hexToNumber(geo.leaderColor) });
+        // Outer glowing pulse ring
+        gfx.circle(midX, targetY, 6);
+        gfx.fill({ color, alpha: 0.35 });
+
+        // Inner dark border ring
+        gfx.circle(midX, targetY, 4);
+        gfx.fill({ color: 0x09090d });
+
+        // Solid crisp center dot
+        gfx.circle(midX, targetY, 2.5);
+        gfx.fill({ color: 0xffffff });
+      } else if (geo.pointerStyle === "arrow") {
+        const headLen = 8;
+        gfx.moveTo(midX, targetY);
+        gfx.lineTo(midX - 4, targetY - headLen);
+        gfx.lineTo(midX + 4, targetY - headLen);
+        gfx.closePath();
+        gfx.fill({ color });
       }
     }
-
-    renderLabel(container, "annText", geo.text, geo.x, geo.y - 12, 12, "#FFFFFF", true);
   },
 });
 
@@ -98,8 +138,8 @@ export class ConnectorVisualizationDefinition implements VisualizationDefinition
     return {
       fromX: node.x,
       fromY: node.y,
-      toX: node.x + node.width,
-      toY: node.y + node.height,
+      toX: node.x + (node.width || 150),
+      toY: node.y + (node.height || 80),
       strokeColor: node.strokeColor || "#3B82F6",
       strokeWidth: node.strokeWidth || 2,
       lineStyle: node.lineStyle || "straight",
@@ -123,20 +163,43 @@ visualizationRendererRegistry.register<EvaluatedConnectorGeometry>("connector", 
     }
     gfx.clear();
 
-    gfx.moveTo(geo.fromX, geo.fromY);
-    if (geo.lineStyle === "elbow") {
-      const midX = (geo.fromX + geo.toX) / 2;
-      gfx.lineTo(midX, geo.fromY);
-      gfx.lineTo(midX, geo.toY);
-      gfx.lineTo(geo.toX, geo.toY);
-    } else {
-      gfx.lineTo(geo.toX, geo.toY);
-    }
-    gfx.stroke({ color: hexToNumber(geo.strokeColor), width: geo.strokeWidth });
+    const localFromX = 0;
+    const localFromY = 0;
+    const localToX = geo.toX - geo.fromX;
+    const localToY = geo.toY - geo.fromY;
+    const color = hexToNumber(geo.strokeColor);
 
+    gfx.moveTo(localFromX, localFromY);
+    if (geo.lineStyle === "elbow") {
+      const midX = (localFromX + localToX) / 2;
+      gfx.lineTo(midX, localFromY);
+      gfx.lineTo(midX, localToY);
+      gfx.lineTo(localToX, localToY);
+    } else {
+      gfx.lineTo(localToX, localToY);
+    }
+    gfx.stroke({ color, width: geo.strokeWidth });
+
+    // Start Dot
+    if (geo.arrowHead === "start" || geo.arrowHead === "both") {
+      gfx.circle(localFromX, localFromY, 3.5);
+      gfx.fill({ color });
+    }
+
+    // End Arrowhead (Precision Filled Arrow Triangle)
     if (geo.arrowHead === "end" || geo.arrowHead === "both") {
-      gfx.circle(geo.toX, geo.toY, 4);
-      gfx.fill({ color: hexToNumber(geo.strokeColor) });
+      const angle = Math.atan2(localToY - localFromY, localToX - localFromX);
+      const headLen = 10;
+      const x1 = localToX - headLen * Math.cos(angle - Math.PI / 6);
+      const y1 = localToY - headLen * Math.sin(angle - Math.PI / 6);
+      const x2 = localToX - headLen * Math.cos(angle + Math.PI / 6);
+      const y2 = localToY - headLen * Math.sin(angle + Math.PI / 6);
+
+      gfx.moveTo(localToX, localToY);
+      gfx.lineTo(x1, y1);
+      gfx.lineTo(x2, y2);
+      gfx.closePath();
+      gfx.fill({ color });
     }
   },
 });

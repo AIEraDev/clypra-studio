@@ -16,7 +16,16 @@ export class PixiSelectionOverlay {
    * Render selection bounding box, 8 resize handles, and rotation knob for single or multi-selected nodes
    */
   public renderSelection(selectedNode: SceneNode | null, doc: OverlayDocument, selectedNodes: SceneNode[] = []): Container {
-    this.selectionGraphics.clear();
+    try {
+      if (!this.selectionGraphics || this.selectionGraphics.destroyed) {
+        this.selectionGraphics = new PixiGraphics();
+        this.overlayContainer.removeChildren();
+        this.overlayContainer.addChild(this.selectionGraphics);
+      }
+      this.selectionGraphics.clear();
+    } catch {
+      return this.overlayContainer;
+    }
 
     const nodesToRender = selectedNodes.length > 0 ? selectedNodes : (selectedNode ? [selectedNode] : []);
     if (nodesToRender.length === 0) return this.overlayContainer;
@@ -24,10 +33,10 @@ export class PixiSelectionOverlay {
     // Calculate bounding box of selection
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const node of nodesToRender) {
-      const absX = node.x < 100 ? (node.x / 100) * doc.canvas.width : node.x;
-      const absY = node.y < 100 ? (node.y / 100) * doc.canvas.height : node.y;
-      const absW = node.width <= 100 ? (node.width / 100) * doc.canvas.width : node.width;
-      const absH = node.height <= 100 ? (node.height / 100) * doc.canvas.height : node.height;
+      const absX = node.x;
+      const absY = node.y;
+      const absW = node.width;
+      const absH = node.height;
 
       if (absX < minX) minX = absX;
       if (absY < minY) minY = absY;
@@ -98,7 +107,13 @@ export class PixiSelectionOverlay {
    * Clear the selection overlay
    */
   public clearSelection(): void {
-    this.selectionGraphics.clear();
+    try {
+      if (this.selectionGraphics && !this.selectionGraphics.destroyed) {
+        this.selectionGraphics.clear();
+      }
+    } catch {
+      // Safe fallback if context lost
+    }
   }
 }
 
