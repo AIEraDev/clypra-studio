@@ -92,11 +92,10 @@ export function evaluateOverlayDocument(
       resolvedText = dataBindingEngine.evaluateExpression(responsiveNode.text, evalVariables);
     }
 
-    // 2d. Construct normalized transform
-    const baseW = responsiveNode.width <= 100 ? (responsiveNode.width / 100) * doc.canvas.width : responsiveNode.width;
-    const baseH = responsiveNode.height <= 100 ? (responsiveNode.height / 100) * doc.canvas.height : responsiveNode.height;
-    const baseAbsX = responsiveNode.x < 100 ? (responsiveNode.x / 100) * doc.canvas.width : responsiveNode.x;
-    const baseAbsY = responsiveNode.y < 100 ? (responsiveNode.y / 100) * doc.canvas.height : responsiveNode.y;
+    const baseW = responsiveNode.width;
+    const baseH = responsiveNode.height;
+    const baseAbsX = responsiveNode.x;
+    const baseAbsY = responsiveNode.y;
 
     let transform: EvaluatedTransform = {
       x: animState.x,

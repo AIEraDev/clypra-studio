@@ -70,10 +70,10 @@ export class SnapEngine {
 
     // 2. Alignment relative to other nodes on canvas
     for (const other of otherNodes) {
-      const otherX = other.x < 100 ? (other.x / 100) * canvasWidth : other.x;
-      const otherY = other.y < 100 ? (other.y / 100) * canvasHeight : other.y;
-      const otherW = other.width <= 100 ? (other.width / 100) * canvasWidth : other.width;
-      const otherH = other.height <= 100 ? (other.height / 100) * canvasHeight : other.height;
+      const otherX = other.x;
+      const otherY = other.y;
+      const otherW = other.width;
+      const otherH = other.height;
 
       const otherCenter = otherX + otherW / 2;
       const otherMiddle = otherY + otherH / 2;

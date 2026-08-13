@@ -61,10 +61,10 @@ export class LayoutEngine {
     parentY: number
   ): ComputedNodeBounds {
     // 1. Initial absolute coordinates
-    let absX = parentX + (node.x < 100 && node.x > 0 ? (node.x / 100) * doc.canvas.width : node.x);
-    let absY = parentY + (node.y < 100 && node.y > 0 ? (node.y / 100) * doc.canvas.height : node.y);
-    let width = node.width <= 100 && node.width > 0 ? (node.width / 100) * doc.canvas.width : node.width;
-    let height = node.height <= 100 && node.height > 0 ? (node.height / 100) * doc.canvas.height : node.height;
+    let absX = parentX + node.x;
+    let absY = parentY + node.y;
+    let width = node.width;
+    let height = node.height;
 
     // 2. Measure text intrinsic dimensions if primitive text or rich-text or metric
     if (node.type === "text" || node.type === "rich-text" || node.type === "metric") {

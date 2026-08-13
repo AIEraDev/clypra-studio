@@ -62,10 +62,10 @@ export class AnimationRuntime {
     clipDuration: number,
     options: AnimationEvaluationOptions = {}
   ): EvaluatedNodeState {
-    const baseW = node.width <= 100 && options.doc ? (node.width / 100) * options.doc.canvas.width : node.width;
-    const baseH = node.height <= 100 && options.doc ? (node.height / 100) * options.doc.canvas.height : node.height;
-    const baseAbsX = node.x < 100 && options.doc ? (node.x / 100) * options.doc.canvas.width : node.x;
-    const baseAbsY = node.y < 100 && options.doc ? (node.y / 100) * options.doc.canvas.height : node.y;
+    const baseW = node.width;
+    const baseH = node.height;
+    const baseAbsX = node.x;
+    const baseAbsY = node.y;
 
     const state: EvaluatedNodeState = {
       x: baseAbsX,
