@@ -62,7 +62,7 @@ export function OverlayStudioWorkspace({ onExit }: OverlayStudioWorkspaceProps =
   const selectedNode = doc.nodes.find((n) => selectedNodeIds.includes(n.id)) || null;
 
   const [viewport, setViewport] = useState<ViewportState>({
-    zoom: 75,
+    zoom: 55,
     panX: 0,
     panY: 0,
     canvasWidth: 1280,
@@ -144,6 +144,12 @@ export function OverlayStudioWorkspace({ onExit }: OverlayStudioWorkspaceProps =
       if (isCmd && e.key.toLowerCase() === "z") {
         e.preventDefault();
         e.shiftKey ? (canRedo && redo()) : (canUndo && undo());
+      } else if ((e.key === "Backspace" || e.key === "Delete") && selectedNodeIds.length > 0) {
+        e.preventDefault();
+        selectedNodeIds.forEach((id) => {
+          executeCommand({ type: "DELETE_NODE", nodeId: id });
+        });
+        setSelectedNodeIds([]);
       } else if (isCmd && e.shiftKey && e.key.toLowerCase() === "g") {
         e.preventDefault();
         if (selectedNode && selectedNode.type === "frame") {
@@ -422,6 +428,7 @@ export function OverlayStudioWorkspace({ onExit }: OverlayStudioWorkspaceProps =
             referenceVideoMeta={referenceVideoMeta}
             onSelectNodeIds={setSelectedNodeIds}
             onExecuteCommand={executeCommand}
+            onSetZoom={(zoom) => setViewport((prev) => ({ ...prev, zoom }))}
           />
           <TimelinePanel
             doc={doc}

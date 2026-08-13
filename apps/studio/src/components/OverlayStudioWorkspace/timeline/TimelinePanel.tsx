@@ -118,9 +118,9 @@ export function TimelinePanel({
   };
 
   return (
-    <div className="border-t border-[#1A1A24] bg-[#0A0A10] select-none z-20 shrink-0 font-sans">
+    <div className="h-72 border-t border-[#1A1A24] bg-[#0A0A10] select-none z-20 shrink-0 font-sans flex flex-col">
       {/* ── TOP CONTROL BAR ───────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-[#1A1A24]">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-[#1A1A24] shrink-0">
         <button
           type="button"
           onClick={() => handleSeekWithSnap(0)}
@@ -241,12 +241,12 @@ export function TimelinePanel({
       </div>
 
       {/* ── TRACKS AND MARKERS ─────────────────────────────────────────── */}
-      <div className="overflow-x-auto overflow-y-hidden max-h-48" ref={trackScrollRef} onWheel={handleTrackWheel}>
-        <div className="flex" style={{ minWidth: `${Math.max(640, totalDuration * 100 * zoom)}px` }}>
+      <div className="flex-1 overflow-auto relative custom-scrollbar" ref={trackScrollRef} onWheel={handleTrackWheel}>
+        <div className="flex min-h-full" style={{ minWidth: `${Math.max(640, totalDuration * 100 * zoom)}px` }}>
           {/* Left Panel: Track Labels */}
           <div className="w-48 shrink-0 border-r border-[#1A1A24] bg-[#0C0C12]">
             {/* Header label area */}
-            <div className="h-6 border-b border-[#1A1A24] px-3 flex items-center">
+            <div className="h-6 border-b border-[#1A1A24] px-3 flex items-center bg-[#0C0C12] sticky top-0 z-20">
               <span className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Tracks & Markers</span>
             </div>
 
@@ -286,7 +286,7 @@ export function TimelinePanel({
           <div className="flex-1 relative bg-[#08080C]">
             {/* Marker Track Ruler */}
             <div
-              className="h-6 border-b border-[#1A1A24] relative bg-[#06060A] cursor-pointer"
+              className="h-6 border-b border-[#1A1A24] relative bg-[#06060A] cursor-pointer sticky top-0 z-20"
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const frac = (e.clientX - rect.left) / rect.width;

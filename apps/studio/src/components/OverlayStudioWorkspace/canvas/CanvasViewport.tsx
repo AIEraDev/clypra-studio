@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   viewportTransform,
   snapEngine,
@@ -23,40 +23,41 @@ type HandleType = "tl" | "tr" | "bl" | "br" | "t" | "b" | "l" | "r" | "rot" | nu
 
 interface CanvasViewportProps {
   doc: OverlayDocument;
-  selectedNode: SceneNode | null;
+  viewport: ViewportState;
   selectedNodeIds: string[];
   currentTime: number;
-  viewport: ViewportState;
-  showHud?: boolean;
-  referenceVideo?: HTMLVideoElement | null;
-  referenceVideoMeta?: { sourceWidth: number; sourceHeight: number; duration: number } | null;
+  referenceVideo: HTMLVideoElement | null;
   onSelectNodeIds: (ids: string[]) => void;
-  onExecuteCommand: (command: DocumentCommand) => void;
+  onExecuteCommand: (cmd: DocumentCommand) => void;
+  onSetZoom?: (zoom: number) => void;
 }
 
 export function CanvasViewport({
   doc,
-  selectedNode,
+  viewport,
   selectedNodeIds,
   currentTime,
-  viewport,
-  showHud = true,
   referenceVideo,
-  referenceVideoMeta,
   onSelectNodeIds,
-  onExecuteCommand
+  onExecuteCommand,
+  onSetZoom
 }: CanvasViewportProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRefContainer = useRef<HTMLDivElement | null>(null);
   const [isInsertPaletteOpen, setIsInsertPaletteOpen] = useState(false);
 
-  // Video Conform calculation — reuse resolveConform from @clypra-studio/engine
-  const videoConform = referenceVideoMeta && referenceVideoMeta.sourceWidth > 0 && referenceVideoMeta.sourceHeight > 0
+  // Derive selected node objects
+  const selectedNodes = doc.nodes.filter((n) => selectedNodeIds.includes(n.id));
+  const selectedNode = selectedNodes[0] || null;
+
+  // Video Conform Geometry (letterbox / pillarbox fit into canvas dimensions)
+  const videoConform = referenceVideo
     ? resolveConform(
         {
           mode: "fit",
-          sourceWidth: referenceVideoMeta.sourceWidth,
-          sourceHeight: referenceVideoMeta.sourceHeight,
+          sourceWidth: referenceVideo.videoWidth,
+          sourceHeight: referenceVideo.videoHeight,
           userScale: 1,
           userOffsetX: 0,
           userOffsetY: 0
@@ -66,39 +67,74 @@ export function CanvasViewport({
       )
     : null;
 
+  // Sync background reference video element into container
   useEffect(() => {
-    if (!videoRefContainer.current) return;
-    videoRefContainer.current.innerHTML = "";
-    if (referenceVideo) {
-      referenceVideo.className = "absolute pointer-events-none";
-      if (videoConform) {
-        referenceVideo.style.left = `${videoConform.x}px`;
-        referenceVideo.style.top = `${videoConform.y}px`;
-        referenceVideo.style.width = `${videoConform.width}px`;
-        referenceVideo.style.height = `${videoConform.height}px`;
-      } else {
-        referenceVideo.style.left = "0px";
-        referenceVideo.style.top = "0px";
-        referenceVideo.style.width = "100%";
-        referenceVideo.style.height = "100%";
-      }
-      videoRefContainer.current.appendChild(referenceVideo);
-    }
-  }, [referenceVideo, videoConform?.x, videoConform?.y, videoConform?.width, videoConform?.height]);
+    const container = videoRefContainer.current;
+    if (!container || !referenceVideo) return;
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setIsInsertPaletteOpen((prev) => !prev);
+    if (videoConform) {
+      referenceVideo.style.position = "absolute";
+      referenceVideo.style.left = `${videoConform.x}px`;
+      referenceVideo.style.top = `${videoConform.y}px`;
+      referenceVideo.style.width = `${videoConform.width}px`;
+      referenceVideo.style.height = `${videoConform.height}px`;
+      referenceVideo.style.objectFit = "cover";
+    }
+
+    container.appendChild(referenceVideo);
+    return () => {
+      if (container.contains(referenceVideo)) {
+        container.removeChild(referenceVideo);
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [referenceVideo, videoConform?.x, videoConform?.y, videoConform?.width, videoConform?.height]);
+
+  // Trackpad pinch / Ctrl+wheel zoom on viewport canvas container
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 5 : -5;
+        const nextZoom = Math.max(20, Math.min(300, viewport.zoom + delta));
+        onSetZoom?.(nextZoom);
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [viewport.zoom, onSetZoom]);
+
+  const handleAutoFit = useCallback(() => {
+    if (!containerRef.current) return;
+    const containerW = containerRef.current.clientWidth - 64;
+    const containerH = containerRef.current.clientHeight - 72;
+    if (containerW > 0 && containerH > 0) {
+      const fitScale = Math.min(containerW / doc.canvas.width, containerH / doc.canvas.height, 1.0);
+      const fitZoom = Math.max(20, Math.floor(fitScale * 100));
+      onSetZoom?.(fitZoom);
+    }
+  }, [doc.canvas.width, doc.canvas.height, onSetZoom]);
+
+  // Auto-fit canvas on initial mount and whenever container dimensions change (responsive sidebar/window)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    handleAutoFit();
+
+    const ro = new ResizeObserver(() => {
+      handleAutoFit();
+    });
+    ro.observe(el);
+
+    return () => ro.disconnect();
+  }, [handleAutoFit]);
 
   // Mount PixiApplication to canvas — 60 FPS loop runs completely outside React
-  usePixiApp(canvasRef, doc, currentTime, selectedNode);
+  usePixiApp(canvasRef, doc, currentTime, selectedNode, !!referenceVideo);
 
   // Drag & Marquee & Handle States
   const dragModeRef = useRef<"move" | "resize" | "rotate" | "marquee" | null>(null);
@@ -131,7 +167,6 @@ export function CanvasViewport({
   } | null>(null);
 
   // Calculate selection bounding box
-  const selectedNodes = doc.nodes.filter((n) => selectedNodeIds.includes(n.id));
   let selMinX = Infinity, selMinY = Infinity, selMaxX = -Infinity, selMaxY = -Infinity;
 
   for (const n of selectedNodes) {
@@ -147,7 +182,8 @@ export function CanvasViewport({
   // Hit-test Handles (Corners, Edges, Rotation)
   const hitTestHandles = (docX: number, docY: number): HandleType => {
     if (selectedNodes.length === 0) return null;
-    const threshold = 12;
+    const scale = viewport.zoom / 100;
+    const threshold = Math.max(16, 20 / scale);
 
     const rotX = selMinX + selW / 2;
     const rotY = selMinY - 24;
@@ -158,23 +194,48 @@ export function CanvasViewport({
     if (Math.hypot(docX - selMinX, docY - (selMinY + selH)) <= threshold) return "bl";
     if (Math.hypot(docX - (selMinX + selW), docY - (selMinY + selH)) <= threshold) return "br";
 
-    if (Math.abs(docY - selMinY) <= threshold && docX >= selMinX && docX <= selMinX + selW) return "t";
-    if (Math.abs(docY - (selMinY + selH)) <= threshold && docX >= selMinX && docX <= selMinX + selW) return "b";
-    if (Math.abs(docX - selMinX) <= threshold && docY >= selMinY && docY <= selMinY + selH) return "l";
-    if (Math.abs(docX - (selMinX + selW)) <= threshold && docY >= selMinY && docY <= selMinY + selH) return "r";
+    if (Math.abs(docY - selMinY) <= threshold && docX >= selMinX - threshold && docX <= selMinX + selW + threshold) return "t";
+    if (Math.abs(docY - (selMinY + selH)) <= threshold && docX >= selMinX - threshold && docX <= selMinX + selW + threshold) return "b";
+    if (Math.abs(docX - selMinX) <= threshold && docY >= selMinY - threshold && docY <= selMinY + selH + threshold) return "l";
+    if (Math.abs(docX - (selMinX + selW)) <= threshold && docY >= selMinY - threshold && docY <= selMinY + selH + threshold) return "r";
 
     return null;
+  };
+
+  // Helper for computing interactive hit bounds for all node types (including floating annotations)
+  const getNodeHitBounds = (n: SceneNode) => {
+    let minX = n.x;
+    let maxX = n.x + n.width;
+    let minY = n.y;
+    let maxY = n.y + n.height;
+
+    if (n.type === "annotation") {
+      const offX = (n as any).offsetX ?? 10;
+      const offY = (n as any).offsetY ?? -20;
+      minX = Math.min(n.x - 12, n.x + offX - 12);
+      maxX = Math.max(n.x + n.width + 12, n.x + offX + 160);
+      minY = Math.min(n.y - 12, n.y + offY - 20);
+      maxY = Math.max(n.y + n.height + 12, n.y + 12);
+    } else {
+      const pad = 8;
+      minX -= pad;
+      maxX += pad;
+      minY -= pad;
+      maxY += pad;
+    }
+
+    return { minX, maxX, minY, maxY };
   };
 
   // Pointer Down Handler
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (!rect || rect.width === 0 || rect.height === 0) return;
 
-    const scale = viewport.zoom / 100;
-    const screenX = (e.clientX - rect.left) / scale;
-    const screenY = (e.clientY - rect.top) / scale;
-    const docPt = viewportTransform.screenToDocument({ x: screenX, y: screenY }, viewport);
+    const docPt = {
+      x: ((e.clientX - rect.left) / rect.width) * doc.canvas.width,
+      y: ((e.clientY - rect.top) / rect.height) * doc.canvas.height
+    };
 
     // 1. Check Handle Hit
     const handle = hitTestHandles(docPt.x, docPt.y);
@@ -195,11 +256,8 @@ export function CanvasViewport({
 
     // 2. Check Node Body Hit
     const hitNode = [...doc.nodes].reverse().find((n) => {
-      const absX = n.x < 100 ? (n.x / 100) * doc.canvas.width : n.x;
-      const absY = n.y < 100 ? (n.y / 100) * doc.canvas.height : n.y;
-      const absW = n.width <= 100 ? (n.width / 100) * doc.canvas.width : n.width;
-      const absH = n.height <= 100 ? (n.height / 100) * doc.canvas.height : n.height;
-      return docPt.x >= absX && docPt.x <= absX + absW && docPt.y >= absY && docPt.y <= absY + absH;
+      const { minX, maxX, minY, maxY } = getNodeHitBounds(n);
+      return docPt.x >= minX && docPt.x <= maxX && docPt.y >= minY && docPt.y <= maxY;
     });
 
     if (hitNode) {
@@ -237,33 +295,26 @@ export function CanvasViewport({
   // Pointer Move Handler (Transient update — zero command emission during drag)
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (!rect || rect.width === 0 || rect.height === 0) return;
 
-    const scale = viewport.zoom / 100;
-    const screenX = (e.clientX - rect.left) / scale;
-    const screenY = (e.clientY - rect.top) / scale;
-    const docPt = viewportTransform.screenToDocument({ x: screenX, y: screenY }, viewport);
+    const docPt = {
+      x: ((e.clientX - rect.left) / rect.width) * doc.canvas.width,
+      y: ((e.clientY - rect.top) / rect.height) * doc.canvas.height
+    };
 
     if (!dragStartRef.current || !dragModeRef.current) {
       const handle = hitTestHandles(docPt.x, docPt.y);
       if (handle) {
         setHoverCursor(getHandleCursor(handle));
       } else {
-        const hitNode = doc.nodes.find((n) => {
-          return docPt.x >= n.x && docPt.x <= n.x + n.width && docPt.y >= n.y && docPt.y <= n.y + n.height;
+        const hitNode = [...doc.nodes].reverse().find((n) => {
+          const { minX, maxX, minY, maxY } = getNodeHitBounds(n);
+          return docPt.x >= minX && docPt.x <= maxX && docPt.y >= minY && docPt.y <= maxY;
         });
         setHoverCursor(hitNode ? "grab" : (selectedNodeIds.length > 0 ? "default" : "crosshair"));
       }
       return;
     }
-
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const scale = viewport.zoom / 100;
-    const screenX = (e.clientX - rect.left) / scale;
-    const screenY = (e.clientY - rect.top) / scale;
-    const docPt = viewportTransform.screenToDocument({ x: screenX, y: screenY }, viewport);
 
     const deltaX = docPt.x - dragStartRef.current.startX;
     const deltaY = docPt.y - dragStartRef.current.startY;
@@ -375,10 +426,22 @@ export function CanvasViewport({
         for (const ns of dragStartRef.current.nodeStarts) {
           const node = doc.nodes.find((n) => n.id === ns.id);
           if (node) {
-            if (node.x !== ns.x) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "x", value: node.x });
-            if (node.y !== ns.y) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "y", value: node.y });
-            if (node.width !== ns.width) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "width", value: node.width });
-            if (node.height !== ns.height) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "height", value: node.height });
+            const finalX = node.x;
+            const finalY = node.y;
+            const finalW = node.width;
+            const finalH = node.height;
+
+            // Reset node back to initial starting snapshot before executing transactional command
+            // so commandExecutor reads true prevValue and produces valid inverseCommand for Undo!
+            node.x = ns.x;
+            node.y = ns.y;
+            node.width = ns.width;
+            node.height = ns.height;
+
+            if (finalX !== ns.x) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "x", value: finalX });
+            if (finalY !== ns.y) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "y", value: finalY });
+            if (finalW !== ns.width) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "width", value: finalW });
+            if (finalH !== ns.height) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "height", value: finalH });
           }
         }
 
@@ -387,12 +450,14 @@ export function CanvasViewport({
         }
       } else if (mode === "rotate" && selectedNode && dragStartRef.current.nodeStarts[0]) {
         const startRot = dragStartRef.current.nodeStarts[0].rotation;
-        if (selectedNode.rotation !== startRot) {
+        const finalRot = selectedNode.rotation;
+        if (finalRot !== startRot) {
+          selectedNode.rotation = startRot;
           onExecuteCommand({
             type: "UPDATE_NODE_PROPERTY",
             nodeId: selectedNode.id,
             path: "rotation",
-            value: selectedNode.rotation
+            value: finalRot
           });
         }
       }
@@ -408,25 +473,26 @@ export function CanvasViewport({
   const alignSelected = (alignment: "left" | "center" | "right" | "top" | "middle" | "bottom") => {
     if (selectedNodes.length === 0) return;
     const cmds: DocumentCommand[] = [];
+    const isSingle = selectedNodes.length === 1;
 
     if (alignment === "left") {
-      const minX = Math.min(...selectedNodes.map((n) => n.x));
-      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "x", value: minX }));
+      const targetX = isSingle ? 0 : Math.min(...selectedNodes.map((n) => n.x));
+      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "x", value: targetX }));
     } else if (alignment === "center") {
-      const centerX = selectedNodes.length === 1 ? doc.canvas.width / 2 : selMinX + selW / 2;
+      const centerX = isSingle ? doc.canvas.width / 2 : selMinX + selW / 2;
       selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "x", value: Math.round(centerX - n.width / 2) }));
     } else if (alignment === "right") {
-      const maxX = Math.max(...selectedNodes.map((n) => n.x + n.width));
-      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "x", value: maxX - n.width }));
+      const targetX = isSingle ? doc.canvas.width : Math.max(...selectedNodes.map((n) => n.x + n.width));
+      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "x", value: Math.round(targetX - n.width) }));
     } else if (alignment === "top") {
-      const minY = Math.min(...selectedNodes.map((n) => n.y));
-      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "y", value: minY }));
+      const targetY = isSingle ? 0 : Math.min(...selectedNodes.map((n) => n.y));
+      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "y", value: targetY }));
     } else if (alignment === "middle") {
-      const centerY = selectedNodes.length === 1 ? doc.canvas.height / 2 : selMinY + selH / 2;
+      const centerY = isSingle ? doc.canvas.height / 2 : selMinY + selH / 2;
       selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "y", value: Math.round(centerY - n.height / 2) }));
     } else if (alignment === "bottom") {
-      const maxY = Math.max(...selectedNodes.map((n) => n.y + n.height));
-      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "y", value: maxY - n.height }));
+      const targetY = isSingle ? doc.canvas.height : Math.max(...selectedNodes.map((n) => n.y + n.height));
+      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "y", value: Math.round(targetY - n.height) }));
     }
 
     if (cmds.length > 0) onExecuteCommand({ type: "BATCH_COMMANDS", commands: cmds });
@@ -541,129 +607,157 @@ export function CanvasViewport({
   const scale = viewport.zoom / 100;
 
   return (
-    <div
-      className="relative flex-1 flex items-center justify-center overflow-hidden"
-      style={{
-        background: "radial-gradient(ellipse at 50% 50%, #141420 0%, #080810 70%)",
-        backgroundImage:
-          "radial-gradient(ellipse at 50% 50%, #141420 0%, #080810 70%), radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
-        backgroundSize: "100% 100%, 24px 24px"
-      }}
-    >
-      {/* Floating Spatial Alignment & Distribution Toolbar */}
-      {selectedNodes.length > 0 && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-xl border border-white/10 bg-black/80 backdrop-blur-md p-1.5 z-50 shadow-2xl">
-          <button type="button" onClick={() => alignSelected("left")} title="Align Left" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignLeft size={14} /></button>
-          <button type="button" onClick={() => alignSelected("center")} title="Align Center" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignCenter size={14} /></button>
-          <button type="button" onClick={() => alignSelected("right")} title="Align Right" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignRight size={14} /></button>
-          <div className="w-px h-4 bg-white/10 mx-0.5" />
-          <button type="button" onClick={() => alignSelected("top")} title="Align Top" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignVerticalSpaceAround size={14} /></button>
-          <button type="button" onClick={() => alignSelected("middle")} title="Align Middle" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignHorizontalSpaceAround size={14} /></button>
-          <button type="button" onClick={() => alignSelected("bottom")} title="Align Bottom" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignVerticalSpaceAround size={14} className="rotate-180" /></button>
-
-          {selectedNodes.length === 1 && (
-            <>
-              <div className="w-px h-4 bg-white/10 mx-0.5" />
-              <button type="button" onClick={() => reorderSelected("up")} title="Bring Forward" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><ArrowUp size={14} /></button>
-              <button type="button" onClick={() => reorderSelected("down")} title="Send Backward" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><ArrowDown size={14} /></button>
-            </>
-          )}
-
-          {selectedNodes.length >= 3 && (
-            <>
-              <div className="w-px h-4 bg-white/10 mx-0.5" />
-              <button type="button" onClick={() => distributeSelected("horizontal")} title="Distribute Horizontally" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><MoveHorizontal size={14} /></button>
-              <button type="button" onClick={() => distributeSelected("vertical")} title="Distribute Vertically" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><MoveVertical size={14} /></button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Canvas wrapper — zoom via CSS scale, positioned at center */}
+    <div ref={containerRef} className="relative flex-1 flex flex-col overflow-hidden select-none">
+      {/* Main Canvas Viewport Area */}
       <div
+        className="relative flex-1 flex items-center justify-center overflow-hidden p-4"
         style={{
-          width: doc.canvas.width,
-          height: doc.canvas.height,
-          transform: `scale(${scale})`,
-          transformOrigin: "center",
-          willChange: "transform"
+          background: "radial-gradient(ellipse at 50% 50%, #141420 0%, #080810 70%)",
+          backgroundImage:
+            "radial-gradient(ellipse at 50% 50%, #141420 0%, #080810 70%), radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
+          backgroundSize: "100% 100%, 24px 24px"
         }}
-        className="relative"
       >
-        {/* Background reference video container — conformed underneath WebGL canvas */}
-        {referenceVideo && (
-          <div
-            ref={videoRefContainer}
-            className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none z-0 bg-black/50"
-          />
+        {/* Floating Spatial Alignment & Distribution Toolbar */}
+        {selectedNodes.length > 0 && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-xl border border-white/10 bg-black/80 backdrop-blur-md p-1.5 z-50 shadow-2xl">
+            <button type="button" onClick={() => alignSelected("left")} title="Align Left" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignLeft size={14} /></button>
+            <button type="button" onClick={() => alignSelected("center")} title="Align Center" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignCenter size={14} /></button>
+            <button type="button" onClick={() => alignSelected("right")} title="Align Right" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignRight size={14} /></button>
+            <div className="w-px h-4 bg-white/10 mx-0.5" />
+            <button type="button" onClick={() => alignSelected("top")} title="Align Top" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignVerticalSpaceAround size={14} /></button>
+            <button type="button" onClick={() => alignSelected("middle")} title="Align Middle" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignHorizontalSpaceAround size={14} /></button>
+            <button type="button" onClick={() => alignSelected("bottom")} title="Align Bottom" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignVerticalSpaceAround size={14} className="rotate-180" /></button>
+
+            {selectedNodes.length === 1 && (
+              <>
+                <div className="w-px h-4 bg-white/10 mx-0.5" />
+                <button type="button" onClick={() => reorderSelected("up")} title="Bring Forward" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><ArrowUp size={14} /></button>
+                <button type="button" onClick={() => reorderSelected("down")} title="Send Backward" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><ArrowDown size={14} /></button>
+              </>
+            )}
+
+            {selectedNodes.length >= 3 && (
+              <>
+                <div className="w-px h-4 bg-white/10 mx-0.5" />
+                <button type="button" onClick={() => distributeSelected("horizontal")} title="Distribute Horizontally" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><MoveHorizontal size={14} /></button>
+                <button type="button" onClick={() => distributeSelected("vertical")} title="Distribute Vertically" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><MoveVertical size={14} /></button>
+              </>
+            )}
+          </div>
         )}
 
-        {/* Outer glow ring when something is selected */}
+        {/* Selected node info badge */}
+        {selectedNodeIds.length > 0 && (
+          <div className="absolute top-4 right-4 rounded-xl border border-violet-500/20 bg-violet-500/10 backdrop-blur-md px-3 py-2 font-mono text-[10px] text-violet-300 pointer-events-none select-none space-y-0.5 z-20">
+            <p className="font-bold text-violet-200">
+              {selectedNodeIds.length === 1 ? (selectedNode?.name || selectedNode?.id) : `${selectedNodeIds.length} Nodes Selected`}
+            </p>
+            {selectedNode && selectedNodeIds.length === 1 && (
+              <p className="text-violet-400/70">
+                x:{Math.round(selectedNode.x)} y:{Math.round(selectedNode.y)} &nbsp;
+                {Math.round(selectedNode.width)}×{Math.round(selectedNode.height)}
+                {selectedNode.rotation ? ` · ${selectedNode.rotation}°` : ""}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Sizing box — reserves exact scaled layout bounds in flexbox */}
         <div
-          className="absolute -inset-0.5 rounded-2xl transition-all duration-300 pointer-events-none z-10"
           style={{
-            boxShadow: selectedNodeIds.length > 0
-              ? "0 0 0 2px rgba(124,111,255,0.5), 0 0 60px rgba(124,111,255,0.15)"
-              : "0 0 0 1.5px rgba(255,255,255,0.08), 0 32px 80px rgba(0,0,0,0.8)"
+            width: Math.round(doc.canvas.width * scale),
+            height: Math.round(doc.canvas.height * scale)
           }}
-        />
-
-        {/* The actual WebGL canvas */}
-        <canvas
-          ref={canvasRef}
-          width={doc.canvas.width}
-          height={doc.canvas.height}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          className="block rounded-2xl overflow-hidden relative z-20"
-          style={{
-            width: doc.canvas.width,
-            height: doc.canvas.height,
-            cursor: hoverCursor
-          }}
-        />
-
-        {/* Marquee Selection Box Overlay */}
-        {marqueeBox && (
+          className="relative flex items-center justify-center shrink-0 transition-all duration-150"
+        >
+          {/* Canvas wrapper — zoom via CSS scale, positioned at center */}
           <div
-            className="absolute border border-violet-400 bg-violet-500/15 pointer-events-none z-40 rounded-sm"
             style={{
-              left: marqueeBox.x,
-              top: marqueeBox.y,
-              width: marqueeBox.width,
-              height: marqueeBox.height,
-              boxShadow: "0 0 12px rgba(124,111,255,0.4)"
+              width: doc.canvas.width,
+              height: doc.canvas.height,
+              transform: `scale(${scale})`,
+              transformOrigin: "center",
+              willChange: "transform"
             }}
-          />
-        )}
+            className="relative shrink-0"
+          >
+            {/* Background reference video container — conformed underneath WebGL canvas */}
+            {referenceVideo && (
+              <div
+                ref={videoRefContainer}
+                className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none z-0 bg-black/50"
+              />
+            )}
 
-        {/* Smart Alignment Guides (DOM overlay — above PixiJS canvas) */}
-        {activeGuides.map((guide, i) => (
-          <div
-            key={i}
-            className="absolute pointer-events-none z-30"
-            style={
-              guide.type === "vertical"
-                ? {
-                    left: `${(guide.position / doc.canvas.width) * 100}%`,
-                    top: 0, bottom: 0, width: "1px",
-                    background: "linear-gradient(to bottom, transparent, #7C6FFF 20%, #7C6FFF 80%, transparent)",
-                    boxShadow: "0 0 6px 1px rgba(124,111,255,0.6)"
-                  }
-                : {
-                    top: `${(guide.position / doc.canvas.height) * 100}%`,
-                    left: 0, right: 0, height: "1px",
-                    background: "linear-gradient(to right, transparent, #7C6FFF 20%, #7C6FFF 80%, transparent)",
-                    boxShadow: "0 0 6px 1px rgba(124,111,255,0.6)"
-                  }
-            }
-          />
-        ))}
+            {/* Outer glow ring when something is selected */}
+            <div
+              className="absolute -inset-0.5 rounded-2xl transition-all duration-300 pointer-events-none z-10"
+              style={{
+                boxShadow: selectedNodeIds.length > 0
+                  ? "0 0 0 2px rgba(124,111,255,0.5), 0 0 60px rgba(124,111,255,0.15)"
+                  : "0 0 0 1.5px rgba(255,255,255,0.08), 0 32px 80px rgba(0,0,0,0.8)"
+              }}
+            />
+
+            {/* The actual WebGL canvas */}
+            <canvas
+              ref={canvasRef}
+              width={doc.canvas.width}
+              height={doc.canvas.height}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              className="block rounded-2xl overflow-hidden relative z-20"
+              style={{
+                width: doc.canvas.width,
+                height: doc.canvas.height,
+                cursor: hoverCursor
+              }}
+            />
+
+            {/* Marquee Selection Box Overlay */}
+            {marqueeBox && (
+              <div
+                className="absolute border border-violet-400 bg-violet-500/15 pointer-events-none z-40 rounded-sm"
+                style={{
+                  left: marqueeBox.x,
+                  top: marqueeBox.y,
+                  width: marqueeBox.width,
+                  height: marqueeBox.height,
+                  boxShadow: "0 0 12px rgba(124,111,255,0.4)"
+                }}
+              />
+            )}
+
+            {/* Smart Alignment Guides (DOM overlay — above PixiJS canvas) */}
+            {activeGuides.map((guide, i) => (
+              <div
+                key={i}
+                className="absolute pointer-events-none z-30"
+                style={
+                  guide.type === "vertical"
+                    ? {
+                        left: `${(guide.position / doc.canvas.width) * 100}%`,
+                        top: 0, bottom: 0, width: "1px",
+                        background: "linear-gradient(to bottom, transparent, #7C6FFF 20%, #7C6FFF 80%, transparent)",
+                        boxShadow: "0 0 6px 1px rgba(124,111,255,0.6)"
+                      }
+                    : {
+                        top: `${(guide.position / doc.canvas.height) * 100}%`,
+                        left: 0, right: 0, height: "1px",
+                        background: "linear-gradient(to right, transparent, #7C6FFF 20%, #7C6FFF 80%, transparent)",
+                        boxShadow: "0 0 6px 1px rgba(124,111,255,0.6)"
+                      }
+                }
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Interactive Canvas Preset & Dimension Badge */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/70 backdrop-blur-md px-3 py-1 font-mono text-[10px] text-gray-300 shadow-xl z-20">
+      {/* Dedicated Middle Toolbar Bar (between Canvas & Timeline) */}
+      <div className="h-10 border-t border-white/[0.08] bg-[#0A0A12] flex items-center justify-center gap-3 px-4 z-30 shrink-0 select-none">
         <select
           value={`${doc.canvas.width}x${doc.canvas.height}`}
           onChange={(e) => {
@@ -672,39 +766,52 @@ export function CanvasViewport({
               onExecuteCommand({ type: "UPDATE_CANVAS_SIZE", width: w, height: h });
             }
           }}
-          className="bg-transparent text-violet-300 font-bold outline-none cursor-pointer"
+          className="bg-transparent text-violet-300 font-bold font-mono text-[10px] outline-none cursor-pointer hover:text-violet-200 transition-colors"
         >
           <option value="1280x720" className="bg-[#0F0F14] text-white">16:9 (1280×720)</option>
           <option value="1080x1920" className="bg-[#0F0F14] text-white">9:16 (1080×1920)</option>
           <option value="1080x1080" className="bg-[#0F0F14] text-white">1:1 (1080×1080)</option>
           <option value="1080x1350" className="bg-[#0F0F14] text-white">4:5 (1080×1350)</option>
         </select>
-        <span className="text-gray-500">·</span>
-        <span>{viewport.zoom}%</span>
+
+        <span className="text-gray-600 font-mono text-xs">·</span>
+
+        <div className="flex items-center gap-1 font-mono text-[10px] text-gray-300">
+          <button
+            type="button"
+            onClick={() => onSetZoom?.(Math.max(20, viewport.zoom - 10))}
+            className="w-5 h-5 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer font-bold transition-colors"
+            title="Zoom Out"
+          >
+            -
+          </button>
+          <span className="w-9 text-center font-bold text-gray-200">{viewport.zoom}%</span>
+          <button
+            type="button"
+            onClick={() => onSetZoom?.(Math.min(300, viewport.zoom + 10))}
+            className="w-5 h-5 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer font-bold transition-colors"
+            title="Zoom In"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={handleAutoFit}
+            className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-[9px] font-bold cursor-pointer ml-1 transition-colors"
+            title="Fit canvas to viewport"
+          >
+            Fit
+          </button>
+        </div>
+
         <button
           type="button"
           onClick={() => setIsInsertPaletteOpen(true)}
-          className="ml-1 px-1.5 py-0.5 rounded bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-[9px] font-bold border border-violet-500/40 cursor-pointer"
+          className="ml-2 px-2.5 py-1 rounded bg-violet-600/30 hover:bg-violet-600/50 text-violet-200 text-[10px] font-bold border border-violet-500/40 cursor-pointer shadow-sm transition-all"
         >
           + Insert (Cmd+K)
         </button>
       </div>
-
-      {/* Selected node info badge */}
-      {selectedNodeIds.length > 0 && (
-        <div className="absolute top-4 right-4 rounded-xl border border-violet-500/20 bg-violet-500/10 backdrop-blur-md px-3 py-2 font-mono text-[10px] text-violet-300 pointer-events-none select-none space-y-0.5 z-20">
-          <p className="font-bold text-violet-200">
-            {selectedNodeIds.length === 1 ? (selectedNode?.name || selectedNode?.id) : `${selectedNodeIds.length} Nodes Selected`}
-          </p>
-          {selectedNode && selectedNodeIds.length === 1 && (
-            <p className="text-violet-400/70">
-              x:{Math.round(selectedNode.x)} y:{Math.round(selectedNode.y)} &nbsp;
-              {Math.round(selectedNode.width)}×{Math.round(selectedNode.height)}
-              {selectedNode.rotation ? ` · ${selectedNode.rotation}°` : ""}
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Cmd+K Insert Palette Modal */}
       <InsertPalette

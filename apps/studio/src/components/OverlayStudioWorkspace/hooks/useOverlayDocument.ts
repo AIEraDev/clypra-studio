@@ -10,41 +10,15 @@ import {
 const initialDefaultDoc: OverlayDocument = {
   id: "custom-doc-scratch",
   version: "2.0",
-  title: "Revenue Growth Overlay",
-  category: "stat",
+  title: "Untitled Smart Overlay",
+  category: "custom",
   canvas: {
     width: 1280,
     height: 720,
     backgroundColor: "#12121A"
   },
-  variables: [
-    { key: "revenue", type: "string", defaultValue: "+142%", label: "Revenue Growth" },
-    { key: "label", type: "string", defaultValue: "User Growth & Engagement", label: "Metric Title" },
-    { key: "delta", type: "string", defaultValue: "+15% YoY", label: "Delta Badge" }
-  ],
-  nodes: [
-    {
-      id: "stat-main",
-      name: "Revenue Stat Card",
-      type: "component",
-      componentType: "stat-card",
-      x: 320,
-      y: 220,
-      width: 640,
-      height: 280,
-      props: {
-        value: "{{revenue}}",
-        label: "{{label}}",
-        delta: "{{delta}}",
-        accentColor: "#7C6FFF",
-        cardBackground: "#12121A",
-        cardBorder: "#2A2A38"
-      },
-      animation: {
-        entrance: { type: "scale", duration: 0.5, easing: "ease-out" }
-      }
-    }
-  ],
+  variables: [],
+  nodes: [],
   duration: 5,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()

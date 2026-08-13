@@ -21,7 +21,8 @@ export function usePixiApp(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   doc: OverlayDocument,
   currentTime: number,
-  selectedNode: SceneNode | null
+  selectedNode: SceneNode | null,
+  hasReferenceVideo = false
 ) {
   const { width, height } = doc.canvas;
 
@@ -29,10 +30,12 @@ export function usePixiApp(
   const docRef = useRef<OverlayDocument>(doc);
   const currentTimeRef = useRef<number>(currentTime);
   const selectedNodeRef = useRef<SceneNode | null>(selectedNode);
+  const hasReferenceVideoRef = useRef<boolean>(hasReferenceVideo);
 
   docRef.current = doc;
   currentTimeRef.current = currentTime;
   selectedNodeRef.current = selectedNode;
+  hasReferenceVideoRef.current = hasReferenceVideo;
 
   const rendererRef = usePixiRenderer(
     canvasRef,
@@ -57,13 +60,22 @@ export function usePixiApp(
 
       // 60 FPS projection loop — reads mutable refs, never touches React
       app.ticker.add((_ticker: Ticker) => {
-        pixiSceneProjection.project(docRef.current, currentTimeRef.current);
+        try {
+          pixiSceneProjection.project(
+            docRef.current,
+            currentTimeRef.current,
+            {},
+            { hasReferenceVideo: hasReferenceVideoRef.current }
+          );
 
-        const selNode = selectedNodeRef.current;
-        if (selNode) {
-          pixiSelectionOverlay.renderSelection(selNode, docRef.current);
-        } else {
-          pixiSelectionOverlay.clearSelection();
+          const selNode = selectedNodeRef.current;
+          if (selNode) {
+            pixiSelectionOverlay.renderSelection(selNode, docRef.current);
+          } else {
+            pixiSelectionOverlay.clearSelection();
+          }
+        } catch (err) {
+          // Prevent ticker loop from dying on transient context recovery
         }
       });
     }
