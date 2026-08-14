@@ -12,6 +12,7 @@ export type ExportProfile =
   | "1080p-portrait"
   | "1080p-square"
   | "4:5-portrait"
+  | "4k-landscape"
   | "custom";
 
 export interface ProfileCanvasDimensions {
@@ -25,9 +26,12 @@ export const EXPORT_PROFILE_PRESETS: Record<Exclude<ExportProfile, "custom">, Pr
   "1080p-portrait": { width: 1080, height: 1920 },
   "1080p-square": { width: 1080, height: 1080 },
   "4:5-portrait": { width: 1080, height: 1350 },
+  "4k-landscape": { width: 3840, height: 2160 },
 };
 
-export type ExportFormat = "png-sequence" | "webm" | "gif" | "raw-frames";
+export type ExportFormat = "png-sequence" | "webm" | "gif" | "raw-frames" | "mp4" | "prores";
+
+export type VideoCodecProfile = "h264" | "hevc" | "av1" | "prores-4444" | "prores-422";
 
 export interface ExportConfig {
   profile: ExportProfile;
@@ -47,6 +51,10 @@ export interface ExportConfig {
   transparent?: boolean;
   /** Target export output format */
   format?: ExportFormat;
+  /** Video codec profile */
+  codec?: VideoCodecProfile;
+  /** Target bitrate in bps (e.g. 12_000_000 for 12 Mbps) */
+  bitrate?: number;
   /** Context data overrides for variable evaluation during export */
   contextData?: Record<string, any>;
 }

@@ -3,6 +3,7 @@ import {
   Text as PixiText,
   Graphics as PixiGraphics,
   TextStyle,
+  BlurFilter,
   type ColorSource,
 } from "pixi.js";
 import type { OverlayDocument, SceneNode, ComponentNode } from "./overlayDocumentSchema.js";
@@ -117,9 +118,49 @@ export class PixiSceneProjection {
 
     // Project root nodes
     if (doc) {
+      const activeNodeIds = new Set<string>();
+      const collectNodeIds = (nodes: SceneNode[]) => {
+        for (const n of nodes) {
+          activeNodeIds.add(n.id);
+          if ("children" in n && Array.isArray((n as any).children)) {
+            collectNodeIds((n as any).children);
+          }
+          if (n.type === "repeater") {
+            const expanded = dataBindingEngine.expandRepeater(n as any, context);
+            for (const child of expanded) {
+              activeNodeIds.add(child.id);
+            }
+          }
+        }
+      };
+      collectNodeIds(doc.nodes);
+
+      // Clean up removed / stale nodes from previous frames (e.g. on Undo / Redo / Delete)
+      for (const [nodeId, container] of Array.from(this.nodeMap.entries())) {
+        if (!activeNodeIds.has(nodeId)) {
+          if (container.parent) {
+            container.parent.removeChild(container);
+          }
+          try {
+            container.destroy({ children: true });
+          } catch {}
+          this.nodeMap.delete(nodeId);
+        }
+      }
+
       for (let i = 0; i < doc.nodes.length; i++) {
         this.projectNode(doc.nodes[i], this.rootContainer, doc, currentTime, context, 0, i);
       }
+    } else {
+      for (const [, container] of this.nodeMap.entries()) {
+        if (container.parent) {
+          container.parent.removeChild(container);
+        }
+        try {
+          container.destroy({ children: true });
+        } catch {}
+      }
+      this.nodeMap.clear();
     }
 
     return this.rootContainer;
@@ -165,8 +206,14 @@ export class PixiSceneProjection {
       nodeContainer.label = node.name || node.id;
       this.nodeMap.set(node.id, nodeContainer);
       parentContainer.addChild(nodeContainer);
+    } else if (nodeContainer.parent !== parentContainer) {
+      if (nodeContainer.parent) {
+        nodeContainer.parent.removeChild(nodeContainer);
+      }
+      parentContainer.addChild(nodeContainer);
     }
 
+    nodeContainer.label = node.name || node.id;
     nodeContainer.visible = true;
 
     // Ensure display list z-order matches document node order
@@ -183,11 +230,52 @@ export class PixiSceneProjection {
     const absW = node.width;
     const absH = node.height;
 
-    nodeContainer.x = absX + animState.translateX;
-    nodeContainer.y = absY + animState.translateY;
-    nodeContainer.alpha = animState.opacity;
+    nodeContainer.pivot.set(absW / 2, absH / 2);
+    nodeContainer.position.set(absX + absW / 2 + animState.translateX, absY + absH / 2 + animState.translateY);
+    const rawOpacity = (node.style as any)?.opacity ?? (node as any).opacity ?? 1;
+    const nodeOpacity = typeof rawOpacity === "number" ? (rawOpacity > 1 ? rawOpacity / 100 : rawOpacity) : 1;
+    nodeContainer.alpha = Math.max(0, Math.min(1, animState.opacity * nodeOpacity));
     nodeContainer.scale.set(animState.scaleX, animState.scaleY);
     nodeContainer.rotation = (animState.rotation * Math.PI) / 180;
+
+    const backdropBlurVal = (node.style as any)?.backdropBlur ?? (node as any).backdropBlur ?? 0;
+    if (backdropBlurVal > 0) {
+      try {
+        const blurFilter = new BlurFilter({ strength: Math.min(backdropBlurVal, 40) });
+        nodeContainer.filters = [blurFilter];
+      } catch {
+        nodeContainer.filters = [];
+      }
+    } else {
+      nodeContainer.filters = [];
+    }
+    // Clip Content (Mask children/overflow to node bounds & border radius)
+    if (Boolean((node as any).clipContent)) {
+      let maskG = (nodeContainer as any)._clipMaskGraphics as PixiGraphics;
+      if (!maskG) {
+        maskG = new PixiGraphics();
+        (nodeContainer as any)._clipMaskGraphics = maskG;
+        nodeContainer.addChild(maskG);
+      }
+      maskG.clear();
+      const radius = (node.style as any)?.borderRadius ?? 0;
+      if (radius > 0) {
+        maskG.roundRect(0, 0, absW, absH, radius);
+      } else {
+        maskG.rect(0, 0, absW, absH);
+      }
+      maskG.fill({ color: 0xffffff });
+      maskG.renderable = false;
+      nodeContainer.mask = maskG;
+    } else {
+      if ((nodeContainer as any)._clipMaskGraphics) {
+        const oldG = (nodeContainer as any)._clipMaskGraphics;
+        nodeContainer.removeChild(oldG);
+        oldG.destroy();
+        (nodeContainer as any)._clipMaskGraphics = null;
+      }
+      nodeContainer.mask = null;
+    }
 
     // Render node according to primitive / component type
     if (node.type === "component") {
@@ -288,7 +376,7 @@ export class PixiSceneProjection {
 
     // Render shadow if defined
     if (style.shadow) {
-      this.applyShadow(container, style.shadow);
+      this.applyShadow(container, style.shadow, width, height, radius);
     }
 
     // Render Component Text Labels
@@ -493,8 +581,15 @@ export class PixiSceneProjection {
     }
 
     // Shadow
-    if (style.shadow) {
-      this.applyShadow(container, style.shadow);
+    const shadow = style.shadow || (node.style as any)?.shadow || (node as any).shadow;
+    if (shadow) {
+      this.applyShadow(container, shadow, width, height, radius, shapeKind);
+    } else {
+      const shadowG = container.getChildByLabel("ShadowGraphics");
+      if (shadowG) {
+        container.removeChild(shadowG);
+        shadowG.destroy();
+      }
     }
   }
 
@@ -504,21 +599,49 @@ export class PixiSceneProjection {
 
   private applyShadow(
     container: Container,
-    shadow: { x: number; y: number; blur: number; color: string }
+    shadow: { x?: number; y?: number; blur?: number; color?: string },
+    width: number,
+    height: number,
+    radius = 8,
+    shapeKind = "rect"
   ): void {
-    // PixiJS v8 uses filter-based shadows; apply via CSS-like filter if available
-    // For now, use a semi-transparent drop shadow Graphics underneath
     let shadowG = container.getChildByLabel("ShadowGraphics") as PixiGraphics;
     if (!shadowG) {
       shadowG = new PixiGraphics();
       shadowG.label = "ShadowGraphics";
-      shadowG.alpha = 0.35;
       container.addChildAt(shadowG, 0);
     }
-    // Shadow is a simple offset copy — simplified for WebGL preview
+
     shadowG.clear();
-    shadowG.x = shadow.x ?? 0;
-    shadowG.y = shadow.y ?? 4;
+    const offX = shadow.x ?? 0;
+    const offY = shadow.y ?? 8;
+    const shadowColor = hexToNumber(shadow.color || "#000000");
+    const shadowBlur = shadow.blur ?? 16;
+
+    if (shapeKind === "circle") {
+      const cx = width / 2;
+      const cy = height / 2;
+      const r = Math.min(width, height) / 2;
+      shadowG.circle(cx + offX, cy + offY, r);
+    } else if (shapeKind === "line") {
+      shadowG.moveTo(offX, height / 2 + offY);
+      shadowG.lineTo(width + offX, height / 2 + offY);
+    } else {
+      shadowG.roundRect(offX, offY, width, height, radius);
+    }
+
+    shadowG.fill({ color: shadowColor, alpha: 0.7 });
+
+    if (shadowBlur > 0) {
+      try {
+        const blurFilter = new BlurFilter({ strength: Math.min(shadowBlur, 40) });
+        shadowG.filters = [blurFilter];
+      } catch {
+        shadowG.filters = [];
+      }
+    } else {
+      shadowG.filters = [];
+    }
   }
 
   private renderLabel(

@@ -8,6 +8,7 @@ export interface SpatialConstraintSpec {
   preferPlacement?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center" | "lower-third" | "side-right" | "side-left";
   avoidRegions?: AvoidRegionKind[];
   collisionPolicy?: "avoid" | "push" | "stack";
+  safeMargin?: number;
   offsetPixelX?: number;
   offsetPixelY?: number;
 }
@@ -23,7 +24,7 @@ export function resolveSpatialConstraints(
   canvasWidth = 1280,
   canvasHeight = 720
 ): EvaluatedTransform {
-  if (!constraints || (!constraints.anchorTo && !constraints.avoidRegions && !constraints.preferPlacement)) {
+  if (!constraints || (!constraints.anchorTo && !constraints.avoidRegions && !constraints.preferPlacement && constraints.safeMargin === undefined)) {
     return initialTransform;
   }
 
@@ -55,6 +56,9 @@ export function resolveSpatialConstraints(
         resolved.y = anchorBox.y + offsetY;
         break;
       case "top-left":
+        resolved.x = anchorBox.x - offsetX;
+        resolved.y = anchorBox.y - resolved.height - offsetY;
+        break;
       case "top-right":
         resolved.x = anchorBox.x + anchorBox.width + offsetX;
         resolved.y = anchorBox.y - resolved.height - offsetY;
@@ -100,9 +104,10 @@ export function resolveSpatialConstraints(
     }
   }
 
-  // 4. Clamp to canvas boundaries
-  resolved.x = Math.max(16, Math.min(canvasWidth - resolved.width - 16, resolved.x));
-  resolved.y = Math.max(16, Math.min(canvasHeight - resolved.height - 16, resolved.y));
+  // 4. Clamp to canvas boundaries with configurable safeMargin (default 16px)
+  const margin = constraints.safeMargin ?? 16;
+  resolved.x = Math.max(margin, Math.min(canvasWidth - resolved.width - margin, resolved.x));
+  resolved.y = Math.max(margin, Math.min(canvasHeight - resolved.height - margin, resolved.y));
 
   return resolved;
 }

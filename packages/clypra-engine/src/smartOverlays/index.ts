@@ -24,6 +24,8 @@ export * from "./propertyAnimationRegistry.js";
 export * from "./motionPresetRegistry.js";
 export * from "./canvas/snapping/snapEngine.js";
 export * from "./layoutEngine.js";
+export * from "./editor/index.js";
+export * from "./analytics/index.js";
 
 // Phase 4I — Asset & Font Management
 export * from "./assets/assetRegistry.js";
@@ -41,6 +43,7 @@ export * from "./export/renderEngine.js";
 export * from "./export/streamingFramePipeline.js";
 export * from "./export/mediaEncoder.js";
 export * from "./export/exportJob.js";
+export * from "./export/liveBroadcastBridge.js";
 
 // Phase 4R — Visual Primitive System & Visualization Registry
 export * from "./visualizationRegistry.js";
@@ -67,3 +70,6 @@ export * from "./spatial/spatialConstraints.js";
 
 // Ticket 6 — Behavioral Motion System
 export * from "./animation/behavioralMotion.js";
+
+// Phase 2 — MediaImage Sizing & Focal Point Engine
+export * from "./mediaImageEngine.js";

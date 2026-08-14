@@ -123,7 +123,7 @@ export interface EvaluatedConnectorGeometry {
   toY: number;
   strokeColor: string;
   strokeWidth: number;
-  lineStyle: "straight" | "curved" | "elbow";
+  lineStyle: "straight" | "curved" | "elbow" | "orthogonal" | "bezier";
   arrowHead: "none" | "start" | "end" | "both";
 }
 

@@ -47,6 +47,20 @@ export class PixiSelectionOverlay {
     const absW = maxX - minX;
     const absH = maxY - minY;
 
+    const singleNode = nodesToRender.length === 1 ? nodesToRender[0] : null;
+    const rotDeg = singleNode ? ((singleNode as any).rotation || (singleNode.style as any)?.rotation || 0) : 0;
+    if (singleNode && rotDeg !== 0) {
+      const cx = minX + absW / 2;
+      const cy = minY + absH / 2;
+      this.selectionGraphics.position.set(cx, cy);
+      this.selectionGraphics.pivot.set(cx, cy);
+      this.selectionGraphics.rotation = (rotDeg * Math.PI) / 180;
+    } else {
+      this.selectionGraphics.position.set(0, 0);
+      this.selectionGraphics.pivot.set(0, 0);
+      this.selectionGraphics.rotation = 0;
+    }
+
     // 1. Draw Outer Glow Bounding Box Line
     this.selectionGraphics.roundRect(minX - 5, minY - 5, absW + 10, absH + 10, 6);
     this.selectionGraphics.stroke({ color: 0x7c6fff, width: 1, alpha: 0.35 });

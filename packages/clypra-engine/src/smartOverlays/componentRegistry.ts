@@ -235,6 +235,8 @@ componentRegistry.register({
     y: 75,
     width: 50,
     height: 18,
+    constraints: { horizontal: "left", vertical: "bottom" },
+    layout: { constraints: { widthMode: "fixed", heightMode: "fixed" } },
     props: {
       name: "Sarah Jenkins",
       title: "Head of Product & Design",
@@ -249,9 +251,9 @@ componentRegistry.register({
 // 5. Primitive Text
 componentRegistry.register({
   type: "text-primitive",
-  name: "Text Layer",
+  name: "Text",
   category: "typography",
-  description: "Standalone text box with custom font, size, color, and weight.",
+  description: "Text layer with custom font, size, weight, and color styling.",
   defaultProps: { text: "Header Title" },
   schema: [
     { key: "text", label: "Text Content", type: "text", defaultValue: "Header Title", group: "Content" }
@@ -263,13 +265,12 @@ componentRegistry.register({
     x: 100,
     y: 100,
     width: 300,
-    height: 60,
+    height: 40,
     text: "Header Title",
     style: {
       fontSize: 32,
-      textColor: "#FFFFFF",
-      fontFamily: "Inter",
-      fontWeight: "bold"
+      fontWeight: "bold",
+      textColor: "#FFFFFF"
     }
   } as any)
 });
@@ -277,22 +278,22 @@ componentRegistry.register({
 // 6. Primitive Shape (Rectangle)
 componentRegistry.register({
   type: "rect-primitive",
-  name: "Rectangle Shape",
+  name: "Rectangle",
   category: "layout",
-  description: "Vector rectangle shape with fill color, border radius, and stroke.",
+  description: "Vector rectangle shape with custom fill, stroke, and rounded corners.",
   defaultProps: {},
   schema: [],
   createDefaultNode: () => ({
     id: `rect-${Date.now().toString(36)}`,
     name: "Rectangle Primitive",
     type: "shape",
-    shapeType: "rectangle",
-    x: 120,
-    y: 120,
+    shapeType: "rect",
+    x: 100,
+    y: 100,
     width: 200,
     height: 120,
     style: {
-      fillColor: "#1C1C28",
+      fillColor: "#1E1E28",
       strokeColor: "#2E2E40",
       strokeWidth: 2,
       borderRadius: 12
@@ -303,7 +304,7 @@ componentRegistry.register({
 // 7. Primitive Shape (Circle)
 componentRegistry.register({
   type: "circle-primitive",
-  name: "Circle Shape",
+  name: "Circle",
   category: "layout",
   description: "Vector circle shape with custom fill and stroke styling.",
   defaultProps: {},
@@ -328,7 +329,7 @@ componentRegistry.register({
 // 8. Primitive Media (Image Slot)
 componentRegistry.register({
   type: "image-primitive",
-  name: "Media Image Slot",
+  name: "Image",
   category: "media",
   description: "Image or asset container for overlays.",
   defaultProps: { src: "" },
@@ -355,7 +356,7 @@ componentRegistry.register({
 // 9. Frame Container Primitive
 componentRegistry.register({
   type: "frame-primitive",
-  name: "Layout Frame Container",
+  name: "Frame",
   category: "layout",
   description: "Container frame for grouping, nesting, and layout management.",
   defaultProps: {},
@@ -366,40 +367,41 @@ componentRegistry.register({
     type: "frame",
     x: 100,
     y: 100,
-    width: 400,
-    height: 300,
+    width: 320,
+    height: 240,
     children: [],
     style: {
-      fillColor: "#0E0E14",
-      strokeColor: "#7C6FFF",
-      strokeWidth: 1.5,
-      borderRadius: 16
+      fillColor: "#12121D",
+      borderRadius: 12
+    },
+    layout: {
+      constraints: { widthMode: "fixed", heightMode: "fixed" },
+      rules: { direction: "vertical", gap: 8, padding: { top: 12, right: 12, bottom: 12, left: 12 } }
     }
   } as any)
 });
 
-// 10. Repeater List Primitive
+// 10. Data Repeater Primitive
 componentRegistry.register({
   type: "repeater-primitive",
-  name: "Data Repeater List",
-  category: "metrics",
-  description: "Dynamic data-driven list component with stagger animations.",
+  name: "Repeater",
+  category: "layout",
+  description: "Repeater primitive for array-driven lists and grids.",
   defaultProps: {},
   schema: [],
   createDefaultNode: () => ({
     id: `repeater-${Date.now().toString(36)}`,
     name: "Data Repeater",
     type: "repeater",
-    x: 80,
-    y: 80,
-    width: 320,
-    height: 240,
-    datasetBinding: "{{metrics}}",
-    staggerDelay: 0.1,
+    x: 100,
+    y: 100,
+    width: 300,
+    height: 200,
+    dataSource: "{{items}}",
     itemTemplate: {
-      id: "template-item",
-      name: "Repeater Item Template",
+      id: "template-node",
       type: "text",
+      name: "Item Text",
       x: 0,
       y: 0,
       width: 320,
@@ -407,6 +409,139 @@ componentRegistry.register({
       text: "{{item.name}}: {{item.value}}",
       style: { fontSize: 18, textColor: "#FFFFFF" }
     }
+  } as any)
+});
+
+// 11. Icon Primitive
+componentRegistry.register({
+  type: "icon-primitive",
+  name: "Icon",
+  category: "graphics" as any,
+  description: "Vector icon symbol with customizable color and stroke.",
+  defaultProps: {},
+  schema: [],
+  createDefaultNode: () => ({
+    id: `icon-${Date.now().toString(36)}`,
+    name: "Icon",
+    type: "icon",
+    x: 100,
+    y: 100,
+    width: 32,
+    height: 32,
+    iconName: "check-circle",
+    style: { fillColor: "#10B981" }
+  } as any)
+});
+
+// 12. Line Primitive
+componentRegistry.register({
+  type: "line-primitive",
+  name: "Line",
+  category: "graphics" as any,
+  description: "Geometric line with caps, dash patterns, and endpoints.",
+  defaultProps: {},
+  schema: [],
+  createDefaultNode: () => ({
+    id: `line-${Date.now().toString(36)}`,
+    name: "Line",
+    type: "line",
+    x: 100,
+    y: 100,
+    width: 200,
+    height: 2,
+    startX: 0,
+    startY: 0,
+    endX: 200,
+    endY: 0,
+    strokeColor: "#3B82F6",
+    strokeWidth: 2,
+  } as any)
+});
+
+// 13. Connector Primitive
+componentRegistry.register({
+  type: "connector-primitive",
+  name: "Connector",
+  category: "graphics" as any,
+  description: "Dynamic arrow connector connecting two nodes or canvas coordinates.",
+  defaultProps: {},
+  schema: [],
+  createDefaultNode: () => ({
+    id: `conn-${Date.now().toString(36)}`,
+    name: "Connector",
+    type: "connector",
+    x: 100,
+    y: 100,
+    width: 150,
+    height: 80,
+    lineStyle: "straight",
+    arrowHead: "end",
+    strokeColor: "#3B82F6",
+    strokeWidth: 2,
+  } as any)
+});
+
+// 14. Video Primitive
+componentRegistry.register({
+  type: "video-primitive",
+  name: "Video",
+  category: "media",
+  description: "Hardware-accelerated video layer with trimming, speed, and audio controls.",
+  defaultProps: {},
+  schema: [],
+  createDefaultNode: () => ({
+    id: `vid-${Date.now().toString(36)}`,
+    name: "Video Layer",
+    type: "video",
+    x: 100,
+    y: 100,
+    width: 320,
+    height: 180,
+    assetId: "",
+    playback: { speed: 1.0, loop: true, volume: 1.0 }
+  } as any)
+});
+
+// 15. Audio Primitive
+componentRegistry.register({
+  type: "audio-primitive",
+  name: "Audio",
+  category: "media",
+  description: "Multi-track audio layer with trimming, fade in/out, and ducking.",
+  defaultProps: {},
+  schema: [],
+  createDefaultNode: () => ({
+    id: `aud-${Date.now().toString(36)}`,
+    name: "Audio Track",
+    type: "audio",
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    assetId: "",
+    playback: { speed: 1.0, loop: false, volume: 1.0, duckingDb: 6 }
+  } as any)
+});
+
+// 16. Lottie Primitive
+componentRegistry.register({
+  type: "lottie-primitive",
+  name: "Lottie",
+  category: "graphics" as any,
+  description: "Vector Lottie animation with dynamic slot and property overrides.",
+  defaultProps: {},
+  schema: [],
+  createDefaultNode: () => ({
+    id: `lot-${Date.now().toString(36)}`,
+    name: "Lottie Animation",
+    type: "lottie",
+    x: 100,
+    y: 100,
+    width: 200,
+    height: 200,
+    assetId: "",
+    speed: 1.0,
+    loop: true
   } as any)
 });
 

@@ -74,12 +74,13 @@ export class PrimitiveRegistry {
           id,
           name: "Frame Container",
           type: "frame",
-          x: 440,
-          y: 210,
-          width: 400,
-          height: 300,
+          x: 320,
+          y: 180,
+          width: 640,
+          height: 360,
+          constraints: { horizontal: "center", vertical: "center" },
           style: { backgroundColor: "#1F2937" },
-          layout: { mode: "flex-column", padding: { top: 16, right: 16, bottom: 16, left: 16 }, gap: 12 },
+          layout: { mode: "flex-column", padding: { top: 16, right: 16, bottom: 16, left: 16 }, gap: 12, constraints: { horizontal: "center", vertical: "center" } },
           children: [],
         } as FrameNode),
     });
@@ -99,6 +100,7 @@ export class PrimitiveRegistry {
           width: 200,
           height: 40,
           text: "Text Label",
+          constraints: { horizontal: "center", vertical: "center" },
           style: { fontSize: 20, textColor: "#FFFFFF" },
         } as PrimitiveTextNode),
     });
@@ -113,11 +115,12 @@ export class PrimitiveRegistry {
           id,
           name: "Shape",
           type: "shape",
-          x: 590,
-          y: 310,
-          width: 100,
-          height: 100,
+          x: 320,
+          y: 180,
+          width: 640,
+          height: 360,
           shapeType: "rectangle",
+          constraints: { horizontal: "center", vertical: "center" },
           style: { fillColor: "#3B82F6", borderRadius: 8 },
         } as PrimitiveShapeNode),
     });
@@ -137,6 +140,7 @@ export class PrimitiveRegistry {
           width: 120,
           height: 120,
           mediaType: "image",
+          constraints: { horizontal: "center", vertical: "center" },
         } as PrimitiveMediaNode),
     });
 
@@ -154,6 +158,7 @@ export class PrimitiveRegistry {
           y: 330,
           width: 300,
           height: 60,
+          constraints: { horizontal: "center", vertical: "center" },
           spans: [
             { text: "Rich ", style: { fontSize: 24, textColor: "#6366F1", fontWeight: "bold" } },
             { text: "Formatted ", style: { fontSize: 24, textColor: "#EC4899", fontWeight: "normal" } },
@@ -182,6 +187,7 @@ export class PrimitiveRegistry {
             { offset: 0, color: "#8B5CF6" },
             { offset: 1, color: "#3B82F6" },
           ],
+          constraints: { horizontal: "center", vertical: "center" },
           style: { borderRadius: 12 },
         } as GradientNode),
     });
@@ -201,6 +207,7 @@ export class PrimitiveRegistry {
           width: 32,
           height: 32,
           iconName: "check-circle",
+          constraints: { horizontal: "center", vertical: "center" },
           style: { fillColor: "#10B981" },
         } as IconNode),
     });
@@ -222,6 +229,7 @@ export class PrimitiveRegistry {
           orientation: "horizontal",
           lineStyle: "solid",
           thickness: 2,
+          constraints: { horizontal: "center", vertical: "center" },
           style: { strokeColor: "#374151" },
         } as DividerNode),
     });
@@ -248,6 +256,7 @@ export class PrimitiveRegistry {
           format: "currency",
           trend: 12.5,
           trendDirection: "up",
+          constraints: { horizontal: "center", vertical: "center" },
         } as MetricNode),
     });
 
@@ -271,6 +280,7 @@ export class PrimitiveRegistry {
           fillColor: "#3B82F6",
           showLabel: true,
           styleType: "bar",
+          constraints: { horizontal: "center", vertical: "center" },
         } as ProgressNode),
     });
 
@@ -303,6 +313,7 @@ export class PrimitiveRegistry {
           colorPalette: ["#45FF72", "#FF4141", "#4ECDC4", "#FFE66D", "#A78BFA"],
           showLegend: true,
           legendPosition: "bottom",
+          constraints: { horizontal: "center", vertical: "center" },
           style: { fillColor: "#111827" },
         } as ChartNode),
     });
@@ -332,6 +343,7 @@ export class PrimitiveRegistry {
             { name: "Sarah Jenkins", role: "Design Director", status: "Active" },
             { name: "Michael Vance", role: "Product Manager", status: "Away" },
           ],
+          constraints: { horizontal: "center", vertical: "center" },
         } as TableNode),
     });
 
@@ -350,8 +362,9 @@ export class PrimitiveRegistry {
           width: 320,
           height: 220,
           clipContent: true,
+          constraints: { horizontal: "center", vertical: "center" },
           style: { backgroundColor: "#111827", borderRadius: 16, strokeColor: "#1F2937", strokeWidth: 1 },
-          layout: { mode: "flex-column", padding: { top: 20, right: 20, bottom: 20, left: 20 }, gap: 12 },
+          layout: { mode: "flex-column", padding: { top: 20, right: 20, bottom: 20, left: 20 }, gap: 12, constraints: { horizontal: "center", vertical: "center" } },
           children: [],
         } as ContainerNode),
     });
@@ -374,6 +387,7 @@ export class PrimitiveRegistry {
           body: "All background sync operations completed successfully.",
           iconName: "info-circle",
           calloutType: "info",
+          constraints: { horizontal: "center", vertical: "center" },
           style: { backgroundColor: "#1E1B4B", borderRadius: 12, strokeColor: "#4338CA", strokeWidth: 1 },
         } as CalloutNode),
     });
@@ -395,6 +409,7 @@ export class PrimitiveRegistry {
           initials: "AC",
           shape: "circle",
           badgeStatus: "online",
+          constraints: { horizontal: "center", vertical: "center" },
         } as AvatarNode),
     });
 
@@ -421,6 +436,7 @@ export class PrimitiveRegistry {
           showValue: true,
           showLabel: true,
           label: "Performance",
+          constraints: { horizontal: "center", vertical: "center" },
         } as GaugeNode),
     });
 
@@ -446,6 +462,7 @@ export class PrimitiveRegistry {
           orientation: "horizontal",
           trackColor: "#374151",
           showLabels: true,
+          constraints: { horizontal: "center", vertical: "center" },
         } as TimelineNode),
     });
 
@@ -469,6 +486,7 @@ export class PrimitiveRegistry {
           showLeader: true,
           leaderColor: "#A78BFA",
           pointerStyle: "dot",
+          constraints: { horizontal: "center", vertical: "center" },
         } as AnnotationNode),
     });
 
@@ -492,6 +510,7 @@ export class PrimitiveRegistry {
           arrowHead: "end",
           strokeColor: "#3B82F6",
           strokeWidth: 2,
+          constraints: { horizontal: "center", vertical: "center" },
         } as ConnectorNode),
     });
   }
