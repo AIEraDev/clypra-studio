@@ -7,6 +7,7 @@ import {
   calculateResizeBounds,
   calculateRotationAngle,
   layoutEngine,
+  measureTextWidth,
   type OverlayDocument,
   type SceneNode,
   type ViewportState,
@@ -323,9 +324,21 @@ export function CanvasViewport({
       dragStartRef.current = {
         startX: docPt.x,
         startY: docPt.y,
-        nodeStarts: selectedNodes.map((n) => ({
-          id: n.id, x: n.x, y: n.y, width: n.width, height: n.height, rotation: n.rotation || 0
-        }))
+        nodeStarts: selectedNodes.map((n) => {
+          const cb = computedLayout.nodes[n.id];
+          return {
+            id: n.id,
+            origX: n.x,
+            origY: n.y,
+            origW: n.width,
+            origH: n.height,
+            x: cb ? cb.x : n.x,
+            y: cb ? cb.y : n.y,
+            width: cb ? cb.width : n.width,
+            height: cb ? cb.height : n.height,
+            rotation: n.rotation || 0
+          };
+        })
       };
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
       return;
@@ -357,9 +370,21 @@ export function CanvasViewport({
       dragStartRef.current = {
         startX: docPt.x,
         startY: docPt.y,
-        nodeStarts: currentSelected.map((n) => ({
-          id: n.id, x: n.x, y: n.y, width: n.width, height: n.height, rotation: n.rotation || 0
-        }))
+        nodeStarts: currentSelected.map((n) => {
+          const cb = computedLayout.nodes[n.id];
+          return {
+            id: n.id,
+            origX: n.x,
+            origY: n.y,
+            origW: n.width,
+            origH: n.height,
+            x: cb ? cb.x : n.x,
+            y: cb ? cb.y : n.y,
+            width: cb ? cb.width : n.width,
+            height: cb ? cb.height : n.height,
+            rotation: n.rotation || 0
+          };
+        })
       };
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
     } else {
@@ -404,13 +429,23 @@ export function CanvasViewport({
       const primaryStart = dragStartRef.current.nodeStarts[0];
       if (!primaryStart || !selectedNode) return;
 
+      const primaryCb = computedLayout.nodes[selectedNode.id];
+      const movingWidth = primaryCb ? primaryCb.width : primaryStart.width;
+      const movingHeight = primaryCb ? primaryCb.height : primaryStart.height;
+
       const targetX = Math.round(primaryStart.x + deltaX);
       const targetY = Math.round(primaryStart.y + deltaY);
 
       const allFlattenedNodes = getAllNodesFlattened(doc.nodes);
-      const otherNodes = allFlattenedNodes.filter((n) => !selectedNodeIds.includes(n.id));
+      const otherNodes = allFlattenedNodes
+        .filter((n) => !selectedNodeIds.includes(n.id))
+        .map((n) => {
+          const cb = computedLayout.nodes[n.id];
+          return cb ? ({ ...n, x: cb.x, y: cb.y, width: cb.width, height: cb.height } as any) : n;
+        });
+
       const snapResult = snapEngine.calculateSnap(
-        { x: targetX, y: targetY, width: selectedNode.width, height: selectedNode.height },
+        { x: targetX, y: targetY, width: movingWidth, height: movingHeight },
         otherNodes,
         doc.canvas.width,
         doc.canvas.height
@@ -423,16 +458,16 @@ export function CanvasViewport({
       for (const ns of dragStartRef.current.nodeStarts) {
         const node = findNodeDeep(doc.nodes, ns.id);
         if (node) {
-          node.x = ns.x + snappedDeltaX;
-          node.y = ns.y + snappedDeltaY;
+          node.x = ns.origX + snappedDeltaX;
+          node.y = ns.origY + snappedDeltaY;
         }
       }
     } else if (dragModeRef.current === "resize" && activeHandleRef.current && selectedNode) {
       const start = dragStartRef.current.nodeStarts[0];
       if (!start) return;
 
-      let newX = start.x;
-      let newY = start.y;
+      let newX = start.origX;
+      let newY = start.origY;
       let newW = start.width;
       let newH = start.height;
 
@@ -445,12 +480,12 @@ export function CanvasViewport({
       if (handle.includes("b")) newH = Math.max(2, start.height + deltaY);
       if (handle.includes("l")) {
         const diff = Math.min(deltaX, start.width - 10);
-        newX = start.x + diff;
+        newX = start.origX + diff;
         newW = start.width - diff;
       }
       if (handle.includes("t")) {
         const diff = Math.min(deltaY, start.height - 2);
-        newY = start.y + diff;
+        newY = start.origY + diff;
         newH = start.height - diff;
       }
 
@@ -459,6 +494,28 @@ export function CanvasViewport({
         const ratio = start.width / start.height;
         newH = Math.round(newW / ratio);
       }
+
+      const allFlattenedNodes = getAllNodesFlattened(doc.nodes);
+      const otherNodes = allFlattenedNodes
+        .filter((n) => !selectedNodeIds.includes(n.id))
+        .map((n) => {
+          const cb = computedLayout.nodes[n.id];
+          return cb ? ({ ...n, x: cb.x, y: cb.y, width: cb.width, height: cb.height } as any) : n;
+        });
+
+      const resizeSnap = snapEngine.calculateResizeSnap(
+        { x: newX, y: newY, width: newW, height: newH },
+        handle,
+        otherNodes,
+        doc.canvas.width,
+        doc.canvas.height
+      );
+
+      newX = resizeSnap.x;
+      newY = resizeSnap.y;
+      newW = resizeSnap.width;
+      newH = resizeSnap.height;
+      setActiveGuides(resizeSnap.guides);
 
       selectedNode.x = Math.round(newX);
       selectedNode.y = Math.round(newY);
@@ -488,6 +545,16 @@ export function CanvasViewport({
           const newFontSize = Math.max(8, Math.round(startFontSize * scaleFactor));
           if (selectedNode.style) selectedNode.style.fontSize = newFontSize;
           (selectedNode as any).fontSize = newFontSize;
+
+          if (selectedNode.layout?.constraints?.widthMode !== "fixed") {
+            const fontFam = selectedNode.style?.fontFamily || "Inter";
+            const fontW = selectedNode.style?.fontWeight || "bold";
+            const currentText = (selectedNode as any).text || "";
+            const measuredW = measureTextWidth(currentText, newFontSize, fontW, fontFam);
+            const lineH = Math.ceil(newFontSize * (selectedNode.style?.lineHeight || 1.2));
+            selectedNode.width = measuredW;
+            selectedNode.height = lineH;
+          }
         }
       } else if (selectedNode.type === "icon") {
         let newSize = Math.max(12, Math.round(Math.min(newW, newH)));
