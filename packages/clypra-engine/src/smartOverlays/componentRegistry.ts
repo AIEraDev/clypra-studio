@@ -264,9 +264,15 @@ componentRegistry.register({
     type: "text",
     x: 100,
     y: 100,
-    width: 300,
-    height: 40,
+    width: 195,
+    height: 38,
     text: "Header Title",
+    layout: {
+      constraints: {
+        widthMode: "hug",
+        heightMode: "hug"
+      }
+    },
     style: {
       fontSize: 32,
       fontWeight: "bold",

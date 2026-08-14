@@ -97,10 +97,11 @@ export class PrimitiveRegistry {
           type: "text",
           x: 540,
           y: 340,
-          width: 200,
-          height: 40,
+          width: 110,
+          height: 28,
           text: "Text Label",
           constraints: { horizontal: "center", vertical: "center" },
+          layout: { constraints: { widthMode: "hug", heightMode: "hug" } },
           style: { fontSize: 20, textColor: "#FFFFFF" },
         } as PrimitiveTextNode),
     });
