@@ -69,20 +69,41 @@ export class CommandExecutor {
         };
       }
 
+      case "UPDATE_NODE" as any: {
+        const nodeId = (command as any).nodeId;
+        const targetNode = this.findNode(docCopy.nodes, nodeId);
+        if (!targetNode) return { nextDocument: docCopy, inverseCommand: command };
+
+        const patchObj = (command as any).patch || (command as any).changes || {};
+        const prevPatch: Record<string, any> = {};
+        Object.keys(patchObj).forEach((k) => {
+          prevPatch[k] = (targetNode as any)[k];
+          (targetNode as any)[k] = patchObj[k];
+        });
+
+        return {
+          nextDocument: docCopy,
+          inverseCommand: { type: "UPDATE_NODE" as any, nodeId, patch: prevPatch }
+        };
+      }
+
       case "UPDATE_NODE_STYLE": {
         const targetNode = this.findNode(docCopy.nodes, command.nodeId);
         if (!targetNode) return { nextDocument: docCopy, inverseCommand: command };
 
         if (!targetNode.style) targetNode.style = {};
-        const prevStyle = (targetNode.style as any)[command.stylePath];
-        (targetNode.style as any)[command.stylePath] = command.value;
+        const styleKey = command.stylePath || (command as any).path;
+        if (!styleKey) return { nextDocument: docCopy, inverseCommand: command };
+
+        const prevStyle = (targetNode.style as any)[styleKey];
+        (targetNode.style as any)[styleKey] = command.value;
 
         return {
           nextDocument: docCopy,
           inverseCommand: {
             type: "UPDATE_NODE_STYLE",
             nodeId: command.nodeId,
-            stylePath: command.stylePath,
+            stylePath: styleKey,
             value: prevStyle,
             previousValue: command.value
           }
@@ -100,7 +121,48 @@ export class CommandExecutor {
           inverseCommand: {
             type: "REORDER_NODES",
             sourceIndex: destinationIndex,
-            destinationIndex: sourceIndex
+            destinationIndex: sourceIndex,
+          }
+        };
+      }
+
+      case "REPARENT_NODE": {
+        const { nodeId, targetParentId } = command as any;
+        const targetNode = this.findNode(docCopy.nodes, nodeId);
+        if (!targetNode) return { nextDocument: docCopy, inverseCommand: command };
+
+        const findParentId = (nodes: SceneNode[], childId: string, parentId?: string): string | undefined => {
+          for (const n of nodes) {
+            if (n.id === childId) return parentId;
+            if ("children" in n && Array.isArray((n as any).children)) {
+              const res = findParentId((n as any).children, childId, n.id);
+              if (res !== undefined) return res;
+            }
+          }
+          return undefined;
+        };
+        const prevParentId = findParentId(docCopy.nodes, nodeId);
+
+        docCopy.nodes = this.removeNode(docCopy.nodes, nodeId);
+
+        if (targetParentId) {
+          const parentNode = this.findNode(docCopy.nodes, targetParentId);
+          if (parentNode && "children" in parentNode && Array.isArray((parentNode as any).children)) {
+            (parentNode as any).children.push(targetNode);
+          } else {
+            docCopy.nodes.push(targetNode);
+          }
+        } else {
+          docCopy.nodes.push(targetNode);
+        }
+
+        return {
+          nextDocument: docCopy,
+          inverseCommand: {
+            type: "REPARENT_NODE",
+            nodeId,
+            targetParentId: prevParentId,
+            previousParentId: targetParentId
           }
         };
       }

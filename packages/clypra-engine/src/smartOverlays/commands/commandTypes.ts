@@ -31,6 +31,7 @@ export type CommandType =
   | "REMOVE_BREAKPOINT"
   | "SET_ACTIVE_BREAKPOINT"
   | "SET_RESPONSIVE_OVERRIDE"
+  | "REPARENT_NODE"
   | "BATCH_COMMANDS";
 
 export interface BaseCommand {
@@ -251,6 +252,13 @@ export interface SetFontRefCommand extends BaseCommand {
   previousFontRef?: FontRef;
 }
 
+export interface ReparentNodeCommand extends BaseCommand {
+  type: "REPARENT_NODE";
+  nodeId: string;
+  targetParentId?: string;
+  previousParentId?: string;
+}
+
 export type DocumentCommand =
   | SetDocumentCommand
   | AddNodeCommand
@@ -282,4 +290,7 @@ export type DocumentCommand =
   | RemoveBreakpointCommand
   | SetActiveBreakpointCommand
   | SetResponsiveOverrideCommand
+  | ReparentNodeCommand
   | BatchCommandsCommand;
+
+export type Command = DocumentCommand;
