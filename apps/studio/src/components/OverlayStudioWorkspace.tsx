@@ -56,10 +56,24 @@ const LEFT_TABS: Array<{ id: LeftTab; label: string }> = [
 export function OverlayStudioWorkspace({
   onExit,
 }: OverlayStudioWorkspaceProps = {}) {
-  const { doc, executeCommand, undo, redo, canUndo, canRedo } =
-    useOverlayDocument();
+  const {
+    doc,
+    executeCommand,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    loadDocument,
+    newDocument,
+    lastSavedTime,
+  } = useOverlayDocument();
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [leftTab, setLeftTab] = useState<LeftTab>("components");
+
+  // Project title editing
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState(doc.title);
+  const projectFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Ephemeral preview data — never persisted to document
   const [previewContext, setPreviewContext] = useState<Record<string, any>>({});
@@ -85,9 +99,21 @@ export function OverlayStudioWorkspace({
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportHistory, setExportHistory] = useState<ExportJobRecord[]>([]);
 
-  // Derive primary selected node (first selected)
-  const selectedNode =
-    doc.nodes.find((n) => selectedNodeIds.includes(n.id)) || null;
+  const findNodeDeep = (nodes: SceneNode[], id: string): SceneNode | null => {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      if ("children" in n && Array.isArray((n as any).children)) {
+        const found = findNodeDeep((n as any).children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Derive primary selected node (first selected at any nesting depth)
+  const selectedNode = selectedNodeIds[0]
+    ? findNodeDeep(doc.nodes, selectedNodeIds[0])
+    : null;
 
   // Prune invalid selectedNodeIds when document changes (e.g. on undo/redo/delete)
   useEffect(() => {
@@ -125,6 +151,67 @@ export function OverlayStudioWorkspace({
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
 
+  // Save Project (.clypra-overlay file download + local app cache)
+  const handleSave = async () => {
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem("clypra_overlay_workspace_doc", JSON.stringify(doc));
+      }
+      const artifact = {
+        documentId: doc.id || `doc-${Date.now()}`,
+        revision: doc.schemaVersion || 1,
+        schemaVersion: "2.0",
+        updatedAt: new Date().toISOString(),
+        savedAt: new Date().toISOString(),
+        author: "Clypra Studio",
+        document: doc,
+      };
+
+      const jsonStr = JSON.stringify(artifact, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const fileName = `${
+        doc.title.toLowerCase().replace(/\s+/g, "-") || "overlay-project"
+      }.clypra-overlay`;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setNoticeMessage(`Saved "${fileName}" to disk & local cache!`);
+      setTimeout(() => setNoticeMessage(null), 3000);
+    } catch (err: any) {
+      setNoticeMessage(`Save failed: ${err.message}`);
+      setTimeout(() => setNoticeMessage(null), 3000);
+    }
+  };
+
+  // Open Project (.clypra-overlay or .json file upload)
+  const handleOpenProjectFile = (file: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const parsed = JSON.parse(content);
+        const targetDoc = parsed.document || parsed;
+        if (!targetDoc || typeof targetDoc !== "object") {
+          throw new Error("Invalid Clypra project file");
+        }
+        loadDocument(targetDoc);
+        setNoticeMessage(`Loaded project: "${targetDoc.title || file.name}"`);
+        setTimeout(() => setNoticeMessage(null), 3000);
+      } catch (err: any) {
+        setNoticeMessage(`Failed to open project: ${err.message}`);
+        setTimeout(() => setNoticeMessage(null), 3500);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   // Import background reference video (captures width/height on loadedmetadata)
   const handleImportReferenceVideo = (file: File) => {
     if (!file.type.startsWith("video/")) return;
@@ -132,7 +219,7 @@ export function OverlayStudioWorkspace({
     const video = document.createElement("video");
     video.src = url;
     video.loop = true;
-    video.muted = true; // design reference only — no audio needed
+    video.muted = true;
     video.playsInline = true;
 
     video.onloadedmetadata = () => {
@@ -192,14 +279,17 @@ export function OverlayStudioWorkspace({
     };
   }, [isPlaying, playbackSpeed, doc.duration]);
 
-  // Global Keyboard Shortcuts
+  // Global Keyboard Shortcuts (⌘Z, ⌘⇧Z, ⌘S, ⌘G, ⌘⇧G, ⌘A, Space, Delete)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName))
         return;
       const isCmd = e.metaKey || e.ctrlKey;
 
-      if (isCmd && e.key.toLowerCase() === "z") {
+      if (isCmd && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        handleSave();
+      } else if (isCmd && e.key.toLowerCase() === "z") {
         e.preventDefault();
         e.shiftKey ? canRedo && redo() : canUndo && undo();
       } else if (
@@ -247,50 +337,6 @@ export function OverlayStudioWorkspace({
     executeCommand,
   ]);
 
-  const handleExportDocument = () => {
-    try {
-      const artifact = {
-        documentId: doc.id || `doc-${Date.now()}`,
-        revision: doc.schemaVersion || 1,
-        schemaVersion: "2.0",
-        updatedAt: doc.updatedAt || new Date().toISOString(),
-        publishedAt: new Date().toISOString(),
-        author: "Clypra Studio",
-        document: doc,
-      };
-
-      const jsonStr = JSON.stringify(artifact, null, 2);
-      const blob = new Blob([jsonStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      const fileName = `${
-        doc.title.toLowerCase().replace(/\s+/g, "-") || "overlay-document"
-      }.clypra-overlay`;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      setNoticeMessage(`Artifact published as ${fileName}`);
-      setTimeout(() => setNoticeMessage(null), 2500);
-    } catch (err: any) {
-      setNoticeMessage(`Export document failed: ${err.message}`);
-      setTimeout(() => setNoticeMessage(null), 3000);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      await smartOverlayRegistry.saveToLocalCache(doc as any);
-      setNoticeMessage("Template saved to AppCache");
-      setTimeout(() => setNoticeMessage(null), 2500);
-    } catch (err: any) {
-      setNoticeMessage(`Save failed: ${err.message}`);
-      setTimeout(() => setNoticeMessage(null), 3000);
-    }
-  };
-
   const zoomIn = () =>
     setViewport((v) => ({ ...v, zoom: Math.min(v.zoom + 10, 200) }));
   const zoomOut = () =>
@@ -308,12 +354,26 @@ export function OverlayStudioWorkspace({
       className="fixed inset-0 flex flex-col overflow-hidden font-sans text-white select-none"
       style={{ zIndex: 9999, background: "#0C0C10" }}
     >
+      {/* Hidden File Input for Opening .clypra-overlay project files */}
+      <input
+        type="file"
+        ref={projectFileInputRef}
+        accept=".clypra-overlay,.json"
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files?.[0]) {
+            handleOpenProjectFile(e.target.files[0]);
+            e.target.value = "";
+          }
+        }}
+      />
+
       {/* ── TOP MENU BAR ─────────────────────────────────────────────── */}
       <header
         className="flex h-11 shrink-0 items-center justify-between border-b border-white/6 bg-[#111116] px-4 z-40"
         style={{ boxShadow: "0 1px 0 rgba(255,255,255,0.04)" }}
       >
-        {/* Left — Branding + Title */}
+        {/* Left — Branding + Editable Project Title */}
         <div className="flex items-center gap-3">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-500/30">
             <Sparkles size={14} className="text-white" />
@@ -323,9 +383,50 @@ export function OverlayStudioWorkspace({
               Clypra
             </span>
             <span className="text-gray-600">/</span>
-            <span className="text-[13px] font-semibold text-white">
-              {doc.title}
-            </span>
+            {isEditingTitle ? (
+              <input
+                type="text"
+                value={titleInput}
+                autoFocus
+                onChange={(e) => setTitleInput(e.target.value)}
+                onBlur={() => {
+                  setIsEditingTitle(false);
+                  if (titleInput.trim() && titleInput !== doc.title) {
+                    executeCommand({
+                      type: "UPDATE_DOCUMENT_META",
+                      patch: { title: titleInput.trim() },
+                    });
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setIsEditingTitle(false);
+                    if (titleInput.trim() && titleInput !== doc.title) {
+                      executeCommand({
+                        type: "UPDATE_DOCUMENT_META",
+                        patch: { title: titleInput.trim() },
+                      });
+                    }
+                  } else if (e.key === "Escape") {
+                    setIsEditingTitle(false);
+                    setTitleInput(doc.title);
+                  }
+                }}
+                className="bg-[#1C1C24] border border-violet-500 rounded px-2 py-0.5 text-[13px] font-semibold text-white outline-none"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setTitleInput(doc.title);
+                  setIsEditingTitle(true);
+                }}
+                title="Click to rename overlay project"
+                className="text-[13px] font-semibold text-white hover:text-violet-300 hover:bg-white/[0.04] px-1.5 py-0.5 rounded transition-colors cursor-pointer text-left"
+              >
+                {doc.title}
+              </button>
+            )}
             <span className="rounded-md bg-violet-500/15 border border-violet-500/25 px-1.5 py-0.5 text-[10px] font-bold text-violet-400 font-mono">
               v2.0
             </span>
@@ -413,8 +514,49 @@ export function OverlayStudioWorkspace({
           </button>
         </div>
 
-        {/* Right — Reference Video, Save, Export & Exit */}
+        {/* Right — Project Open, Save, Reference Video, Export & Exit */}
         <div className="flex items-center gap-2">
+          {/* New Project */}
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                window.confirm(
+                  "Create a new smart overlay project? Unsaved changes will be cleared.",
+                )
+              ) {
+                newDocument();
+                setNoticeMessage("Created new blank overlay project");
+                setTimeout(() => setNoticeMessage(null), 2500);
+              }
+            }}
+            title="New blank project"
+            className="flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-bold text-gray-300 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
+          >
+            <Sparkles size={12} /> New
+          </button>
+
+          {/* Open / Load Project */}
+          <button
+            type="button"
+            onClick={() => projectFileInputRef.current?.click()}
+            title="Open an existing .clypra-overlay or .json project file"
+            className="flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1.5 text-[11px] font-bold text-indigo-300 hover:bg-indigo-500/20 transition-all cursor-pointer"
+          >
+            <Download size={12} className="rotate-180" /> Open
+          </button>
+
+          {/* Save Project */}
+          <button
+            type="button"
+            onClick={handleSave}
+            title="Save project (.clypra-overlay) & cache draft (⌘S)"
+            className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer shadow-sm shadow-emerald-500/10"
+          >
+            <Save size={12} /> Save (⌘S)
+          </button>
+
+          {/* Reference Video Import */}
           <input
             type="file"
             accept="video/*"
@@ -450,19 +592,13 @@ export function OverlayStudioWorkspace({
               type="button"
               onClick={() => videoInputRef.current?.click()}
               title="Import background reference video clip to align overlays against moving footage"
-              className="flex items-center gap-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-1.5 text-[11px] font-bold text-sky-300 hover:bg-sky-500/20 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-1.5 text-[11px] font-bold text-sky-300 hover:bg-sky-500/20 transition-all cursor-pointer"
             >
-              <Video size={12} /> Import Video
+              <Video size={12} /> Video
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleExportDocument}
-            title="Export full OverlayDocument schema (.clypra-overlay JSON)"
-            className="flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-[11px] font-bold text-indigo-300 hover:bg-indigo-500/20 transition-all cursor-pointer"
-          >
-            <Download size={12} /> .clypra-overlay
-          </button>
+
+          {/* Export Video Modal */}
           <button
             type="button"
             onClick={() => setShowExportModal(true)}
@@ -470,19 +606,14 @@ export function OverlayStudioWorkspace({
           >
             <Download size={12} /> Export Video
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer"
-          >
-            <Save size={12} /> Save
-          </button>
+
+          {/* Exit Studio */}
           <button
             type="button"
             onClick={onExit}
-            className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-[11px] font-bold text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
+            className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-bold text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
           >
-            <Monitor size={12} /> Exit Studio
+            <Monitor size={12} /> Exit
           </button>
         </div>
       </header>
@@ -533,7 +664,10 @@ export function OverlayStudioWorkspace({
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
             {leftTab === "components" && (
               <div className="p-3">
-                <ComponentLibrary onExecuteCommand={executeCommand} />
+                <ComponentLibrary
+                  onExecuteCommand={executeCommand}
+                  selectedNode={selectedNode}
+                />
               </div>
             )}
             {leftTab === "layers" && (
@@ -570,12 +704,10 @@ export function OverlayStudioWorkspace({
         >
           <CanvasViewport
             doc={doc}
-            selectedNode={selectedNode}
             selectedNodeIds={selectedNodeIds}
             currentTime={currentTime}
             viewport={viewport}
             referenceVideo={referenceVideo}
-            referenceVideoMeta={referenceVideoMeta}
             onSelectNodeIds={setSelectedNodeIds}
             onExecuteCommand={executeCommand}
             onSetZoom={handleSetZoom}
