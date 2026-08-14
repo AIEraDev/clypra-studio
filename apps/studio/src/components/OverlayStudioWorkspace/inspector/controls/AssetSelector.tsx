@@ -16,7 +16,9 @@ export function AssetSelector({ node, onExecuteCommand }: AssetSelectorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentAssetId = node.assetId || "";
   const allAssets = assetRegistry.list();
-  const currentEntry = currentAssetId ? assetRegistry.get(currentAssetId) : undefined;
+  const currentEntry = currentAssetId
+    ? assetRegistry.get(currentAssetId)
+    : undefined;
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newAssetId = e.target.value;
@@ -32,7 +34,9 @@ export function AssetSelector({ node, onExecuteCommand }: AssetSelectorProps) {
     if (!file) return;
 
     const blobUrl = URL.createObjectURL(file);
-    const assetId = `asset-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const assetId = `asset-${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2, 6)}`;
 
     const ref: AssetRef = {
       assetId,
@@ -52,7 +56,7 @@ export function AssetSelector({ node, onExecuteCommand }: AssetSelectorProps) {
   };
 
   return (
-    <div className="flex flex-col gap-2 p-2.5 bg-[#151519] border border-white/[0.06] rounded-xl">
+    <div className="flex flex-col gap-2 p-2.5 bg-[#151519] border border-white/6 rounded-xl">
       <div className="flex items-center justify-between">
         <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
           <Image size={11} className="text-violet-400" />
@@ -79,7 +83,7 @@ export function AssetSelector({ node, onExecuteCommand }: AssetSelectorProps) {
       <select
         value={currentAssetId}
         onChange={handleSelectChange}
-        className="w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors"
+        className="w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors"
       >
         <option value="">-- None (Missing Asset) --</option>
         {allAssets.map((asset) => (
@@ -91,7 +95,7 @@ export function AssetSelector({ node, onExecuteCommand }: AssetSelectorProps) {
 
       {/* Selected Asset Details Card */}
       {currentEntry ? (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-[#1C1C22] border border-white/[0.04]">
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-[#1C1C22] border border-white/4">
           <div className="w-8 h-8 rounded bg-[#151519] overflow-hidden flex items-center justify-center shrink-0">
             {currentEntry.resolvedUrl ? (
               <img
@@ -108,10 +112,13 @@ export function AssetSelector({ node, onExecuteCommand }: AssetSelectorProps) {
               {currentAssetId}
             </p>
             <p className="text-[9px] text-gray-500 flex items-center gap-1">
-              <span className="uppercase text-gray-400">{currentEntry.ref.kind}</span>
+              <span className="uppercase text-gray-400">
+                {currentEntry.ref.kind}
+              </span>
               <span>•</span>
               <span className="text-emerald-400 font-bold">
-                {currentEntry.refCount} node{currentEntry.refCount > 1 ? "s" : ""}
+                {currentEntry.refCount} node
+                {currentEntry.refCount > 1 ? "s" : ""}
               </span>
             </p>
           </div>

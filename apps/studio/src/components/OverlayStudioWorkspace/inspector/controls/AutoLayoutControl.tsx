@@ -1,5 +1,9 @@
 import React from "react";
-import type { NodeLayoutRules, LayoutMode, AlignmentMode } from "@clypra-studio/engine";
+import type {
+  NodeLayoutRules,
+  LayoutMode,
+  AlignmentMode,
+} from "@clypra-studio/engine";
 import { ArrowRight, ArrowDown, LayoutGrid, Layers } from "lucide-react";
 
 interface AutoLayoutControlProps {
@@ -7,10 +11,23 @@ interface AutoLayoutControlProps {
   onChange: (layout: NodeLayoutRules) => void;
 }
 
-export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlProps) {
+export function AutoLayoutControl({
+  layout = {},
+  onChange,
+}: AutoLayoutControlProps) {
   const currentMode: LayoutMode = layout.mode || "none";
   const gap = layout.gap || 0;
-  const padding = layout.padding || { top: 0, right: 0, bottom: 0, left: 0 };
+  const rawPadding = layout.padding;
+  const padding = typeof rawPadding === "number"
+    ? { top: rawPadding, right: rawPadding, bottom: rawPadding, left: rawPadding }
+    : typeof rawPadding === "object" && rawPadding !== null
+    ? {
+        top: rawPadding.top ?? 0,
+        right: rawPadding.right ?? 0,
+        bottom: rawPadding.bottom ?? 0,
+        left: rawPadding.left ?? 0,
+      }
+    : { top: 0, right: 0, bottom: 0, left: 0 };
   const alignItems = layout.alignItems || "start";
   const justifyContent = layout.justifyContent || "start";
 
@@ -25,7 +42,7 @@ export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlPr
   const setPaddingField = (field: keyof typeof padding, val: number) => {
     onChange({
       ...layout,
-      padding: { ...padding, [field]: val }
+      padding: { ...padding, [field]: val },
     });
   };
 
@@ -44,12 +61,14 @@ export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlPr
         <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
           Layout Direction
         </label>
-        <div className="grid grid-cols-4 gap-1 p-0.5 bg-[#151519] border border-white/[0.06] rounded-lg">
+        <div className="grid grid-cols-4 gap-1 p-0.5 bg-[#151519] border border-white/6 rounded-lg">
           <button
             type="button"
             onClick={() => setMode("none")}
             className={`flex items-center justify-center gap-1 py-1 rounded text-[11px] font-medium transition-all ${
-              currentMode === "none" ? "bg-violet-600 text-white shadow" : "text-gray-400 hover:text-white"
+              currentMode === "none"
+                ? "bg-violet-600 text-white shadow"
+                : "text-gray-400 hover:text-white"
             }`}
             title="Absolute Positioning"
           >
@@ -60,7 +79,9 @@ export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlPr
             type="button"
             onClick={() => setMode("flex-row")}
             className={`flex items-center justify-center gap-1 py-1 rounded text-[11px] font-medium transition-all ${
-              currentMode === "flex-row" ? "bg-violet-600 text-white shadow" : "text-gray-400 hover:text-white"
+              currentMode === "flex-row"
+                ? "bg-violet-600 text-white shadow"
+                : "text-gray-400 hover:text-white"
             }`}
             title="Horizontal Row"
           >
@@ -71,7 +92,9 @@ export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlPr
             type="button"
             onClick={() => setMode("flex-column")}
             className={`flex items-center justify-center gap-1 py-1 rounded text-[11px] font-medium transition-all ${
-              currentMode === "flex-column" ? "bg-violet-600 text-white shadow" : "text-gray-400 hover:text-white"
+              currentMode === "flex-column"
+                ? "bg-violet-600 text-white shadow"
+                : "text-gray-400 hover:text-white"
             }`}
             title="Vertical Column"
           >
@@ -82,7 +105,9 @@ export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlPr
             type="button"
             onClick={() => setMode("grid")}
             className={`flex items-center justify-center gap-1 py-1 rounded text-[11px] font-medium transition-all ${
-              currentMode === "grid" ? "bg-violet-600 text-white shadow" : "text-gray-400 hover:text-white"
+              currentMode === "grid"
+                ? "bg-violet-600 text-white shadow"
+                : "text-gray-400 hover:text-white"
             }`}
             title="Grid Layout"
           >
@@ -91,6 +116,27 @@ export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlPr
           </button>
         </div>
       </div>
+
+      {currentMode === "grid" && (
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+            Grid Columns
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={12}
+            value={layout.gridColumns ?? 2}
+            onChange={(e) =>
+              onChange({
+                ...layout,
+                gridColumns: Math.max(1, parseInt(e.target.value) || 1),
+              })
+            }
+            className="w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono outline-none focus:border-violet-500"
+          />
+        </div>
+      )}
 
       {currentMode !== "none" && (
         <>
@@ -105,7 +151,7 @@ export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlPr
                 min={0}
                 value={gap}
                 onChange={(e) => setGap(parseFloat(e.target.value) || 0)}
-                className="w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono outline-none focus:border-violet-500"
+                className="w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono outline-none focus:border-violet-500"
               />
             </div>
 
@@ -120,9 +166,11 @@ export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlPr
                     type="number"
                     min={0}
                     value={padding[side]}
-                    onChange={(e) => setPaddingField(side, parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setPaddingField(side, parseFloat(e.target.value) || 0)
+                    }
                     placeholder={side[0].toUpperCase()}
-                    className="w-full bg-[#1C1C22] border border-white/[0.06] rounded px-1 py-1 text-[11px] text-white font-mono text-center outline-none focus:border-violet-500"
+                    className="w-full bg-[#1C1C22] border border-white/6 rounded px-1 py-1 text-[11px] text-white font-mono text-center outline-none focus:border-violet-500"
                     title={`Padding ${side}`}
                   />
                 ))}
@@ -139,7 +187,7 @@ export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlPr
               <select
                 value={alignItems}
                 onChange={(e) => setAlign(e.target.value as AlignmentMode)}
-                className="w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2 py-1.5 text-[11px] text-white outline-none cursor-pointer"
+                className="w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2 py-1.5 text-[11px] text-white outline-none cursor-pointer"
               >
                 <option value="start">Start</option>
                 <option value="center">Center</option>
@@ -155,7 +203,7 @@ export function AutoLayoutControl({ layout = {}, onChange }: AutoLayoutControlPr
               <select
                 value={justifyContent}
                 onChange={(e) => setJustify(e.target.value as AlignmentMode)}
-                className="w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2 py-1.5 text-[11px] text-white outline-none cursor-pointer"
+                className="w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2 py-1.5 text-[11px] text-white outline-none cursor-pointer"
               >
                 <option value="start">Start</option>
                 <option value="center">Center</option>

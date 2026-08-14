@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import type { PropertyDefinition, DataBindingRule } from "@clypra-studio/engine";
+import type {
+  PropertyDefinition,
+  DataBindingRule,
+} from "@clypra-studio/engine";
 import { Link, Zap } from "lucide-react";
 
 interface PropertyRowProps {
@@ -17,7 +20,7 @@ export function PropertyRow({
   binding,
   onChange,
   onBind,
-  isAnimatable
+  isAnimatable,
 }: PropertyRowProps) {
   const [showBinding, setShowBinding] = useState(Boolean(binding?.expression));
   const [expr, setExpr] = useState(binding?.expression || "");
@@ -62,7 +65,7 @@ export function PropertyRow({
             className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1 ${
               showBinding || binding?.expression
                 ? "bg-violet-500/20 text-violet-300 border border-violet-500/40"
-                : "bg-white/[0.04] text-gray-400 hover:text-white border border-white/[0.06]"
+                : "bg-white/[0.04] text-gray-400 hover:text-white border border-white/6"
             }`}
             title={showBinding ? "Switch to static value" : "Bind to variable"}
           >
@@ -75,7 +78,9 @@ export function PropertyRow({
       {/* Control / Binding Input */}
       {showBinding ? (
         <div className="flex items-center gap-1 bg-[#1C1C22] border border-violet-500/40 rounded-lg px-2 py-1">
-          <span className="text-violet-400 font-mono text-[10px] font-bold">fx</span>
+          <span className="text-violet-400 font-mono text-[10px] font-bold">
+            fx
+          </span>
           <input
             type="text"
             value={expr}
@@ -94,7 +99,7 @@ export function PropertyRow({
 function renderControl(
   def: PropertyDefinition,
   value: any,
-  onChange: (val: any) => void
+  onChange: (val: any) => void,
 ): React.ReactNode {
   const currentVal = value ?? def.defaultValue ?? "";
 
@@ -104,7 +109,7 @@ function renderControl(
         <select
           value={currentVal}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none cursor-pointer"
+          className="w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none cursor-pointer"
         >
           {(def.options || []).map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -119,7 +124,11 @@ function renderControl(
         <div className="flex items-center gap-2">
           <input
             type="color"
-            value={typeof currentVal === "string" && currentVal.startsWith("#") ? currentVal : "#7C6FFF"}
+            value={
+              typeof currentVal === "string" && currentVal.startsWith("#")
+                ? currentVal
+                : "#7C6FFF"
+            }
             onChange={(e) => onChange(e.target.value)}
             className="w-7 h-7 rounded border-0 bg-transparent cursor-pointer"
           />
@@ -127,7 +136,7 @@ function renderControl(
             type="text"
             value={currentVal}
             onChange={(e) => onChange(e.target.value)}
-            className="flex-1 bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono outline-none focus:border-violet-500"
+            className="flex-1 bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono outline-none focus:border-violet-500"
           />
         </div>
       );
@@ -141,7 +150,7 @@ function renderControl(
           max={def.max}
           step={def.step || 1}
           onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-          className="w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none"
+          className="w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none"
         />
       );
 
@@ -154,7 +163,9 @@ function renderControl(
             onChange={(e) => onChange(e.target.checked)}
             className="accent-violet-500 rounded cursor-pointer"
           />
-          <span className="text-[12px] text-gray-300">{Boolean(currentVal) ? "Enabled" : "Disabled"}</span>
+          <span className="text-[12px] text-gray-300">
+            {Boolean(currentVal) ? "Enabled" : "Disabled"}
+          </span>
         </label>
       );
 
@@ -167,7 +178,7 @@ function renderControl(
           type="text"
           value={currentVal}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none"
+          className="w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none"
         />
       );
   }

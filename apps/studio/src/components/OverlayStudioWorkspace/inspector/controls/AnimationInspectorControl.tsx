@@ -1,6 +1,16 @@
 import React, { useState } from "react";
 import {
-  Play, Pause, Plus, Trash2, ChevronDown, Clock, Move, Layers, Sparkles, SlidersHorizontal, Bookmark
+  Play,
+  Pause,
+  Plus,
+  Trash2,
+  ChevronDown,
+  Clock,
+  Move,
+  Layers,
+  Sparkles,
+  SlidersHorizontal,
+  Bookmark,
 } from "lucide-react";
 import type {
   SceneNode,
@@ -10,7 +20,7 @@ import type {
   AnimationStartSpec,
   SemanticAnimationConfig,
   KeyframeTrack,
-  TimelineMarker
+  TimelineMarker,
 } from "@clypra-studio/engine";
 import { motionPresetRegistry, componentRegistry } from "@clypra-studio/engine";
 
@@ -24,11 +34,12 @@ interface AnimationInspectorControlProps {
 
 type TabMode = "preset" | "semantic" | "keyframe";
 
-const LABEL_CLS = "block text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1";
+const LABEL_CLS =
+  "block text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1";
 const INPUT_CLS =
-  "w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors placeholder:text-gray-600 font-mono";
+  "w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors placeholder:text-gray-600 font-mono";
 const SELECT_CLS =
-  "w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors cursor-pointer";
+  "w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors cursor-pointer";
 
 export function AnimationInspectorControl({
   selectedNode,
@@ -59,7 +70,8 @@ export function AnimationInspectorControl({
     const dur = doc.duration || 5;
 
     if (phase === "rest") onSeekTime(0);
-    else if (phase === "enter") onSeekTime((ent?.delay || 0) + (ent?.duration || 0) * 0.5);
+    else if (phase === "enter")
+      onSeekTime((ent?.delay || 0) + (ent?.duration || 0) * 0.5);
     else if (phase === "hold") onSeekTime(dur * 0.5);
     else if (phase === "exit") onSeekTime(dur - (ext?.duration || 0.5) * 0.5);
   };
@@ -107,7 +119,10 @@ export function AnimationInspectorControl({
 
   const addKeyframeTrack = (property: string) => {
     if (keyframeTracks.some((t) => t.property === property)) return;
-    const normalizedTime = Math.max(0, Math.min(1, currentTime / (doc.duration || 5)));
+    const normalizedTime = Math.max(
+      0,
+      Math.min(1, currentTime / (doc.duration || 5)),
+    );
     const currentVal = (selectedNode as any)[property] ?? 0;
     const newTracks: KeyframeTrack[] = [
       ...keyframeTracks,
@@ -124,14 +139,19 @@ export function AnimationInspectorControl({
   };
 
   const addKeyframeAtPlayhead = (property: string) => {
-    const normalizedTime = Math.max(0, Math.min(1, currentTime / (doc.duration || 5)));
+    const normalizedTime = Math.max(
+      0,
+      Math.min(1, currentTime / (doc.duration || 5)),
+    );
     const trackIdx = keyframeTracks.findIndex((t) => t.property === property);
     if (trackIdx === -1) return;
 
     const track = keyframeTracks[trackIdx];
     const currentVal = (selectedNode as any)[property] ?? 0;
     const updatedKeyframes = [
-      ...track.keyframes.filter((k) => Math.abs(k.time - normalizedTime) > 0.01),
+      ...track.keyframes.filter(
+        (k) => Math.abs(k.time - normalizedTime) > 0.01,
+      ),
       { time: normalizedTime, value: currentVal },
     ].sort((a, b) => a.time - b.time);
 
@@ -159,7 +179,7 @@ export function AnimationInspectorControl({
       {/* Preview Phase Bar */}
       <div>
         <span className={LABEL_CLS}>Preview State</span>
-        <div className="grid grid-cols-4 gap-1 p-1 bg-[#151519] border border-white/[0.06] rounded-xl">
+        <div className="grid grid-cols-4 gap-1 p-1 bg-[#151519] border border-white/6 rounded-xl">
           {[
             { id: "rest", label: "Rest" },
             { id: "enter", label: "Enter" },
@@ -179,7 +199,7 @@ export function AnimationInspectorControl({
       </div>
 
       {/* Layer Tabs */}
-      <div className="flex border-b border-white/[0.06]">
+      <div className="flex border-b border-white/6">
         {[
           { id: "preset", label: "Presets" },
           { id: "semantic", label: "Semantic" },
@@ -190,7 +210,9 @@ export function AnimationInspectorControl({
             type="button"
             onClick={() => setTabMode(t.id as any)}
             className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-              tabMode === t.id ? "text-violet-400 border-b-2 border-violet-500" : "text-gray-500 hover:text-gray-300"
+              tabMode === t.id
+                ? "text-violet-400 border-b-2 border-violet-500"
+                : "text-gray-500 hover:text-gray-300"
             }`}
           >
             {t.label}
@@ -202,9 +224,11 @@ export function AnimationInspectorControl({
       {tabMode === "preset" && (
         <div className="space-y-3">
           {/* Entrance Preset */}
-          <div className="bg-[#151519] border border-white/[0.06] rounded-xl p-3 space-y-2">
+          <div className="bg-[#151519] border border-white/6 rounded-xl p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-violet-400">Entrance Animation</span>
+              <span className="text-[11px] font-bold text-violet-400">
+                Entrance Animation
+              </span>
               {anim.entrance && (
                 <button
                   type="button"
@@ -239,7 +263,9 @@ export function AnimationInspectorControl({
                     <span className={LABEL_CLS}>Direction</span>
                     <select
                       value={anim.entrance.direction || "up"}
-                      onChange={(e) => setEntrance({ direction: e.target.value as any })}
+                      onChange={(e) =>
+                        setEntrance({ direction: e.target.value as any })
+                      }
                       className={SELECT_CLS}
                     >
                       <option value="up">Slide Up</option>
@@ -259,7 +285,11 @@ export function AnimationInspectorControl({
                       min={0.1}
                       max={5}
                       value={anim.entrance.duration}
-                      onChange={(e) => setEntrance({ duration: parseFloat(e.target.value) || 0.5 })}
+                      onChange={(e) =>
+                        setEntrance({
+                          duration: parseFloat(e.target.value) || 0.5,
+                        })
+                      }
                       className={INPUT_CLS}
                     />
                   </div>
@@ -271,7 +301,9 @@ export function AnimationInspectorControl({
                       min={0}
                       max={5}
                       value={anim.entrance.delay || 0}
-                      onChange={(e) => setEntrance({ delay: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) =>
+                        setEntrance({ delay: parseFloat(e.target.value) || 0 })
+                      }
                       className={INPUT_CLS}
                     />
                   </div>
@@ -281,7 +313,9 @@ export function AnimationInspectorControl({
                   <span className={LABEL_CLS}>Easing</span>
                   <select
                     value={anim.entrance.easing || "ease-out"}
-                    onChange={(e) => setEntrance({ easing: e.target.value as any })}
+                    onChange={(e) =>
+                      setEntrance({ easing: e.target.value as any })
+                    }
                     className={SELECT_CLS}
                   >
                     <option value="ease-out">Ease Out (Smooth)</option>
@@ -296,16 +330,25 @@ export function AnimationInspectorControl({
 
           {/* Marker Relative Start Spec */}
           {doc.markers && doc.markers.length > 0 && (
-            <div className="bg-[#151519] border border-white/[0.06] rounded-xl p-3 space-y-2">
-              <span className="text-[11px] font-bold text-violet-400">Marker Snap Binding</span>
+            <div className="bg-[#151519] border border-white/6 rounded-xl p-3 space-y-2">
+              <span className="text-[11px] font-bold text-violet-400">
+                Marker Snap Binding
+              </span>
               <select
-                value={anim.start?.type === "marker" ? anim.start.markerId : "none"}
+                value={
+                  anim.start?.type === "marker" ? anim.start.markerId : "none"
+                }
                 onChange={(e) => {
                   if (e.target.value === "none") {
                     execAnim({ start: undefined });
                   } else {
                     execAnim({
-                      start: { type: "marker", markerId: e.target.value, offset: anim.start?.type === "marker" ? anim.start.offset : 0 }
+                      start: {
+                        type: "marker",
+                        markerId: e.target.value,
+                        offset:
+                          anim.start?.type === "marker" ? anim.start.offset : 0,
+                      },
                     });
                   }
                 }}
@@ -328,7 +371,11 @@ export function AnimationInspectorControl({
                     value={anim.start.offset || 0}
                     onChange={(e) =>
                       execAnim({
-                        start: { type: "marker", markerId: (anim.start as any).markerId, offset: parseFloat(e.target.value) || 0 }
+                        start: {
+                          type: "marker",
+                          markerId: (anim.start as any).markerId,
+                          offset: parseFloat(e.target.value) || 0,
+                        },
                       })
                     }
                     className={INPUT_CLS}
@@ -339,13 +386,17 @@ export function AnimationInspectorControl({
           )}
 
           {/* Hierarchy Inheritance Scope */}
-          <div className="bg-[#151519] border border-white/[0.06] rounded-xl p-3 space-y-2">
-            <span className="text-[11px] font-bold text-violet-400">Child Inheritance & Stagger</span>
+          <div className="bg-[#151519] border border-white/6 rounded-xl p-3 space-y-2">
+            <span className="text-[11px] font-bold text-violet-400">
+              Child Inheritance & Stagger
+            </span>
             <div>
               <span className={LABEL_CLS}>Animation Scope</span>
               <select
                 value={anim.animationScope || "node"}
-                onChange={(e) => execAnim({ animationScope: e.target.value as any })}
+                onChange={(e) =>
+                  execAnim({ animationScope: e.target.value as any })
+                }
                 className={SELECT_CLS}
               >
                 <option value="node">This Node Only</option>
@@ -363,11 +414,38 @@ export function AnimationInspectorControl({
                   min={0}
                   max={2}
                   value={anim.staggerChildren || 0}
-                  onChange={(e) => execAnim({ staggerChildren: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    execAnim({
+                      staggerChildren: parseFloat(e.target.value) || 0,
+                    })
+                  }
                   className={INPUT_CLS}
                 />
               </div>
             )}
+          </div>
+
+          {/* Motion System Reflow Mode */}
+          <div className="bg-[#151519] border border-white/6 rounded-xl p-3 space-y-2">
+            <span className="text-[11px] font-bold text-violet-400">
+              Motion System Reflow Mode
+            </span>
+            <div className="flex items-center justify-between pt-1">
+              <div>
+                <p className="text-[11px] font-bold text-gray-300">
+                  Animate Layout Reflow
+                </p>
+                <p className="text-[9px] text-gray-500">
+                  Per-frame stack reflow pass for siblings instead of GPU transform scale
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={anim.animatesLayout || false}
+                onChange={(e) => execAnim({ animatesLayout: e.target.checked })}
+                className="w-4 h-4 rounded border-white/10 bg-[#1C1C22] text-violet-500 focus:ring-0 cursor-pointer"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -375,8 +453,10 @@ export function AnimationInspectorControl({
       {/* ── TAB 2: SEMANTIC ANIMATIONS ────────────────────────────────── */}
       {tabMode === "semantic" && (
         <div className="space-y-3">
-          <div className="bg-[#151519] border border-white/[0.06] rounded-xl p-3 space-y-2">
-            <span className="text-[11px] font-bold text-violet-400">Semantic Effect</span>
+          <div className="bg-[#151519] border border-white/6 rounded-xl p-3 space-y-2">
+            <span className="text-[11px] font-bold text-violet-400">
+              Semantic Effect
+            </span>
             <select
               value={anim.semanticAnimation?.type || "none"}
               onChange={(e) => {
@@ -384,11 +464,20 @@ export function AnimationInspectorControl({
                 if (t === "none") execAnim({ semanticAnimation: undefined });
                 else if (t === "count-up") {
                   execAnim({
-                    semanticAnimation: { type: "count-up", from: 0, to: 100, duration: 1.2, format: "0,0" }
+                    semanticAnimation: {
+                      type: "count-up",
+                      from: 0,
+                      to: 100,
+                      duration: 1.2,
+                      format: "0,0",
+                    },
                   });
                 } else if (t === "typewriter") {
                   execAnim({
-                    semanticAnimation: { type: "typewriter", charsPerSecond: 18 }
+                    semanticAnimation: {
+                      type: "typewriter",
+                      charsPerSecond: 18,
+                    },
                   });
                 }
               }}
@@ -409,7 +498,10 @@ export function AnimationInspectorControl({
                       value={anim.semanticAnimation.from}
                       onChange={(e) =>
                         execAnim({
-                          semanticAnimation: { ...anim.semanticAnimation, from: parseFloat(e.target.value) || 0 }
+                          semanticAnimation: {
+                            ...anim.semanticAnimation,
+                            from: parseFloat(e.target.value) || 0,
+                          },
                         })
                       }
                       className={INPUT_CLS}
@@ -422,7 +514,10 @@ export function AnimationInspectorControl({
                       value={String(anim.semanticAnimation.to)}
                       onChange={(e) =>
                         execAnim({
-                          semanticAnimation: { ...anim.semanticAnimation, to: e.target.value }
+                          semanticAnimation: {
+                            ...anim.semanticAnimation,
+                            to: e.target.value,
+                          },
                         })
                       }
                       className={INPUT_CLS}
@@ -437,7 +532,10 @@ export function AnimationInspectorControl({
                     value={anim.semanticAnimation.duration}
                     onChange={(e) =>
                       execAnim({
-                        semanticAnimation: { ...anim.semanticAnimation, duration: parseFloat(e.target.value) || 1 }
+                        semanticAnimation: {
+                          ...anim.semanticAnimation,
+                          duration: parseFloat(e.target.value) || 1,
+                        },
                       })
                     }
                     className={INPUT_CLS}
@@ -456,7 +554,10 @@ export function AnimationInspectorControl({
                   value={anim.semanticAnimation.charsPerSecond}
                   onChange={(e) =>
                     execAnim({
-                      semanticAnimation: { ...anim.semanticAnimation, charsPerSecond: parseInt(e.target.value, 10) || 18 }
+                      semanticAnimation: {
+                        ...anim.semanticAnimation,
+                        charsPerSecond: parseInt(e.target.value, 10) || 18,
+                      },
                     })
                   }
                   className={INPUT_CLS}
@@ -470,9 +571,11 @@ export function AnimationInspectorControl({
       {/* ── TAB 3: KEYFRAMES ─────────────────────────────────────────── */}
       {tabMode === "keyframe" && (
         <div className="space-y-3">
-          <div className="bg-[#151519] border border-white/[0.06] rounded-xl p-3 space-y-2">
+          <div className="bg-[#151519] border border-white/6 rounded-xl p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-violet-400">Keyframe Tracks</span>
+              <span className="text-[11px] font-bold text-violet-400">
+                Keyframe Tracks
+              </span>
               <select
                 onChange={(e) => {
                   if (e.target.value) {
@@ -480,14 +583,24 @@ export function AnimationInspectorControl({
                     e.target.value = "";
                   }
                 }}
-                className="bg-[#1C1C22] border border-white/[0.06] rounded px-2 py-0.5 text-[10px] text-gray-300 font-bold outline-none cursor-pointer"
+                className="bg-[#1C1C22] border border-white/6 rounded px-2 py-0.5 text-[10px] text-gray-300 font-bold outline-none cursor-pointer"
               >
                 <option value="">+ Add Track</option>
                 {(() => {
-                  const baseProps = ["opacity", "x", "y", "scaleX", "scaleY", "rotation", "blur"];
+                  const baseProps = [
+                    "opacity",
+                    "x",
+                    "y",
+                    "scaleX",
+                    "scaleY",
+                    "rotation",
+                    "blur",
+                  ];
                   let customProps: string[] = [];
                   if (selectedNode.type === "component") {
-                    const compDef = componentRegistry.get((selectedNode as any).componentType);
+                    const compDef = componentRegistry.get(
+                      (selectedNode as any).componentType,
+                    );
                     if (compDef) {
                       customProps = compDef.schema
                         .filter((f) => f.animatable === true)
@@ -496,7 +609,11 @@ export function AnimationInspectorControl({
                   }
                   const allProps = [...baseProps, ...customProps];
                   return allProps.map((prop) => (
-                    <option key={prop} value={prop} disabled={keyframeTracks.some((t) => t.property === prop)}>
+                    <option
+                      key={prop}
+                      value={prop}
+                      disabled={keyframeTracks.some((t) => t.property === prop)}
+                    >
                       {prop}
                     </option>
                   ));
@@ -506,14 +623,20 @@ export function AnimationInspectorControl({
 
             {keyframeTracks.length === 0 ? (
               <p className="text-[11px] text-gray-600 text-center py-4">
-                No keyframe tracks defined. Select "+ Add Track" above to animate custom properties.
+                No keyframe tracks defined. Select "+ Add Track" above to
+                animate custom properties.
               </p>
             ) : (
               <div className="space-y-3">
                 {keyframeTracks.map((track) => (
-                  <div key={track.property} className="border border-white/[0.04] rounded-lg p-2 bg-[#111116] space-y-1.5">
+                  <div
+                    key={track.property}
+                    className="border border-white/4 rounded-lg p-2 bg-[#111116] space-y-1.5"
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-[11px] font-bold text-violet-300">{track.property}</span>
+                      <span className="font-mono text-[11px] font-bold text-violet-300">
+                        {track.property}
+                      </span>
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
@@ -535,8 +658,13 @@ export function AnimationInspectorControl({
 
                     <div className="space-y-1">
                       {track.keyframes.map((kf, kfIdx) => (
-                        <div key={kfIdx} className="flex items-center gap-1.5 bg-[#191921] px-2 py-1 rounded">
-                          <span className="text-[9px] font-mono text-gray-500">{(kf.time * (doc.duration || 5)).toFixed(2)}s</span>
+                        <div
+                          key={kfIdx}
+                          className="flex items-center gap-1.5 bg-[#191921] px-2 py-1 rounded"
+                        >
+                          <span className="text-[9px] font-mono text-gray-500">
+                            {(kf.time * (doc.duration || 5)).toFixed(2)}s
+                          </span>
                           <input
                             type="number"
                             step={0.1}
@@ -546,7 +674,9 @@ export function AnimationInspectorControl({
                               const updatedKf = [...track.keyframes];
                               updatedKf[kfIdx] = { ...kf, value: val };
                               const updatedTracks = keyframeTracks.map((t) =>
-                                t.property === track.property ? { ...t, keyframes: updatedKf } : t
+                                t.property === track.property
+                                  ? { ...t, keyframes: updatedKf }
+                                  : t,
                               );
                               onExecuteCommand({
                                 type: "UPDATE_KEYFRAME_TRACKS",
@@ -554,7 +684,7 @@ export function AnimationInspectorControl({
                                 tracks: updatedTracks,
                               });
                             }}
-                            className="w-16 bg-[#111116] border border-white/[0.06] rounded px-1 py-0.5 text-[11px] font-mono text-white text-center"
+                            className="w-16 bg-[#111116] border border-white/6 rounded px-1 py-0.5 text-[11px] font-mono text-white text-center"
                           />
                         </div>
                       ))}

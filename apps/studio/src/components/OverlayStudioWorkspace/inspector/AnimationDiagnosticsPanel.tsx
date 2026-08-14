@@ -31,14 +31,16 @@ const SEVERITY_STYLES = {
   },
 } as const;
 
-export function AnimationDiagnosticsPanel({ doc }: AnimationDiagnosticsPanelProps) {
+export function AnimationDiagnosticsPanel({
+  doc,
+}: AnimationDiagnosticsPanelProps) {
   const diagnostics = useMemo(() => animationValidator.validate(doc), [doc]);
 
   const errorCount = diagnostics.filter((d) => d.severity === "error").length;
   const warnCount = diagnostics.filter((d) => d.severity === "warning").length;
 
   return (
-    <div className="bg-[#0F0F14] rounded-xl border border-white/[0.06] overflow-hidden font-sans">
+    <div className="bg-[#0F0F14] rounded-xl border border-white/6 overflow-hidden font-sans">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.05]">
         <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">
@@ -65,7 +67,9 @@ export function AnimationDiagnosticsPanel({ doc }: AnimationDiagnosticsPanelProp
         {diagnostics.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 gap-2">
             <CheckCircle2 size={20} className="text-emerald-400" />
-            <span className="text-[12px] text-emerald-400 font-medium">All animations valid</span>
+            <span className="text-[12px] text-emerald-400 font-medium">
+              All animations valid
+            </span>
           </div>
         ) : (
           diagnostics.map((diag, i) => {
@@ -76,7 +80,10 @@ export function AnimationDiagnosticsPanel({ doc }: AnimationDiagnosticsPanelProp
                 key={`${diag.nodeId}-${diag.code}-${i}`}
                 className={`flex items-start gap-2 p-2 rounded-lg border ${styles.bgColor} ${styles.borderColor}`}
               >
-                <Icon size={13} className={`${styles.textColor} mt-0.5 shrink-0`} />
+                <Icon
+                  size={13}
+                  className={`${styles.textColor} mt-0.5 shrink-0`}
+                />
                 <div className="flex-1 min-w-0 space-y-0.5">
                   <div className="flex items-center gap-1.5">
                     <span className="font-mono text-[10px] font-bold text-violet-300 truncate">
@@ -88,7 +95,9 @@ export function AnimationDiagnosticsPanel({ doc }: AnimationDiagnosticsPanelProp
                       {diag.code}
                     </span>
                   </div>
-                  <p className="text-[11px] text-gray-500 leading-snug">{diag.message}</p>
+                  <p className="text-[11px] text-gray-500 leading-snug">
+                    {diag.message}
+                  </p>
                 </div>
               </div>
             );

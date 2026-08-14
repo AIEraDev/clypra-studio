@@ -1,12 +1,13 @@
-import React, { useState, useRef } from 'react';
-import type { OverlayDocument } from '@clypra-studio/engine';
+import React, { useState, useRef } from "react";
+import type { OverlayDocument } from "@clypra-studio/engine";
 
 // Gracefully fall back if dataBindingEngine is not yet exported from the engine
 let evaluateExpression: (expr: string, ctx: Record<string, any>) => any;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const engine = require('@clypra-studio/engine');
-  evaluateExpression = engine.dataBindingEngine?.evaluate ?? fallbackEval;
+  const engine = require("@clypra-studio/engine");
+  evaluateExpression = engine.dataBindingEngine?.evaluateExpression
+    ? (expr, ctx) => engine.dataBindingEngine.evaluateExpression(expr, ctx)
+    : fallbackEval;
 } catch {
   evaluateExpression = fallbackEval;
 }
@@ -16,7 +17,9 @@ function fallbackEval(expr: string, ctx: Record<string, any>): any {
     // Simple template {{key}} substitution
     return expr.replace(/\{\{([^}]+)\}\}/g, (_: string, k: string) => {
       const trimmed = k.trim();
-      return ctx[trimmed] !== undefined ? String(ctx[trimmed]) : `{{${trimmed}}}`;
+      return ctx[trimmed] !== undefined
+        ? String(ctx[trimmed])
+        : `{{${trimmed}}}`;
     });
   } catch {
     return expr;
@@ -36,7 +39,7 @@ export interface BindingEditorProps {
   onChange: (val: any) => void;
 }
 
-type BindingMode = 'static' | 'dynamic';
+type BindingMode = "static" | "dynamic";
 
 interface DocumentVariable {
   key: string;
@@ -49,7 +52,7 @@ interface DocumentVariable {
 // ---------------------------------------------------------------------------
 
 const baseInputCls =
-  'bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:border-violet-500 outline-none w-full';
+  "bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:border-violet-500 outline-none w-full";
 
 const EXAMPLE_CHIPS = [
   "{{ revenue / 1000000 }}",
@@ -73,18 +76,20 @@ const BindingEditor: React.FC<BindingEditorProps> = ({
 
   // Detect initial mode: if value is a string containing {{ it's dynamic
   const initialMode: BindingMode =
-    typeof value === 'string' && /\{\{.+?\}\}/.test(value) ? 'dynamic' : 'static';
+    typeof value === "string" && /\{\{.+?\}\}/.test(value)
+      ? "dynamic"
+      : "static";
 
   const [mode, setMode] = useState<BindingMode>(initialMode);
   const [expr, setExpr] = useState<string>(
-    initialMode === 'dynamic' ? String(value ?? '') : `{{${fieldKey}}}`
+    initialMode === "dynamic" ? String(value ?? "") : `{{${fieldKey}}}`,
   );
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Live preview
   let preview: React.ReactNode = null;
-  if (mode === 'dynamic') {
+  if (mode === "dynamic") {
     try {
       const result = evaluateExpression(expr, previewContext);
       preview = (
@@ -95,7 +100,7 @@ const BindingEditor: React.FC<BindingEditorProps> = ({
     } catch (err: any) {
       preview = (
         <span className="text-[10px] text-red-400 font-mono truncate max-w-full block">
-          ✕ {err?.message ?? 'Error'}
+          ✕ {err?.message ?? "Error"}
         </span>
       );
     }
@@ -122,10 +127,10 @@ const BindingEditor: React.FC<BindingEditorProps> = ({
   const handleModeSwitch = (next: BindingMode) => {
     if (next === mode) return;
     setMode(next);
-    if (next === 'static') {
+    if (next === "static") {
       // Clear expression, revert to previous static value
       setExpr(`{{${fieldKey}}}`);
-      onChange(typeof value === 'string' && !/\{\{/.test(value) ? value : '');
+      onChange(typeof value === "string" && !/\{\{/.test(value) ? value : "");
     } else {
       const newExpr = `{{${fieldKey}}}`;
       setExpr(newExpr);
@@ -136,14 +141,14 @@ const BindingEditor: React.FC<BindingEditorProps> = ({
   return (
     <div className="flex flex-col gap-2">
       {/* Mode toggle */}
-      <div className="flex gap-0 rounded-lg overflow-hidden border border-white/[0.06] self-start">
-        {(['static', 'dynamic'] as BindingMode[]).map((m) => (
+      <div className="flex gap-0 rounded-lg overflow-hidden border border-white/6 self-start">
+        {(["static", "dynamic"] as BindingMode[]).map((m) => (
           <button
             key={m}
             className={`cursor-pointer px-2.5 py-1 text-[11px] font-medium transition-colors capitalize ${
               mode === m
-                ? 'bg-violet-600 text-white'
-                : 'bg-[#1C1C22] text-gray-400 hover:text-white'
+                ? "bg-violet-600 text-white"
+                : "bg-[#1C1C22] text-gray-400 hover:text-white"
             }`}
             onClick={() => handleModeSwitch(m)}
           >
@@ -153,10 +158,10 @@ const BindingEditor: React.FC<BindingEditorProps> = ({
       </div>
 
       {/* Static mode: render the passed staticInput */}
-      {mode === 'static' && <div>{staticInput}</div>}
+      {mode === "static" && <div>{staticInput}</div>}
 
       {/* Dynamic mode */}
-      {mode === 'dynamic' && (
+      {mode === "dynamic" && (
         <div className="flex flex-col gap-2">
           {/* Variable picker */}
           {variables.length > 0 && (
@@ -165,12 +170,16 @@ const BindingEditor: React.FC<BindingEditorProps> = ({
               defaultValue=""
               onChange={(e) => {
                 if (e.target.value) insertAtCursor(`{{${e.target.value}}}`);
-                e.target.value = '';
+                e.target.value = "";
               }}
             >
-              <option value="" disabled>Insert variable…</option>
+              <option value="" disabled>
+                Insert variable…
+              </option>
               {variables.map((v) => (
-                <option key={v.key} value={v.key}>{v.label}</option>
+                <option key={v.key} value={v.key}>
+                  {v.label}
+                </option>
               ))}
             </select>
           )}
@@ -179,7 +188,9 @@ const BindingEditor: React.FC<BindingEditorProps> = ({
           <textarea
             ref={textareaRef}
             rows={3}
-            className={`${baseInputCls} font-mono resize-none ${focused ? 'border-violet-500' : ''}`}
+            className={`${baseInputCls} font-mono resize-none ${
+              focused ? "border-violet-500" : ""
+            }`}
             value={expr}
             onChange={(e) => {
               setExpr(e.target.value);
@@ -192,7 +203,7 @@ const BindingEditor: React.FC<BindingEditorProps> = ({
 
           {/* Live preview */}
           {preview && (
-            <div className="bg-[#151519] border border-white/[0.06] rounded-lg px-2.5 py-1.5">
+            <div className="bg-[#151519] border border-white/6 rounded-lg px-2.5 py-1.5">
               {preview}
             </div>
           )}
@@ -202,7 +213,7 @@ const BindingEditor: React.FC<BindingEditorProps> = ({
             {EXAMPLE_CHIPS.map((chip) => (
               <button
                 key={chip}
-                className="cursor-pointer text-[10px] font-mono bg-[#1C1C22] border border-white/[0.06] rounded px-1.5 py-0.5 text-violet-300 hover:border-violet-500/50 transition-colors"
+                className="cursor-pointer text-[10px] font-mono bg-[#1C1C22] border border-white/6 rounded px-1.5 py-0.5 text-violet-300 hover:border-violet-500/50 transition-colors"
                 onClick={() => insertAtCursor(chip)}
               >
                 {chip}
@@ -217,4 +228,3 @@ const BindingEditor: React.FC<BindingEditorProps> = ({
 
 export { BindingEditor };
 export default BindingEditor;
-

@@ -9,7 +9,12 @@ export interface LayoutValue {
   paddingBottom?: number;
   paddingLeft?: number;
   alignItems?: "flex-start" | "center" | "flex-end" | "stretch";
-  justifyContent?: "flex-start" | "center" | "flex-end" | "space-between" | "space-around";
+  justifyContent?:
+    | "flex-start"
+    | "center"
+    | "flex-end"
+    | "space-between"
+    | "space-around";
 }
 
 interface LayoutControlProps {
@@ -33,14 +38,17 @@ const JUSTIFY_OPTIONS = [
 ];
 
 export function LayoutControl({ value, onChange }: LayoutControlProps) {
-  const set = <K extends keyof LayoutValue>(k: K, v: LayoutValue[K]) => onChange({ ...value, [k]: v });
+  const set = <K extends keyof LayoutValue>(k: K, v: LayoutValue[K]) =>
+    onChange({ ...value, [k]: v });
   const isFlex = value.display === "flex";
 
   return (
     <div className="flex flex-col gap-3">
       {/* Display Mode */}
       <div className="flex flex-col gap-1">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">Display</span>
+        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+          Display
+        </span>
         <div className="grid grid-cols-2 gap-1">
           {(["absolute", "flex"] as const).map((d) => (
             <button
@@ -50,7 +58,7 @@ export function LayoutControl({ value, onChange }: LayoutControlProps) {
               className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
                 (value.display || "absolute") === d
                   ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
-                  : "bg-[#1C1C22] border-white/[0.06] text-gray-500 hover:text-gray-300"
+                  : "bg-[#1C1C22] border-white/6 text-gray-500 hover:text-gray-300"
               }`}
             >
               {d === "absolute" ? "Absolute" : "Flex"}
@@ -63,7 +71,9 @@ export function LayoutControl({ value, onChange }: LayoutControlProps) {
         <>
           {/* Direction */}
           <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">Direction</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+              Direction
+            </span>
             <div className="grid grid-cols-2 gap-1">
               {(["row", "column"] as const).map((d) => (
                 <button
@@ -73,7 +83,7 @@ export function LayoutControl({ value, onChange }: LayoutControlProps) {
                   className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
                     (value.flexDirection || "row") === d
                       ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
-                      : "bg-[#1C1C22] border-white/[0.06] text-gray-500 hover:text-gray-300"
+                      : "bg-[#1C1C22] border-white/6 text-gray-500 hover:text-gray-300"
                   }`}
                 >
                   {d.charAt(0).toUpperCase() + d.slice(1)}
@@ -84,19 +94,24 @@ export function LayoutControl({ value, onChange }: LayoutControlProps) {
 
           {/* Gap */}
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 w-10">Gap</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 w-10">
+              Gap
+            </span>
             <input
               type="number"
-              min={0} max={200}
+              min={0}
+              max={200}
               value={value.gap ?? 0}
               onChange={(e) => set("gap", Number(e.target.value))}
-              className="flex-1 bg-[#1C1C22] border border-white/[0.06] rounded-md px-2 py-1 font-mono text-[11px] text-white focus:border-violet-500 focus:outline-none"
+              className="flex-1 bg-[#1C1C22] border border-white/6 rounded-md px-2 py-1 font-mono text-[11px] text-white focus:border-violet-500 focus:outline-none"
             />
           </div>
 
           {/* Align */}
           <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">Align Items</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+              Align Items
+            </span>
             <div className="flex gap-1 flex-wrap">
               {ALIGN_OPTIONS.map((opt) => (
                 <button
@@ -106,7 +121,7 @@ export function LayoutControl({ value, onChange }: LayoutControlProps) {
                   className={`flex-1 px-2 py-1 rounded-md text-[10px] font-medium border transition-all cursor-pointer min-w-[50px] ${
                     (value.alignItems || "flex-start") === opt.value
                       ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
-                      : "bg-[#1C1C22] border-white/[0.06] text-gray-500 hover:text-gray-300"
+                      : "bg-[#1C1C22] border-white/6 text-gray-500 hover:text-gray-300"
                   }`}
                 >
                   {opt.label}
@@ -117,7 +132,9 @@ export function LayoutControl({ value, onChange }: LayoutControlProps) {
 
           {/* Justify */}
           <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">Justify Content</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+              Justify Content
+            </span>
             <div className="flex gap-1 flex-wrap">
               {JUSTIFY_OPTIONS.map((opt) => (
                 <button
@@ -127,7 +144,7 @@ export function LayoutControl({ value, onChange }: LayoutControlProps) {
                   className={`flex-1 px-2 py-1 rounded-md text-[10px] font-medium border transition-all cursor-pointer min-w-[50px] ${
                     (value.justifyContent || "flex-start") === opt.value
                       ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
-                      : "bg-[#1C1C22] border-white/[0.06] text-gray-500 hover:text-gray-300"
+                      : "bg-[#1C1C22] border-white/6 text-gray-500 hover:text-gray-300"
                   }`}
                 >
                   {opt.label}
@@ -140,17 +157,29 @@ export function LayoutControl({ value, onChange }: LayoutControlProps) {
 
       {/* Padding */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">Padding</span>
+        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500">
+          Padding
+        </span>
         <div className="grid grid-cols-4 gap-1">
-          {(["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"] as const).map((k, i) => (
+          {(
+            [
+              "paddingTop",
+              "paddingRight",
+              "paddingBottom",
+              "paddingLeft",
+            ] as const
+          ).map((k, i) => (
             <div key={k}>
-              <span className="text-[8px] text-gray-600 block text-center mb-0.5">{["T", "R", "B", "L"][i]}</span>
+              <span className="text-[8px] text-gray-600 block text-center mb-0.5">
+                {["T", "R", "B", "L"][i]}
+              </span>
               <input
                 type="number"
-                min={0} max={200}
+                min={0}
+                max={200}
                 value={value[k] ?? 0}
                 onChange={(e) => set(k, Number(e.target.value))}
-                className="w-full bg-[#1C1C22] border border-white/[0.06] rounded-md px-1 py-1 font-mono text-[11px] text-white text-center focus:border-violet-500 focus:outline-none"
+                className="w-full bg-[#1C1C22] border border-white/6 rounded-md px-1 py-1 font-mono text-[11px] text-white text-center focus:border-violet-500 focus:outline-none"
               />
             </div>
           ))}

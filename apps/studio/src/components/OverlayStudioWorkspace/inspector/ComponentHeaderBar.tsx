@@ -1,5 +1,9 @@
 import React from "react";
-import { componentRegistry, type ComponentNode, type DocumentCommand } from "@clypra-studio/engine";
+import {
+  componentRegistry,
+  type ComponentNode,
+  type DocumentCommand,
+} from "@clypra-studio/engine";
 import { Box, Layers, Scissors, Edit3 } from "lucide-react";
 
 interface ComponentHeaderBarProps {
@@ -11,7 +15,7 @@ interface ComponentHeaderBarProps {
 export function ComponentHeaderBar({
   node,
   onExecuteCommand,
-  onEditTemplate
+  onEditTemplate,
 }: ComponentHeaderBarProps) {
   const def = componentRegistry.get(node.componentType);
 
@@ -20,19 +24,19 @@ export function ComponentHeaderBar({
       type: "UPDATE_NODE_PROPERTY",
       nodeId: node.id,
       path: "variant",
-      value: variant
+      value: variant,
     });
   };
 
   const handleDetach = () => {
     onExecuteCommand({
       type: "DETACH_COMPONENT",
-      nodeId: node.id
+      nodeId: node.id,
     });
   };
 
   return (
-    <div className="bg-[#151519] border-b border-white/[0.06] p-3 space-y-2.5 font-sans">
+    <div className="bg-[#151519] border-b border-white/6 p-3 space-y-2.5 font-sans">
       {/* Title & Badge */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -78,7 +82,7 @@ export function ComponentHeaderBar({
         <button
           type="button"
           onClick={handleDetach}
-          className="flex items-center justify-center gap-1 h-6 px-2.5 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-gray-400 hover:text-white text-[10px] font-bold transition-all cursor-pointer"
+          className="flex items-center justify-center gap-1 h-6 px-2.5 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/6 text-gray-400 hover:text-white text-[10px] font-bold transition-all cursor-pointer"
           title="Detach instance into plain scene nodes"
         >
           <Scissors size={11} />
