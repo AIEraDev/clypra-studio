@@ -1,51 +1,37 @@
 # @clypra-studio/types
 
-Shared TypeScript type definitions for all Clypra Studio packages - Single source of truth.
+Single source of truth for TypeScript type definitions across all Clypra Studio packages. Zero runtime dependencies.
 
 ## Installation
 
 ```bash
-npm install @clypra-studio/types
-# or
 pnpm add @clypra-studio/types
-# or
-yarn add @clypra-studio/types
 ```
+
+## Domain Modules
+
+- **`./overlay`** — Overlay Document schema, base scene node types, responsive breakpoints, & layout constraints.
+- **`./primitives`** — Compositional primitives (RichText, Gradient, Icon, Metric, Progress, Chart, Table, Callout, Avatar).
+- **`./export`** — Production export pipeline contracts, media encoder interfaces, and job descriptors.
+- **`./effect`** — Effect definitions, capabilities, requirements, and preset manifests.
+- **`./graph`** — Media processing graph nodes, edges, pin definitions, and `GraphHelper`.
+- **`./frame`** — Frame graph, render pass descriptors, and planner configuration.
+- **`./job`** — Render job contracts, execution policies, resource usage, and evaluation contexts.
+- **`./snapshot`** — Runtime state snapshots, execution timelines, and diagnostic messages.
+- **`./vefx`** — `.vefx` plugin bridge specifications, shader nodes, keyframe easing curves, audio bindings, CDL color wheel, and body effect states.
 
 ## Usage
 
 ```typescript
-import type { Effect, Frame, Graph, Job, Snapshot } from "@clypra-studio/types";
-
-// Use individual type modules
-import type { EffectDefinition, EffectMetadata } from "@clypra-studio/types/effect";
-import type { GraphNode, GraphEdge } from "@clypra-studio/types/graph";
-import type { FrameData } from "@clypra-studio/types/frame";
-import type { JobConfig } from "@clypra-studio/types/job";
-import type { SnapshotData } from "@clypra-studio/types/snapshot";
+import type { 
+  OverlayDocument, 
+  RichTextNode, 
+  EffectDefinition, 
+  RenderJob, 
+  RuntimeSnapshot 
+} from "@clypra-studio/types";
 ```
-
-## Exports
-
-- **`effect`** - Effect-related types and interfaces
-- **`graph`** - Graph node and edge definitions
-- **`frame`** - Frame data structures
-- **`job`** - Job configuration types
-- **`snapshot`** - Snapshot data types
-
-## Features
-
-- ✅ Comprehensive TypeScript definitions
-- ✅ Modular exports for tree-shaking
-- ✅ Zero runtime dependencies
-- ✅ Shared across all Clypra Studio packages
 
 ## License
 
 MIT
-
-## Links
-
-- [GitHub Repository](https://github.com/AIEraDev/clypra-studio)
-- [Report Issues](https://github.com/AIEraDev/clypra-studio/issues)
-- [npm Package](https://www.npmjs.com/package/@clypra-studio/types)

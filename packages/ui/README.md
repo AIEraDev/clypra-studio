@@ -1,87 +1,61 @@
 # @clypra-studio/ui
 
-Shared UI components for all Clypra Studio Labs. Built with React, TypeScript, and Tailwind CSS.
+Shared UI components, developer panels, keyframe editors, and observatories for Clypra Studio. Built with React 19, TypeScript, and Tailwind CSS.
 
 ## Installation
 
 ```bash
-npm install @clypra-studio/ui
-# or
 pnpm add @clypra-studio/ui
-# or
-yarn add @clypra-studio/ui
 ```
+
+## Component Overview
+
+### Studio Master & Harness
+- `StudioMasterApp` — Full studio application harness
+- `StudioControlPanel` — Lab navigation & master controls
+- `StudioDiagnosticsOverlay` — Real-time performance & diagnostic overlay
+
+### Developer Inspectors & Observatories
+- `GraphInspector` — Render graph node & edge visualization
+- `PassInspector` — Render pass order & shader uniform inspection
+- `ResourceInspector` — GPU texture & buffer allocation metrics
+- `PerformanceMonitor` — Real-time FPS, frame timing, and GPU profiling
+- `ValidationPanel` — Effect & graph validation issue log
+- `RuntimeInspector` & `RuntimeObservatory` — Live runtime state & snapshot observation
+
+### Curve & Keyframe Editors
+- `BezierCurveEditor` & `KeyframePropertyInspector` — SVG Bezier easing curve manipulator
+- `MultiKeyframeGraphEditor` & `VideoEditorInspector` — Multi-property timeline curve graph editor
+
+### Studio Specialty Panels
+- `ColorGradingStudioPanel` & `ColorWheel` — 3-way CDL color grading studio
+- `BodyEffectsStudioPanel` — Masking, segmentation, and body effects studio
+- `ResponsivePreviewCanvas` & `Timeline` — Interactive canvas & keyframe timeline
+
+### Hooks
+- `usePixiRenderer` — React hook for PixiJS canvas initialization & frame loop management
 
 ## Usage
 
-```typescript
-import { GraphInspector, PassInspector, ResourceInspector, PerformanceMonitor, PreviewCanvas, Timeline, PresetManager, ValidationPanel } from "@clypra-studio/ui";
+```tsx
+import { 
+  StudioMasterApp, 
+  BezierCurveEditor, 
+  ColorGradingStudioPanel,
+  RuntimeObservatory 
+} from "@clypra-studio/ui";
 
-// Use UI components in your React app
-function MyApp() {
+function App() {
   return (
-    <div>
-      <PreviewCanvas width={1920} height={1080} />
-      <Timeline duration={10000} />
-      <GraphInspector graph={myGraph} />
-    </div>
+    <StudioMasterApp>
+      <ColorGradingStudioPanel />
+      <BezierCurveEditor />
+      <RuntimeObservatory />
+    </StudioMasterApp>
   );
 }
 ```
 
-## Features
-
-- ✅ **Graph Inspector** - Visualize and debug render graphs
-- ✅ **Pass Inspector** - Inspect individual render passes
-- ✅ **Resource Inspector** - Monitor textures and buffers
-- ✅ **Performance Monitor** - Real-time performance metrics
-- ✅ **Preview Canvas** - Responsive canvas with controls
-- ✅ **Timeline** - Keyframe timeline editor
-- ✅ **Preset Manager** - Save and load effect presets
-- ✅ **Validation Panel** - Display validation errors and warnings
-- ✅ **TypeScript** - Full type safety
-- ✅ **Tailwind CSS** - Styled with utility classes
-
-## Components
-
-### Core Components
-
-- `GraphInspector` - Render graph visualization
-- `PassInspector` - Render pass details
-- `ResourceInspector` - Resource management UI
-- `PerformanceMonitor` - FPS and performance stats
-
-### Canvas Components
-
-- `PreviewCanvas` - Main preview canvas
-- `ResponsivePreviewCanvas` - Auto-sizing canvas
-
-### Timeline Components
-
-- `Timeline` - Keyframe timeline editor
-- `TimelineTrack` - Individual track component
-
-### Utility Components
-
-- `PresetManager` - Preset management UI
-- `ValidationPanel` - Error and warning display
-
-## Styling
-
-The package includes pre-built CSS. Import it in your app:
-
-```typescript
-import "@clypra-studio/ui/dist/index.css";
-```
-
-Or use your own Tailwind CSS configuration to style the components.
-
 ## License
 
 MIT
-
-## Links
-
-- [GitHub Repository](https://github.com/AIEraDev/clypra-studio)
-- [Report Issues](https://github.com/AIEraDev/clypra-studio/issues)
-- [npm Package](https://www.npmjs.com/package/@clypra-studio/ui)

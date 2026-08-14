@@ -1,57 +1,30 @@
 # @clypra-studio/feature-providers
 
-Extensible feature providers for Body Effect Lab. Provides body segmentation, chroma key, and other feature extraction capabilities.
+Extensible feature provider architecture for Body & Masking Effects in Clypra Studio.
 
 ## Installation
 
 ```bash
-npm install @clypra-studio/feature-providers
-# or
 pnpm add @clypra-studio/feature-providers
-# or
-yarn add @clypra-studio/feature-providers
 ```
+
+## Overview & Providers
+
+Features providers produce real-time feature maps (segmentation masks, chroma key keys, pose tracking) that body effects consume.
+
+- `FeatureProviderManager` — Central registry and manager for feature providers.
+- `ChromaKeyProvider` — Green screen / color key mask extraction.
+- `SegmentationProvider` — Person body segmentation mask provider.
 
 ## Usage
 
 ```typescript
 import { createDefaultProviderManager } from "@clypra-studio/feature-providers";
-import { BodySegmentationProvider } from "@clypra-studio/feature-providers/segmentation";
-import { ChromaKeyProvider } from "@clypra-studio/feature-providers/chroma-key";
 
-// Create a provider manager
+// Create provider manager with built-in providers
 const manager = createDefaultProviderManager();
-
-// Use body segmentation
-const segmentationProvider = new BodySegmentationProvider();
-const mask = await segmentationProvider.segment(imageData);
-
-// Use chroma key
-const chromaProvider = new ChromaKeyProvider({ color: "#00FF00" });
-const result = await chromaProvider.process(imageData);
 ```
-
-## Features
-
-- ✅ **Body Segmentation** - Segment human bodies from video frames
-- ✅ **Chroma Key** - Green screen and color key effects
-- ✅ **Extensible Architecture** - Plugin-based provider system
-- ✅ **WebGL Acceleration** - GPU-accelerated processing
-- ✅ **TypeScript Support** - Full type definitions
-
-## Entry Points
-
-- **`@clypra-studio/feature-providers`** - Main exports and provider manager
-- **`@clypra-studio/feature-providers/types`** - TypeScript type definitions
-- **`@clypra-studio/feature-providers/segmentation`** - Body segmentation provider
-- **`@clypra-studio/feature-providers/chroma-key`** - Chroma key provider
 
 ## License
 
 MIT
-
-## Links
-
-- [GitHub Repository](https://github.com/AIEraDev/clypra-studio)
-- [Report Issues](https://github.com/AIEraDev/clypra-studio/issues)
-- [npm Package](https://www.npmjs.com/package/@clypra-studio/feature-providers)

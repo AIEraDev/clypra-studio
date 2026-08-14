@@ -1,57 +1,31 @@
 # @clypra-studio/engine
 
-The rendering and animation engine powering [Clypra Studio](https://github.com/AIEraDev/clypra-studio) — a high-performance Canvas 2D text effects system with GPU-accelerated PixiJS video effects, full Lottie JSON tooling, keyframe animation, and CapCut-style timeline capabilities.
+Core effect registry, Canvas 2D text layout engine, Lottie JSON tooling, video/body effects, transitions, and smart overlays.
 
 ## Installation
 
 ```bash
-npm install @clypra-studio/engine
-# or
 pnpm add @clypra-studio/engine
-# or
-yarn add @clypra-studio/engine
 ```
+
+## Features & Subsystems
+
+- 🔤 **Text Layout & Effects**: Canvas 2D per-character fill, typography layout, text effects recipes, and animatable parameters.
+- 🎨 **Lottie JSON Tooling**: Full Lottie parser, injector, text style editor, template presets, Google Fonts integration, and Lottie export.
+- 📽️ **Video & Body Effects**: Built-in video filters, green screen chroma keying, body segmentation masks, and effect definitions.
+- 🔀 **Transitions**: Dual-input temporal transition renderers and definitions.
+- 🖌️ **Procedural Engines**: Procedural `InkBrushEngine` and canvas rasterization utilities.
+- 🖼️ **Smart Overlays**: Declarative canvas templates, keyframe presets, and overlay document renderer.
+- ⚡ **Pipeline V2**: Media processing graph node registry, frame graph builder, and `MPGFrameRenderer`.
 
 ## Usage
 
 ```typescript
 import { EffectRenderer } from "@clypra-studio/engine";
-import { TransitionRenderer } from "@clypra-studio/engine/transitions";
-import { TextEffectConfig } from "@clypra-studio/engine/textEffects";
-import { PixiRenderBackend } from "@clypra-studio/engine/v2/backends";
-
-// Create an effect renderer
-const renderer = new EffectRenderer(canvas, effect);
-
-// Render a frame
-await renderer.render(frame);
+import { InkBrushEngine } from "@clypra-studio/engine";
+import { TemplateRenderer } from "@clypra-studio/engine";
 ```
-
-## Features
-
-- ✅ **Text Effects** - Canvas 2D text rendering with advanced effects
-- ✅ **Video Effects** - GPU-accelerated effects using PixiJS
-- ✅ **Transitions** - Professional transition effects
-- ✅ **Lottie Support** - Full Lottie JSON animation tooling
-- ✅ **Keyframe Animation** - Timeline-based animation system
-- ✅ **Render Backends** - Pixi.js GPU rendering support
-
-## Entry Points
-
-- **`@clypra-studio/engine`** - Main engine exports
-- **`@clypra-studio/engine/transitions`** - Transition effects
-- **`@clypra-studio/engine/videoEffects`** - Video effect definitions
-- **`@clypra-studio/engine/textEffects`** - Text effect system
-- **`@clypra-studio/engine/v2/backends`** - Rendering backends
-- **`@clypra-studio/engine/v2/contract`** - V2 API contracts
 
 ## License
 
 MIT
-
-## Links
-
-- [GitHub Repository](https://github.com/AIEraDev/clypra-studio)
-- [Documentation](https://github.com/AIEraDev/clypra-studio/tree/main/packages/clypra-engine#readme)
-- [Report Issues](https://github.com/AIEraDev/clypra-studio/issues)
-- [npm Package](https://www.npmjs.com/package/@clypra-studio/engine)

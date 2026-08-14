@@ -1,66 +1,36 @@
 # @clypra-studio/runtime
 
-Shared runtime infrastructure for all Clypra Studio Labs. Provides graph management, execution planning, state management, and rendering backends.
+Core execution engine and shared runtime infrastructure powering Clypra Studio and Clypra Desktop Editor.
 
 ## Installation
 
 ```bash
-npm install @clypra-studio/runtime
-# or
 pnpm add @clypra-studio/runtime
-# or
-yarn add @clypra-studio/runtime
 ```
+
+## Architectural Subsystems
+
+- **Graph & Compiler**: Media processing graph builder, validation engine, and NLE project-to-graph compiler (`./graph`, `./compiler`, `./project`).
+- **Planner & Executor**: Frame graph planner, render job builder, and job execution engine (`./planner`, `./job`, `./executor`).
+- **Render Backends**: GPU-accelerated PixiJS renderer and Headless Null renderer (`./pixi`, `./null`).
+- **WebGPU Pipeline**: Hardware-accelerated WebGPU execution pipeline (`./webgpu`).
+- **Host Plugin Bridge & SDK**: `.vefx` plugin bridge and host communication protocol (`./bridge`).
+- **Keyframe & Animation Engine**: Bezier curve interpolation and keyframe property animation (`./keyframe`).
+- **Audio Spectrum Engine**: Real-time audio spectrum binding and frequency band extraction (`./audio`).
+- **Testing & Validation**: Golden frame comparison suite, GPU benchmark runner, and effect validation (`./testing`, `./validation`).
 
 ## Usage
 
 ```typescript
-import { GraphBuilder } from "@clypra-studio/runtime/graph";
-import { Planner } from "@clypra-studio/runtime/planner";
-import { JobExecutor } from "@clypra-studio/runtime/executor";
+import { FrameGraphPlanner } from "@clypra-studio/runtime/planner";
 import { PixiRenderer } from "@clypra-studio/runtime/pixi";
-import { StateManager } from "@clypra-studio/runtime/state";
+import { KeyframeEvaluator } from "@clypra-studio/runtime/keyframe";
 
-// Build a render graph
-const graph = new GraphBuilder().addNode("source", { type: "video" }).addNode("effect", { type: "blur" }).connect("source", "effect").build();
-
-// Execute the graph
-const executor = new JobExecutor(renderer);
-await executor.execute(graph);
+// Create frame planner & renderer
+const planner = new FrameGraphPlanner({ targetWidth: 1920, targetHeight: 1080 });
+const renderer = new PixiRenderer();
 ```
-
-## Features
-
-- ✅ **Graph Management** - Build and validate render graphs
-- ✅ **Execution Planning** - Optimize render pass execution
-- ✅ **Job Execution** - Run render jobs efficiently
-- ✅ **State Management** - Track and manage rendering state
-- ✅ **Pixi Renderer** - GPU-accelerated rendering with PixiJS
-- ✅ **Null Renderer** - Testing and validation renderer
-- ✅ **Resource Management** - Handle textures and buffers
-- ✅ **Validation** - Runtime validation and error checking
-- ✅ **Telemetry** - Performance monitoring and metrics
-
-## Entry Points
-
-- **`@clypra-studio/runtime`** - Main runtime exports
-- **`@clypra-studio/runtime/graph`** - Graph building and management
-- **`@clypra-studio/runtime/planner`** - Execution planning
-- **`@clypra-studio/runtime/job`** - Job execution
-- **`@clypra-studio/runtime/executor`** - Executor implementation
-- **`@clypra-studio/runtime/state`** - State management
-- **`@clypra-studio/runtime/pixi`** - PixiJS renderer
-- **`@clypra-studio/runtime/null`** - Null renderer
-- **`@clypra-studio/runtime/resources`** - Resource management
-- **`@clypra-studio/runtime/validation`** - Validation utilities
-- **`@clypra-studio/runtime/telemetry`** - Telemetry and metrics
 
 ## License
 
 MIT
-
-## Links
-
-- [GitHub Repository](https://github.com/AIEraDev/clypra-studio)
-- [Report Issues](https://github.com/AIEraDev/clypra-studio/issues)
-- [npm Package](https://www.npmjs.com/package/@clypra-studio/runtime)
