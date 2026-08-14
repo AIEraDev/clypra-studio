@@ -3,6 +3,40 @@ import { dataBindingEngine } from "./dataBindingEngine.js";
 import { resolveDocumentForBreakpoint } from "./responsiveResolver.js";
 import { MediaImageEngine } from "./mediaImageEngine.js";
 
+let _measureCanvas: any = null;
+let _measureCtx: any = null;
+
+/**
+ * Measure exact pixel width of text string across browser canvas / headless environments.
+ */
+export function measureTextWidth(
+  text: string,
+  fontSize: number,
+  fontWeight: string | number = "normal",
+  fontFamily: string = "Inter, sans-serif",
+  tabularNums = false
+): number {
+  if (!text) return 20;
+  if (typeof document !== "undefined") {
+    try {
+      if (!_measureCanvas) {
+        _measureCanvas = document.createElement("canvas");
+        _measureCtx = _measureCanvas.getContext("2d");
+      }
+      if (_measureCtx) {
+        _measureCtx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+        const measured = _measureCtx.measureText(text).width;
+        if (measured > 0) {
+          return Math.ceil(measured);
+        }
+      }
+    } catch {}
+  }
+  // Fast headless heuristic fallback
+  const charWidthRatio = tabularNums ? 0.60 : (fontWeight === "bold" || fontWeight === 700 || fontWeight === "700" ? 0.54 : 0.50);
+  return Math.max(20, Math.ceil(text.length * fontSize * charWidthRatio));
+}
+
 export interface ComputedNodeBounds {
   x: number;
   y: number;
@@ -470,8 +504,21 @@ export class LayoutEngine {
         const hugWidth = maxLineWidth + normPadding.left + normPadding.right;
         const hugHeight = totalLinesHeight + normPadding.top + normPadding.bottom;
 
-        if (effectiveWidthMode === "hug") width = activeChildren.length > 0 ? hugWidth : (node.width || 320);
-        if (effectiveHeightMode === "hug") height = activeChildren.length > 0 ? hugHeight : (node.height || 240);
+        if (effectiveWidthMode === "hug") {
+          width = activeChildren.length > 0 ? hugWidth : (node.width || 320);
+        } else if (effectiveWidthMode !== "fill") {
+          if (activeChildren.length > 0 && hugWidth > width) {
+            width = hugWidth;
+          }
+        }
+
+        if (effectiveHeightMode === "hug") {
+          height = activeChildren.length > 0 ? hugHeight : (node.height || 240);
+        } else if (effectiveHeightMode !== "fill") {
+          if (activeChildren.length > 0 && hugHeight > height) {
+            height = hugHeight;
+          }
+        }
 
         const containerContentW = Math.max(maxLineWidth, width - normPadding.left - normPadding.right);
 
@@ -581,8 +628,21 @@ export class LayoutEngine {
         const hugWidth = maxChildW + normPadding.left + normPadding.right;
         const hugHeight = totalContentH + normPadding.top + normPadding.bottom;
 
-        if (effectiveWidthMode === "hug") width = activeColChildren.length > 0 ? hugWidth : (node.width || 320);
-        if (effectiveHeightMode === "hug") height = activeColChildren.length > 0 ? hugHeight : (node.height || 240);
+        if (effectiveWidthMode === "hug") {
+          width = activeColChildren.length > 0 ? hugWidth : (node.width || 320);
+        } else if (effectiveWidthMode !== "fill") {
+          if (activeColChildren.length > 0 && hugWidth > width) {
+            width = hugWidth;
+          }
+        }
+
+        if (effectiveHeightMode === "hug") {
+          height = activeColChildren.length > 0 ? hugHeight : (node.height || 240);
+        } else if (effectiveHeightMode !== "fill") {
+          if (activeColChildren.length > 0 && hugHeight > height) {
+            height = hugHeight;
+          }
+        }
 
         const containerContentW = Math.max(maxChildW, width - normPadding.left - normPadding.right);
         const containerContentH = Math.max(totalContentH, height - normPadding.top - normPadding.bottom);

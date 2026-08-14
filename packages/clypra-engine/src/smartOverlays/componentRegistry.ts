@@ -384,7 +384,7 @@ componentRegistry.register({
       mode: "flex-column",
       gap: 12,
       padding: { top: 16, right: 16, bottom: 16, left: 16 },
-      constraints: { widthMode: "fixed", heightMode: "hug" },
+      constraints: { widthMode: "fixed", heightMode: "fixed" },
     }
   } as any)
 });

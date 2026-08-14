@@ -136,6 +136,139 @@ export class SnapEngine {
 
     return { x: snappedX, y: snappedY, guides } satisfies CanvasSnapResult;
   }
+
+  /**
+   * Calculate snapped bounds and alignment guides during handle resizing
+   */
+  public calculateResizeSnap(
+    resizingBounds: { x: number; y: number; width: number; height: number },
+    handle: string,
+    otherNodes: Array<{ x: number; y: number; width: number; height: number }>,
+    canvasWidth = 1280,
+    canvasHeight = 720,
+    threshold = 6
+  ): { x: number; y: number; width: number; height: number; guides: AlignmentGuide[] } {
+    let { x, y, width, height } = resizingBounds;
+    const guides: AlignmentGuide[] = [];
+
+    const safeMarginX = Math.round(canvasWidth * 0.05);
+    const safeMarginY = Math.round(canvasHeight * 0.05);
+    const canvasCenterX = canvasWidth / 2;
+    const canvasCenterY = canvasHeight / 2;
+
+    // 1. Right Edge Snapping
+    if (handle.includes("r")) {
+      const right = x + width;
+      if (Math.abs(right - (canvasWidth - safeMarginX)) < threshold) {
+        width = canvasWidth - safeMarginX - x;
+        guides.push({ type: "vertical", position: canvasWidth - safeMarginX });
+      } else if (Math.abs(right - canvasCenterX) < threshold) {
+        width = canvasCenterX - x;
+        guides.push({ type: "vertical", position: canvasCenterX });
+      } else {
+        for (const other of otherNodes) {
+          if (Math.abs(right - other.x) < threshold) {
+            width = other.x - x;
+            guides.push({ type: "vertical", position: other.x });
+            break;
+          } else if (Math.abs(right - (other.x + other.width)) < threshold) {
+            width = other.x + other.width - x;
+            guides.push({ type: "vertical", position: other.x + other.width });
+            break;
+          }
+        }
+      }
+    }
+
+    // 2. Left Edge Snapping
+    if (handle.includes("l")) {
+      if (Math.abs(x - safeMarginX) < threshold) {
+        const diff = safeMarginX - x;
+        x = safeMarginX;
+        width -= diff;
+        guides.push({ type: "vertical", position: safeMarginX });
+      } else if (Math.abs(x - canvasCenterX) < threshold) {
+        const diff = canvasCenterX - x;
+        x = canvasCenterX;
+        width -= diff;
+        guides.push({ type: "vertical", position: canvasCenterX });
+      } else {
+        for (const other of otherNodes) {
+          if (Math.abs(x - other.x) < threshold) {
+            const diff = other.x - x;
+            x = other.x;
+            width -= diff;
+            guides.push({ type: "vertical", position: other.x });
+            break;
+          } else if (Math.abs(x - (other.x + other.width)) < threshold) {
+            const diff = (other.x + other.width) - x;
+            x = other.x + other.width;
+            width -= diff;
+            guides.push({ type: "vertical", position: other.x + other.width });
+            break;
+          }
+        }
+      }
+    }
+
+    // 3. Bottom Edge Snapping
+    if (handle.includes("b")) {
+      const bottom = y + height;
+      if (Math.abs(bottom - (canvasHeight - safeMarginY)) < threshold) {
+        height = canvasHeight - safeMarginY - y;
+        guides.push({ type: "horizontal", position: canvasHeight - safeMarginY });
+      } else if (Math.abs(bottom - canvasCenterY) < threshold) {
+        height = canvasCenterY - y;
+        guides.push({ type: "horizontal", position: canvasCenterY });
+      } else {
+        for (const other of otherNodes) {
+          if (Math.abs(bottom - other.y) < threshold) {
+            height = other.y - y;
+            guides.push({ type: "horizontal", position: other.y });
+            break;
+          } else if (Math.abs(bottom - (other.y + other.height)) < threshold) {
+            height = other.y + other.height - y;
+            guides.push({ type: "horizontal", position: other.y + other.height });
+            break;
+          }
+        }
+      }
+    }
+
+    // 4. Top Edge Snapping
+    if (handle.includes("t")) {
+      if (Math.abs(y - safeMarginY) < threshold) {
+        const diff = safeMarginY - y;
+        y = safeMarginY;
+        height -= diff;
+        guides.push({ type: "horizontal", position: safeMarginY });
+      } else if (Math.abs(y - canvasCenterY) < threshold) {
+        const diff = canvasCenterY - y;
+        y = canvasCenterY;
+        height -= diff;
+        guides.push({ type: "horizontal", position: canvasCenterY });
+      } else {
+        for (const other of otherNodes) {
+          if (Math.abs(y - other.y) < threshold) {
+            const diff = other.y - y;
+            y = other.y;
+            height -= diff;
+            guides.push({ type: "horizontal", position: other.y });
+            break;
+          } else if (Math.abs(y - (other.y + other.height)) < threshold) {
+            const diff = (other.y + other.height) - y;
+            y = other.y + other.height;
+            height -= diff;
+            guides.push({ type: "horizontal", position: other.y + other.height });
+            break;
+          }
+        }
+      }
+    }
+
+    return { x, y, width: Math.max(10, width), height: Math.max(2, height), guides };
+  }
 }
 
 export const snapEngine = new SnapEngine();
+

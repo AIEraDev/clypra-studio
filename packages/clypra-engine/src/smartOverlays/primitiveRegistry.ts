@@ -80,7 +80,7 @@ export class PrimitiveRegistry {
           height: 360,
           constraints: { horizontal: "center", vertical: "center" },
           style: { backgroundColor: "#1F2937" },
-          layout: { mode: "flex-column", padding: { top: 16, right: 16, bottom: 16, left: 16 }, gap: 12, constraints: { horizontal: "center", vertical: "center" } },
+          layout: { mode: "flex-column", padding: { top: 16, right: 16, bottom: 16, left: 16 }, gap: 12, constraints: { horizontal: "center", vertical: "center", widthMode: "fixed", heightMode: "fixed" } },
           children: [],
         } as FrameNode),
     });
@@ -365,7 +365,7 @@ export class PrimitiveRegistry {
           clipContent: true,
           constraints: { horizontal: "center", vertical: "center" },
           style: { backgroundColor: "#111827", borderRadius: 16, strokeColor: "#1F2937", strokeWidth: 1 },
-          layout: { mode: "flex-column", padding: { top: 20, right: 20, bottom: 20, left: 20 }, gap: 12, constraints: { horizontal: "center", vertical: "center" } },
+          layout: { mode: "flex-column", padding: { top: 20, right: 20, bottom: 20, left: 20 }, gap: 12, constraints: { horizontal: "center", vertical: "center", widthMode: "fixed", heightMode: "fixed" } },
           children: [],
         } as ContainerNode),
     });
