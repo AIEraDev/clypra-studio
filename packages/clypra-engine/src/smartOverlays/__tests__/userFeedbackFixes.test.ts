@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { layoutEngine } from "../layoutEngine.js";
+import { snapEngine } from "../canvas/snapping/snapEngine.js";
 import { primitiveRegistry } from "../primitiveRegistry.js";
 import { componentRegistry } from "../componentRegistry.js";
 import { PixiSceneProjection } from "../pixiSceneProjection.js";
@@ -304,4 +305,198 @@ describe("User Highlighted Fixes & Regression Suite", () => {
       expect(updatedContainer.children[0].id).toBe("free-child");
     });
   });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 8. Text Bounding Box Auto-Hug & Content Bounds
+  // ───────────────────────────────────────────────────────────────────────────
+  describe("8. Text Bounding Box Auto-Hug (No Empty Space)", () => {
+    it("creates text-primitive default node with hug constraints and tight width", () => {
+      const textDef = componentRegistry.get("text-primitive");
+      expect(textDef).toBeDefined();
+      const node = textDef!.createDefaultNode();
+      expect(node.layout?.constraints?.widthMode).toBe("hug");
+      expect(node.layout?.constraints?.heightMode).toBe("hug");
+      expect(node.width).toBeLessThanOrEqual(220); // Tight to "Header Title", not hardcoded 300
+    });
+
+    it("computes tight bounding box for text node without dead space on the right", () => {
+      const textNode: SceneNode = {
+        id: "header-title-node",
+        name: "Header Title",
+        type: "text",
+        x: 100,
+        y: 100,
+        width: 300,
+        height: 40,
+        text: "Header Title",
+        layout: { constraints: { widthMode: "hug", heightMode: "hug" } },
+        style: { fontSize: 32, fontWeight: "bold" },
+      } as any;
+
+      const doc: OverlayDocument = { ...sampleDoc, nodes: [textNode] };
+      const layout = layoutEngine.computeLayout(doc);
+      const computed = layout.nodes["header-title-node"];
+
+      // 12 chars * 32 * 0.55 = 211.2 -> 212
+      expect(computed.width).toBe(212);
+      expect(computed.width).toBeLessThan(250); // Closes roundly on text without 300px empty dead space
+      expect(computed.height).toBe(39);
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 9. Frame Container Height Preservation & Professional Auto-Increase
+  // ───────────────────────────────────────────────────────────────────────────
+  describe("9. Frame Height Preservation & Auto-Increase", () => {
+    it("creates frame-primitive default node with fixed/fixed constraints", () => {
+      const frameDef = componentRegistry.get("frame-primitive");
+      expect(frameDef).toBeDefined();
+      const node = frameDef!.createDefaultNode();
+      expect(node.layout?.constraints?.widthMode).toBe("fixed");
+      expect(node.layout?.constraints?.heightMode).toBe("fixed");
+      expect(node.height).toBe(240);
+    });
+
+    it("does not reduce frame height when a single text layer is added inside it", () => {
+      const textChild: SceneNode = {
+        id: "frame-inner-text",
+        name: "Header Title",
+        type: "text",
+        x: 0,
+        y: 0,
+        width: 212,
+        height: 39,
+        text: "Header Title",
+        style: { fontSize: 32, fontWeight: "bold" },
+      } as any;
+
+      const frameNode: SceneNode = {
+        id: "designed-frame",
+        name: "Designed Frame",
+        type: "frame",
+        x: 100,
+        y: 100,
+        width: 400,
+        height: 240,
+        layout: {
+          mode: "flex-column",
+          padding: { top: 16, right: 16, bottom: 16, left: 16 },
+          gap: 12,
+          constraints: { widthMode: "fixed", heightMode: "fixed" },
+        },
+        children: [textChild],
+      } as any;
+
+      const doc: OverlayDocument = { ...sampleDoc, nodes: [frameNode] };
+      const layout = layoutEngine.computeLayout(doc);
+      const computedFrame = layout.nodes["designed-frame"];
+
+      // Frame must maintain its designed 240px height, NOT collapse to 71px (39 text + 32 padding)
+      expect(computedFrame.height).toBe(240);
+    });
+
+    it("auto-increases frame height professionally when content exceeds fixed designed height", () => {
+      // 6 "Header Title" lines added inside a 200px tall fixed-height frame (matches user screenshot)
+      const children: SceneNode[] = Array.from({ length: 6 }, (_, i) => ({
+        id: `header-title-${i + 1}`,
+        name: `Header Title ${i + 1}`,
+        type: "text",
+        x: 0,
+        y: 0,
+        width: 212,
+        height: 39,
+        text: "Header Title",
+        style: { fontSize: 32, fontWeight: "bold" },
+      } as any));
+
+      const frameNode: SceneNode = {
+        id: "auto-grow-frame",
+        name: "Auto Grow Frame",
+        type: "frame",
+        x: 100,
+        y: 100,
+        width: 400,
+        height: 200,
+        layout: {
+          mode: "flex-column",
+          padding: { top: 16, right: 16, bottom: 16, left: 16 },
+          gap: 12,
+          constraints: { widthMode: "fixed", heightMode: "fixed" },
+        },
+        children,
+      } as any;
+
+      const doc: OverlayDocument = { ...sampleDoc, nodes: [frameNode] };
+      const layout = layoutEngine.computeLayout(doc);
+      const computedFrame = layout.nodes["auto-grow-frame"];
+
+      // 6 items * 39 + 5 gaps * 12 + 32 padding = 326px > 200px initial height
+      expect(computedFrame.height).toBe(326);
+      expect(computedFrame.height).toBeGreaterThan(200);
+
+      // Verify all 6 children fit within the frame bounds without overflowing outside
+      for (const child of children) {
+        const childComputed = layout.nodes[child.id];
+        expect(childComputed.y + childComputed.height).toBeLessThanOrEqual(computedFrame.y + computedFrame.height);
+      }
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 10. Snap Grid Alignment with Auto-Increased Frame Dimensions
+  // ───────────────────────────────────────────────────────────────────────────
+  describe("10. Snap Grid Alignment with Auto-Increased Dimensions", () => {
+    it("snaps center and bottom edge using auto-increased computed height instead of initial height", () => {
+      // Auto-increased frame with 360px computed height on 720px canvas
+      // Canvas center Y = 360
+      // Target position placed near center: y = 178 (middle = 178 + 180 = 358, within 6px threshold of 360)
+      const movingBounds = { x: 300, y: 178, width: 400, height: 360 };
+      const otherNodes: SceneNode[] = [];
+
+      const snapResult = snapEngine.calculateSnap(movingBounds, otherNodes, 1280, 720, 6);
+
+      // Snapped Y should center 360px frame at canvasCenterY (360 - 360/2 = 180)
+      expect(snapResult.y).toBe(180);
+      expect(snapResult.guides).toEqual(
+        expect.arrayContaining([{ type: "horizontal", position: 360 }])
+      );
+    });
+
+    it("snaps bottom edge to safe title margin (5% margin = 684px) using auto-increased height", () => {
+      // Canvas height 720, safe margin Y is 36px (top: 36, bottom: 684)
+      // Moving 360px frame near bottom safe margin: y = 322 (bottom = 322 + 360 = 682, within 6px threshold of 684)
+      const movingBounds = { x: 100, y: 322, width: 400, height: 360 };
+      const otherNodes: SceneNode[] = [];
+
+      const snapResult = snapEngine.calculateSnap(movingBounds, otherNodes, 1280, 720, 6);
+
+      // Snapped Y should align bottom edge with 684 (684 - 360 = 324)
+      expect(snapResult.y).toBe(324);
+      expect(snapResult.guides).toEqual(
+        expect.arrayContaining([{ type: "horizontal", position: 684 }])
+      );
+    });
+
+    it("snaps resize handles accurately to canvas margins and sibling bounds", () => {
+      // Dragging bottom handle 'b' of frame near bottom safe margin (684)
+      const resizingBounds = { x: 100, y: 100, width: 400, height: 582 };
+      const resizeResult = snapEngine.calculateResizeSnap(
+        resizingBounds,
+        "b",
+        [],
+        1280,
+        720,
+        6
+      );
+
+      // Height should snap so 100 + height = 684 -> height = 584
+      expect(resizeResult.height).toBe(584);
+      expect(resizeResult.guides).toEqual(
+        expect.arrayContaining([{ type: "horizontal", position: 684 }])
+      );
+    });
+  });
 });
+
+
+
