@@ -30,10 +30,14 @@ interface AssetLibraryPanelProps {
 type FilterKind = "all" | "image" | "video" | "icon";
 
 const INPUT_CLS =
-  "w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors placeholder:text-gray-600";
-const LABEL_CLS = "block text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1";
+  "w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors placeholder:text-gray-600";
+const LABEL_CLS =
+  "block text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1";
 
-export function AssetLibraryPanel({ doc, onExecuteCommand }: AssetLibraryPanelProps) {
+export function AssetLibraryPanel({
+  doc,
+  onExecuteCommand,
+}: AssetLibraryPanelProps) {
   const [filter, setFilter] = useState<FilterKind>("all");
   const [search, setSearch] = useState("");
   const [showRemoteForm, setShowRemoteForm] = useState(false);
@@ -73,7 +77,9 @@ export function AssetLibraryPanel({ doc, onExecuteCommand }: AssetLibraryPanelPr
     if (!file) return;
 
     const blobUrl = URL.createObjectURL(file);
-    const assetId = `asset-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const assetId = `asset-${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2, 6)}`;
     const kind: AssetKind = file.type.startsWith("video") ? "video" : "image";
 
     const ref: AssetRef = {
@@ -105,7 +111,9 @@ export function AssetLibraryPanel({ doc, onExecuteCommand }: AssetLibraryPanelPr
 
     const assetId =
       remoteAssetId.trim() ||
-      `asset-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+      `asset-${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2, 6)}`;
 
     const ref: AssetRef = {
       assetId,
@@ -245,13 +253,16 @@ export function AssetLibraryPanel({ doc, onExecuteCommand }: AssetLibraryPanelPr
 
         {/* Search bar */}
         <div className="relative">
-          <Search size={12} className="absolute left-2.5 top-2.5 text-gray-500" />
+          <Search
+            size={12}
+            className="absolute left-2.5 top-2.5 text-gray-500"
+          />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search assets by ID or URI…"
-            className="w-full bg-[#151519] border border-white/[0.06] rounded-lg pl-7 pr-2.5 py-1.5 text-[11px] text-white focus:border-violet-500 outline-none placeholder:text-gray-600"
+            className="w-full bg-[#151519] border border-white/6 rounded-lg pl-7 pr-2.5 py-1.5 text-[11px] text-white focus:border-violet-500 outline-none placeholder:text-gray-600"
           />
         </div>
 
@@ -279,7 +290,9 @@ export function AssetLibraryPanel({ doc, onExecuteCommand }: AssetLibraryPanelPr
         {filteredAssets.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center p-4">
             <Image size={28} className="text-gray-600 mb-2 opacity-50" />
-            <p className="text-[12px] font-semibold text-gray-400">No assets found</p>
+            <p className="text-[12px] font-semibold text-gray-400">
+              No assets found
+            </p>
             <p className="text-[10px] text-gray-600 mt-1 max-w-[180px]">
               Import a local image or add a remote URI to populate your catalog.
             </p>
@@ -294,10 +307,10 @@ export function AssetLibraryPanel({ doc, onExecuteCommand }: AssetLibraryPanelPr
             return (
               <div
                 key={asset.assetId}
-                className="group relative bg-[#151519] border border-white/[0.06] hover:border-violet-500/30 rounded-xl p-2.5 transition-all flex gap-3 items-center"
+                className="group relative bg-[#151519] border border-white/6 hover:border-violet-500/30 rounded-xl p-2.5 transition-all flex gap-3 items-center"
               >
                 {/* Thumbnail Preview Box */}
-                <div className="w-12 h-12 rounded-lg bg-[#1C1C22] border border-white/[0.06] overflow-hidden flex items-center justify-center shrink-0 relative">
+                <div className="w-12 h-12 rounded-lg bg-[#1C1C22] border border-white/6 overflow-hidden flex items-center justify-center shrink-0 relative">
                   {resolvedUrl && state === "ready" ? (
                     <img
                       src={resolvedUrl}

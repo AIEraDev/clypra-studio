@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   viewportTransform,
   snapEngine,
@@ -6,6 +6,7 @@ import {
   hitTestTransformHandles,
   calculateResizeBounds,
   calculateRotationAngle,
+  layoutEngine,
   type OverlayDocument,
   type SceneNode,
   type ViewportState,
@@ -114,9 +115,11 @@ export function CanvasViewport({
     if (containerW > 0 && containerH > 0) {
       const fitScale = Math.min(containerW / doc.canvas.width, containerH / doc.canvas.height, 1.0);
       const fitZoom = Math.max(20, Math.floor(fitScale * 100));
-      onSetZoom?.(fitZoom);
+      if (viewport.zoom !== fitZoom) {
+        onSetZoom?.(fitZoom);
+      }
     }
-  }, [doc.canvas.width, doc.canvas.height, onSetZoom]);
+  }, [doc.canvas.width, doc.canvas.height, viewport.zoom, onSetZoom]);
 
   // Auto-fit canvas on initial mount and whenever container dimensions change (responsive sidebar/window)
   useEffect(() => {
@@ -131,7 +134,7 @@ export function CanvasViewport({
     ro.observe(el);
 
     return () => ro.disconnect();
-  }, [handleAutoFit]);
+  }, [doc.canvas.width, doc.canvas.height, viewport.zoom, handleAutoFit]);
 
   // Mount PixiApplication to canvas — 60 FPS loop runs completely outside React
   usePixiApp(canvasRef, doc, currentTime, selectedNode, !!referenceVideo);
@@ -166,14 +169,23 @@ export function CanvasViewport({
     nodeStarts: Array<{ id: string; x: number; y: number; width: number; height: number; rotation: number }>;
   } | null>(null);
 
+  // Compute layout state using layoutEngine for accurate bounding boxes (Fill/Hug/Auto-Layout)
+  const computedLayout = useMemo(() => layoutEngine.computeLayout(doc), [doc]);
+
   // Calculate selection bounding box
   let selMinX = Infinity, selMinY = Infinity, selMaxX = -Infinity, selMaxY = -Infinity;
 
   for (const n of selectedNodes) {
-    if (n.x < selMinX) selMinX = n.x;
-    if (n.y < selMinY) selMinY = n.y;
-    if (n.x + n.width > selMaxX) selMaxX = n.x + n.width;
-    if (n.y + n.height > selMaxY) selMaxY = n.y + n.height;
+    const cb = computedLayout.nodes[n.id];
+    const nx = cb ? cb.x : n.x;
+    const ny = cb ? cb.y : n.y;
+    const nw = cb ? cb.width : n.width;
+    const nh = cb ? cb.height : n.height;
+
+    if (nx < selMinX) selMinX = nx;
+    if (ny < selMinY) selMinY = ny;
+    if (nx + nw > selMaxX) selMaxX = nx + nw;
+    if (ny + nh > selMaxY) selMaxY = ny + nh;
   }
 
   const selW = selMaxX - selMinX;
@@ -185,29 +197,51 @@ export function CanvasViewport({
     const scale = viewport.zoom / 100;
     const threshold = Math.max(16, 20 / scale);
 
+    const singleNode = selectedNodes.length === 1 ? selectedNodes[0] : null;
+    const rotDeg = singleNode ? ((singleNode as any).rotation || (singleNode.style as any)?.rotation || 0) : 0;
+
+    let testX = docX;
+    let testY = docY;
+
+    if (singleNode && rotDeg !== 0) {
+      const cx = selMinX + selW / 2;
+      const cy = selMinY + selH / 2;
+      const rad = (-rotDeg * Math.PI) / 180;
+      const dx = docX - cx;
+      const dy = docY - cy;
+      testX = cx + dx * Math.cos(rad) - dy * Math.sin(rad);
+      testY = cy + dx * Math.sin(rad) + dy * Math.cos(rad);
+    }
+
     const rotX = selMinX + selW / 2;
     const rotY = selMinY - 24;
-    if (Math.hypot(docX - rotX, docY - rotY) <= threshold) return "rot";
+    if (Math.hypot(testX - rotX, testY - rotY) <= threshold) return "rot";
 
-    if (Math.hypot(docX - selMinX, docY - selMinY) <= threshold) return "tl";
-    if (Math.hypot(docX - (selMinX + selW), docY - selMinY) <= threshold) return "tr";
-    if (Math.hypot(docX - selMinX, docY - (selMinY + selH)) <= threshold) return "bl";
-    if (Math.hypot(docX - (selMinX + selW), docY - (selMinY + selH)) <= threshold) return "br";
+    if (Math.hypot(testX - selMinX, testY - selMinY) <= threshold) return "tl";
+    if (Math.hypot(testX - (selMinX + selW), testY - selMinY) <= threshold) return "tr";
+    if (Math.hypot(testX - selMinX, testY - (selMinY + selH)) <= threshold) return "bl";
+    if (Math.hypot(testX - (selMinX + selW), testY - (selMinY + selH)) <= threshold) return "br";
 
-    if (Math.abs(docY - selMinY) <= threshold && docX >= selMinX - threshold && docX <= selMinX + selW + threshold) return "t";
-    if (Math.abs(docY - (selMinY + selH)) <= threshold && docX >= selMinX - threshold && docX <= selMinX + selW + threshold) return "b";
-    if (Math.abs(docX - selMinX) <= threshold && docY >= selMinY - threshold && docY <= selMinY + selH + threshold) return "l";
-    if (Math.abs(docX - (selMinX + selW)) <= threshold && docY >= selMinY - threshold && docY <= selMinY + selH + threshold) return "r";
+    if (Math.abs(testY - selMinY) <= threshold && testX >= selMinX - threshold && testX <= selMinX + selW + threshold) return "t";
+    if (Math.abs(testY - (selMinY + selH)) <= threshold && testX >= selMinX - threshold && testX <= selMinX + selW + threshold) return "b";
+    if (Math.abs(testX - selMinX) <= threshold && testY >= selMinY - threshold && testY <= selMinY + selH + threshold) return "l";
+    if (Math.abs(testX - (selMinX + selW)) <= threshold && testY >= selMinY - threshold && testY <= selMinY + selH + threshold) return "r";
 
     return null;
   };
 
   // Helper for computing interactive hit bounds for all node types (including floating annotations)
   const getNodeHitBounds = (n: SceneNode) => {
-    let minX = n.x;
-    let maxX = n.x + n.width;
-    let minY = n.y;
-    let maxY = n.y + n.height;
+    const cb = computedLayout.nodes[n.id];
+    const nx = cb ? cb.x : n.x;
+    const ny = cb ? cb.y : n.y;
+    const nw = cb ? cb.width : n.width;
+    const nh = cb ? cb.height : n.height;
+
+    let minX = nx;
+    let maxX = nx + nw;
+    let minY = ny;
+    let maxY = ny + nh;
 
     if (n.type === "annotation") {
       const offX = (n as any).offsetX ?? 10;

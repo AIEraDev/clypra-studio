@@ -6,13 +6,7 @@ import {
   type DocumentCommand,
   type FontRef,
 } from "@clypra-studio/engine";
-import {
-  Type,
-  Plus,
-  Globe,
-  Monitor,
-  Search,
-} from "lucide-react";
+import { Type, Plus, Globe, Monitor, Search } from "lucide-react";
 
 interface FontManagerPanelProps {
   doc: OverlayDocument;
@@ -32,8 +26,9 @@ const SYSTEM_FONTS: FontRef[] = [
 ];
 
 const INPUT_CLS =
-  "w-full bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors placeholder:text-gray-600";
-const LABEL_CLS = "block text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1";
+  "w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors placeholder:text-gray-600";
+const LABEL_CLS =
+  "block text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1";
 
 export function FontManagerPanel({
   doc,
@@ -51,12 +46,14 @@ export function FontManagerPanel({
 
   const registeredFonts = fontRegistry.list();
   const allFontsMap = new Map<string, FontRef>();
-  for (const f of SYSTEM_FONTS) allFontsMap.set(`${f.family}:${f.weight}:${f.style}`, f);
-  for (const f of registeredFonts) allFontsMap.set(`${f.family}:${f.weight}:${f.style}`, f);
+  for (const f of SYSTEM_FONTS)
+    allFontsMap.set(`${f.family}:${f.weight}:${f.style}`, f);
+  for (const f of registeredFonts)
+    allFontsMap.set(`${f.family}:${f.weight}:${f.style}`, f);
   const allFonts = Array.from(allFontsMap.values());
 
   const filteredFonts = allFonts.filter((f) =>
-    f.family.toLowerCase().includes(search.toLowerCase())
+    f.family.toLowerCase().includes(search.toLowerCase()),
   );
 
   const handleAddFont = (e: React.FormEvent) => {
@@ -152,7 +149,9 @@ export function FontManagerPanel({
               </div>
             </div>
             <div>
-              <label className={LABEL_CLS}>Font CSS / WOFF2 URL (Optional)</label>
+              <label className={LABEL_CLS}>
+                Font CSS / WOFF2 URL (Optional)
+              </label>
               <input
                 type="url"
                 value={url}
@@ -181,13 +180,16 @@ export function FontManagerPanel({
 
         {/* Search */}
         <div className="relative">
-          <Search size={12} className="absolute left-2.5 top-2.5 text-gray-500" />
+          <Search
+            size={12}
+            className="absolute left-2.5 top-2.5 text-gray-500"
+          />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search fonts…"
-            className="w-full bg-[#151519] border border-white/[0.06] rounded-lg pl-7 pr-2.5 py-1.5 text-[11px] text-white focus:border-violet-500 outline-none placeholder:text-gray-600"
+            className="w-full bg-[#151519] border border-white/6 rounded-lg pl-7 pr-2.5 py-1.5 text-[11px] text-white focus:border-violet-500 outline-none placeholder:text-gray-600"
           />
         </div>
       </div>
@@ -200,11 +202,13 @@ export function FontManagerPanel({
           return (
             <div
               key={`${f.family}:${f.weight}:${f.style}`}
-              className="group bg-[#151519] border border-white/[0.06] hover:border-violet-500/30 rounded-xl p-3 transition-all flex flex-col gap-2"
+              className="group bg-[#151519] border border-white/6 hover:border-violet-500/30 rounded-xl p-3 transition-all flex flex-col gap-2"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[12px] font-bold text-white">{f.family}</span>
+                  <span className="text-[12px] font-bold text-white">
+                    {f.family}
+                  </span>
                   <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/[0.06] text-gray-400">
                     {f.weight} {f.style !== "normal" && f.style}
                   </span>
@@ -242,7 +246,7 @@ export function FontManagerPanel({
 
               {/* Sample preview text */}
               <div
-                className="text-[14px] text-gray-300 truncate pt-1 border-t border-white/[0.04]"
+                className="text-[14px] text-gray-300 truncate pt-1 border-t border-white/4"
                 style={{
                   fontFamily: f.family,
                   fontWeight: f.weight,

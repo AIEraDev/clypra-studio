@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   assetRegistry,
   fontRegistry,
@@ -9,7 +9,8 @@ import {
   AlertTriangle,
   AlertCircle,
   CheckCircle2,
-  Image,
+  ShieldCheck,
+  X,
 } from "lucide-react";
 
 interface ResourceDiagnosticsPanelProps {
@@ -21,10 +22,15 @@ export function ResourceDiagnosticsPanel({
   doc,
   onExecuteCommand,
 }: ResourceDiagnosticsPanelProps) {
+  const [showModal, setShowModal] = useState(false);
   const manifestAssets = doc.assetManifest?.assets || [];
 
   // Inspect missing/error assets
-  const assetIssues: Array<{ assetId: string; status: string; message: string }> = [];
+  const assetIssues: Array<{
+    assetId: string;
+    status: string;
+    message: string;
+  }> = [];
   for (const asset of manifestAssets) {
     const state = assetRegistry.getState(asset.assetId);
     if (state === "missing") {
@@ -38,7 +44,9 @@ export function ResourceDiagnosticsPanel({
       assetIssues.push({
         assetId: asset.assetId,
         status: "error",
-        message: `Asset "${asset.assetId}" failed to load: ${entry?.error || "Unknown error"}`,
+        message: `Asset "${asset.assetId}" failed to load: ${
+          entry?.error || "Unknown error"
+        }`,
       });
     }
   }
@@ -65,51 +73,133 @@ export function ResourceDiagnosticsPanel({
   const totalIssues = assetIssues.length + fontIssues.length;
 
   return (
-    <div className="bg-[#151519] border border-white/[0.06] rounded-xl p-3 flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-          <Image size={12} className="text-violet-400" />
-          Resource Diagnostics
+    <>
+      {/* Compact Status Button */}
+      <button
+        type="button"
+        onClick={() => setShowModal(true)}
+        className={`w-full flex items-center justify-between px-3 py-2 rounded-md border text-xs font-semibold transition-all cursor-pointer ${
+          totalIssues === 0
+            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/30"
+            : "bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/30"
+        }`}
+      >
+        <span className="flex items-center gap-2">
+          {totalIssues === 0 ? (
+            <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+          ) : (
+            <AlertTriangle size={14} className="text-amber-400 shrink-0" />
+          )}
+          <span>Resource Diagnostics</span>
         </span>
         <span
-          className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+          className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
             totalIssues === 0
-              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-              : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+              ? "bg-emerald-500/20 text-emerald-300"
+              : "bg-amber-500/20 text-amber-300"
           }`}
         >
-          {totalIssues === 0 ? "All Resources Ready" : `${totalIssues} Issue${totalIssues > 1 ? "s" : ""}`}
+          {totalIssues === 0
+            ? "All Ready"
+            : `${totalIssues} Issue${totalIssues > 1 ? "s" : ""}`}
         </span>
-      </div>
+      </button>
 
-      {totalIssues === 0 ? (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-emerald-400 text-[11px] font-medium">
-          <CheckCircle2 size={13} />
-          <span>All document assets & fonts resolved cleanly.</span>
-        </div>
-      ) : (
-        <div className="space-y-1.5 pt-1">
-          {assetIssues.map((issue) => (
-            <div
-              key={issue.assetId}
-              className="flex items-center gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-[11px]"
-            >
-              <AlertCircle size={13} className="text-red-400 shrink-0" />
-              <span className="flex-1 truncate">{issue.message}</span>
+      {/* Modal Dialog */}
+      {showModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/75 backdrop-blur-sm animate-in fade-in duration-150 p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#12121A] p-5 shadow-2xl flex flex-col gap-4 font-sans text-white">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck size={18} className="text-violet-400" />
+                <h3 className="text-sm font-bold tracking-tight">
+                  Resource Diagnostics Details
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="rounded-lg p-1 text-gray-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
             </div>
-          ))}
 
-          {fontIssues.map((issue) => (
-            <div
-              key={issue.family}
-              className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px]"
-            >
-              <AlertTriangle size={13} className="text-amber-400 shrink-0" />
-              <span className="flex-1 truncate">{issue.message}</span>
+            {/* Body Content */}
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              {totalIssues === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-8 text-center bg-emerald-500/5 rounded-xl border border-emerald-500/10">
+                  <CheckCircle2 size={36} className="text-emerald-400" />
+                  <div>
+                    <h4 className="text-xs font-bold text-emerald-300">
+                      All Document Resources Resolved
+                    </h4>
+                    <p className="text-[11px] text-gray-400 mt-1 max-w-sm">
+                      All image assets, video clips, custom web fonts, and
+                      component dependencies are fully verified and ready for
+                      real-time WebGL rendering and 4K export.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {assetIssues.map((issue) => (
+                    <div
+                      key={issue.assetId}
+                      className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-200 text-xs"
+                    >
+                      <AlertCircle
+                        size={16}
+                        className="text-red-400 shrink-0 mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-red-300">
+                          Missing Asset: {issue.assetId}
+                        </div>
+                        <p className="text-[11px] text-red-300/80 mt-0.5 leading-relaxed">
+                          {issue.message}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {fontIssues.map((issue) => (
+                    <div
+                      key={issue.family}
+                      className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs"
+                    >
+                      <AlertTriangle
+                        size={16}
+                        className="text-amber-400 shrink-0 mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-amber-300">
+                          Font Warning: {issue.family}
+                        </div>
+                        <p className="text-[11px] text-amber-300/80 mt-0.5 leading-relaxed">
+                          {issue.message}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
+
+            {/* Footer */}
+            <div className="flex justify-end pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

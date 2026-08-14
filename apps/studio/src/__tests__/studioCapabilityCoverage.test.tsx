@@ -49,13 +49,14 @@ describe("Studio Capability Surface — VisualizationControl Inspector", () => {
 
     expect(handleCommand).toHaveBeenCalledTimes(1);
     expect(handleCommand).toHaveBeenCalledWith({
-      type: "UPDATE_NODE",
+      type: "UPDATE_NODE_PROPERTY",
       nodeId: "test-chart-node",
-      changes: { chartType: "line" },
+      path: "chartType",
+      value: "line",
     });
   });
 
-  it("edits category labels and dispatches UPDATE_NODE command", () => {
+  it("edits category labels and dispatches UPDATE_NODE_PROPERTY command", () => {
     const handleCommand = vi.fn();
     render(<VisualizationControl node={sampleChartNode} onExecuteCommand={handleCommand} />);
 
@@ -65,9 +66,10 @@ describe("Studio Capability Surface — VisualizationControl Inspector", () => {
     fireEvent.change(categoriesInput, { target: { value: "Jan, Feb, Mar, Apr" } });
 
     expect(handleCommand).toHaveBeenCalledWith({
-      type: "UPDATE_NODE",
+      type: "UPDATE_NODE_PROPERTY",
       nodeId: "test-chart-node",
-      changes: { xLabels: ["Jan", "Feb", "Mar", "Apr"] },
+      path: "xLabels",
+      value: ["Jan", "Feb", "Mar", "Apr"],
     });
   });
 
@@ -81,13 +83,12 @@ describe("Studio Capability Surface — VisualizationControl Inspector", () => {
     fireEvent.change(q1ValueInput, { target: { value: "150" } });
 
     expect(handleCommand).toHaveBeenCalledWith({
-      type: "UPDATE_NODE",
+      type: "UPDATE_NODE_PROPERTY",
       nodeId: "test-chart-node",
-      changes: {
-        series: [
-          { id: "rev", name: "Revenue", color: "#45FF72", data: [150, 200, 300, 400] }
-        ]
-      },
+      path: "series",
+      value: [
+        { id: "rev", name: "Revenue", color: "#45FF72", data: [150, 200, 300, 400] }
+      ],
     });
   });
 
@@ -100,8 +101,8 @@ describe("Studio Capability Surface — VisualizationControl Inspector", () => {
 
     expect(handleCommand).toHaveBeenCalledTimes(1);
     const lastCmd = handleCommand.mock.calls[0][0] as DocumentCommand;
-    expect(lastCmd.type).toBe("UPDATE_NODE");
-    expect((lastCmd as any).changes.series.length).toBe(2);
+    expect(lastCmd.type).toBe("UPDATE_NODE_PROPERTY");
+    expect((lastCmd as any).value.length).toBe(2);
   });
 
   it("renders Gauge inspector controls for GaugeNode", () => {
@@ -124,9 +125,10 @@ describe("Studio Capability Surface — VisualizationControl Inspector", () => {
 
     fireEvent.change(valInput, { target: { value: "85" } });
     expect(handleCommand).toHaveBeenCalledWith({
-      type: "UPDATE_NODE",
+      type: "UPDATE_NODE_PROPERTY",
       nodeId: "test-gauge",
-      changes: { value: 85 },
+      path: "value",
+      value: 85,
     });
   });
 });

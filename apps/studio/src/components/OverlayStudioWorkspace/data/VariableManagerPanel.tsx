@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, Database } from 'lucide-react';
-import type { OverlayDocument, DocumentCommand } from '@clypra-studio/engine';
+import React, { useState } from "react";
+import { Plus, Trash2, Database } from "lucide-react";
+import type { OverlayDocument, DocumentCommand } from "@clypra-studio/engine";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type VariableType = 'string' | 'number' | 'boolean' | 'color' | 'array';
+type VariableType = "string" | "number" | "boolean" | "color" | "array";
 
 export interface VariableManagerPanelProps {
   doc: OverlayDocument;
@@ -18,23 +18,31 @@ export interface VariableManagerPanelProps {
 // ---------------------------------------------------------------------------
 
 const TYPE_PILL_CLASSES: Record<VariableType, string> = {
-  number: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
-  string: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-  boolean: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
-  color: 'bg-pink-500/20 text-pink-300 border border-pink-500/30',
-  array: 'bg-sky-500/20 text-sky-300 border border-sky-500/30',
+  number: "bg-violet-500/20 text-violet-300 border border-violet-500/30",
+  string: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
+  boolean: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+  color: "bg-pink-500/20 text-pink-300 border border-pink-500/30",
+  array: "bg-sky-500/20 text-sky-300 border border-sky-500/30",
 };
 
-const VARIABLE_TYPES: VariableType[] = ['string', 'number', 'boolean', 'color', 'array'];
+const VARIABLE_TYPES: VariableType[] = [
+  "string",
+  "number",
+  "boolean",
+  "color",
+  "array",
+];
 
-const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const SectionLabel: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
   <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
     {children}
   </span>
 );
 
 const baseInputCls =
-  'bg-[#1C1C22] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:border-violet-500 outline-none w-full';
+  "bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:border-violet-500 outline-none w-full";
 
 // ---------------------------------------------------------------------------
 // TypeBadge
@@ -53,12 +61,21 @@ const TypeBadge: React.FC<{ type: VariableType }> = ({ type }) => (
 // ---------------------------------------------------------------------------
 
 interface VariableRowProps {
-  variable: { key: string; label: string; dataType: VariableType; defaultValue: any };
+  variable: {
+    key: string;
+    label: string;
+    dataType: VariableType;
+    defaultValue: any;
+  };
   onUpdate: (key: string, patch: Record<string, any>) => void;
   onDelete: (key: string) => void;
 }
 
-const VariableRow: React.FC<VariableRowProps> = ({ variable, onUpdate, onDelete }) => {
+const VariableRow: React.FC<VariableRowProps> = ({
+  variable,
+  onUpdate,
+  onDelete,
+}) => {
   const [arrayError, setArrayError] = useState<string | null>(null);
 
   const handleArrayChange = (raw: string) => {
@@ -67,12 +84,12 @@ const VariableRow: React.FC<VariableRowProps> = ({ variable, onUpdate, onDelete 
       setArrayError(null);
       onUpdate(variable.key, { defaultValue: parsed });
     } catch {
-      setArrayError('Invalid JSON');
+      setArrayError("Invalid JSON");
     }
   };
 
   return (
-    <div className="group bg-[#151519] border border-white/[0.06] rounded-xl p-3 flex items-start gap-3">
+    <div className="group bg-[#151519] border border-white/6 rounded-xl p-3 flex items-start gap-3">
       {/* Left: type badge */}
       <div className="pt-1 shrink-0">
         <TypeBadge type={variable.dataType} />
@@ -94,7 +111,7 @@ const VariableRow: React.FC<VariableRowProps> = ({ variable, onUpdate, onDelete 
 
       {/* Right: default value + delete */}
       <div className="flex flex-col gap-1.5 shrink-0 w-[120px]">
-        {variable.dataType === 'array' ? (
+        {variable.dataType === "array" ? (
           <div className="flex flex-col gap-1">
             <textarea
               className={`${baseInputCls} resize-none h-[56px]`}
@@ -107,29 +124,37 @@ const VariableRow: React.FC<VariableRowProps> = ({ variable, onUpdate, onDelete 
               <span className="text-[10px] text-red-400">{arrayError}</span>
             )}
           </div>
-        ) : variable.dataType === 'boolean' ? (
+        ) : variable.dataType === "boolean" ? (
           <select
             className={baseInputCls}
             value={String(variable.defaultValue)}
-            onChange={(e) => onUpdate(variable.key, { defaultValue: e.target.value === 'true' })}
+            onChange={(e) =>
+              onUpdate(variable.key, {
+                defaultValue: e.target.value === "true",
+              })
+            }
             aria-label="Default value"
           >
             <option value="true">true</option>
             <option value="false">false</option>
           </select>
-        ) : variable.dataType === 'color' ? (
+        ) : variable.dataType === "color" ? (
           <div className="flex items-center gap-1.5">
             <input
               type="color"
-              className="w-7 h-7 rounded cursor-pointer border border-white/[0.06] bg-[#1C1C22]"
-              value={variable.defaultValue ?? '#000000'}
-              onChange={(e) => onUpdate(variable.key, { defaultValue: e.target.value })}
+              className="w-7 h-7 rounded cursor-pointer border border-white/6 bg-[#1C1C22]"
+              value={variable.defaultValue ?? "#000000"}
+              onChange={(e) =>
+                onUpdate(variable.key, { defaultValue: e.target.value })
+              }
               aria-label="Default color"
             />
             <input
               className={`${baseInputCls} flex-1`}
-              value={variable.defaultValue ?? ''}
-              onChange={(e) => onUpdate(variable.key, { defaultValue: e.target.value })}
+              value={variable.defaultValue ?? ""}
+              onChange={(e) =>
+                onUpdate(variable.key, { defaultValue: e.target.value })
+              }
               placeholder="#000000"
               aria-label="Default color hex"
             />
@@ -137,12 +162,14 @@ const VariableRow: React.FC<VariableRowProps> = ({ variable, onUpdate, onDelete 
         ) : (
           <input
             className={baseInputCls}
-            type={variable.dataType === 'number' ? 'number' : 'text'}
-            value={variable.defaultValue ?? ''}
+            type={variable.dataType === "number" ? "number" : "text"}
+            value={variable.defaultValue ?? ""}
             onChange={(e) =>
               onUpdate(variable.key, {
                 defaultValue:
-                  variable.dataType === 'number' ? Number(e.target.value) : e.target.value,
+                  variable.dataType === "number"
+                    ? Number(e.target.value)
+                    : e.target.value,
               })
             }
             placeholder="Default"
@@ -168,23 +195,35 @@ const VariableRow: React.FC<VariableRowProps> = ({ variable, onUpdate, onDelete 
 // ---------------------------------------------------------------------------
 
 interface AddVariableFormProps {
-  onAdd: (key: string, dataType: VariableType, defaultValue: any, label: string) => void;
+  onAdd: (
+    key: string,
+    dataType: VariableType,
+    defaultValue: any,
+    label: string,
+  ) => void;
   onCancel: () => void;
 }
 
-const AddVariableForm: React.FC<AddVariableFormProps> = ({ onAdd, onCancel }) => {
-  const [key, setKey] = useState('');
-  const [label, setLabel] = useState('');
-  const [dataType, setDataType] = useState<VariableType>('string');
-  const [defaultValue, setDefaultValue] = useState('');
+const AddVariableForm: React.FC<AddVariableFormProps> = ({
+  onAdd,
+  onCancel,
+}) => {
+  const [key, setKey] = useState("");
+  const [label, setLabel] = useState("");
+  const [dataType, setDataType] = useState<VariableType>("string");
+  const [defaultValue, setDefaultValue] = useState("");
 
   const handleAdd = () => {
     if (!key.trim()) return;
     let parsed: any = defaultValue;
-    if (dataType === 'number') parsed = Number(defaultValue) || 0;
-    if (dataType === 'boolean') parsed = defaultValue === 'true';
-    if (dataType === 'array') {
-      try { parsed = JSON.parse(defaultValue || '[]'); } catch { parsed = []; }
+    if (dataType === "number") parsed = Number(defaultValue) || 0;
+    if (dataType === "boolean") parsed = defaultValue === "true";
+    if (dataType === "array") {
+      try {
+        parsed = JSON.parse(defaultValue || "[]");
+      } catch {
+        parsed = [];
+      }
     }
     onAdd(key.trim(), dataType, parsed, label.trim() || key.trim());
   };
@@ -199,7 +238,7 @@ const AddVariableForm: React.FC<AddVariableFormProps> = ({ onAdd, onCancel }) =>
           <input
             className={baseInputCls}
             value={key}
-            onChange={(e) => setKey(e.target.value.replace(/\s/g, '_'))}
+            onChange={(e) => setKey(e.target.value.replace(/\s/g, "_"))}
             placeholder="my_variable"
             autoFocus
           />
@@ -224,13 +263,15 @@ const AddVariableForm: React.FC<AddVariableFormProps> = ({ onAdd, onCancel }) =>
             onChange={(e) => setDataType(e.target.value as VariableType)}
           >
             {VARIABLE_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-[10px] text-gray-500">Default Value</span>
-          {dataType === 'boolean' ? (
+          {dataType === "boolean" ? (
             <select
               className={baseInputCls}
               value={defaultValue}
@@ -244,7 +285,13 @@ const AddVariableForm: React.FC<AddVariableFormProps> = ({ onAdd, onCancel }) =>
               className={baseInputCls}
               value={defaultValue}
               onChange={(e) => setDefaultValue(e.target.value)}
-              placeholder={dataType === 'array' ? '[]' : dataType === 'color' ? '#000000' : ''}
+              placeholder={
+                dataType === "array"
+                  ? "[]"
+                  : dataType === "color"
+                  ? "#000000"
+                  : ""
+              }
             />
           )}
         </div>
@@ -252,7 +299,7 @@ const AddVariableForm: React.FC<AddVariableFormProps> = ({ onAdd, onCancel }) =>
 
       <div className="flex gap-2 pt-1">
         <button
-          className="flex-1 cursor-pointer text-[12px] py-1.5 rounded-lg border border-white/[0.06] text-gray-400 hover:text-white hover:border-white/20 transition-colors"
+          className="flex-1 cursor-pointer text-[12px] py-1.5 rounded-lg border border-white/6 text-gray-400 hover:text-white hover:border-white/20 transition-colors"
           onClick={onCancel}
         >
           Cancel
@@ -273,29 +320,47 @@ const AddVariableForm: React.FC<AddVariableFormProps> = ({ onAdd, onCancel }) =>
 // VariableManagerPanel
 // ---------------------------------------------------------------------------
 
-const VariableManagerPanel: React.FC<VariableManagerPanelProps> = ({ doc, onExecuteCommand }) => {
+const VariableManagerPanel: React.FC<VariableManagerPanelProps> = ({
+  doc,
+  onExecuteCommand,
+}) => {
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const variables: Array<{ key: string; label: string; dataType: VariableType; defaultValue: any }> =
-    (doc.variables as any) ?? [];
+  const variables: Array<{
+    key: string;
+    label: string;
+    dataType: VariableType;
+    defaultValue: any;
+  }> = (doc.variables as any) ?? [];
 
-  const handleAdd = (key: string, dataType: VariableType, defaultValue: any, label: string) => {
-    onExecuteCommand({ type: 'ADD_VARIABLE', key, dataType, defaultValue, label } as any);
+  const handleAdd = (
+    key: string,
+    dataType: VariableType,
+    defaultValue: any,
+    label: string,
+  ) => {
+    onExecuteCommand({
+      type: "ADD_VARIABLE",
+      key,
+      dataType,
+      defaultValue,
+      label,
+    } as any);
     setShowAddForm(false);
   };
 
   const handleUpdate = (key: string, patch: Record<string, any>) => {
-    onExecuteCommand({ type: 'UPDATE_VARIABLE', key, patch } as any);
+    onExecuteCommand({ type: "UPDATE_VARIABLE", key, patch } as any);
   };
 
   const handleDelete = (key: string) => {
-    onExecuteCommand({ type: 'REMOVE_VARIABLE', key } as any);
+    onExecuteCommand({ type: "REMOVE_VARIABLE", key } as any);
   };
 
   return (
     <div className="flex flex-col gap-0 h-full overflow-hidden bg-[#0F0F14]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/6 shrink-0">
         <SectionLabel>Variables</SectionLabel>
         {!showAddForm && (
           <button
@@ -313,11 +378,13 @@ const VariableManagerPanel: React.FC<VariableManagerPanelProps> = ({ doc, onExec
         {variables.length === 0 && !showAddForm ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center flex-1 gap-3 py-12 text-center">
-            <div className="w-10 h-10 rounded-xl bg-[#151519] border border-white/[0.06] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-[#151519] border border-white/6 flex items-center justify-center">
               <Database size={18} className="text-gray-600" />
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[12px] text-gray-400 font-medium">No variables yet.</span>
+              <span className="text-[12px] text-gray-400 font-medium">
+                No variables yet.
+              </span>
               <span className="text-[11px] text-gray-600 max-w-[200px]">
                 Add a variable to make this overlay data-driven.
               </span>
@@ -348,5 +415,3 @@ const VariableManagerPanel: React.FC<VariableManagerPanelProps> = ({ doc, onExec
 
 export { VariableManagerPanel };
 export default VariableManagerPanel;
-
-

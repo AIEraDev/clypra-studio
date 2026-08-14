@@ -1,6 +1,25 @@
 import React, { useState, useEffect, useRef } from "react";
-import { componentRegistry, type ComponentDefinition, type SceneNode } from "@clypra-studio/engine";
-import { Search, Box, Type, Square, Image, List, Layers, Plus, Scissors, Link, Zap, Download, Trash2, Play } from "lucide-react";
+import {
+  componentRegistry,
+  type ComponentDefinition,
+  type SceneNode,
+} from "@clypra-studio/engine";
+import {
+  Search,
+  Box,
+  Type,
+  Square,
+  Image,
+  List,
+  Layers,
+  Plus,
+  Scissors,
+  Link,
+  Zap,
+  Download,
+  Trash2,
+  Play,
+} from "lucide-react";
 
 export interface PaletteItem {
   id: string;
@@ -19,7 +38,10 @@ interface InsertPaletteProps {
   onExecuteAction?: (actionId: string) => void;
 }
 
-const CATEGORY_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+const CATEGORY_ICONS: Record<
+  string,
+  React.ComponentType<{ size?: number; className?: string }>
+> = {
   typography: Type,
   layout: Square,
   media: Image,
@@ -32,30 +54,44 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ size?: number; classN
   primitives: Square,
   actions: Zap,
   commands: Download,
-  templates: SparklesIcon
+  templates: SparklesIcon,
 };
 
-function SparklesIcon({ size = 14, className = "" }: { size?: number; className?: string }) {
+function SparklesIcon({
+  size = 14,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) {
   return <Zap size={size} className={className} />;
 }
 
-export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }: InsertPaletteProps) {
+export function InsertPalette({
+  isOpen,
+  onClose,
+  onInsertNode,
+  onExecuteAction,
+}: InsertPaletteProps) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Build unified item list across components, actions, templates, commands
-  const components: PaletteItem[] = componentRegistry.getAll().map((comp) => ({
-    id: `comp-${comp.type}`,
-    kind: "component",
-    title: comp.name,
-    category: comp.category,
-    description: comp.description,
-    icon: CATEGORY_ICONS[comp.category] || Box,
-    onSelect: () => {
-      onInsertNode(comp.createDefaultNode() as SceneNode);
-    }
-  }));
+  // Build unified item list across primitives, actions, and commands
+  const components: PaletteItem[] = componentRegistry
+    .getAll()
+    .filter((comp) => comp.type.endsWith("-primitive"))
+    .map((comp) => ({
+      id: `comp-${comp.type}`,
+      kind: "component",
+      title: comp.name.replace(" Primitive", "").replace(" Layer", "").replace(" Shape", ""),
+      category: "primitives",
+      description: comp.description,
+      icon: CATEGORY_ICONS[comp.category] || Box,
+      onSelect: () => {
+        onInsertNode(comp.createDefaultNode() as SceneNode);
+      },
+    }));
 
   const actions: PaletteItem[] = [
     {
@@ -65,7 +101,7 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
       category: "actions",
       description: "Convert selected component into editable plain scene frame",
       icon: Scissors,
-      onSelect: () => onExecuteAction?.("DETACH_COMPONENT")
+      onSelect: () => onExecuteAction?.("DETACH_COMPONENT"),
     },
     {
       id: "action-group",
@@ -74,7 +110,7 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
       category: "actions",
       description: "Group selected nodes into a parent Frame container",
       icon: Layers,
-      onSelect: () => onExecuteAction?.("GROUP_NODES")
+      onSelect: () => onExecuteAction?.("GROUP_NODES"),
     },
     {
       id: "action-ungroup",
@@ -83,7 +119,7 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
       category: "actions",
       description: "Unpack container frame and release child nodes to root",
       icon: Layers,
-      onSelect: () => onExecuteAction?.("UNGROUP_NODES")
+      onSelect: () => onExecuteAction?.("UNGROUP_NODES"),
     },
     {
       id: "action-add-var",
@@ -92,8 +128,8 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
       category: "actions",
       description: "Create a new dynamic data variable for binding",
       icon: Link,
-      onSelect: () => onExecuteAction?.("ADD_VARIABLE")
-    }
+      onSelect: () => onExecuteAction?.("ADD_VARIABLE"),
+    },
   ];
 
   const commands: PaletteItem[] = [
@@ -104,7 +140,7 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
       category: "commands",
       description: "Download the current OverlayDocument schema file",
       icon: Download,
-      onSelect: () => onExecuteAction?.("EXPORT_JSON")
+      onSelect: () => onExecuteAction?.("EXPORT_JSON"),
     },
     {
       id: "cmd-play-toggle",
@@ -113,8 +149,8 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
       category: "commands",
       description: "Play or pause real-time animation playback",
       icon: Play,
-      onSelect: () => onExecuteAction?.("TOGGLE_PLAY")
-    }
+      onSelect: () => onExecuteAction?.("TOGGLE_PLAY"),
+    },
   ];
 
   const allItems = [...components, ...actions, ...commands];
@@ -123,7 +159,7 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
     (item) =>
       item.title.toLowerCase().includes(query.toLowerCase()) ||
       item.description.toLowerCase().includes(query.toLowerCase()) ||
-      item.category.toLowerCase().includes(query.toLowerCase())
+      item.category.toLowerCase().includes(query.toLowerCase()),
   );
 
   useEffect(() => {
@@ -143,10 +179,16 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
         onClose();
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex((prev) => (filtered.length > 0 ? (prev + 1) % filtered.length : 0));
+        setSelectedIndex((prev) =>
+          filtered.length > 0 ? (prev + 1) % filtered.length : 0,
+        );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedIndex((prev) => (filtered.length > 0 ? (prev - 1 + filtered.length) % filtered.length : 0));
+        setSelectedIndex((prev) =>
+          filtered.length > 0
+            ? (prev - 1 + filtered.length) % filtered.length
+            : 0,
+        );
       } else if (e.key === "Enter") {
         e.preventDefault();
         if (filtered[selectedIndex]) {
@@ -166,7 +208,7 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-lg bg-[#0F0F14] border border-white/[0.1] rounded-xl shadow-2xl overflow-hidden font-sans flex flex-col">
         {/* Search Header */}
-        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06] bg-[#151519]">
+        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/6 bg-[#151519]">
           <Search size={16} className="text-violet-400 shrink-0" />
           <input
             ref={inputRef}
@@ -211,7 +253,9 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       className={`p-1.5 rounded-lg ${
-                        isSelected ? "bg-violet-500 text-white" : "bg-white/[0.06] text-violet-400"
+                        isSelected
+                          ? "bg-violet-500 text-white"
+                          : "bg-white/[0.06] text-violet-400"
                       }`}
                     >
                       <Icon size={14} />
@@ -223,10 +267,15 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
                           {item.category}
                         </span>
                       </div>
-                      <p className="text-[10px] text-gray-400 truncate">{item.description}</p>
+                      <p className="text-[10px] text-gray-400 truncate">
+                        {item.description}
+                      </p>
                     </div>
                   </div>
-                  <Plus size={14} className={isSelected ? "text-violet-400" : "text-gray-600"} />
+                  <Plus
+                    size={14}
+                    className={isSelected ? "text-violet-400" : "text-gray-600"}
+                  />
                 </div>
               );
             })
@@ -234,9 +283,10 @@ export function InsertPalette({ isOpen, onClose, onInsertNode, onExecuteAction }
         </div>
 
         {/* Footer */}
-        <div className="px-3 py-1.5 border-t border-white/[0.04] bg-[#0A0A0E] text-[10px] text-gray-500 flex items-center justify-between">
+        <div className="px-3 py-1.5 border-t border-white/4 bg-[#0A0A0E] text-[10px] text-gray-500 flex items-center justify-between">
           <span>
-            Press <kbd className="font-mono text-gray-400">↑</kbd> <kbd className="font-mono text-gray-400">↓</kbd> to navigate
+            Press <kbd className="font-mono text-gray-400">↑</kbd>{" "}
+            <kbd className="font-mono text-gray-400">↓</kbd> to navigate
           </span>
           <span>
             Press <kbd className="font-mono text-gray-400">↵</kbd> to select

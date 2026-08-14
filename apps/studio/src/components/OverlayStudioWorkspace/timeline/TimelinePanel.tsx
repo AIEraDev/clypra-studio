@@ -1,14 +1,31 @@
 import React, { useState, useEffect, useRef } from "react";
-import type { OverlayDocument, SceneNode, DocumentCommand, TimelineMarker, KeyframeTrack } from "@clypra-studio/engine";
+import type {
+  OverlayDocument,
+  SceneNode,
+  DocumentCommand,
+  TimelineMarker,
+  KeyframeTrack,
+} from "@clypra-studio/engine";
 import { animationRuntime } from "@clypra-studio/engine";
-import { Play, Pause, SkipBack, Clock, Bookmark, Plus, ChevronRight, ChevronDown, Trash2, ZoomIn } from "lucide-react";
+import {
+  Play,
+  Pause,
+  SkipBack,
+  Clock,
+  Bookmark,
+  Plus,
+  ChevronRight,
+  ChevronDown,
+  Trash2,
+  ZoomIn,
+} from "lucide-react";
 
 interface TimelineTrack {
   node: SceneNode;
   nodeId: string;
   nodeName: string;
   duration: number; // seconds
-  delay: number;    // seconds
+  delay: number; // seconds
   color: string;
   keyframeTracks: KeyframeTrack[];
 }
@@ -44,21 +61,30 @@ export function TimelinePanel({
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
   const [showAddMarkerForm, setShowAddMarkerForm] = useState(false);
   const [markerLabel, setMarkerLabel] = useState("");
-  const [markerType, setMarkerType] = useState<TimelineMarker["type"]>("keyword");
+  const [markerType, setMarkerType] =
+    useState<TimelineMarker["type"]>("keyword");
   const [zoom, setZoom] = useState(1);
   const trackScrollRef = useRef<HTMLDivElement>(null);
 
   const totalDuration = doc.duration || 5;
-  const timePct = (t: number) => `${Math.max(0, Math.min(100, (t / totalDuration) * 100))}%`;
+  const timePct = (t: number) =>
+    `${Math.max(0, Math.min(100, (t / totalDuration) * 100))}%`;
 
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea" || tag === "select") return;
-      if (e.key === "Home") { e.preventDefault(); handleSeekWithSnap(0); }
-      else if (e.key === "End") { e.preventDefault(); handleSeekWithSnap(totalDuration); }
-      else if (e.key === " ") { e.preventDefault(); onTogglePlay(); }
+      if (e.key === "Home") {
+        e.preventDefault();
+        handleSeekWithSnap(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        handleSeekWithSnap(totalDuration);
+      } else if (e.key === " ") {
+        e.preventDefault();
+        onTogglePlay();
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
@@ -68,7 +94,7 @@ export function TimelinePanel({
   const handleTrackWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
-      setZoom(prev => Math.max(0.25, Math.min(4, prev - e.deltaY * 0.005)));
+      setZoom((prev) => Math.max(0.25, Math.min(4, prev - e.deltaY * 0.005)));
     }
   };
 
@@ -84,13 +110,17 @@ export function TimelinePanel({
 
   const toggleExpand = (id: string) => {
     setExpandedNodeIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
   const handleSeekWithSnap = (rawTime: number) => {
     const clamped = Math.max(0, Math.min(totalDuration, rawTime));
-    const snapResult = animationRuntime.snapTime(clamped, doc.markers || [], 0.1);
+    const snapResult = animationRuntime.snapTime(
+      clamped,
+      doc.markers || [],
+      0.1,
+    );
     onSeek(snapResult.snappedTime);
   };
 
@@ -182,13 +212,13 @@ export function TimelinePanel({
               value={markerLabel}
               onChange={(e) => setMarkerLabel(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddMarker()}
-              className="w-28 bg-[#1C1C22] border border-white/[0.06] rounded px-2 py-0.5 text-[11px] text-white outline-none"
+              className="w-28 bg-[#1C1C22] border border-white/6 rounded px-2 py-0.5 text-[11px] text-white outline-none"
               autoFocus
             />
             <select
               value={markerType}
               onChange={(e) => setMarkerType(e.target.value as any)}
-              className="bg-[#1C1C22] border border-white/[0.06] rounded px-1.5 py-0.5 text-[10px] text-gray-300 outline-none cursor-pointer"
+              className="bg-[#1C1C22] border border-white/6 rounded px-1.5 py-0.5 text-[10px] text-gray-300 outline-none cursor-pointer"
             >
               <option value="keyword">Keyword</option>
               <option value="chapter">Chapter</option>
@@ -214,7 +244,9 @@ export function TimelinePanel({
               type="button"
               onClick={() => onSetSpeed(spd)}
               className={`px-1.5 py-0.5 rounded cursor-pointer transition-all ${
-                playbackSpeed === spd ? "bg-violet-600 text-white shadow" : "text-gray-400 hover:text-white"
+                playbackSpeed === spd
+                  ? "bg-violet-600 text-white shadow"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
               {spd}x
@@ -228,26 +260,41 @@ export function TimelinePanel({
         </div>
 
         {/* Zoom Control */}
-        <div className="flex items-center gap-1.5 ml-2 border-l border-white/[0.06] pl-2">
+        <div className="flex items-center gap-1.5 ml-2 border-l border-white/6 pl-2">
           <ZoomIn size={11} className="text-gray-600" />
           <input
-            type="range" min={0.25} max={4} step={0.25} value={zoom}
+            type="range"
+            min={0.25}
+            max={4}
+            step={0.25}
+            value={zoom}
             onChange={(e) => setZoom(parseFloat(e.target.value))}
             className="w-16 accent-violet-500 cursor-pointer"
             title="Timeline zoom"
           />
-          <span className="text-[10px] font-mono text-gray-400 w-9">{Math.round(zoom * 100)}%</span>
+          <span className="text-[10px] font-mono text-gray-400 w-9">
+            {Math.round(zoom * 100)}%
+          </span>
         </div>
       </div>
 
       {/* ── TRACKS AND MARKERS ─────────────────────────────────────────── */}
-      <div className="flex-1 overflow-auto relative custom-scrollbar" ref={trackScrollRef} onWheel={handleTrackWheel}>
-        <div className="flex min-h-full" style={{ minWidth: `${Math.max(640, totalDuration * 100 * zoom)}px` }}>
+      <div
+        className="flex-1 overflow-auto relative custom-scrollbar"
+        ref={trackScrollRef}
+        onWheel={handleTrackWheel}
+      >
+        <div
+          className="flex min-h-full"
+          style={{ minWidth: `${Math.max(640, totalDuration * 100 * zoom)}px` }}
+        >
           {/* Left Panel: Track Labels */}
           <div className="w-48 shrink-0 border-r border-[#1A1A24] bg-[#0C0C12]">
             {/* Header label area */}
             <div className="h-6 border-b border-[#1A1A24] px-3 flex items-center bg-[#0C0C12] sticky top-0 z-20">
-              <span className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">Tracks & Markers</span>
+              <span className="text-[9px] uppercase font-bold text-gray-500 tracking-wider">
+                Tracks & Markers
+              </span>
             </div>
 
             {/* Layer Rows */}
@@ -261,20 +308,34 @@ export function TimelinePanel({
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
                       {t.keyframeTracks.length > 0 ? (
-                        isExpanded ? <ChevronDown size={10} className="text-gray-500" /> : <ChevronRight size={10} className="text-gray-500" />
+                        isExpanded ? (
+                          <ChevronDown size={10} className="text-gray-500" />
+                        ) : (
+                          <ChevronRight size={10} className="text-gray-500" />
+                        )
                       ) : (
                         <div className="w-2.5 h-2.5" />
                       )}
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
-                      <span className="text-[10px] font-bold text-gray-300 truncate">{t.nodeName}</span>
+                      <div
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: t.color }}
+                      />
+                      <span className="text-[10px] font-bold text-gray-300 truncate">
+                        {t.nodeName}
+                      </span>
                     </div>
                   </div>
 
                   {/* Subtracks for keyframe properties */}
                   {isExpanded &&
                     t.keyframeTracks.map((kt) => (
-                      <div key={kt.property} className="h-6 pl-7 pr-2 flex items-center border-b border-[#1A1A24]/60 bg-[#08080E]">
-                        <span className="font-mono text-[9px] text-violet-400 font-bold truncate">♦ {kt.property}</span>
+                      <div
+                        key={kt.property}
+                        className="h-6 pl-7 pr-2 flex items-center border-b border-[#1A1A24]/60 bg-[#08080E]"
+                      >
+                        <span className="font-mono text-[9px] text-violet-400 font-bold truncate">
+                          ♦ {kt.property}
+                        </span>
                       </div>
                     ))}
                 </React.Fragment>
@@ -298,7 +359,10 @@ export function TimelinePanel({
                 <span
                   key={frac}
                   className="absolute top-1 text-[8px] font-mono text-gray-600"
-                  style={{ left: `${frac * 100}%`, transform: "translateX(-50%)" }}
+                  style={{
+                    left: `${frac * 100}%`,
+                    transform: "translateX(-50%)",
+                  }}
                 >
                   {(frac * totalDuration).toFixed(1)}s
                 </span>
@@ -311,7 +375,10 @@ export function TimelinePanel({
                     key={m.id}
                     title={`${m.label} (${m.type}) — ${m.time.toFixed(2)}s`}
                     className="absolute top-0 bottom-0 flex items-center group cursor-pointer"
-                    style={{ left: timePct(m.time), transform: "translateX(-50%)" }}
+                    style={{
+                      left: timePct(m.time),
+                      transform: "translateX(-50%)",
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSeekWithSnap(m.time);
@@ -320,7 +387,8 @@ export function TimelinePanel({
                     <span
                       className="px-1 py-0.5 rounded text-[8px] font-mono font-bold tracking-tight shadow text-white border"
                       style={{
-                        backgroundColor: (m.color || MARKER_COLORS[m.type]) + "40",
+                        backgroundColor:
+                          (m.color || MARKER_COLORS[m.type]) + "40",
                         borderColor: m.color || MARKER_COLORS[m.type],
                         color: m.color || MARKER_COLORS[m.type],
                       }}
@@ -359,7 +427,9 @@ export function TimelinePanel({
                       className="absolute top-1 h-5 rounded-md opacity-75 hover:opacity-100 transition-opacity flex items-center px-1.5"
                       style={{
                         left: timePct(t.delay),
-                        width: timePct(Math.min(t.duration, totalDuration - t.delay)),
+                        width: timePct(
+                          Math.min(t.duration, totalDuration - t.delay),
+                        ),
                         backgroundColor: t.color,
                       }}
                     >
@@ -386,9 +456,15 @@ export function TimelinePanel({
                           return (
                             <div
                               key={kfIdx}
-                              title={`${kt.property}: ${kf.value} at ${kfTimeSec.toFixed(2)}s`}
+                              title={`${kt.property}: ${
+                                kf.value
+                              } at ${kfTimeSec.toFixed(2)}s`}
                               className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-violet-400 border border-white rotate-45 rounded-sm shadow-md cursor-pointer hover:scale-125 transition-transform"
-                              style={{ left: timePct(kfTimeSec), transform: "translate(-50%, -50%) rotate(45deg)" }}
+                              style={{
+                                left: timePct(kfTimeSec),
+                                transform:
+                                  "translate(-50%, -50%) rotate(45deg)",
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleSeekWithSnap(kfTimeSec);
