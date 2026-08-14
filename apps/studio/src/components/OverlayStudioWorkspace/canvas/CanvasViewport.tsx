@@ -48,8 +48,39 @@ export function CanvasViewport({
   const videoRefContainer = useRef<HTMLDivElement | null>(null);
   const [isInsertPaletteOpen, setIsInsertPaletteOpen] = useState(false);
 
-  // Derive selected node objects
-  const selectedNodes = doc.nodes.filter((n) => selectedNodeIds.includes(n.id));
+  const findNodeDeep = useCallback((nodes: SceneNode[], id: string): SceneNode | null => {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      if ("children" in n && Array.isArray((n as any).children)) {
+        const found = findNodeDeep((n as any).children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, []);
+
+  const getAllNodesFlattened = useCallback((nodes: SceneNode[]): SceneNode[] => {
+    const result: SceneNode[] = [];
+    const traverse = (list: SceneNode[]) => {
+      for (const n of list) {
+        result.push(n);
+        if ("children" in n && Array.isArray((n as any).children)) {
+          traverse((n as any).children);
+        }
+      }
+    };
+    traverse(nodes);
+    return result;
+  }, []);
+
+  // Derive selected node objects (supports nested children at any depth)
+  const selectedNodes = useMemo(
+    () =>
+      selectedNodeIds
+        .map((id) => findNodeDeep(doc.nodes, id))
+        .filter((n): n is SceneNode => n !== null),
+    [doc.nodes, selectedNodeIds, findNodeDeep],
+  );
   const selectedNode = selectedNodes[0] || null;
 
   // Video Conform Geometry (letterbox / pillarbox fit into canvas dimensions)
@@ -194,8 +225,12 @@ export function CanvasViewport({
   // Hit-test Handles (Corners, Edges, Rotation)
   const hitTestHandles = (docX: number, docY: number): HandleType => {
     if (selectedNodes.length === 0) return null;
-    const scale = viewport.zoom / 100;
-    const threshold = Math.max(16, 20 / scale);
+    const scale = Math.max(0.2, viewport.zoom / 100);
+
+    // Responsive handle hit radius bounded to element dimension
+    const maxHandleRadius = Math.max(6, Math.min(12, 10 / scale));
+    const cornerRadius = Math.min(maxHandleRadius, Math.max(5, Math.min(selW, selH) * 0.4));
+    const edgeRadius = Math.min(maxHandleRadius, Math.max(4, Math.min(selW, selH) * 0.35));
 
     const singleNode = selectedNodes.length === 1 ? selectedNodes[0] : null;
     const rotDeg = singleNode ? ((singleNode as any).rotation || (singleNode.style as any)?.rotation || 0) : 0;
@@ -213,19 +248,27 @@ export function CanvasViewport({
       testY = cy + dx * Math.sin(rad) + dy * Math.cos(rad);
     }
 
+    // 1. Rotation knob
     const rotX = selMinX + selW / 2;
     const rotY = selMinY - 24;
-    if (Math.hypot(testX - rotX, testY - rotY) <= threshold) return "rot";
+    if (Math.hypot(testX - rotX, testY - rotY) <= Math.max(10, 12 / scale)) return "rot";
 
-    if (Math.hypot(testX - selMinX, testY - selMinY) <= threshold) return "tl";
-    if (Math.hypot(testX - (selMinX + selW), testY - selMinY) <= threshold) return "tr";
-    if (Math.hypot(testX - selMinX, testY - (selMinY + selH)) <= threshold) return "bl";
-    if (Math.hypot(testX - (selMinX + selW), testY - (selMinY + selH)) <= threshold) return "br";
+    // 2. 4 Corner Handles (tl, tr, bl, br)
+    if (Math.hypot(testX - selMinX, testY - selMinY) <= cornerRadius) return "tl";
+    if (Math.hypot(testX - (selMinX + selW), testY - selMinY) <= cornerRadius) return "tr";
+    if (Math.hypot(testX - selMinX, testY - (selMinY + selH)) <= cornerRadius) return "bl";
+    if (Math.hypot(testX - (selMinX + selW), testY - (selMinY + selH)) <= cornerRadius) return "br";
 
-    if (Math.abs(testY - selMinY) <= threshold && testX >= selMinX - threshold && testX <= selMinX + selW + threshold) return "t";
-    if (Math.abs(testY - (selMinY + selH)) <= threshold && testX >= selMinX - threshold && testX <= selMinX + selW + threshold) return "b";
-    if (Math.abs(testX - selMinX) <= threshold && testY >= selMinY - threshold && testY <= selMinY + selH + threshold) return "l";
-    if (Math.abs(testX - (selMinX + selW)) <= threshold && testY >= selMinY - threshold && testY <= selMinY + selH + threshold) return "r";
+    // 3. 4 Edge Midpoint Handles (t, b, l, r)
+    const midX = selMinX + selW / 2;
+    const midY = selMinY + selH / 2;
+    const verticalKnobRadius = Math.min(edgeRadius, Math.max(4, selH * 0.35));
+    const horizontalKnobRadius = Math.min(edgeRadius, Math.max(4, selW * 0.35));
+
+    if (Math.hypot(testX - midX, testY - selMinY) <= verticalKnobRadius) return "t";
+    if (Math.hypot(testX - midX, testY - (selMinY + selH)) <= verticalKnobRadius) return "b";
+    if (Math.hypot(testX - selMinX, testY - midY) <= horizontalKnobRadius) return "l";
+    if (Math.hypot(testX - (selMinX + selW), testY - midY) <= horizontalKnobRadius) return "r";
 
     return null;
   };
@@ -288,8 +331,9 @@ export function CanvasViewport({
       return;
     }
 
-    // 2. Check Node Body Hit
-    const hitNode = [...doc.nodes].reverse().find((n) => {
+    // 2. Check Node Body Hit (deepest child first so nested text/primitives are selected directly)
+    const allFlattenedNodes = getAllNodesFlattened(doc.nodes);
+    const hitNode = [...allFlattenedNodes].reverse().find((n) => {
       const { minX, maxX, minY, maxY } = getNodeHitBounds(n);
       return docPt.x >= minX && docPt.x <= maxX && docPt.y >= minY && docPt.y <= maxY;
     });
@@ -307,7 +351,9 @@ export function CanvasViewport({
 
       dragModeRef.current = "move";
       setHoverCursor("grabbing");
-      const currentSelected = doc.nodes.filter((n) => nextIds.includes(n.id));
+      const currentSelected = nextIds
+        .map((id) => findNodeDeep(doc.nodes, id))
+        .filter((n): n is SceneNode => n !== null);
       dragStartRef.current = {
         startX: docPt.x,
         startY: docPt.y,
@@ -341,7 +387,8 @@ export function CanvasViewport({
       if (handle) {
         setHoverCursor(getHandleCursor(handle));
       } else {
-        const hitNode = [...doc.nodes].reverse().find((n) => {
+        const allFlattenedNodes = getAllNodesFlattened(doc.nodes);
+        const hitNode = [...allFlattenedNodes].reverse().find((n) => {
           const { minX, maxX, minY, maxY } = getNodeHitBounds(n);
           return docPt.x >= minX && docPt.x <= maxX && docPt.y >= minY && docPt.y <= maxY;
         });
@@ -360,7 +407,8 @@ export function CanvasViewport({
       const targetX = Math.round(primaryStart.x + deltaX);
       const targetY = Math.round(primaryStart.y + deltaY);
 
-      const otherNodes = doc.nodes.filter((n) => !selectedNodeIds.includes(n.id));
+      const allFlattenedNodes = getAllNodesFlattened(doc.nodes);
+      const otherNodes = allFlattenedNodes.filter((n) => !selectedNodeIds.includes(n.id));
       const snapResult = snapEngine.calculateSnap(
         { x: targetX, y: targetY, width: selectedNode.width, height: selectedNode.height },
         otherNodes,
@@ -373,7 +421,7 @@ export function CanvasViewport({
       const snappedDeltaY = snapResult.y - primaryStart.y;
 
       for (const ns of dragStartRef.current.nodeStarts) {
-        const node = doc.nodes.find((n) => n.id === ns.id);
+        const node = findNodeDeep(doc.nodes, ns.id);
         if (node) {
           node.x = ns.x + snappedDeltaX;
           node.y = ns.y + snappedDeltaY;
@@ -389,21 +437,24 @@ export function CanvasViewport({
       let newH = start.height;
 
       const handle = activeHandleRef.current;
+      const isCorner = handle === "tr" || handle === "tl" || handle === "br" || handle === "bl";
+      const isVertical = handle === "t" || handle === "b";
+      const isHorizontal = handle === "l" || handle === "r";
 
-      if (handle.includes("r")) newW = Math.max(20, start.width + deltaX);
-      if (handle.includes("b")) newH = Math.max(20, start.height + deltaY);
+      if (handle.includes("r")) newW = Math.max(10, start.width + deltaX);
+      if (handle.includes("b")) newH = Math.max(2, start.height + deltaY);
       if (handle.includes("l")) {
-        const diff = Math.min(deltaX, start.width - 20);
+        const diff = Math.min(deltaX, start.width - 10);
         newX = start.x + diff;
         newW = start.width - diff;
       }
       if (handle.includes("t")) {
-        const diff = Math.min(deltaY, start.height - 20);
+        const diff = Math.min(deltaY, start.height - 2);
         newY = start.y + diff;
         newH = start.height - diff;
       }
 
-      // Shift -> lock aspect ratio
+      // Aspect ratio lock (Shift key or naturally proportional primitives on corner drag)
       if (e.shiftKey && start.width > 0 && start.height > 0) {
         const ratio = start.width / start.height;
         newH = Math.round(newW / ratio);
@@ -413,6 +464,39 @@ export function CanvasViewport({
       selectedNode.y = Math.round(newY);
       selectedNode.width = Math.round(newW);
       selectedNode.height = Math.round(newH);
+
+      // Primitive-Specific Scaling across ALL sides and handles (fill space without leaving empty gaps)
+      if (selectedNode.type === "line" || (selectedNode as any).shapeKind === "line") {
+        if (isVertical || isCorner) {
+          (selectedNode as any).strokeWidth = Math.max(1, Math.round(newH));
+          if (selectedNode.style) selectedNode.style.strokeWidth = Math.max(1, Math.round(newH));
+        }
+      } else if (selectedNode.type === "text" || selectedNode.type === "rich-text" || selectedNode.type === "metric") {
+        let scaleFactor = 1;
+        if (isVertical && start.height > 0) {
+          scaleFactor = Math.max(0.2, newH / start.height);
+        } else if (isHorizontal && start.width > 0) {
+          scaleFactor = Math.max(0.2, newW / start.width);
+        } else if (isCorner && start.height > 0) {
+          const hRatio = newH / start.height;
+          const wRatio = start.width > 0 ? newW / start.width : hRatio;
+          scaleFactor = Math.max(0.2, Math.max(hRatio, wRatio));
+        }
+
+        if (scaleFactor !== 1) {
+          const startFontSize = (start as any).fontSize || (start as any).style?.fontSize || 24;
+          const newFontSize = Math.max(8, Math.round(startFontSize * scaleFactor));
+          if (selectedNode.style) selectedNode.style.fontSize = newFontSize;
+          (selectedNode as any).fontSize = newFontSize;
+        }
+      } else if (selectedNode.type === "icon") {
+        let newSize = Math.max(12, Math.round(Math.min(newW, newH)));
+        if (isVertical) newSize = Math.max(12, Math.round(newH));
+        if (isHorizontal) newSize = Math.max(12, Math.round(newW));
+        (selectedNode as any).size = newSize;
+        selectedNode.width = newSize;
+        selectedNode.height = newSize;
+      }
     } else if (dragModeRef.current === "rotate" && selectedNode) {
       const start = dragStartRef.current.nodeStarts[0];
       if (!start) return;
@@ -440,8 +524,16 @@ export function CanvasViewport({
 
       setMarqueeBox({ x: minX, y: minY, width, height });
 
-      const hitIds = doc.nodes
-        .filter((n) => n.x >= minX && n.x + n.width <= minX + width && n.y >= minY && n.y + n.height <= minY + height)
+      const allFlattened = getAllNodesFlattened(doc.nodes);
+      const hitIds = allFlattened
+        .filter((n) => {
+          const cb = computedLayout.nodes[n.id];
+          const nx = cb ? cb.x : n.x;
+          const ny = cb ? cb.y : n.y;
+          const nw = cb ? cb.width : n.width;
+          const nh = cb ? cb.height : n.height;
+          return nx >= minX && nx + nw <= minX + width && ny >= minY && ny + nh <= minY + height;
+        })
         .map((n) => n.id);
 
       onSelectNodeIds(hitIds);
@@ -458,7 +550,7 @@ export function CanvasViewport({
         const updateCmds: DocumentCommand[] = [];
 
         for (const ns of dragStartRef.current.nodeStarts) {
-          const node = doc.nodes.find((n) => n.id === ns.id);
+          const node = findNodeDeep(doc.nodes, ns.id);
           if (node) {
             const finalX = node.x;
             const finalY = node.y;
@@ -474,8 +566,35 @@ export function CanvasViewport({
 
             if (finalX !== ns.x) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "x", value: finalX });
             if (finalY !== ns.y) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "y", value: finalY });
-            if (finalW !== ns.width) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "width", value: finalW });
-            if (finalH !== ns.height) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "height", value: finalH });
+            if (finalW !== ns.width) {
+              updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "width", value: finalW });
+              if (node.layout?.constraints?.widthMode === "hug") {
+                updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "layout.constraints.widthMode", value: "fixed" });
+              }
+            }
+            if (finalH !== ns.height) {
+              updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "height", value: finalH });
+              if (node.layout?.constraints?.heightMode === "hug") {
+                updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "layout.constraints.heightMode", value: "fixed" });
+              }
+            }
+
+            if (node.type === "line" || (node as any).shapeKind === "line") {
+              const finalStrokeW = Math.round(finalH);
+              updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "strokeWidth", value: finalStrokeW });
+              updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "style.strokeWidth", value: finalStrokeW });
+            } else if (node.type === "text" || node.type === "rich-text" || node.type === "metric") {
+              const currentFontSize = (node as any).fontSize || node.style?.fontSize;
+              if (currentFontSize && currentFontSize !== (ns as any).fontSize) {
+                updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "fontSize", value: currentFontSize });
+                updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "style.fontSize", value: currentFontSize });
+              }
+            } else if (node.type === "icon") {
+              const currentSize = (node as any).size;
+              if (currentSize && currentSize !== (ns as any).size) {
+                updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "size", value: currentSize });
+              }
+            }
           }
         }
 
@@ -564,18 +683,33 @@ export function CanvasViewport({
     if (cmds.length > 0) onExecuteCommand({ type: "BATCH_COMMANDS", commands: cmds });
   };
 
+  const findParentAndIndex = (nodes: SceneNode[], targetId: string, parentId?: string): { parentId?: string; list: SceneNode[]; index: number } | null => {
+    const idx = nodes.findIndex((n) => n.id === targetId);
+    if (idx !== -1) {
+      return { parentId, list: nodes, index: idx };
+    }
+    for (const n of nodes) {
+      if ("children" in n && Array.isArray((n as any).children)) {
+        const res = findParentAndIndex((n as any).children, targetId, n.id);
+        if (res) return res;
+      }
+    }
+    return null;
+  };
+
   const reorderSelected = (direction: "up" | "down") => {
     if (selectedNodeIds.length !== 1) return;
     const targetId = selectedNodeIds[0];
-    const sourceIndex = doc.nodes.findIndex((n) => n.id === targetId);
-    if (sourceIndex === -1) return;
+    const match = findParentAndIndex(doc.nodes, targetId);
+    if (!match) return;
 
+    const { parentId, list, index: sourceIndex } = match;
     const destinationIndex = direction === "up"
-      ? Math.min(doc.nodes.length - 1, sourceIndex + 1)
+      ? Math.min(list.length - 1, sourceIndex + 1)
       : Math.max(0, sourceIndex - 1);
 
     if (destinationIndex !== sourceIndex) {
-      onExecuteCommand({ type: "REORDER_NODES", sourceIndex, destinationIndex });
+      onExecuteCommand({ type: "REORDER_NODES", sourceIndex, destinationIndex, parentId });
     }
   };
 
@@ -591,7 +725,30 @@ export function CanvasViewport({
         onSelectNodeIds([]);
       }
 
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "d") {
+      const isCmd = e.metaKey || e.ctrlKey;
+
+      // Bring Forward (⌘]) / Send Backward (⌘[) / Bring to Front (⌘⇧]) / Send to Back (⌘⇧[)
+      if (isCmd && (e.key === "]" || e.key === "[")) {
+        e.preventDefault();
+        if (selectedNodeIds.length === 1) {
+          const targetId = selectedNodeIds[0];
+          const match = findParentAndIndex(doc.nodes, targetId);
+          if (match) {
+            const { parentId, list, index: srcIdx } = match;
+            let destIdx = srcIdx;
+            if (e.key === "]") {
+              destIdx = e.shiftKey ? list.length - 1 : Math.min(list.length - 1, srcIdx + 1);
+            } else if (e.key === "[") {
+              destIdx = e.shiftKey ? 0 : Math.max(0, srcIdx - 1);
+            }
+            if (destIdx !== srcIdx) {
+              onExecuteCommand({ type: "REORDER_NODES", sourceIndex: srcIdx, destinationIndex: destIdx, parentId });
+            }
+          }
+        }
+      }
+
+      if (isCmd && e.key.toLowerCase() === "d") {
         e.preventDefault();
         const cloneCmds: DocumentCommand[] = [];
         const newIds: string[] = [];
