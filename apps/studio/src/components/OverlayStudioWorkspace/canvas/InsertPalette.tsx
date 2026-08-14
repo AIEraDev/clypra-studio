@@ -76,6 +76,8 @@ export function InsertPalette({
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Build unified item list across primitives, actions, and commands
   const components: PaletteItem[] = componentRegistry
@@ -166,17 +168,32 @@ export function InsertPalette({
     if (isOpen) {
       setQuery("");
       setSelectedIndex(0);
+      itemRefs.current.clear();
+      listRef.current?.scrollTo({ top: 0 });
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen]);
+
+  // Always scroll the selected item into view when selectedIndex changes
+  useEffect(() => {
+    if (filtered.length > 0 && selectedIndex >= 0) {
+      const el = itemRefs.current.get(selectedIndex);
+      if (el) {
+        el.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+    }
+  }, [selectedIndex, filtered]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
 
-      if (e.key === "Escape") {
+      const isCmd = e.metaKey || e.ctrlKey;
+      if (e.key === "Escape" || (isCmd && e.key.toLowerCase() === "k")) {
         e.preventDefault();
+        e.stopPropagation();
         onClose();
+        return;
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedIndex((prev) =>
@@ -200,7 +217,7 @@ export function InsertPalette({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, filtered, selectedIndex]);
+  }, [isOpen, filtered, selectedIndex, onClose]);
 
   if (!isOpen) return null;
 
@@ -217,6 +234,7 @@ export function InsertPalette({
             onChange={(e) => {
               setQuery(e.target.value);
               setSelectedIndex(0);
+              listRef.current?.scrollTo({ top: 0 });
             }}
             placeholder="Search components, actions, commands… (Cmd+K)"
             className="w-full bg-transparent text-[13px] text-white placeholder-gray-500 outline-none"
@@ -227,7 +245,7 @@ export function InsertPalette({
         </div>
 
         {/* Results List */}
-        <div className="max-h-80 overflow-y-auto p-2 space-y-1">
+        <div ref={listRef} className="max-h-80 overflow-y-auto p-2 space-y-1">
           {filtered.length === 0 ? (
             <div className="py-8 text-center text-gray-500 text-[12px]">
               No matching components or commands found.
@@ -239,6 +257,13 @@ export function InsertPalette({
               return (
                 <div
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(idx, el);
+                    } else {
+                      itemRefs.current.delete(idx);
+                    }
+                  }}
                   onClick={() => {
                     item.onSelect();
                     onClose();
