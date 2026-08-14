@@ -282,8 +282,17 @@ export function OverlayStudioWorkspace({
   // Global Keyboard Shortcuts (⌘Z, ⌘⇧Z, ⌘S, ⌘G, ⌘⇧G, ⌘A, Space, Delete)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName))
+      if (e.defaultPrevented) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
         return;
+      }
       const isCmd = e.metaKey || e.ctrlKey;
 
       if (isCmd && e.key.toLowerCase() === "s") {
@@ -297,9 +306,16 @@ export function OverlayStudioWorkspace({
         selectedNodeIds.length > 0
       ) {
         e.preventDefault();
-        selectedNodeIds.forEach((id) => {
-          executeCommand({ type: "DELETE_NODE", nodeId: id });
-        });
+        e.stopPropagation();
+        const deleteCmds: DocumentCommand[] = selectedNodeIds.map((id) => ({
+          type: "DELETE_NODE",
+          nodeId: id,
+        }));
+        if (deleteCmds.length === 1) {
+          executeCommand(deleteCmds[0]);
+        } else if (deleteCmds.length > 1) {
+          executeCommand({ type: "BATCH_COMMANDS", commands: deleteCmds });
+        }
         setSelectedNodeIds([]);
       } else if (isCmd && e.shiftKey && e.key.toLowerCase() === "g") {
         e.preventDefault();
