@@ -24,6 +24,7 @@ import {
   Play,
   BarChart3,
   Link2,
+  Trash2,
 } from "lucide-react";
 import { AnchorControl } from "./controls/AnchorControl";
 import { VisualizationControl } from "./controls/VisualizationControl";
@@ -775,15 +776,25 @@ export function InspectorPanel({
         style={{ backgroundColor: "#0F0F14" }}
       >
         <div
-          className="px-4 py-3 shrink-0 border-b border-white/6"
+          className="px-4 py-3 shrink-0 border-b border-white/6 flex items-start justify-between gap-2"
           style={{ backgroundColor: "#151519" }}
         >
-          <p className="text-[12px] font-bold text-white truncate leading-tight">
-            {selectedNode.name || selectedNode.id}
-          </p>
-          <span className="inline-block mt-1 rounded-md px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider bg-sky-500/15 text-sky-400 border border-sky-500/25">
-            repeater
-          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[12px] font-bold text-white truncate leading-tight">
+              {selectedNode.name || selectedNode.id}
+            </p>
+            <span className="inline-block mt-1 rounded-md px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider bg-sky-500/15 text-sky-400 border border-sky-500/25">
+              repeater
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onExecuteCommand({ type: "DELETE_NODE", nodeId: selectedNode.id })}
+            title="Delete repeater (Del / Backspace)"
+            className="p-1.5 rounded hover:bg-rose-500/20 text-gray-500 hover:text-rose-400 transition-colors cursor-pointer"
+          >
+            <Trash2 size={13} />
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">
           <RepeaterPanel
@@ -812,7 +823,7 @@ export function InspectorPanel({
         style={{ backgroundColor: "#151519" }}
       >
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-[12px] font-bold text-white truncate leading-tight">
               {selectedNode.name || selectedNode.id}
             </p>
@@ -820,16 +831,26 @@ export function InspectorPanel({
               {selectedNode.id}
             </p>
           </div>
-          <span
-            className="shrink-0 mt-0.5 rounded-md px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider"
-            style={{
-              background: "rgba(124,58,237,0.15)",
-              color: "#a78bfa",
-              border: "1px solid rgba(124,58,237,0.25)",
-            }}
-          >
-            {isComponent && componentType ? componentType : selectedNode.type}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span
+              className="rounded-md px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider"
+              style={{
+                background: "rgba(124,58,237,0.15)",
+                color: "#a78bfa",
+                border: "1px solid rgba(124,58,237,0.25)",
+              }}
+            >
+              {isComponent && componentType ? componentType : selectedNode.type}
+            </span>
+            <button
+              type="button"
+              onClick={() => onExecuteCommand({ type: "DELETE_NODE", nodeId: selectedNode.id })}
+              title="Delete element (Del / Backspace)"
+              className="p-1 rounded hover:bg-rose-500/20 text-gray-500 hover:text-rose-400 transition-colors cursor-pointer"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
         </div>
       </div>
 
