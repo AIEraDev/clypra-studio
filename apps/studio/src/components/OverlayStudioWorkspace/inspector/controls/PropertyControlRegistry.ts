@@ -20,6 +20,7 @@ export interface ControlProps<T = any> {
   max?: number;
   step?: number;
   options?: Array<{ label: string; value: any }>;
+  disabled?: boolean;
 }
 
 type ControlComponent = React.ComponentType<ControlProps>;

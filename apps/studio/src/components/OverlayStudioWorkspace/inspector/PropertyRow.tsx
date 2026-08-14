@@ -4,6 +4,7 @@ import type {
   DataBindingRule,
 } from "@clypra-studio/engine";
 import { Link, Zap } from "lucide-react";
+import { ClypraColorPicker } from "@clypra/ui-color-picker";
 
 interface PropertyRowProps {
   definition: PropertyDefinition;
@@ -121,22 +122,20 @@ function renderControl(
 
     case "color":
       return (
-        <div className="flex items-center gap-2">
-          <input
-            type="color"
+        <div className="w-full">
+          <ClypraColorPicker
             value={
-              typeof currentVal === "string" && currentVal.startsWith("#")
+              typeof currentVal === "string" && currentVal
                 ? currentVal
-                : "#7C6FFF"
+                : "#8B5CF6"
             }
-            onChange={(e) => onChange(e.target.value)}
-            className="w-7 h-7 rounded border-0 bg-transparent cursor-pointer"
-          />
-          <input
-            type="text"
-            value={currentVal}
-            onChange={(e) => onChange(e.target.value)}
-            className="flex-1 bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono outline-none focus:border-violet-500"
+            onChange={(c) => onChange(c)}
+            onChangeComplete={(c) => onChange(c)}
+            format="hex"
+            showAlpha={true}
+            size="sm"
+            triggerClassName="w-full justify-between h-8 bg-[#1C1C22] border-white/6 hover:border-white/15"
+            popoverClassName="right-0 left-auto mt-1 z-[100]"
           />
         </div>
       );

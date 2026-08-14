@@ -27,6 +27,8 @@ interface AppearanceControlProps {
   onChange: (val: AppearanceValue) => void;
 }
 
+import { ClypraColorPicker } from "@clypra/ui-color-picker";
+
 function ShadowEditor({
   value,
   onChange,
@@ -58,11 +60,15 @@ function ShadowEditor({
           <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 mb-0.5 block">
             Color
           </span>
-          <input
-            type="color"
-            value={value.color}
-            onChange={(e) => set("color", e.target.value)}
-            className="w-full h-8 rounded-md border border-white/6 bg-[#1C1C22] cursor-pointer"
+          <ClypraColorPicker
+            value={value.color || "#000000"}
+            onChange={(c) => set("color", c)}
+            onChangeComplete={(c) => set("color", c)}
+            format="hex"
+            showAlpha={true}
+            size="sm"
+            triggerClassName="w-full h-7 bg-[#1C1C22] border-white/6"
+            popoverClassName="right-0 left-auto mt-1 z-[100]"
           />
         </div>
       </div>

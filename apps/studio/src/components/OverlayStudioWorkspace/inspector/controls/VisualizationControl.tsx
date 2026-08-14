@@ -7,6 +7,7 @@
  */
 
 import React from "react";
+import { ClypraColorPicker } from "@clypra/ui-color-picker";
 import type {
   SceneNode,
   ChartNode,
@@ -320,17 +321,19 @@ export function VisualizationControl({
         {/* Chart Type Selector */}
         <div>
           <label className={LABEL_CLS}>Chart Type</label>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-5 gap-1">
             {[
               { type: "bar", label: "Bar", icon: <BarChart3 size={13} /> },
               { type: "line", label: "Line", icon: <LineChart size={13} /> },
+              { type: "area", label: "Area", icon: <LineChart size={13} /> },
+              { type: "pie", label: "Pie", icon: <PieChart size={13} /> },
               { type: "donut", label: "Donut", icon: <PieChart size={13} /> },
             ].map((t) => (
               <button
                 key={t.type}
                 type="button"
                 onClick={() => updateNode({ chartType: t.type } as any)}
-                className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border text-[11px] font-semibold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg border text-[11px] font-semibold transition-all cursor-pointer ${
                   chartType === t.type
                     ? "bg-violet-500/20 border-violet-500/50 text-violet-300"
                     : "bg-[#141419] border-white/6 text-gray-400 hover:text-white"
@@ -341,6 +344,22 @@ export function VisualizationControl({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Categories / X Labels */}
+        <div>
+          <label className={LABEL_CLS}>Categories (X-Axis)</label>
+          <input
+            type="text"
+            value={(chartNode.xLabels ?? []).join(", ")}
+            onChange={(e) =>
+              updateNode({
+                xLabels: e.target.value.split(",").map((s) => s.trim()),
+              } as any)
+            }
+            className={INPUT_CLS}
+            placeholder="Q1, Q2, Q3, Q4"
+          />
         </div>
 
         {/* Series Configuration */}
@@ -368,15 +387,23 @@ export function VisualizationControl({
             {seriesList.map((s, idx) => (
               <div key={s.id || idx} className="bg-[#141419] p-2.5 rounded-lg border border-white/6 space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={s.color}
-                    onChange={(e) => {
+                  <ClypraColorPicker
+                    value={s.color || "#A78BFA"}
+                    onChange={(c) => {
                       const next = [...seriesList];
-                      next[idx] = { ...next[idx], color: e.target.value };
+                      next[idx] = { ...next[idx], color: c };
                       updateNode({ series: next } as any);
                     }}
-                    className="w-5 h-5 rounded cursor-pointer border-0 bg-transparent shrink-0"
+                    onChangeComplete={(c) => {
+                      const next = [...seriesList];
+                      next[idx] = { ...next[idx], color: c };
+                      updateNode({ series: next } as any);
+                    }}
+                    format="hex"
+                    showAlpha={true}
+                    size="sm"
+                    triggerClassName="w-16 h-7.5 bg-[#1C1C22] border-white/6 shrink-0"
+                    popoverClassName="right-0 left-auto mt-1 z-[100]"
                   />
                   <input
                     type="text"
@@ -471,20 +498,28 @@ export function VisualizationControl({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <span className="text-[10px] text-gray-500 font-medium block mb-1">Fill Color</span>
-            <input
-              type="color"
+            <ClypraColorPicker
               value={gaugeNode.fillColor || "#3B82F6"}
-              onChange={(e) => updateNode({ fillColor: e.target.value } as any)}
-              className="w-full h-8 rounded cursor-pointer border-0 bg-transparent"
+              onChange={(c) => updateNode({ fillColor: c } as any)}
+              onChangeComplete={(c) => updateNode({ fillColor: c } as any)}
+              format="hex"
+              showAlpha={true}
+              size="sm"
+              triggerClassName="w-full h-8 bg-[#1C1C22] border-white/6"
+              popoverClassName="left-0 mt-1 z-[100]"
             />
           </div>
           <div>
             <span className="text-[10px] text-gray-500 font-medium block mb-1">Track Color</span>
-            <input
-              type="color"
+            <ClypraColorPicker
               value={gaugeNode.trackColor || "#1F2937"}
-              onChange={(e) => updateNode({ trackColor: e.target.value } as any)}
-              className="w-full h-8 rounded cursor-pointer border-0 bg-transparent"
+              onChange={(c) => updateNode({ trackColor: c } as any)}
+              onChangeComplete={(c) => updateNode({ trackColor: c } as any)}
+              format="hex"
+              showAlpha={true}
+              size="sm"
+              triggerClassName="w-full h-8 bg-[#1C1C22] border-white/6"
+              popoverClassName="right-0 left-auto mt-1 z-[100]"
             />
           </div>
         </div>
@@ -526,15 +561,23 @@ export function VisualizationControl({
           {events.map((ev, i) => (
             <div key={ev.id ?? i} className="bg-[#141419] p-2.5 rounded-lg border border-white/6 space-y-1.5">
               <div className="flex items-center gap-2">
-                <input
-                  type="color"
+                <ClypraColorPicker
                   value={ev.color || "#45FF72"}
-                  onChange={(e) => {
+                  onChange={(c) => {
                     const updated = [...events];
-                    updated[i] = { ...updated[i], color: e.target.value };
+                    updated[i] = { ...updated[i], color: c };
                     updateNode({ events: updated } as any);
                   }}
-                  className="w-5 h-5 rounded cursor-pointer border-0 bg-transparent shrink-0"
+                  onChangeComplete={(c) => {
+                    const updated = [...events];
+                    updated[i] = { ...updated[i], color: c };
+                    updateNode({ events: updated } as any);
+                  }}
+                  format="hex"
+                  showAlpha={true}
+                  size="sm"
+                  triggerClassName="w-16 h-7.5 bg-[#1C1C22] border-white/6 shrink-0"
+                  popoverClassName="right-0 left-auto mt-1 z-[100]"
                 />
                 <input
                   type="text"
@@ -601,11 +644,15 @@ export function VisualizationControl({
           </div>
           <div>
             <span className="text-[10px] text-gray-500 font-medium block mb-1">Color</span>
-            <input
-              type="color"
+            <ClypraColorPicker
               value={(iconNode.style?.fillColor as string) || "#10B981"}
-              onChange={(e) => updateNode({ style: { ...iconNode.style, fillColor: e.target.value } } as any)}
-              className="w-full h-8 rounded cursor-pointer border-0 bg-transparent"
+              onChange={(c) => updateNode({ style: { ...iconNode.style, fillColor: c } } as any)}
+              onChangeComplete={(c) => updateNode({ style: { ...iconNode.style, fillColor: c } } as any)}
+              format="hex"
+              showAlpha={true}
+              size="sm"
+              triggerClassName="w-full h-8 bg-[#1C1C22] border-white/6"
+              popoverClassName="right-0 left-auto mt-1 z-[100]"
             />
           </div>
         </div>
@@ -664,11 +711,15 @@ export function VisualizationControl({
           </div>
           <div>
             <span className="text-[10px] text-gray-500 font-medium block mb-1">Stroke Color</span>
-            <input
-              type="color"
+            <ClypraColorPicker
               value={conn?.strokeColor || lineNode?.strokeColor || "#3B82F6"}
-              onChange={(e) => updateNode({ strokeColor: e.target.value } as any)}
-              className="w-full h-8 rounded cursor-pointer border-0 bg-transparent"
+              onChange={(c) => updateNode({ strokeColor: c } as any)}
+              onChangeComplete={(c) => updateNode({ strokeColor: c } as any)}
+              format="hex"
+              showAlpha={true}
+              size="sm"
+              triggerClassName="w-full h-8 bg-[#1C1C22] border-white/6"
+              popoverClassName="right-0 left-auto mt-1 z-[100]"
             />
           </div>
         </div>
