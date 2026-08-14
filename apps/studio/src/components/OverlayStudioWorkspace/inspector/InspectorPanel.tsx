@@ -189,13 +189,13 @@ function StyleTab({
   const isComponent = selectedNode.type === "component";
   const isText = selectedNode.type === "text";
   const isShape =
-    selectedNode.type === "shape" ||
-    selectedNode.type === "frame" ||
+    (selectedNode.type as string) === "shape" ||
+    (selectedNode.type as string) === "frame" ||
     selectedNode.type === "line" ||
     selectedNode.type === "connector" ||
     selectedNode.type === "icon" ||
-    selectedNode.type === "circle" ||
-    selectedNode.type === "rectangle" ||
+    (selectedNode.type as string) === "circle" ||
+    (selectedNode.type as string) === "rectangle" ||
     selectedNode.type === "repeater";
   const compNode = isComponent ? (selectedNode as ComponentNode) : null;
   const compDef = compNode

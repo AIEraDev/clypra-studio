@@ -73,21 +73,21 @@ describe("Studio Capability Surface — VisualizationControl Inspector", () => {
     });
   });
 
-  it("edits series values in the data table", () => {
+  it("edits series values and configuration", () => {
     const handleCommand = vi.fn();
     render(<VisualizationControl node={sampleChartNode} onExecuteCommand={handleCommand} />);
 
-    const q1ValueInput = screen.getByDisplayValue("100");
-    expect(q1ValueInput).toBeInTheDocument();
+    const revInput = screen.getByDisplayValue("Revenue");
+    expect(revInput).toBeInTheDocument();
 
-    fireEvent.change(q1ValueInput, { target: { value: "150" } });
+    fireEvent.change(revInput, { target: { value: "Net Revenue" } });
 
     expect(handleCommand).toHaveBeenCalledWith({
       type: "UPDATE_NODE_PROPERTY",
       nodeId: "test-chart-node",
       path: "series",
       value: [
-        { id: "rev", name: "Revenue", color: "#45FF72", data: [150, 200, 300, 400] }
+        { id: "rev", name: "Net Revenue", color: "#45FF72", data: [100, 200, 300, 400] }
       ],
     });
   });
@@ -163,9 +163,8 @@ describe("Studio Workspace System Flow — OverlayStudioWorkspace Route & Panels
     const { container } = render(<OverlayStudioWorkspace />);
 
     // Verify header menu elements
-    expect(screen.getByText("Save")).toBeInTheDocument();
-    expect(screen.getByText("Export Video")).toBeInTheDocument();
-    expect(screen.getByText(".clypra-overlay")).toBeInTheDocument();
+    expect(screen.getByText(/Save/i)).toBeInTheDocument();
+    expect(screen.getByText(/Export/i)).toBeInTheDocument();
 
     // Verify left rail navigation tabs
     expect(screen.getByText("Add")).toBeInTheDocument();

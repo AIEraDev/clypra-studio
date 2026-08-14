@@ -180,7 +180,6 @@ export function LayersPanel({ doc, selectedNodeIds, onSelectNodeIds, onExecuteCo
         type: "REPARENT_NODE",
         nodeId: src.id,
         targetParentId,
-        index: Math.max(0, destIdx),
       });
     }
   };

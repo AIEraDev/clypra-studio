@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Trash2, Database } from "lucide-react";
 import type { OverlayDocument, DocumentCommand } from "@clypra-studio/engine";
+import { ClypraColorPicker } from "@clypra/ui-color-picker";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -139,24 +140,20 @@ const VariableRow: React.FC<VariableRowProps> = ({
             <option value="false">false</option>
           </select>
         ) : variable.dataType === "color" ? (
-          <div className="flex items-center gap-1.5">
-            <input
-              type="color"
-              className="w-7 h-7 rounded cursor-pointer border border-white/6 bg-[#1C1C22]"
+          <div className="w-full">
+            <ClypraColorPicker
               value={variable.defaultValue ?? "#000000"}
-              onChange={(e) =>
-                onUpdate(variable.key, { defaultValue: e.target.value })
+              onChange={(c) =>
+                onUpdate(variable.key, { defaultValue: c })
               }
-              aria-label="Default color"
-            />
-            <input
-              className={`${baseInputCls} flex-1`}
-              value={variable.defaultValue ?? ""}
-              onChange={(e) =>
-                onUpdate(variable.key, { defaultValue: e.target.value })
+              onChangeComplete={(c) =>
+                onUpdate(variable.key, { defaultValue: c })
               }
-              placeholder="#000000"
-              aria-label="Default color hex"
+              format="hex"
+              showAlpha={true}
+              size="sm"
+              triggerClassName="w-full justify-between h-7.5 bg-[#1C1C22] border-white/6"
+              popoverClassName="right-0 left-auto mt-1 z-[100]"
             />
           </div>
         ) : (

@@ -21,6 +21,7 @@ import {
 import {
   type SceneNode,
   type ViewportState,
+  type DocumentCommand,
   smartOverlayRegistry,
 } from "@clypra-studio/engine";
 

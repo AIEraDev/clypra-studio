@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Play, Save, ChevronDown } from "lucide-react";
 import type { OverlayDocument, DocumentCommand } from "@clypra-studio/engine";
+import { ClypraColorPicker } from "@clypra/ui-color-picker";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -101,18 +102,16 @@ const PreviewValueInput: React.FC<PreviewValueInputProps> = ({
   }
   if (variable.dataType === "color") {
     return (
-      <div className="flex items-center gap-1.5">
-        <input
-          type="color"
-          className="w-7 h-7 rounded cursor-pointer border border-white/6 bg-[#1C1C22]"
+      <div className="w-full">
+        <ClypraColorPicker
           value={value ?? "#000000"}
-          onChange={(e) => onChange(variable.key, e.target.value)}
-        />
-        <input
-          className={`${baseInputCls} flex-1`}
-          value={value ?? ""}
-          onChange={(e) => onChange(variable.key, e.target.value)}
-          placeholder="#000000"
+          onChange={(c) => onChange(variable.key, c)}
+          onChangeComplete={(c) => onChange(variable.key, c)}
+          format="hex"
+          showAlpha={true}
+          size="sm"
+          triggerClassName="w-full justify-between h-7.5 bg-[#1C1C22] border-white/6"
+          popoverClassName="right-0 left-auto mt-1 z-[100]"
         />
       </div>
     );

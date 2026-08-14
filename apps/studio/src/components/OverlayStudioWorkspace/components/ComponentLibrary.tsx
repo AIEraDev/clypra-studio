@@ -41,7 +41,7 @@ const VISUALIZATION_PRIMITIVES = [
   },
   {
     type: "chart",
-    name: "Animated Chart",
+    name: "Animated Bar Chart",
     icon: <BarChart3 size={14} className="text-violet-400" />,
   },
   {
