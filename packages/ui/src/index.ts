@@ -68,6 +68,49 @@ export { StudioControlPanel } from "./components/StudioControlPanel";
 export type { StudioControlPanelProps } from "./components/StudioControlPanel";
 export { StudioMasterApp } from "./components/StudioMasterApp";
 
+// Clypra Color Picker Component Suite
+export {
+  ClypraColorPicker,
+  ColorTrigger,
+  SaturationBrightness,
+  HueSlider,
+  AlphaSlider,
+  ColorInputs,
+  PresetGrid,
+  useColorDrag,
+  useColorFormat,
+  useColorHistory,
+  createColorPickerSlice,
+  useColorPickerStore,
+  hexToRgba,
+  rgbaToHex,
+  rgbaToHsva,
+  hsvaToRgba,
+  hsvaToHsla,
+  hslaToHsva,
+  parseColor,
+  formatColor,
+  isValidColor,
+  getContrastColor,
+} from "@clypra/ui-color-picker";
+
+export type {
+  ClypraColorPickerProps,
+  ClypraColorPickerHandle,
+  ColorFormat,
+  ColorSize,
+  RGBA,
+  HSLA,
+  HSVA,
+  ColorTriggerProps,
+  SaturationBrightnessProps,
+  HueSliderProps,
+  AlphaSliderProps,
+  ColorInputsProps,
+  PresetGridProps,
+  ColorPickerSlice,
+} from "@clypra/ui-color-picker";
+
 // Reusable Hooks
 export { usePixiRenderer } from "./hooks/usePixiRenderer";
 
