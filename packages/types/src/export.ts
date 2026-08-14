@@ -153,3 +153,14 @@ export interface ExportJobRecord {
   retryCount?: number;
   docSnapshot?: OverlayDocument;
 }
+
+export interface ExportParityMetrics {
+  nodeId: string;
+  previewWidth: number;
+  previewHeight: number;
+  exportWidth: number;
+  exportHeight: number;
+  deltaWidth: number;
+  deltaHeight: number;
+  parityPassed: boolean;
+}

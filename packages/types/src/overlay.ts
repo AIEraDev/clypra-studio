@@ -7,9 +7,18 @@
 import type {
   SceneNodeType,
   ShapeKind,
+  TextOverflowPolicy,
+  BaselineAlignment,
   RichTextNode,
   GradientNode,
   IconNode,
+  AnchorSide,
+  SpatialAnchorConfig,
+  LineNode,
+  MediaObjectFit,
+  MediaCropBounds,
+  MediaTimingConfig,
+  MediaPlaybackConfig,
   DividerNode,
   MetricNode,
   ProgressNode,
@@ -23,6 +32,15 @@ import type {
 export type {
   SceneNodeType,
   ShapeKind,
+  TextOverflowPolicy,
+  BaselineAlignment,
+  AnchorSide,
+  SpatialAnchorConfig,
+  LineNode,
+  MediaObjectFit,
+  MediaCropBounds,
+  MediaTimingConfig,
+  MediaPlaybackConfig,
   RichTextSpan,
   RichTextNode,
   GradientStop,
@@ -107,6 +125,16 @@ export interface NodeStyle {
   lineHeight?: number;
   letterSpacing?: number;
   textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
+  /** Text overflow behavior */
+  overflow?: TextOverflowPolicy;
+  /** Maximum lines before clamping/truncating */
+  maxLines?: number;
+  /** Minimum font size when overflow is scale-down */
+  minFontSize?: number;
+  /** Vertical baseline alignment */
+  baseline?: BaselineAlignment;
+  /** Tabular numerals for fixed-width digits */
+  tabularNums?: boolean;
   /** Font registry reference */
   fontRef?: FontRef;
 }
@@ -168,6 +196,10 @@ export interface NodeAnimationConfig {
   staggerChildren?: number;
   /** Loop behavior for keyframe tracks */
   loop?: boolean;
+  /** If true, width/height animation triggers per-frame layout reflow passes instead of GPU transform scale */
+  animatesLayout?: boolean;
+  /** Layout transition duration for repeater/sibling reflows */
+  layoutTransitionMs?: number;
 }
 
 export interface ResponsiveNodeOverride {
@@ -199,12 +231,18 @@ export interface SceneNodeBase {
   animation?: NodeAnimationConfig;
   bindings?: NodePropertyBinding[];
   visibilityExpression?: string;
+  anchor?: SpatialAnchorConfig;
   responsive?: Record<string, ResponsiveNodeOverride>;
 }
 
 export interface PrimitiveTextNode extends SceneNodeBase {
   type: "text";
   text: string;
+  overflow?: TextOverflowPolicy;
+  maxLines?: number;
+  minFontSize?: number;
+  baseline?: BaselineAlignment;
+  tabularNums?: boolean;
 }
 
 export interface PrimitiveShapeNode extends SceneNodeBase {
@@ -217,6 +255,16 @@ export interface PrimitiveMediaNode extends SceneNodeBase {
   mediaType: MediaKind;
   assetId: string;
   sourceUrl?: string;
+  objectFit?: MediaObjectFit;
+  aspectRatioLock?: boolean;
+  cropBounds?: MediaCropBounds;
+  intrinsicWidth?: number;
+  intrinsicHeight?: number;
+  volume?: number;
+  loop?: boolean;
+  playbackRate?: number;
+  timing?: MediaTimingConfig;
+  playback?: MediaPlaybackConfig;
 }
 
 export interface ComponentNode extends SceneNodeBase {
@@ -252,6 +300,7 @@ export type SceneNode =
   | GradientNode
   | IconNode
   | DividerNode
+  | LineNode
   | MetricNode
   | ProgressNode
   | ChartNode

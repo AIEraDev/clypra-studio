@@ -21,6 +21,7 @@ export type SceneNodeType =
   | "gradient"
   | "icon"
   | "divider"
+  | "line"
   | "metric"
   | "progress"
   | "chart"
@@ -70,17 +71,26 @@ interface PrimitiveBase {
 }
 
 // ---------------------------------------------------------------------------
-// N1 — Graphics Primitives
+// Typography & Text AST Types
 // ---------------------------------------------------------------------------
+
+export type TextOverflowPolicy = "wrap" | "ellipsis" | "clip" | "scale-down" | "marquee";
+export type BaselineAlignment = "alphabetic" | "top" | "cap-height" | "center" | "bottom";
 
 export interface RichTextSpan {
   text: string;
   style?: Record<string, any>;
+  binding?: string;
 }
 
 export interface RichTextNode extends PrimitiveBase {
   type: "rich-text";
   spans: RichTextSpan[];
+  overflow?: TextOverflowPolicy;
+  maxLines?: number;
+  minFontSize?: number;
+  baseline?: BaselineAlignment;
+  tabularNums?: boolean;
 }
 
 export interface GradientStop {
@@ -107,6 +117,58 @@ export interface DividerNode extends PrimitiveBase {
   orientation: "horizontal" | "vertical";
   lineStyle?: "solid" | "dashed" | "dotted" | "gradient";
   thickness?: number;
+}
+
+export type AnchorSide = "top" | "right" | "bottom" | "left" | "center";
+export type MediaObjectFit = "cover" | "contain" | "fill" | "none";
+export type MediaKind = "image" | "video" | "lottie" | "audio";
+
+export interface MediaCropBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface MediaTimingConfig {
+  start?: number;
+  duration?: number;
+  trimStart?: number;
+  trimEnd?: number;
+  playbackRate?: number;
+}
+
+export interface MediaPlaybackConfig {
+  loop?: boolean;
+  muted?: boolean;
+  volume?: number;
+  autoplay?: boolean;
+}
+
+export interface SpatialAnchorConfig {
+  targetId: string;
+  anchorSide?: AnchorSide;
+  targetSide?: AnchorSide;
+  offsetX?: number;
+  offsetY?: number;
+}
+
+export interface LineNode extends PrimitiveBase {
+  type: "line";
+  startNodeId?: string;
+  endNodeId?: string;
+  startX?: number;
+  startY?: number;
+  endX?: number;
+  endY?: number;
+  curveStyle?: "straight" | "curved" | "orthogonal";
+  startMarker?: "none" | "dot" | "arrow";
+  endMarker?: "none" | "dot" | "arrow";
+  strokeColor?: string;
+  strokeWidth?: number;
+  lineStyle?: "solid" | "dashed" | "dotted";
+  drawOnProgress?: number;
+  strokeDashArray?: string;
 }
 
 // ---------------------------------------------------------------------------
