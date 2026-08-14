@@ -177,16 +177,25 @@ function StyleTab({
   doc,
   previewContext,
   onExecuteCommand,
+  onSelectTemplateNode,
 }: {
   selectedNode: SceneNode;
   doc: OverlayDocument;
   previewContext?: Record<string, any>;
   onExecuteCommand: (cmd: DocumentCommand) => void;
+  onSelectTemplateNode?: (node: SceneNode) => void;
 }) {
   const isComponent = selectedNode.type === "component";
   const isText = selectedNode.type === "text";
   const isShape =
-    selectedNode.type === "shape" || selectedNode.type === "frame";
+    selectedNode.type === "shape" ||
+    selectedNode.type === "frame" ||
+    selectedNode.type === "line" ||
+    selectedNode.type === "connector" ||
+    selectedNode.type === "icon" ||
+    selectedNode.type === "circle" ||
+    selectedNode.type === "rectangle" ||
+    selectedNode.type === "repeater";
   const compNode = isComponent ? (selectedNode as ComponentNode) : null;
   const compDef = compNode
     ? componentRegistry.get(compNode.componentType)
@@ -211,7 +220,14 @@ function StyleTab({
         <ComponentHeaderBar
           node={compNode}
           onExecuteCommand={onExecuteCommand}
-          onEditTemplate={onSelectTemplateNode}
+          onEditTemplate={
+            onSelectTemplateNode
+              ? (nodeId) => {
+                  const n = doc.nodes.find((x) => x.id === nodeId);
+                  if (n) onSelectTemplateNode(n);
+                }
+              : undefined
+          }
         />
       )}
 
@@ -449,23 +465,62 @@ function StyleTab({
         <Section title="Appearance" icon={<Palette size={12} />}>
           <AppearanceControl
             value={{
-              fillColor: style.fillColor,
-              fillOpacity: style.fillOpacity,
-              strokeColor: style.strokeColor,
-              strokeWidth: style.strokeWidth,
-              borderRadius: style.borderRadius,
-              shadow: style.shadow,
-              backdropBlur: style.backdropBlur,
+              fillColor:
+                style.fillColor ||
+                (selectedNode as any).fillColor ||
+                (selectedNode as any).strokeColor ||
+                "#3B82F6",
+              fillOpacity:
+                style.fillOpacity !== undefined
+                  ? style.fillOpacity
+                  : (selectedNode as any).fillOpacity,
+              strokeColor:
+                style.strokeColor ||
+                (selectedNode as any).strokeColor ||
+                style.fillColor ||
+                "#3B82F6",
+              strokeWidth:
+                style.strokeWidth !== undefined
+                  ? style.strokeWidth
+                  : (selectedNode as any).strokeWidth !== undefined
+                  ? (selectedNode as any).strokeWidth
+                  : 2,
+              borderRadius:
+                style.borderRadius !== undefined
+                  ? style.borderRadius
+                  : (selectedNode as any).borderRadius,
+              shadow: style.shadow || (selectedNode as any).shadow,
+              backdropBlur:
+                style.backdropBlur || (selectedNode as any).backdropBlur,
               opacity:
                 style.opacity !== undefined
                   ? Math.round(style.opacity * 100)
+                  : (selectedNode as any).opacity !== undefined
+                  ? Math.round((selectedNode as any).opacity * 100)
                   : 100,
             }}
             onChange={(v: AppearanceValue) => {
               const mapped: Record<string, any> = { ...v };
               if (v.opacity !== undefined) mapped.opacity = v.opacity / 100;
               Object.entries(mapped).forEach(([key, val]) => {
-                if (val !== undefined) setStyle(key, val);
+                if (val !== undefined) {
+                  setStyle(key, val);
+                  if (
+                    key === "fillColor" ||
+                    key === "strokeColor" ||
+                    key === "strokeWidth" ||
+                    key === "borderRadius"
+                  ) {
+                    execProp(key, val);
+                    if (
+                      key === "strokeWidth" &&
+                      (selectedNode.type === "line" ||
+                        (selectedNode as any).shapeKind === "line")
+                    ) {
+                      execProp("height", val);
+                    }
+                  }
+                }
               });
             }}
           />
@@ -792,6 +847,7 @@ export function InspectorPanel({
             doc={doc}
             previewContext={previewContext}
             onExecuteCommand={onExecuteCommand}
+            onSelectTemplateNode={onSelectTemplateNode}
           />
         )}
         {activeTab === "layout" && (

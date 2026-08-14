@@ -25,6 +25,7 @@ import {
   primitiveRegistry,
   componentRegistry,
   type DocumentCommand,
+  type SceneNode,
 } from "@clypra-studio/engine";
 
 const VISUALIZATION_PRIMITIVES = [
@@ -87,9 +88,10 @@ const PRIMITIVE_ICONS: Record<string, React.ReactNode> = {
 
 interface ComponentLibraryProps {
   onExecuteCommand: (cmd: DocumentCommand) => void;
+  selectedNode?: SceneNode | null;
 }
 
-export function ComponentLibrary({ onExecuteCommand }: ComponentLibraryProps) {
+export function ComponentLibrary({ onExecuteCommand, selectedNode }: ComponentLibraryProps) {
   const [search, setSearch] = useState("");
 
   const allComponents = componentRegistry?.getAll() ?? [];
@@ -114,16 +116,32 @@ export function ComponentLibrary({ onExecuteCommand }: ComponentLibraryProps) {
     return node;
   };
 
+  const isContainerSelected =
+    selectedNode &&
+    (selectedNode.type === "frame" ||
+      selectedNode.type === "repeater" ||
+      "children" in selectedNode);
+
   const handleInsert = (comp: (typeof allComponents)[number]) => {
-    const node = centerNodeOnCanvas(comp.createDefaultNode());
-    onExecuteCommand({ type: "ADD_NODE", node });
+    const defaultNode = comp.createDefaultNode();
+    if (isContainerSelected && selectedNode) {
+      const node = { ...defaultNode, x: 16, y: 16 };
+      onExecuteCommand({ type: "ADD_NODE", node: node as SceneNode, parentId: selectedNode.id });
+    } else {
+      const node = centerNodeOnCanvas(defaultNode);
+      onExecuteCommand({ type: "ADD_NODE", node: node as SceneNode });
+    }
   };
 
   const handleInsertVisualization = (type: string) => {
-    const node = centerNodeOnCanvas(
-      primitiveRegistry.createDefaultNode(type as any),
-    );
-    onExecuteCommand({ type: "ADD_NODE", node });
+    const defaultNode = primitiveRegistry.createDefaultNode(type as any);
+    if (isContainerSelected && selectedNode) {
+      const node = { ...defaultNode, x: 16, y: 16 };
+      onExecuteCommand({ type: "ADD_NODE", node: node as SceneNode, parentId: selectedNode.id });
+    } else {
+      const node = centerNodeOnCanvas(defaultNode);
+      onExecuteCommand({ type: "ADD_NODE", node: node as SceneNode });
+    }
   };
 
   return (

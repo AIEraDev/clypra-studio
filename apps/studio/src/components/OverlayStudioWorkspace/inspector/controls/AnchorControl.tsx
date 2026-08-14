@@ -1,6 +1,6 @@
 import React from "react";
 import { Link2, Unlink } from "lucide-react";
-import type { SceneNode, SpatialAnchorConfig, AnchorSide } from "@clypra-studio/types";
+import type { SceneNode, SpatialAnchorConfig, AnchorSide } from "@clypra-studio/engine";
 
 interface AnchorControlProps {
   node: SceneNode;
@@ -17,7 +17,7 @@ const SIDES: Array<{ label: string; value: AnchorSide }> = [
 ];
 
 export function AnchorControl({ node, nodes, onChange }: AnchorControlProps) {
-  const currentAnchor = node.anchor;
+  const currentAnchor = (node.anchor && "targetId" in node.anchor ? node.anchor : undefined) as SpatialAnchorConfig | undefined;
   const availableTargets = nodes.filter((n) => n.id !== node.id);
 
   const set = (patch: Partial<SpatialAnchorConfig>) => {

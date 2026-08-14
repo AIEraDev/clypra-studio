@@ -16,7 +16,7 @@ export function AutoLayoutControl({
   onChange,
 }: AutoLayoutControlProps) {
   const currentMode: LayoutMode = layout.mode || "none";
-  const gap = layout.gap || 0;
+  const gapValue = typeof layout.gap === "number" ? layout.gap : typeof layout.gap === "object" && layout.gap !== null ? layout.gap.col : 0;
   const rawPadding = layout.padding;
   const padding = typeof rawPadding === "number"
     ? { top: rawPadding, right: rawPadding, bottom: rawPadding, left: rawPadding }
@@ -149,7 +149,7 @@ export function AutoLayoutControl({
               <input
                 type="number"
                 min={0}
-                value={gap}
+                value={gapValue}
                 onChange={(e) => setGap(parseFloat(e.target.value) || 0)}
                 className="w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono outline-none focus:border-violet-500"
               />
