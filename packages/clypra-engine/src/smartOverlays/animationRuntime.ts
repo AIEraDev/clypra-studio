@@ -381,17 +381,25 @@ export class AnimationRuntime {
     if (!track.keyframes || track.keyframes.length === 0) return undefined;
     const sorted = [...track.keyframes].sort((a, b) => a.time - b.time);
 
-    if (currentTime <= sorted[0].time * duration) return sorted[0].value;
-    if (currentTime >= sorted[sorted.length - 1].time * duration) return sorted[sorted.length - 1].value;
+    const maxTime = sorted[sorted.length - 1].time;
+    const isRatio = maxTime <= 1 && maxTime > 0;
+    const getTimeInSec = (kTime: number) => (isRatio ? kTime * duration : kTime);
+
+    const tStart = getTimeInSec(sorted[0].time);
+    const tEnd = getTimeInSec(sorted[sorted.length - 1].time);
+
+    if (currentTime <= tStart) return sorted[0].value;
+    if (currentTime >= tEnd) return sorted[sorted.length - 1].value;
 
     for (let i = 0; i < sorted.length - 1; i++) {
       const k1 = sorted[i];
       const k2 = sorted[i + 1];
-      const t1 = k1.time * duration;
-      const t2 = k2.time * duration;
+      const t1 = getTimeInSec(k1.time);
+      const t2 = getTimeInSec(k2.time);
 
       if (currentTime >= t1 && currentTime <= t2) {
-        const factor = (currentTime - t1) / (t2 - t1);
+        const rawFactor = t2 > t1 ? (currentTime - t1) / (t2 - t1) : 0;
+        const factor = this.applyEasing(rawFactor, k1.easing || "linear");
         return propertyInterpolator.interpolate(track.property, k1.value, k2.value, factor);
       }
     }

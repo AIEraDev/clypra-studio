@@ -71,6 +71,9 @@ export function evaluateOverlayDocument(
     Object.assign(evalVariables, context.data);
   }
 
+  // Pre-calculate spatial layout for all nodes via layoutEngine
+  const computedLayout = layoutEngine.computeLayoutForBreakpoint(doc, activeBreakpointId, evalVariables);
+
   // 2. Evaluate individual node states
   function evaluateSingleNode(node: SceneNode, parentId?: string): EvaluatedNode {
     // 2a. Apply responsive breakpoint override if present
@@ -92,16 +95,17 @@ export function evaluateOverlayDocument(
       resolvedText = dataBindingEngine.evaluateExpression(responsiveNode.text, evalVariables);
     }
 
-    const baseW = responsiveNode.width;
-    const baseH = responsiveNode.height;
-    const baseAbsX = responsiveNode.x;
-    const baseAbsY = responsiveNode.y;
+    const computedBounds = computedLayout.nodes[responsiveNode.id];
+    const finalWidth = computedBounds ? computedBounds.width : animState.width;
+    const finalHeight = computedBounds ? computedBounds.height : animState.height;
+    const finalX = computedBounds ? computedBounds.x : animState.x;
+    const finalY = computedBounds ? computedBounds.y : animState.y;
 
     let transform: EvaluatedTransform = {
-      x: animState.x,
-      y: animState.y,
-      width: animState.width,
-      height: animState.height,
+      x: finalX,
+      y: finalY,
+      width: finalWidth,
+      height: finalHeight,
       rotation: animState.rotation,
       scaleX: animState.scaleX,
       scaleY: animState.scaleY,
@@ -132,7 +136,7 @@ export function evaluateOverlayDocument(
       strokeColor: nodeStyle.strokeColor,
       strokeWidth: nodeStyle.strokeWidth,
       borderRadius: nodeStyle.borderRadius,
-      opacity: Math.max(0, Math.min(1, animState.opacity * (nodeStyle.opacity ?? 1))),
+      opacity: Math.max(0, Math.min(1, animState.opacity * (typeof (nodeStyle.opacity ?? (responsiveNode as any).opacity) === "number" ? ((nodeStyle.opacity ?? (responsiveNode as any).opacity) > 1 ? (nodeStyle.opacity ?? (responsiveNode as any).opacity) / 100 : (nodeStyle.opacity ?? (responsiveNode as any).opacity)) : 1))),
       fontFamily: nodeStyle.fontFamily || "Inter",
       fontSize: nodeStyle.fontSize || 24,
       fontWeight: nodeStyle.fontWeight || "normal",
@@ -213,7 +217,7 @@ export function evaluateOverlayDocument(
       name: responsiveNode.name || responsiveNode.id,
       type: responsiveNode.type,
       parentId,
-      visible: animState.visible && (responsiveNode.visible !== false),
+      visible: animState.visible && responsiveNode.visible !== false,
       transform,
       style,
       content,

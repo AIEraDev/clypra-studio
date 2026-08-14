@@ -143,15 +143,22 @@ export function resolveDocumentForBreakpoint(
 ): OverlayDocument {
   if (breakpointId === null) return doc;
 
-  const bp = doc.breakpoints?.breakpoints.find((b) => b.id === breakpointId);
+  const breakpointsList = Array.isArray(doc.breakpoints)
+    ? doc.breakpoints
+    : (doc.breakpoints as any)?.breakpoints;
+
+  const bp = Array.isArray(breakpointsList)
+    ? breakpointsList.find((b: any) => b.id === breakpointId)
+    : undefined;
+
   if (!bp) return doc; // unknown id → graceful fallback
 
   return {
     ...doc,
     canvas: {
       ...doc.canvas,
-      width: bp.canvas.width,
-      height: bp.canvas.height,
+      width: bp.canvas?.width ?? doc.canvas.width,
+      height: bp.canvas?.height ?? doc.canvas.height,
     },
     nodes: doc.nodes.map((node) =>
       resolveNodeForBreakpoint(node, breakpointId)

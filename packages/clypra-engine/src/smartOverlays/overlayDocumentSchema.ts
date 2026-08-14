@@ -63,6 +63,7 @@ export type SceneNodeType =
   | "rich-text"
   | "gradient"
   | "icon"
+  | "line"
   | "divider"
   | "metric"
   | "progress"
@@ -74,7 +75,10 @@ export type SceneNodeType =
   | "annotation"
   | "connector"
   | "gauge"
-  | "timeline";
+  | "timeline"
+  | "video"
+  | "audio"
+  | "lottie";
 
 export type LayoutMode = "none" | "flex-row" | "flex-column" | "grid" | "space-between";
 export type AlignmentMode = "start" | "center" | "end" | "stretch";
@@ -83,6 +87,8 @@ export type AnchorXMode = "left" | "center" | "right";
 export type AnchorYMode = "top" | "center" | "bottom";
 
 export interface NodeConstraints {
+  horizontal?: "left" | "center" | "right" | "stretch" | AnchorXMode;
+  vertical?: "top" | "center" | "bottom" | "stretch" | AnchorYMode;
   anchorX?: AnchorXMode;
   anchorY?: AnchorYMode;
   left?: number;
@@ -106,15 +112,17 @@ export interface NodeConstraints {
 
 export interface NodeLayoutRules {
   mode?: LayoutMode;
-  gap?: number;
-  padding?: {
+  gap?: number | { col: number; row: number };
+  padding?: number | {
     top: number;
     right: number;
     bottom: number;
     left: number;
   };
-  alignItems?: AlignmentMode;
-  justifyContent?: AlignmentMode;
+  alignItems?: AlignmentMode | "flex-start" | "flex-end";
+  justifyContent?: AlignmentMode | "flex-start" | "flex-end" | "space-between" | "space-around" | "space-evenly";
+  wrap?: boolean | "wrap" | "nowrap";
+  gridColumns?: number;
   constraints?: NodeConstraints;
 }
 
@@ -136,6 +144,8 @@ export interface NodeStyleRules {
   fillOpacity?: number;
   strokeColor?: string;
   strokeWidth?: number;
+  borderColor?: string;
+  borderWidth?: number;
   borderRadius?: number;
   opacity?: number;
   fontFamily?: string;
@@ -146,10 +156,15 @@ export interface NodeStyleRules {
   fontSize?: number;
   fontWeight?: "normal" | "bold" | "600" | "800" | string;
   textColor?: string;
+  color?: string;
   textAlign?: "left" | "center" | "right";
   letterSpacing?: number;
   lineHeight?: number;
   textTransform?: "none" | "uppercase" | "lowercase";
+  overflow?: "visible" | "hidden" | "truncate" | "shrink-to-fit" | "multiline" | string;
+  minFontSize?: number;
+  maxLines?: number;
+  tabularNums?: boolean;
   shadowColor?: string;
   shadowBlur?: number;
   shadow?: {
@@ -287,11 +302,65 @@ export interface PrimitiveShapeNode extends SceneNodeBase {
 
 export interface PrimitiveMediaNode extends SceneNodeBase {
   type: "media";
-  mediaType: "image" | "icon" | "svg" | "avatar";
+  mediaType: "image" | "icon" | "svg" | "avatar" | "video" | "audio" | "lottie";
   /** @deprecated Prefer assetId. Kept as legacy fallback for migration. */
   src?: string;
   /** Stable reference to AssetRegistry — document never contains binary data */
   assetId?: string;
+  // Sizing matrix attributes
+  intrinsicWidth?: number;
+  intrinsicHeight?: number;
+  aspectRatioLock?: boolean;
+  objectFit?: "cover" | "contain" | "fill" | "none";
+}
+
+export interface VideoPlaybackConfig {
+  startTime?: number; // Timeline offset when video begins (seconds)
+  trimIn?: number; // In-point offset within source video (seconds)
+  trimOut?: number; // Out-point offset within source video (seconds)
+  speed?: number; // Playback rate multiplier (default: 1.0)
+  loop?: boolean; // Wrap local playhead when reaching duration
+  volume?: number; // Audio volume 0.0 - 1.0
+  muted?: boolean;
+}
+
+export interface VideoNode extends SceneNodeBase {
+  type: "video";
+  assetId: string;
+  intrinsicWidth?: number;
+  intrinsicHeight?: number;
+  aspectRatioLock?: boolean;
+  objectFit?: "cover" | "contain" | "fill" | "none";
+  playback?: VideoPlaybackConfig;
+}
+
+export interface AudioPlaybackConfig {
+  startTime?: number;
+  trimIn?: number;
+  trimOut?: number;
+  speed?: number;
+  loop?: boolean;
+  volume?: number; // 0.0 - 1.0
+  muted?: boolean;
+  fadeInDuration?: number; // Seconds for linear fade-in
+  fadeOutDuration?: number; // Seconds for linear fade-out
+  duckingDb?: number; // Target volume reduction in dB
+}
+
+export interface AudioNode extends SceneNodeBase {
+  type: "audio";
+  assetId: string;
+  playback?: AudioPlaybackConfig;
+}
+
+export interface LottieNode extends SceneNodeBase {
+  type: "lottie";
+  assetId: string;
+  fps?: number; // Defaults to 60
+  speed?: number; // Speed multiplier (default: 1.0)
+  loop?: boolean;
+  mode?: "forward" | "reverse" | "pingpong";
+  slots?: Record<string, string | number>; // Dynamic property/color/text injection
 }
 
 export interface RepeaterNode extends SceneNodeBase {
@@ -301,6 +370,14 @@ export interface RepeaterNode extends SceneNodeBase {
   itemTemplate: SceneNode;
   direction?: "vertical" | "horizontal";
   previewItemCount?: number;
+  /** Stable field name used to track instance identity across sort/reorder operations */
+  keyField?: string;
+  /** Maximum number of items to instantiate from the dataset (windowing limit) */
+  maxItems?: number;
+  /** Context variable name for the current item in templates (defaults to "item") */
+  itemContextKey?: string;
+  /** Context variable name for the current index in templates (defaults to "index") */
+  indexContextKey?: string;
 }
 
 export interface ComponentNode extends SceneNodeBase {
@@ -334,8 +411,26 @@ export interface GradientNode extends SceneNodeBase {
 export interface IconNode extends SceneNodeBase {
   type: "icon";
   iconName: string;
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
   assetId?: string;
   svgPath?: string;
+}
+
+export interface LineNode extends SceneNodeBase {
+  type: "line";
+  startX?: number;
+  startY?: number;
+  endX?: number;
+  endY?: number;
+  startNodeId?: string;
+  endNodeId?: string;
+  strokeColor?: string;
+  strokeWidth?: number;
+  strokeCap?: "butt" | "round" | "square";
+  strokeJoin?: "miter" | "round" | "bevel";
+  dashPattern?: number[];
 }
 
 export interface DividerNode extends SceneNodeBase {
@@ -517,9 +612,11 @@ export interface ConnectorNode extends SceneNodeBase {
   type: "connector";
   fromNodeId: string;
   toNodeId: string;
+  fromAnchor?: "top" | "bottom" | "left" | "right" | "center" | { x: number; y: number };
+  toAnchor?: "top" | "bottom" | "left" | "right" | "center" | { x: number; y: number };
   fromElement?: "bar-top" | "point" | "arc-mid" | "center";
   toElement?: "bar-top" | "point" | "arc-mid" | "center";
-  lineStyle?: "straight" | "curved" | "elbow";
+  lineStyle?: "straight" | "curved" | "elbow" | "orthogonal" | "bezier";
   arrowHead?: "none" | "start" | "end" | "both";
   strokeColor?: string;
   strokeWidth?: number;
@@ -609,11 +706,15 @@ export type SceneNode =
   | PrimitiveTextNode
   | PrimitiveShapeNode
   | PrimitiveMediaNode
+  | VideoNode
+  | AudioNode
+  | LottieNode
   | RepeaterNode
   | ComponentNode
   | RichTextNode
   | GradientNode
   | IconNode
+  | LineNode
   | DividerNode
   | MetricNode
   | ProgressNode

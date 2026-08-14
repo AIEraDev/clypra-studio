@@ -33,8 +33,16 @@ export class DataBindingEngine {
     const unwrapped = expr.replace(/^\{\{\s*/, "").replace(/\s*\}\}$/, "");
 
     try {
-      const keys = Object.keys(context);
-      const vals = Object.values(context);
+      const formatters = {
+        currency: (val: any) => `$${Number(val || 0).toLocaleString()}`,
+        number: (val: any) => Number(val || 0).toLocaleString(),
+        uppercase: (val: any) => String(val || "").toUpperCase(),
+        lowercase: (val: any) => String(val || "").toLowerCase(),
+        percent: (val: any) => `${(Number(val || 0) * 100).toFixed(0)}%`,
+      };
+
+      const keys = [...Object.keys(formatters), ...Object.keys(context)];
+      const vals = [...Object.values(formatters), ...Object.values(context)];
       // eslint-disable-next-line no-new-func
       const fn = new Function(...keys, `return (${unwrapped});`);
       return fn(...vals);
@@ -78,13 +86,20 @@ export class DataBindingEngine {
     const expandedNodes: SceneNode[] = [];
     const staggerDelay = repeater.staggerDelay ?? 0.1;
     const direction = repeater.direction ?? "vertical";
-    const gap = repeater.layout?.gap ?? 10;
+    const rawGap = repeater.layout?.gap ?? 10;
+    const gap = typeof rawGap === "number" ? rawGap : (typeof rawGap === "object" && rawGap !== null ? (direction === "horizontal" ? rawGap.col : rawGap.row) : 10);
 
     items.forEach((itemData, idx) => {
       const itemContext = { ...context, item: itemData, index: idx };
       const clonedNode = JSON.parse(JSON.stringify(repeater.itemTemplate)) as SceneNode;
 
-      clonedNode.id = `${repeater.id}-item-${idx}`;
+      const itemPrefix = `${repeater.id}-item-${idx}`;
+      clonedNode.id = itemPrefix;
+      if ("children" in clonedNode && Array.isArray((clonedNode as any).children)) {
+        for (const child of (clonedNode as any).children) {
+          this.prefixChildIds(child, itemPrefix);
+        }
+      }
 
       if (direction === "horizontal") {
         clonedNode.x = repeater.x + idx * (clonedNode.width + gap);
@@ -109,6 +124,15 @@ export class DataBindingEngine {
     return expandedNodes;
   }
 
+  private prefixChildIds(node: SceneNode, prefix: string): void {
+    node.id = `${prefix}-${node.id}`;
+    if ("children" in node && Array.isArray((node as any).children)) {
+      for (const child of (node as any).children) {
+        this.prefixChildIds(child, prefix);
+      }
+    }
+  }
+
   /**
    * Recursively evaluate data bindings across a node tree.
    * Evaluates node.bindings rules, text content, and component props.
@@ -123,6 +147,10 @@ export class DataBindingEngine {
 
     if (node.type === "text") {
       node.text = this.evaluateString(node.text, context);
+    } else if (node.type === "media") {
+      const m = node as any;
+      if (m.assetId) m.assetId = this.evaluateString(m.assetId, context);
+      if (m.src) m.src = this.evaluateString(m.src, context);
     } else if (node.type === "rich-text") {
       const richNode = node as any;
       if (Array.isArray(richNode.spans)) {
