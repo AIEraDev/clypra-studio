@@ -111,10 +111,17 @@ export class CommandExecutor {
       }
 
       case "REORDER_NODES": {
-        const { sourceIndex, destinationIndex } = command;
-        if (sourceIndex >= 0 && sourceIndex < docCopy.nodes.length && destinationIndex >= 0 && destinationIndex < docCopy.nodes.length) {
-          const [moved] = docCopy.nodes.splice(sourceIndex, 1);
-          docCopy.nodes.splice(destinationIndex, 0, moved);
+        const { sourceIndex, destinationIndex, parentId } = command;
+        let targetList: SceneNode[] = docCopy.nodes;
+        if (parentId) {
+          const parentNode = this.findNode(docCopy.nodes, parentId);
+          if (parentNode && "children" in parentNode && Array.isArray((parentNode as any).children)) {
+            targetList = (parentNode as any).children;
+          }
+        }
+        if (sourceIndex >= 0 && sourceIndex < targetList.length && destinationIndex >= 0 && destinationIndex < targetList.length) {
+          const [moved] = targetList.splice(sourceIndex, 1);
+          targetList.splice(destinationIndex, 0, moved);
         }
         return {
           nextDocument: docCopy,
@@ -122,12 +129,13 @@ export class CommandExecutor {
             type: "REORDER_NODES",
             sourceIndex: destinationIndex,
             destinationIndex: sourceIndex,
+            parentId,
           }
         };
       }
 
       case "REPARENT_NODE": {
-        const { nodeId, targetParentId } = command as any;
+        const { nodeId, targetParentId, index } = command as any;
         const targetNode = this.findNode(docCopy.nodes, nodeId);
         if (!targetNode) return { nextDocument: docCopy, inverseCommand: command };
 
@@ -148,12 +156,20 @@ export class CommandExecutor {
         if (targetParentId) {
           const parentNode = this.findNode(docCopy.nodes, targetParentId);
           if (parentNode && "children" in parentNode && Array.isArray((parentNode as any).children)) {
-            (parentNode as any).children.push(targetNode);
+            if (typeof index === "number" && index >= 0 && index <= (parentNode as any).children.length) {
+              (parentNode as any).children.splice(index, 0, targetNode);
+            } else {
+              (parentNode as any).children.push(targetNode);
+            }
           } else {
             docCopy.nodes.push(targetNode);
           }
         } else {
-          docCopy.nodes.push(targetNode);
+          if (typeof index === "number" && index >= 0 && index <= docCopy.nodes.length) {
+            docCopy.nodes.splice(index, 0, targetNode);
+          } else {
+            docCopy.nodes.push(targetNode);
+          }
         }
 
         return {

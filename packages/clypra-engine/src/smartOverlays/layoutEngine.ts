@@ -87,22 +87,29 @@ export class LayoutEngine {
         const startTarget = lineNode.startNodeId ? result[lineNode.startNodeId] : undefined;
         const endTarget = lineNode.endNodeId ? result[lineNode.endNodeId] : undefined;
 
-        const startX = startTarget ? startTarget.x + startTarget.width / 2 : (lineNode.startX ?? node.x);
-        const startY = startTarget ? startTarget.y + startTarget.height / 2 : (lineNode.startY ?? node.y);
-        const endX = endTarget ? endTarget.x + endTarget.width / 2 : (lineNode.endX ?? (node.x + node.width));
-        const endY = endTarget ? endTarget.y + endTarget.height / 2 : (lineNode.endY ?? (node.y + node.height));
+        if (
+          startTarget ||
+          endTarget ||
+          lineNode.startX !== undefined ||
+          lineNode.endX !== undefined
+        ) {
+          const startX = startTarget ? startTarget.x + startTarget.width / 2 : (lineNode.startX ?? node.x);
+          const startY = startTarget ? startTarget.y + startTarget.height / 2 : (lineNode.startY ?? node.y);
+          const endX = endTarget ? endTarget.x + endTarget.width / 2 : (lineNode.endX ?? (node.x + node.width));
+          const endY = endTarget ? endTarget.y + endTarget.height / 2 : (lineNode.endY ?? (node.y + node.height));
 
-        const minX = Math.min(startX, endX);
-        const minY = Math.min(startY, endY);
-        const lineW = Math.max(1, Math.abs(endX - startX));
-        const lineH = Math.max(1, Math.abs(endY - startY));
+          const minX = Math.min(startX, endX);
+          const minY = Math.min(startY, endY);
+          const lineW = Math.max(1, Math.abs(endX - startX));
+          const lineH = Math.max(1, Math.abs(endY - startY));
 
-        result[node.id] = {
-          x: Math.round(minX),
-          y: Math.round(minY),
-          width: Math.round(lineW),
-          height: Math.round(lineH),
-        };
+          result[node.id] = {
+            x: Math.round(minX),
+            y: Math.round(minY),
+            width: Math.round(lineW),
+            height: Math.round(lineH),
+          };
+        }
       }
     }
 
@@ -187,14 +194,23 @@ export class LayoutEngine {
     doc: OverlayDocument,
     context: Record<string, any>,
     result: Record<string, ComputedNodeBounds>,
-    parentX: number,
-    parentY: number
+    parentX = 0,
+    parentY = 0,
+    isAbsoluteSlot = false
   ): ComputedNodeBounds {
     // 1. Initial absolute coordinates
-    let absX = parentX + node.x;
-    let absY = parentY + node.y;
+    let absX = isAbsoluteSlot ? parentX : parentX + node.x;
+    let absY = isAbsoluteSlot ? parentY : parentY + node.y;
     let width = node.width;
     let height = node.height;
+
+    // Line / Connector intrinsic thickness
+    if (node.type === "line" || (node as any).shapeKind === "line") {
+      const strokeW = (node as any).style?.strokeWidth ?? (node as any).strokeWidth;
+      if (typeof strokeW === "number" && strokeW > 0) {
+        height = Math.max(height, strokeW);
+      }
+    }
 
     // Root-level Fill mode (top-level node with no parent container fills doc.canvas)
     const effectiveWidthMode = node.layout?.constraints?.widthMode || (node as any).constraints?.widthMode || (node as any).widthMode;
@@ -212,36 +228,38 @@ export class LayoutEngine {
       }
     }
 
-    // Canvas Anchor Pinning (Horizontal & Vertical Pinning relative to Canvas/Parent Container)
-    const horizontalPin = (node as any).constraints?.horizontal || node.layout?.constraints?.horizontal || "left";
-    const verticalPin = (node as any).constraints?.vertical || node.layout?.constraints?.vertical || "top";
-
     const containerW = parentX === 0 ? doc.canvas.width : 1280;
     const containerH = parentY === 0 ? doc.canvas.height : 720;
 
-    // Horizontal Anchor Resolution
-    if (horizontalPin === "center") {
-      absX = parentX + (containerW - width) / 2;
-    } else if (horizontalPin === "right") {
-      absX = parentX + containerW - width;
-    } else if (horizontalPin === "scale") {
-      const scaleX = containerW / (doc.canvas.width || 1280);
-      absX = Math.round(parentX + node.x * scaleX);
-      if (node.layout?.constraints?.widthMode !== "fixed") {
-        width = Math.round(node.width * scaleX);
-      }
-    }
+    // Canvas Anchor Pinning (Horizontal & Vertical Pinning relative to Canvas/Parent Container)
+    if (!isAbsoluteSlot) {
+      const horizontalPin = (node as any).constraints?.horizontal || node.layout?.constraints?.horizontal || "left";
+      const verticalPin = (node as any).constraints?.vertical || node.layout?.constraints?.vertical || "top";
 
-    // Vertical Anchor Resolution
-    if (verticalPin === "center") {
-      absY = parentY + (containerH - height) / 2;
-    } else if (verticalPin === "bottom") {
-      absY = parentY + containerH - height;
-    } else if (verticalPin === "scale") {
-      const scaleY = containerH / (doc.canvas.height || 720);
-      absY = Math.round(parentY + node.y * scaleY);
-      if (node.layout?.constraints?.heightMode !== "fixed") {
-        height = Math.round(node.height * scaleY);
+      // Horizontal Anchor Resolution
+      if (horizontalPin === "center") {
+        absX = parentX + (containerW - width) / 2;
+      } else if (horizontalPin === "right") {
+        absX = parentX + containerW - width;
+      } else if (horizontalPin === "scale") {
+        const scaleX = containerW / (doc.canvas.width || 1280);
+        absX = Math.round(parentX + node.x * scaleX);
+        if (node.layout?.constraints?.widthMode !== "fixed") {
+          width = Math.round(node.width * scaleX);
+        }
+      }
+
+      // Vertical Anchor Resolution
+      if (verticalPin === "center") {
+        absY = parentY + (containerH - height) / 2;
+      } else if (verticalPin === "bottom") {
+        absY = parentY + containerH - height;
+      } else if (verticalPin === "scale") {
+        const scaleY = containerH / (doc.canvas.height || 720);
+        absY = Math.round(parentY + node.y * scaleY);
+        if (node.layout?.constraints?.heightMode !== "fixed") {
+          height = Math.round(node.height * scaleY);
+        }
       }
     }
 
@@ -355,13 +373,14 @@ export class LayoutEngine {
 
     // 3. Process children layout if container has children
     const children = (node as any).children as SceneNode[] | undefined;
-    const normPadding = typeof node.layout?.padding === "number"
-      ? { top: node.layout.padding, right: node.layout.padding, bottom: node.layout.padding, left: node.layout.padding }
+    const rawPadding = node.layout?.padding ?? (node.layout as any)?.rules?.padding;
+    const normPadding = typeof rawPadding === "number"
+      ? { top: rawPadding, right: rawPadding, bottom: rawPadding, left: rawPadding }
       : {
-          top: node.layout?.padding?.top ?? 0,
-          right: node.layout?.padding?.right ?? 0,
-          bottom: node.layout?.padding?.bottom ?? 0,
-          left: node.layout?.padding?.left ?? 0
+          top: rawPadding?.top ?? 0,
+          right: rawPadding?.right ?? 0,
+          bottom: rawPadding?.bottom ?? 0,
+          left: rawPadding?.left ?? 0
         };
 
     // Filter out hidden children so layout stack gaps collapse
@@ -381,14 +400,24 @@ export class LayoutEngine {
     });
 
     if (activeChildren.length > 0) {
-      const rawMode = node.layout?.mode || (node.layout as any)?.direction || "none";
-      const isRow = rawMode === "flex-row" || rawMode === "row" || rawMode === "row-reverse";
-      const isColumn = rawMode === "flex-column" || rawMode === "column" || rawMode === "column-reverse";
+      const rawMode =
+        node.layout?.mode ||
+        (node.layout as any)?.direction ||
+        ((node.layout as any)?.rules?.direction === "vertical"
+          ? "flex-column"
+          : (node.layout as any)?.rules?.direction === "horizontal"
+          ? "flex-row"
+          : (node.layout as any)?.rules?.direction) ||
+        (node.type === "frame" ? "flex-column" : "none");
+
+      const isRow = rawMode === "flex-row" || rawMode === "row" || rawMode === "row-reverse" || rawMode === "horizontal";
+      const isColumn = rawMode === "flex-column" || rawMode === "column" || rawMode === "column-reverse" || rawMode === "vertical";
       const isRowReverse = rawMode === "row-reverse" || (node.layout as any)?.direction === "row-reverse";
       const isColReverse = rawMode === "column-reverse" || (node.layout as any)?.direction === "column-reverse";
 
-      const gapX = typeof node.layout?.gap === "object" ? ((node.layout.gap as any).col ?? (node.layout.gap as any).x ?? 0) : (node.layout?.gap || 0);
-      const gapY = typeof node.layout?.gap === "object" ? ((node.layout.gap as any).row ?? (node.layout.gap as any).y ?? 0) : (node.layout?.gap || 0);
+      const rawGap = node.layout?.gap ?? (node.layout as any)?.rules?.gap ?? 0;
+      const gapX = typeof rawGap === "object" ? ((rawGap as any).col ?? (rawGap as any).x ?? 0) : (rawGap || 0);
+      const gapY = typeof rawGap === "object" ? ((rawGap as any).row ?? (rawGap as any).y ?? 0) : (rawGap || 0);
       const justify = (node.layout?.justifyContent || (node.layout as any)?.justify || "flex-start") as string;
       const align = (node.layout?.alignItems || (node.layout as any)?.align || "flex-start") as string;
       const isWrap = node.layout?.wrap === true || node.layout?.wrap === "wrap" || (node.layout as any)?.flexWrap === "wrap";
@@ -441,8 +470,8 @@ export class LayoutEngine {
         const hugWidth = maxLineWidth + normPadding.left + normPadding.right;
         const hugHeight = totalLinesHeight + normPadding.top + normPadding.bottom;
 
-        if (effectiveWidthMode === "hug") width = hugWidth;
-        if (effectiveHeightMode === "hug") height = hugHeight;
+        if (effectiveWidthMode === "hug") width = activeChildren.length > 0 ? hugWidth : (node.width || 320);
+        if (effectiveHeightMode === "hug") height = activeChildren.length > 0 ? hugHeight : (node.height || 240);
 
         const containerContentW = Math.max(maxLineWidth, width - normPadding.left - normPadding.right);
 
@@ -522,7 +551,15 @@ export class LayoutEngine {
               }
             }
 
-            const placed = this.computeNodeGeometry(child, doc, context, result, Math.round(currentChildX), Math.round(childY));
+            const placed = this.computeNodeGeometry(
+              child,
+              doc,
+              context,
+              result,
+              Math.round(currentChildX),
+              Math.round(childY),
+              true
+            );
             if (align === "stretch" && childHeight !== b.height) {
               placed.height = childHeight;
               result[child.id] = placed;
@@ -544,8 +581,8 @@ export class LayoutEngine {
         const hugWidth = maxChildW + normPadding.left + normPadding.right;
         const hugHeight = totalContentH + normPadding.top + normPadding.bottom;
 
-        if (effectiveWidthMode === "hug") width = hugWidth;
-        if (effectiveHeightMode === "hug") height = hugHeight;
+        if (effectiveWidthMode === "hug") width = activeColChildren.length > 0 ? hugWidth : (node.width || 320);
+        if (effectiveHeightMode === "hug") height = activeColChildren.length > 0 ? hugHeight : (node.height || 240);
 
         const containerContentW = Math.max(maxChildW, width - normPadding.left - normPadding.right);
         const containerContentH = Math.max(totalContentH, height - normPadding.top - normPadding.bottom);
@@ -620,7 +657,15 @@ export class LayoutEngine {
             }
           }
 
-          const placed = this.computeNodeGeometry(child, doc, context, result, Math.round(childX), Math.round(currentChildY));
+          const placed = this.computeNodeGeometry(
+            child,
+            doc,
+            context,
+            result,
+            Math.round(childX),
+            Math.round(currentChildY),
+            true
+          );
           if (align === "stretch" && childWidth !== b.width) {
             placed.width = childWidth;
             result[child.id] = placed;
@@ -645,7 +690,8 @@ export class LayoutEngine {
             context,
             result,
             rowX,
-            rowY
+            rowY,
+            true
           );
 
           rowMaxH = Math.max(rowMaxH, childBounds.height);

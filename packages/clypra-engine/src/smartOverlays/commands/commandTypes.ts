@@ -76,6 +76,7 @@ export interface ReorderNodesCommand extends BaseCommand {
   type: "REORDER_NODES";
   sourceIndex: number;
   destinationIndex: number;
+  parentId?: string;
 }
 
 export interface AddVariableCommand extends BaseCommand {
