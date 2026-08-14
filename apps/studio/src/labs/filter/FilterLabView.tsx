@@ -390,7 +390,7 @@ export function FilterLabView() {
       // ── Conditionally add/remove halation-node from graph ─────────────────
       if (needsHalation && !halationActiveRef.current) {
         try {
-          renderer.addNode?.({
+          (renderer as any).addNode?.({
             id: "halation-node",
             effect: HalationEffect,
             params: {
@@ -403,12 +403,12 @@ export function FilterLabView() {
         } catch (_) { /* renderer may not support addNode — silently skip */ }
       } else if (!needsHalation && halationActiveRef.current) {
         try {
-          renderer.removeNode?.("halation-node");
+          (renderer as any).removeNode?.("halation-node");
           halationActiveRef.current = false;
           addLog("[EFFECT] Halation pass removed.");
         } catch (_) { /* silently skip */ }
       } else if (needsHalation && halationActiveRef.current) {
-        renderer.updateParams?.("halation-node", {
+        (renderer as any).updateParams?.("halation-node", {
           halationR: base.halationR, halationG: base.halationG, halationB: base.halationB,
           halationThreshold: base.halationThreshold, halationIntensity: base.halationIntensity,
         });

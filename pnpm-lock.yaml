@@ -38,6 +38,9 @@ importers:
       '@clypra-studio/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+      '@clypra-studio/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@clypra-studio/ui':
         specifier: workspace:*
         version: link:../../packages/ui

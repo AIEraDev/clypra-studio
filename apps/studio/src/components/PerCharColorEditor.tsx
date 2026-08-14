@@ -3,8 +3,15 @@ import { Palette, RotateCcw, Sparkles } from "lucide-react";
 import type { TextEffectConfig } from "@clypra-studio/engine";
 import { applyFillColorToAll, countTextGlyphs, rainbowCharFillColors, resizeCharFillColors, setCharFillColor } from "@clypra-studio/engine";
 
+export type PerCharColorConfig = Partial<TextEffectConfig> & {
+  text?: string;
+  fillColor?: string;
+  charFillColors?: string[];
+  perCharFillEnabled?: boolean;
+};
+
 interface PerCharColorEditorProps {
-  config: TextEffectConfig;
+  config: PerCharColorConfig;
   onChange: (patch: Partial<TextEffectConfig>) => void;
 }
 

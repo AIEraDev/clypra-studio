@@ -6,14 +6,6 @@
 // Common components
 export * from "./common";
 
-// Video effects
-export * from "./video";
-
 // Filter workspace
 export * from "./filter";
 
-// Body effects
-export * from "./body";
-
-// Transition effects
-export * from "./transition";
