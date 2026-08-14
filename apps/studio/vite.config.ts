@@ -23,6 +23,10 @@ export default defineConfig(() => {
           replacement: `${packagesDir}/ui/src$1`,
         },
         {
+          find: /^@clypra\/ui-color-picker(\/.*)?$/,
+          replacement: `${packagesDir}/ui-color-picker/src$1`,
+        },
+        {
           find: /^@clypra-studio\/engine(\/.*)?$/,
           replacement: `${packagesDir}/clypra-engine/src$1`,
         },

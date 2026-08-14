@@ -18,6 +18,12 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@clypra/ui-color-picker": [
+        "../../packages/ui-color-picker/dist/index.d.ts"
+      ],
+      "@clypra-studio/ui": [
+        "../../packages/ui/dist/index.d.ts"
       ]
     },
     "allowImportingTsExtensions": true,

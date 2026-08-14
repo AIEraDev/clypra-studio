@@ -18,6 +18,7 @@
     "@clypra-studio/runtime": "workspace:*",
     "@clypra-studio/types": "workspace:*",
     "@clypra-studio/ui": "workspace:*",
+    "@clypra/ui-color-picker": "workspace:*",
     "@google/genai": "^2.4.0",
     "@lottiefiles/react-lottie-player": "^3.6.0",
     "@tailwindcss/vite": "^4.1.14",
@@ -35,6 +36,8 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@vitest/ui": "^4.1.9",
     "autoprefixer": "^10.4.21",
     "happy-dom": "^20.10.6",
