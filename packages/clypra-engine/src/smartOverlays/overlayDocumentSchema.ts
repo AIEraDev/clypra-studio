@@ -216,6 +216,10 @@ export interface NodeAnimationRules {
   animationScope?: "node" | "children" | "subtree";
   /** Stagger delay applied incrementally to children based on scene tree order */
   staggerChildren?: number;
+  /** If true, width/height animation triggers per-frame layout reflow passes instead of GPU transform scale */
+  animatesLayout?: boolean;
+  /** Layout transition duration for repeater/sibling reflows */
+  layoutTransitionMs?: number;
 }
 
 export interface DataBindingRule {
@@ -242,6 +246,16 @@ export interface ResponsiveNodeOverride {
   layoutOrder?: number;
 }
 
+export type AnchorSide = "left" | "right" | "top" | "bottom" | "center";
+
+export interface SpatialAnchorConfig {
+  targetId: string;
+  anchorSide?: AnchorSide;
+  targetSide?: AnchorSide;
+  offsetX?: number;
+  offsetY?: number;
+}
+
 export interface SceneNodeBase {
   id: string;
   name: string;
@@ -253,6 +267,7 @@ export interface SceneNodeBase {
   rotation?: number;
   visible?: boolean;
   locked?: boolean;
+  anchor?: SpatialAnchorConfig;
   layout?: NodeLayoutRules;
   style?: NodeStyleRules;
   animation?: NodeAnimationRules;
@@ -592,7 +607,7 @@ export interface ChartNode extends SceneNodeBase {
   }>;
 }
 
-export interface AnnotationNode extends SceneNodeBase {
+export interface AnnotationNode extends Omit<SceneNodeBase, "anchor"> {
   type: "annotation";
   text: string;
   anchor?: {

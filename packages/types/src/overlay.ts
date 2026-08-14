@@ -60,7 +60,17 @@ export type {
   PrimitiveDefinition,
 } from "./primitives.js";
 
-export type LayoutMode = "none" | "flex-row" | "flex-column" | "grid";
+export type LayoutMode =
+  | "none"
+  | "row"
+  | "column"
+  | "grid"
+  | "stack"
+  | "space-between"
+  | "space-around"
+  | "space-evenly"
+  | "flex-row"
+  | "flex-column";
 export type SizingMode = "fixed" | "hug" | "fill";
 export type ShapePrimitiveType = ShapeKind;
 export type MediaKind = "image" | "video" | "audio" | "lottie";

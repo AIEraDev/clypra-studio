@@ -84,6 +84,9 @@ export type {
   ChartType,
   // Phase 4Q — visualization geometry output types
   LinePoint,
+  LineNode,
+  SpatialAnchorConfig,
+  AnchorSide,
   ArcGeometry,
   // Chart config
   ChartSeries,
