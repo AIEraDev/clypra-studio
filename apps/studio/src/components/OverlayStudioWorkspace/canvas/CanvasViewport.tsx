@@ -15,7 +15,7 @@ import {
 } from "@clypra-studio/engine";
 import {
   AlignLeft, AlignCenter, AlignRight, AlignVerticalSpaceAround, AlignHorizontalSpaceAround,
-  MoveHorizontal, MoveVertical, RotateCw, Layers, ArrowUp, ArrowDown
+  MoveHorizontal, MoveVertical, RotateCw, Layers, ArrowUp, ArrowDown, Trash2, Copy
 } from "lucide-react";
 import { usePixiApp } from "../hooks/usePixiApp";
 import { InsertPalette } from "./InsertPalette";
@@ -713,19 +713,90 @@ export function CanvasViewport({
     }
   };
 
-  // Keyboard Shortcuts (Nudge, Delete, Duplicate, Deselect)
+  const deleteSelected = useCallback(() => {
+    if (selectedNodeIds.length === 0) return;
+    const deleteCmds: DocumentCommand[] = selectedNodeIds.map((id) => ({
+      type: "DELETE_NODE",
+      nodeId: id,
+    }));
+    if (deleteCmds.length === 1) {
+      onExecuteCommand(deleteCmds[0]);
+    } else if (deleteCmds.length > 1) {
+      onExecuteCommand({ type: "BATCH_COMMANDS", commands: deleteCmds });
+    }
+    onSelectNodeIds([]);
+  }, [selectedNodeIds, onExecuteCommand, onSelectNodeIds]);
+
+  const duplicateSelected = useCallback(() => {
+    if (selectedNodeIds.length === 0) return;
+    const cloneCmds: DocumentCommand[] = [];
+    const newIds: string[] = [];
+
+    for (const id of selectedNodeIds) {
+      const original = findNodeDeep(doc.nodes, id);
+      if (original) {
+        const cloneNode: SceneNode = JSON.parse(JSON.stringify(original));
+        cloneNode.id = `node-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
+        cloneNode.name = `${original.name || original.id} Copy`;
+        cloneNode.x += 20;
+        cloneNode.y += 20;
+        cloneCmds.push({ type: "ADD_NODE", node: cloneNode });
+        newIds.push(cloneNode.id);
+      }
+    }
+    if (cloneCmds.length > 0) {
+      onExecuteCommand({ type: "BATCH_COMMANDS", commands: cloneCmds });
+      onSelectNodeIds(newIds);
+    }
+  }, [selectedNodeIds, doc.nodes, onExecuteCommand, onSelectNodeIds, findNodeDeep]);
+
+  // Keyboard Shortcuts (Cmd+K, Nudge, Delete, Duplicate, Deselect)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedNodeIds.length === 0) return;
-      if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) return;
+      const isCmd = e.metaKey || e.ctrlKey;
 
-      if (e.key === "Delete" || e.key === "Backspace") {
-        const deleteCmds: DocumentCommand[] = selectedNodeIds.map((id) => ({ type: "DELETE_NODE", nodeId: id }));
-        onExecuteCommand({ type: "BATCH_COMMANDS", commands: deleteCmds });
-        onSelectNodeIds([]);
+      // Cmd+K / Ctrl+K Quick Insert Palette
+      if (isCmd && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsInsertPaletteOpen((prev) => !prev);
+        return;
       }
 
-      const isCmd = e.metaKey || e.ctrlKey;
+      if (e.defaultPrevented) return;
+
+      if (e.key === "Escape") {
+        if (isInsertPaletteOpen) {
+          e.preventDefault();
+          setIsInsertPaletteOpen(false);
+          return;
+        }
+        if (selectedNodeIds.length > 0) {
+          e.preventDefault();
+          onSelectNodeIds([]);
+          return;
+        }
+      }
+
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (selectedNodeIds.length === 0) return;
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        e.stopPropagation();
+        deleteSelected();
+        return;
+      }
 
       // Bring Forward (⌘]) / Send Backward (⌘[) / Bring to Front (⌘⇧]) / Send to Back (⌘⇧[)
       if (isCmd && (e.key === "]" || e.key === "[")) {
@@ -746,29 +817,13 @@ export function CanvasViewport({
             }
           }
         }
+        return;
       }
 
       if (isCmd && e.key.toLowerCase() === "d") {
         e.preventDefault();
-        const cloneCmds: DocumentCommand[] = [];
-        const newIds: string[] = [];
-
-        for (const id of selectedNodeIds) {
-          const original = doc.nodes.find((n) => n.id === id);
-          if (original) {
-            const cloneNode: SceneNode = JSON.parse(JSON.stringify(original));
-            cloneNode.id = `node-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
-            cloneNode.name = `${original.name || original.id} Copy`;
-            cloneNode.x += 20;
-            cloneNode.y += 20;
-            cloneCmds.push({ type: "ADD_NODE", node: cloneNode });
-            newIds.push(cloneNode.id);
-          }
-        }
-        if (cloneCmds.length > 0) {
-          onExecuteCommand({ type: "BATCH_COMMANDS", commands: cloneCmds });
-          onSelectNodeIds(newIds);
-        }
+        duplicateSelected();
+        return;
       }
 
       const step = e.shiftKey ? 10 : 1;
@@ -779,21 +834,25 @@ export function CanvasViewport({
       else if (e.key === "ArrowRight") { nudgeAxis = "x"; nudgeDir = step; }
       else if (e.key === "ArrowUp") { nudgeAxis = "y"; nudgeDir = -step; }
       else if (e.key === "ArrowDown") { nudgeAxis = "y"; nudgeDir = step; }
-      else if (e.key === "Escape") { onSelectNodeIds([]); }
 
       if (nudgeAxis) {
+        e.preventDefault();
         const nudgeCmds: DocumentCommand[] = selectedNodeIds.map((id) => {
-          const target = doc.nodes.find((n) => n.id === id);
+          const target = findNodeDeep(doc.nodes, id);
           const currentVal = target ? (target as any)[nudgeAxis!] : 0;
           return { type: "UPDATE_NODE_PROPERTY", nodeId: id, path: nudgeAxis!, value: currentVal + nudgeDir };
         });
-        onExecuteCommand({ type: "BATCH_COMMANDS", commands: nudgeCmds });
+        if (nudgeCmds.length === 1) {
+          onExecuteCommand(nudgeCmds[0]);
+        } else if (nudgeCmds.length > 1) {
+          onExecuteCommand({ type: "BATCH_COMMANDS", commands: nudgeCmds });
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedNodeIds, doc.nodes, onExecuteCommand, onSelectNodeIds]);
+  }, [selectedNodeIds, doc.nodes, onExecuteCommand, onSelectNodeIds, deleteSelected, duplicateSelected, findNodeDeep, isInsertPaletteOpen]);
 
   const scale = viewport.zoom / 100;
 
@@ -835,6 +894,10 @@ export function CanvasViewport({
                 <button type="button" onClick={() => distributeSelected("vertical")} title="Distribute Vertically" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><MoveVertical size={14} /></button>
               </>
             )}
+
+            <div className="w-px h-4 bg-white/10 mx-0.5" />
+            <button type="button" onClick={duplicateSelected} title="Duplicate (Cmd+D)" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><Copy size={14} /></button>
+            <button type="button" onClick={deleteSelected} title="Delete (Del / Backspace)" className="p-1.5 rounded hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 cursor-pointer"><Trash2 size={14} /></button>
           </div>
         )}
 
@@ -995,13 +1058,53 @@ export function CanvasViewport({
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsInsertPaletteOpen(true)}
-          className="ml-2 px-2.5 py-1 rounded bg-violet-600/30 hover:bg-violet-600/50 text-violet-200 text-[10px] font-bold border border-violet-500/40 cursor-pointer shadow-sm transition-all"
-        >
-          + Insert (Cmd+K)
-        </button>
+        <div className="flex items-center gap-1.5 ml-1">
+          <button
+            type="button"
+            onClick={() => setIsInsertPaletteOpen(true)}
+            className="px-2.5 py-1 rounded bg-violet-600/30 hover:bg-violet-600/50 text-violet-200 text-[10px] font-bold border border-violet-500/40 cursor-pointer shadow-sm transition-all"
+          >
+            + Insert (Cmd+K)
+          </button>
+
+          <button
+            type="button"
+            onClick={duplicateSelected}
+            disabled={selectedNodeIds.length === 0}
+            title={
+              selectedNodeIds.length > 0
+                ? `Duplicate selected ${selectedNodeIds.length === 1 ? "element" : `${selectedNodeIds.length} elements`} (Cmd+D)`
+                : "Select an element to duplicate (Cmd+D)"
+            }
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
+              selectedNodeIds.length > 0
+                ? "bg-white/[0.07] hover:bg-white/[0.12] text-gray-200 hover:text-white border-white/[0.12] cursor-pointer shadow-sm"
+                : "bg-white/[0.02] text-gray-600 border-white/[0.04] opacity-40 cursor-not-allowed"
+            }`}
+          >
+            <Copy size={11} className={selectedNodeIds.length > 0 ? "text-gray-300" : "text-gray-600"} />
+            <span>Duplicate</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={deleteSelected}
+            disabled={selectedNodeIds.length === 0}
+            title={
+              selectedNodeIds.length > 0
+                ? `Delete selected ${selectedNodeIds.length === 1 ? "element" : `${selectedNodeIds.length} elements`} (Del / Backspace)`
+                : "Select an element to delete (Del / Backspace)"
+            }
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
+              selectedNodeIds.length > 0
+                ? "bg-rose-500/20 hover:bg-rose-500/35 text-rose-300 hover:text-rose-200 border-rose-500/40 hover:border-rose-500/60 cursor-pointer shadow-sm shadow-rose-950/40"
+                : "bg-white/[0.02] text-gray-600 border-white/[0.04] opacity-40 cursor-not-allowed"
+            }`}
+          >
+            <Trash2 size={11} className={selectedNodeIds.length > 0 ? "text-rose-400" : "text-gray-600"} />
+            <span>Delete{selectedNodeIds.length > 1 ? ` (${selectedNodeIds.length})` : ""}</span>
+          </button>
+        </div>
       </div>
 
       {/* Cmd+K Insert Palette Modal */}
