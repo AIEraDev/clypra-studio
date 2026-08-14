@@ -1,5 +1,6 @@
 import { Container, Graphics as PixiGraphics } from "pixi.js";
 import type { SceneNode, OverlayDocument } from "./overlayDocumentSchema.js";
+import { layoutEngine } from "./layoutEngine.js";
 
 export class PixiSelectionOverlay {
   public overlayContainer: Container;
@@ -30,13 +31,15 @@ export class PixiSelectionOverlay {
     const nodesToRender = selectedNodes.length > 0 ? selectedNodes : (selectedNode ? [selectedNode] : []);
     if (nodesToRender.length === 0) return this.overlayContainer;
 
-    // Calculate bounding box of selection
+    // Calculate bounding box of selection (using layoutEngine for absolute bounds of nested nodes)
+    const layout = layoutEngine.computeLayout(doc);
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const node of nodesToRender) {
-      const absX = node.x;
-      const absY = node.y;
-      const absW = node.width;
-      const absH = node.height;
+      const cb = layout.nodes[node.id];
+      const absX = cb ? cb.x : node.x;
+      const absY = cb ? cb.y : node.y;
+      const absW = cb ? cb.width : node.width;
+      const absH = cb ? cb.height : node.height;
 
       if (absX < minX) minX = absX;
       if (absY < minY) minY = absY;
@@ -73,9 +76,9 @@ export class PixiSelectionOverlay {
       this.selectionGraphics.stroke({ color: 0x7c6fff, width: 2, alpha: 0.95 });
     }
 
-    // 3. Draw 8 Circular Resize Handle Knobs (4 Corners + 4 Edge Midpoints)
-    const handleRadius = 5;
-    const handles = [
+    // 3. Draw Circular Resize Handle Knobs (4 Corners + 4 Edge Midpoints)
+    const handleRadius = Math.min(5, Math.max(3.5, Math.min(absW, absH) * 0.2));
+    const handles: { x: number; y: number }[] = [
       { x: minX - 3, y: minY - 3 },                 // tl
       { x: minX + absW / 2, y: minY - 3 },          // t
       { x: minX + absW + 3, y: minY - 3 },          // tr

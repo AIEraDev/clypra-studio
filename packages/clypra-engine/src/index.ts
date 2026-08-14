@@ -75,6 +75,7 @@ export type {
 } from "./v2/runtime/types.js";
 export * from "./v2/runtime/NullBackend.js";
 export * from "./v2/compiler/ProjectCompiler.js";
+export * from "./v2/planner/types.js";
 export * from "./v2/planner/FrameGraphBuilder.js";
 export * from "./v2/validation/GraphValidator.js";
 export * from "./v2/runtime/CommandBufferBuilder.js";

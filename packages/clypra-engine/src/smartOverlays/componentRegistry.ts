@@ -375,8 +375,10 @@ componentRegistry.register({
       borderRadius: 12
     },
     layout: {
-      constraints: { widthMode: "fixed", heightMode: "fixed" },
-      rules: { direction: "vertical", gap: 8, padding: { top: 12, right: 12, bottom: 12, left: 12 } }
+      mode: "flex-column",
+      gap: 12,
+      padding: { top: 16, right: 16, bottom: 16, left: 16 },
+      constraints: { widthMode: "fixed", heightMode: "hug" },
     }
   } as any)
 });

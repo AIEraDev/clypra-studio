@@ -16,6 +16,7 @@ import { runtimeAssetResolver } from "./assets/runtimeAssetResolver.js";
 import { visualizationEngine } from "./visualizationEngine.js";
 import { visualizationRegistry } from "./visualizationRegistry.js";
 import { visualizationRendererRegistry } from "./visualizationProjection.js";
+import { layoutEngine, type LayoutComputedState } from "./layoutEngine.js";
 import "./gaugeVisualization.js";
 import "./timelineVisualization.js";
 import "./annotationVisualization.js";
@@ -148,8 +149,20 @@ export class PixiSceneProjection {
         }
       }
 
+      const computedLayout = layoutEngine.computeLayout(doc, context);
+
       for (let i = 0; i < doc.nodes.length; i++) {
-        this.projectNode(doc.nodes[i], this.rootContainer, doc, currentTime, context, 0, i);
+        this.projectNode(
+          doc.nodes[i],
+          this.rootContainer,
+          doc,
+          currentTime,
+          context,
+          0,
+          i,
+          null,
+          computedLayout,
+        );
       }
     } else {
       for (const [, container] of this.nodeMap.entries()) {
@@ -173,7 +186,9 @@ export class PixiSceneProjection {
     currentTime: number,
     context: Record<string, any>,
     inheritedDelay = 0,
-    targetIndex = -1
+    targetIndex = -1,
+    parentNode: SceneNode | null = null,
+    computedLayout?: LayoutComputedState,
   ): void {
     // 1. Evaluate visibilityExpression — hide node entirely if falsy
     if (node.visibilityExpression) {
@@ -218,17 +233,59 @@ export class PixiSceneProjection {
 
     // Ensure display list z-order matches document node order
     if (targetIndex >= 0 && parentContainer.children.length > 0) {
-      const bgOffset = parentContainer.getChildByLabel("CanvasBackground") ? 1 : 0;
-      const desiredIndex = Math.min(targetIndex + bgOffset, parentContainer.children.length - 1);
-      if (parentContainer.children[desiredIndex] !== nodeContainer) {
+      const backgroundLabels = new Set([
+        "CanvasBackground",
+        "ShadowGraphics",
+        "ShapeGraphics",
+        "ContainerGraphics",
+        "CalloutGraphics",
+      ]);
+      let bgOffset = 0;
+      for (const child of parentContainer.children) {
+        if (child.label && backgroundLabels.has(child.label)) {
+          bgOffset++;
+        }
+      }
+      const desiredIndex = Math.min(
+        targetIndex + bgOffset,
+        parentContainer.children.length - 1
+      );
+      if (
+        desiredIndex >= 0 &&
+        parentContainer.children[desiredIndex] !== nodeContainer
+      ) {
         parentContainer.setChildIndex(nodeContainer, desiredIndex);
       }
     }
 
-    const absX = node.x;
-    const absY = node.y;
-    const absW = node.width;
-    const absH = node.height;
+    // Resolve node coordinates using computed layout geometry (supports Flex Row/Col, Hug, Fill, Gap)
+    const nodeLayoutBounds = computedLayout?.nodes[node.id];
+    const parentLayoutBounds = parentNode
+      ? computedLayout?.nodes[parentNode.id]
+      : null;
+
+    let absX: number;
+    let absY: number;
+    let absW: number;
+    let absH: number;
+
+    if (parentNode && nodeLayoutBounds && parentLayoutBounds) {
+      // Relative to parent container coordinates in Pixi scene hierarchy
+      absX = nodeLayoutBounds.x - parentLayoutBounds.x;
+      absY = nodeLayoutBounds.y - parentLayoutBounds.y;
+      absW = nodeLayoutBounds.width;
+      absH = nodeLayoutBounds.height;
+    } else if (nodeLayoutBounds) {
+      absX = nodeLayoutBounds.x;
+      absY = nodeLayoutBounds.y;
+      absW = nodeLayoutBounds.width;
+      absH = nodeLayoutBounds.height;
+    } else {
+      absX = node.x;
+      absY = node.y;
+      absW = node.width;
+      absH = node.height;
+    }
 
     nodeContainer.pivot.set(absW / 2, absH / 2);
     nodeContainer.position.set(absX + absW / 2 + animState.translateX, absY + absH / 2 + animState.translateY);
@@ -313,7 +370,14 @@ export class PixiSceneProjection {
       this.renderCalloutNode(node as any, nodeContainer, absW, absH);
     } else if (node.type === "avatar") {
       this.renderAvatarNode(node as any, nodeContainer, absW, absH);
-    } else if (node.type === "shape" || node.type === "frame") {
+    } else if (
+      node.type === "shape" ||
+      node.type === "frame" ||
+      node.type === "line" ||
+      node.type === "connector" ||
+      (node as any).type === "circle" ||
+      (node as any).type === "rectangle"
+    ) {
       this.renderShapeNode(node, nodeContainer, absW, absH);
     } else if (node.type === "media") {
       this.renderMediaNode(node as any, nodeContainer, absW, absH);
@@ -321,7 +385,7 @@ export class PixiSceneProjection {
       const expanded = dataBindingEngine.expandRepeater(node as any, context);
       expanded.forEach((childNode, childIdx) => {
         const childDelay = animationRuntime.computeChildInheritedDelay(node.animation, childIdx, inheritedDelay);
-        this.projectNode(childNode, nodeContainer, doc, currentTime, context, childDelay);
+        this.projectNode(childNode, nodeContainer, doc, currentTime, context, childDelay, childIdx, node, computedLayout);
       });
     }
 
@@ -329,7 +393,7 @@ export class PixiSceneProjection {
     if ("children" in node && Array.isArray(node.children)) {
       node.children.forEach((child, childIdx) => {
         const childDelay = animationRuntime.computeChildInheritedDelay(node.animation, childIdx, inheritedDelay);
-        this.projectNode(child, nodeContainer, doc, currentTime, context, childDelay);
+        this.projectNode(child, nodeContainer, doc, currentTime, context, childDelay, childIdx, node, computedLayout);
       });
     }
   }
@@ -544,40 +608,76 @@ export class PixiSceneProjection {
     height: number
   ): void {
     let graphics = container.getChildByLabel("ShapeGraphics") as PixiGraphics;
+    const shadowG = container.getChildByLabel("ShadowGraphics");
+    const desiredBgIndex = shadowG ? 1 : 0;
+
     if (!graphics) {
       graphics = new PixiGraphics();
       graphics.label = "ShapeGraphics";
-      container.addChild(graphics);
+      container.addChildAt(graphics, Math.min(desiredBgIndex, container.children.length));
+    } else {
+      const currentIdx = container.children.indexOf(graphics);
+      if (currentIdx !== desiredBgIndex && container.children.length > desiredBgIndex) {
+        container.setChildIndex(graphics, desiredBgIndex);
+      }
     }
 
     const style: Record<string, any> = (node as any).style || {};
-    const fill = style.fillColor || "#1E1E28";
-    const strokeColor = style.strokeColor || "#2E2E3E";
-    const strokeWidth = style.strokeWidth ?? 0;
-    const radius = style.borderRadius ?? 8;
-    const fillOpacity = resolveAlpha(style.fillOpacity, 1);
+    const fill =
+      style.fillColor ||
+      (node as any).fillColor ||
+      (node as any).strokeColor ||
+      "#3B82F6";
+    const strokeColor =
+      style.strokeColor || (node as any).strokeColor || fill;
+    const strokeWidth =
+      style.strokeWidth ?? (node as any).strokeWidth ?? 0;
+    const radius = style.borderRadius ?? (node as any).borderRadius ?? 0;
+    const fillOpacity = resolveAlpha(
+      style.fillOpacity ?? (node as any).fillOpacity,
+      1
+    );
 
-    // Determine shape kind from componentType if available
-    const shapeKind = (node as any).shapeKind || "rect";
+    // Determine shape kind
+    const shapeKind = (node as any).shapeKind || node.type || "rect";
 
     graphics.clear();
 
-    if (shapeKind === "circle") {
+    if (shapeKind === "circle" || (node as any).type === "circle") {
       const cx = width / 2;
       const cy = height / 2;
       const r = Math.min(width, height) / 2;
       graphics.circle(cx, cy, r);
-    } else if (shapeKind === "line") {
+      graphics.fill({ color: hexToNumber(fill), alpha: fillOpacity });
+      if (strokeWidth > 0) {
+        graphics.stroke({ color: hexToNumber(strokeColor), width: strokeWidth });
+      }
+    } else if (shapeKind === "line" || node.type === "line") {
+      const lineThickness = Math.max(1, height || strokeWidth || 2);
+      if (radius > 0) {
+        graphics.roundRect(0, 0, width, lineThickness, radius);
+      } else {
+        graphics.rect(0, 0, width, lineThickness);
+      }
+      graphics.fill({ color: hexToNumber(fill), alpha: fillOpacity });
+      if (strokeWidth > 0 && strokeColor !== fill) {
+        graphics.stroke({ color: hexToNumber(strokeColor), width: 1 });
+      }
+    } else if (shapeKind === "connector" || node.type === "connector") {
+      const lineThickness = Math.max(1, strokeWidth || 2);
       graphics.moveTo(0, height / 2);
       graphics.lineTo(width, height / 2);
+      graphics.stroke({ color: hexToNumber(fill), width: lineThickness });
     } else {
-      graphics.roundRect(0, 0, width, height, radius);
-    }
-
-    graphics.fill({ color: hexToNumber(fill), alpha: fillOpacity });
-
-    if (strokeWidth > 0) {
-      graphics.stroke({ color: hexToNumber(strokeColor), width: strokeWidth });
+      if (radius > 0) {
+        graphics.roundRect(0, 0, width, height, radius);
+      } else {
+        graphics.rect(0, 0, width, height);
+      }
+      graphics.fill({ color: hexToNumber(fill), alpha: fillOpacity });
+      if (strokeWidth > 0) {
+        graphics.stroke({ color: hexToNumber(strokeColor), width: strokeWidth });
+      }
     }
 
     // Shadow
@@ -610,6 +710,10 @@ export class PixiSceneProjection {
       shadowG = new PixiGraphics();
       shadowG.label = "ShadowGraphics";
       container.addChildAt(shadowG, 0);
+    } else {
+      if (container.children.indexOf(shadowG) !== 0) {
+        container.setChildIndex(shadowG, 0);
+      }
     }
 
     shadowG.clear();

@@ -19,7 +19,7 @@ export function hitTestTransformHandles(
   docX: number,
   docY: number,
   box: BoundingBox,
-  threshold = 12
+  threshold = 10
 ): HandleType {
   if (box.width <= 0 || box.height <= 0) return null;
 
@@ -32,15 +32,26 @@ export function hitTestTransformHandles(
   const maxX = box.x + box.width;
   const maxY = box.y + box.height;
 
-  if (Math.hypot(docX - minX, docY - minY) <= threshold) return "tl";
-  if (Math.hypot(docX - maxX, docY - minY) <= threshold) return "tr";
-  if (Math.hypot(docX - minX, docY - maxY) <= threshold) return "bl";
-  if (Math.hypot(docX - maxX, docY - maxY) <= threshold) return "br";
+  // Clamped handle radius so small/thin boxes never have their body covered by handles
+  const cornerRadius = Math.min(threshold, Math.max(5, Math.min(box.width, box.height) * 0.4));
+  const edgeRadius = Math.min(threshold, Math.max(4, Math.min(box.width, box.height) * 0.35));
 
-  if (Math.abs(docY - minY) <= threshold && docX >= minX && docX <= maxX) return "t";
-  if (Math.abs(docY - maxY) <= threshold && docX >= minX && docX <= maxX) return "b";
-  if (Math.abs(docX - minX) <= threshold && docY >= minY && docY <= maxY) return "l";
-  if (Math.abs(docX - maxX) <= threshold && docY >= minY && docY <= maxY) return "r";
+  // 1. 4 Corner Handles (tl, tr, bl, br)
+  if (Math.hypot(docX - minX, docY - minY) <= cornerRadius) return "tl";
+  if (Math.hypot(docX - maxX, docY - minY) <= cornerRadius) return "tr";
+  if (Math.hypot(docX - minX, docY - maxY) <= cornerRadius) return "bl";
+  if (Math.hypot(docX - maxX, docY - maxY) <= cornerRadius) return "br";
+
+  // 2. 4 Edge Midpoint Handles (t, b, l, r)
+  const midX = minX + box.width / 2;
+  const midY = minY + box.height / 2;
+  const verticalKnobRadius = Math.min(edgeRadius, Math.max(4, box.height * 0.35));
+  const horizontalKnobRadius = Math.min(edgeRadius, Math.max(4, box.width * 0.35));
+
+  if (Math.hypot(docX - midX, docY - minY) <= verticalKnobRadius) return "t";
+  if (Math.hypot(docX - midX, docY - maxY) <= verticalKnobRadius) return "b";
+  if (Math.hypot(docX - minX, docY - midY) <= horizontalKnobRadius) return "l";
+  if (Math.hypot(docX - maxX, docY - midY) <= horizontalKnobRadius) return "r";
 
   return null;
 }
