@@ -47,7 +47,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clypra-studio/types": "workspace:^",
+    "@clypra-studio/types": "workspace:^0.5.0",
     "pixi-filters": "^6.0.4",
     "pixi.js": "^8.6.6"
   },

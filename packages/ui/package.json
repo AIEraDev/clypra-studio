@@ -26,10 +26,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@clypra-studio/types": "workspace:^",
-    "@clypra-studio/runtime": "workspace:^",
-    "@clypra-studio/engine": "workspace:^",
-    "@clypra/ui-color-picker": "workspace:^",
+    "@clypra-studio/types": "workspace:^0.5.0",
+    "@clypra-studio/runtime": "workspace:^0.2.2",
+    "@clypra-studio/engine": "workspace:^1.3.0",
+    "@clypra/ui-color-picker": "workspace:^0.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
