@@ -1,6 +1,6 @@
 {
   "name": "@clypra/ui-color-picker",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Professional dark-themed reusable Color Picker component for Clypra video editor and web applications",
   "author": "Clypra Contributors",
   "license": "MIT",
@@ -72,5 +72,9 @@
     "type": "git",
     "url": "https://github.com/AIEraDev/clypra.git",
     "directory": "packages/ui-color-picker"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
