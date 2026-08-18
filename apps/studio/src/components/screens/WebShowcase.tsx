@@ -1,5 +1,80 @@
 import React, { useEffect, useState } from "react";
-import { Download, ArrowRight, Sparkles, Shield, Terminal, Monitor, Layers, Play, CheckCircle2, Copy, Check, Smartphone, Github, Twitter, Globe, Linkedin, Youtube, Mail } from "lucide-react";
+import {
+  Download,
+  ArrowRight,
+  Sparkles,
+  Shield,
+  Terminal,
+  Monitor,
+  Layers,
+  Play,
+  CheckCircle2,
+  Copy,
+  Check,
+  Smartphone,
+  Github,
+  Twitter,
+  Globe,
+  Linkedin,
+  Youtube,
+  Mail,
+  Loader2,
+} from "lucide-react";
+
+// ── GitHub Release types ──────────────────────────────────────────────────────
+interface GithubAsset {
+  name: string;
+  browser_download_url: string;
+  size: number;
+}
+
+interface GithubRelease {
+  tag_name: string;
+  name: string;
+  published_at: string;
+  assets: GithubAsset[];
+}
+
+// ── OS detection helper ───────────────────────────────────────────────────────
+type OS = "mac" | "win" | "linux";
+
+function detectOS(): OS {
+  const p = window.navigator.platform.toLowerCase();
+  const ua = window.navigator.userAgent.toLowerCase();
+  if (p.includes("win") || ua.includes("windows")) return "win";
+  if (p.includes("linux") || ua.includes("linux")) return "linux";
+  return "mac";
+}
+
+// ── Pick best asset for the detected OS ──────────────────────────────────────
+function pickAsset(assets: GithubAsset[], os: OS): GithubAsset | undefined {
+  if (os === "mac") {
+    // Prefer DMG, fall back to app.tar.gz
+    return (
+      assets.find((a) => a.name.endsWith(".dmg")) ??
+      assets.find((a) => a.name.endsWith(".app.tar.gz"))
+    );
+  }
+  if (os === "win") {
+    // Prefer MSI over NSIS exe
+    return (
+      assets.find(
+        (a) => a.name.endsWith(".msi") && !a.name.includes("setup"),
+      ) ?? assets.find((a) => a.name.endsWith("-setup.exe"))
+    );
+  }
+  // Linux: prefer AppImage
+  return (
+    assets.find((a) => a.name.endsWith(".AppImage")) ??
+    assets.find((a) => a.name.endsWith(".deb")) ??
+    assets.find((a) => a.name.endsWith(".rpm"))
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(0)} MB`;
+  return `${(bytes / 1_000).toFixed(0)} KB`;
+}
 
 export const WebShowcase: React.FC = () => {
   const [copiedMac, setCopiedMac] = useState(false);
@@ -9,38 +84,73 @@ export const WebShowcase: React.FC = () => {
   // Mouse coordinate state to feed dynamic light highlights
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  // Detect user's OS for smart download
-  const [userOS, setUserOS] = useState<"mac" | "win" | "linux">("mac");
+  // Detect user's OS
+  const [userOS, setUserOS] = useState<OS>("mac");
+
+  // GitHub release state
+  const [release, setRelease] = useState<GithubRelease | null>(null);
+  const [releaseLoading, setReleaseLoading] = useState(true);
   const [downloadUrl, setDownloadUrl] = useState("");
+  const [downloadSize, setDownloadSize] = useState("");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadStarted, setDownloadStarted] = useState(false);
 
+  // Fetch latest release from GitHub API
   useEffect(() => {
-    const platform = window.navigator.platform.toLowerCase();
-    const userAgent = window.navigator.userAgent.toLowerCase();
+    const os = detectOS();
+    setUserOS(os);
+    setActiveTab(os);
 
-    let detectedOS: "mac" | "win" | "linux" = "mac";
-
-    if (platform.includes("win") || userAgent.includes("windows")) {
-      detectedOS = "win";
-    } else if (platform.includes("linux") || userAgent.includes("linux")) {
-      detectedOS = "linux";
-    } else if (platform.includes("mac") || userAgent.includes("mac")) {
-      detectedOS = "mac";
-    }
-
-    setUserOS(detectedOS);
-    setActiveTab(detectedOS);
-
-    // Set appropriate download URL
-    // These will redirect to the latest release assets
-    const baseUrl = "https://github.com/AIEraDev/Clypra/releases/latest/download";
-    if (detectedOS === "mac") {
-      setDownloadUrl(`${baseUrl}/Clypra_aarch64.dmg`);
-    } else if (detectedOS === "win") {
-      setDownloadUrl(`${baseUrl}/Clypra_x64_en-US.msi`);
-    } else {
-      setDownloadUrl(`${baseUrl}/Clypra_amd64.AppImage`);
-    }
+    fetch("https://api.github.com/repos/AIEraDev/Clypra/releases/latest", {
+      headers: { Accept: "application/vnd.github+json" },
+    })
+      .then((r) => r.json())
+      .then((data: GithubRelease) => {
+        setRelease(data);
+        const asset = pickAsset(data.assets, os);
+        if (asset) {
+          setDownloadUrl(asset.browser_download_url);
+          setDownloadSize(formatBytes(asset.size));
+        } else {
+          // Fallback to generic latest redirect
+          const base =
+            "https://github.com/AIEraDev/Clypra/releases/latest/download";
+          setDownloadUrl(
+            os === "mac"
+              ? `${base}/Clypra_aarch64.dmg`
+              : os === "win"
+              ? `${base}/Clypra_1.3.0_x64_en-US.msi`
+              : `${base}/Clypra_1.3.0_amd64.AppImage`,
+          );
+        }
+      })
+      .catch(() => {
+        // GitHub API unavailable — fall back to latest redirect
+        const base =
+          "https://github.com/AIEraDev/Clypra/releases/latest/download";
+        const fallbacks: Record<OS, string> = {
+          mac: `${base}/Clypra_aarch64.dmg`,
+          win: `${base}/Clypra_1.3.0_x64_en-US.msi`,
+          linux: `${base}/Clypra_1.3.0_amd64.AppImage`,
+        };
+        setDownloadUrl(fallbacks[os]);
+      })
+      .finally(() => setReleaseLoading(false));
   }, []);
+
+  // Handle download click — track state for feedback
+  const handleDownload = () => {
+    if (!downloadUrl) return;
+    setIsDownloading(true);
+    // Small delay so user sees the "Starting…" state before browser takes over
+    setTimeout(() => {
+      window.location.href = downloadUrl;
+      setIsDownloading(false);
+      setDownloadStarted(true);
+      // Reset after 5s
+      setTimeout(() => setDownloadStarted(false), 5000);
+    }, 400);
+  };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -260,25 +370,29 @@ export const WebShowcase: React.FC = () => {
         <div
           className="absolute top-[-15%] left-[5%] w-[60vw] h-[60vw] rounded-full blur-[140px] opacity-[0.25] animate-nebula-p"
           style={{
-            background: "radial-gradient(circle, rgba(108, 99, 255, 0.4) 0%, rgba(139, 92, 246, 0.1) 60%, transparent 100%)",
+            background:
+              "radial-gradient(circle, rgba(108, 99, 255, 0.4) 0%, rgba(139, 92, 246, 0.1) 60%, transparent 100%)",
           }}
         />
         <div
           className="absolute top-[25%] right-[-15%] w-[55vw] h-[55vw] rounded-full blur-[130px] opacity-[0.2] animate-nebula-b"
           style={{
-            background: "radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, rgba(59, 130, 246, 0.08) 60%, transparent 100%)",
+            background:
+              "radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, rgba(59, 130, 246, 0.08) 60%, transparent 100%)",
           }}
         />
         <div
           className="absolute bottom-[15%] left-[-15%] w-[50vw] h-[50vw] rounded-full blur-[150px] opacity-[0.16] animate-nebula-e"
           style={{
-            background: "radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(108, 99, 255, 0.03) 65%, transparent 100%)",
+            background:
+              "radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(108, 99, 255, 0.03) 65%, transparent 100%)",
           }}
         />
         <div
           className="absolute bottom-[-10%] right-[10%] w-[50vw] h-[50vw] rounded-full blur-[140px] opacity-[0.15] animate-nebula-c"
           style={{
-            background: "radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(139, 92, 246, 0.03) 60%, transparent 100%)",
+            background:
+              "radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(139, 92, 246, 0.03) 60%, transparent 100%)",
           }}
         />
 
@@ -289,11 +403,26 @@ export const WebShowcase: React.FC = () => {
         {/* Layer 5: Floating Micro-Star Particles */}
         <div className="absolute inset-0">
           <div className="absolute top-[12%] left-[8%] w-1.5 h-1.5 rounded-full bg-white animate-star-s" />
-          <div className="absolute top-[28%] left-[85%] w-1 h-1 rounded-full bg-cyan-300 animate-star-f" style={{ animationDelay: "1s" }} />
-          <div className="absolute top-[65%] left-[15%] w-2 h-2 rounded-full bg-indigo-300 animate-star-s" style={{ animationDelay: "2.5s" }} />
-          <div className="absolute top-[45%] left-[62%] w-1 h-1 rounded-full bg-white animate-star-f" style={{ animationDelay: "0.5s" }} />
-          <div className="absolute top-[82%] left-[78%] w-1.5 h-1.5 rounded-full bg-emerald-300 animate-star-s" style={{ animationDelay: "3s" }} />
-          <div className="absolute top-[90%] left-[22%] w-1 h-1 rounded-full bg-white animate-star-f" style={{ animationDelay: "1.8s" }} />
+          <div
+            className="absolute top-[28%] left-[85%] w-1 h-1 rounded-full bg-cyan-300 animate-star-f"
+            style={{ animationDelay: "1s" }}
+          />
+          <div
+            className="absolute top-[65%] left-[15%] w-2 h-2 rounded-full bg-indigo-300 animate-star-s"
+            style={{ animationDelay: "2.5s" }}
+          />
+          <div
+            className="absolute top-[45%] left-[62%] w-1 h-1 rounded-full bg-white animate-star-f"
+            style={{ animationDelay: "0.5s" }}
+          />
+          <div
+            className="absolute top-[82%] left-[78%] w-1.5 h-1.5 rounded-full bg-emerald-300 animate-star-s"
+            style={{ animationDelay: "3s" }}
+          />
+          <div
+            className="absolute top-[90%] left-[22%] w-1 h-1 rounded-full bg-white animate-star-f"
+            style={{ animationDelay: "1.8s" }}
+          />
         </div>
       </div>
 
@@ -303,20 +432,36 @@ export const WebShowcase: React.FC = () => {
           <div className="flex items-center gap-3 group">
             <div className="w-10 h-10 flex items-center justify-center relative">
               <div className="absolute inset-0 bg-[#6c63ff]/20 blur-md rounded-full group-hover:scale-125 transition-transform duration-500 animate-pulse"></div>
-              <img src="/clypra.svg" alt="Clypra Logo" className="w-9 h-9 object-contain relative z-10 group-hover:rotate-6 transition-transform duration-500" />
+              <img
+                src="/clypra.svg"
+                alt="Clypra Logo"
+                className="w-9 h-9 object-contain relative z-10 group-hover:rotate-6 transition-transform duration-500"
+              />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight bg-linear-to-r from-white to-neutral-400 bg-clip-text text-transparent">Clypra</h1>
-              <p className="text-[9px] text-[#666] font-mono tracking-widest uppercase">Premium Video Editor</p>
+              <h1 className="text-lg font-bold tracking-tight bg-linear-to-r from-white to-neutral-400 bg-clip-text text-transparent">
+                Clypra
+              </h1>
+              <p className="text-[9px] text-[#666] font-mono tracking-widest uppercase">
+                Premium Video Editor
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-6">
-            <a href="/studio" className="h-9 rounded-full border border-[#6c63ff]/30 bg-[#6c63ff]/15 px-4 text-xs font-semibold text-white flex items-center gap-2 hover:bg-[#6c63ff]/25 transition-all duration-300 shadow-[0_0_18px_rgba(108,99,255,0.16)]">
+            <a
+              href="/studio"
+              className="h-9 rounded-full border border-[#6c63ff]/30 bg-[#6c63ff]/15 px-4 text-xs font-semibold text-white flex items-center gap-2 hover:bg-[#6c63ff]/25 transition-all duration-300 shadow-[0_0_18px_rgba(108,99,255,0.16)]"
+            >
               <Sparkles className="w-3.5 h-3.5 text-[#a9a4ff]" />
               Open Studio
             </a>
-            <a href="https://github.com/AIEraDev/clypra" target="_blank" rel="noopener noreferrer" className="text-xs text-[#a1a1aa] hover:text-white transition-all duration-300 hidden sm:flex items-center gap-1.5 font-medium relative group py-2">
+            <a
+              href="https://github.com/AIEraDev/clypra"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[#a1a1aa] hover:text-white transition-all duration-300 hidden sm:flex items-center gap-1.5 font-medium relative group py-2"
+            >
               <span>GitHub Repository</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               <span className="absolute bottom-0 left-0 w-0 h-px bg-[#6c63ff] group-hover:w-full transition-all duration-300"></span>
@@ -328,54 +473,156 @@ export const WebShowcase: React.FC = () => {
       {/* ── Main Content Area ────────────────────────────────────── */}
       <main className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-6 py-12 md:py-24 flex flex-col gap-28">
         {/* ── Hero Section ────────────────────────────────────────── */}
-        <section className="text-center max-w-4xl mx-auto flex flex-col gap-8 animate-fade-up" style={{ animationDelay: "100ms" }}>
+        <section
+          className="text-center max-w-4xl mx-auto flex flex-col gap-8 animate-fade-up"
+          style={{ animationDelay: "100ms" }}
+        >
           {/* Version Badge */}
           <div className="inline-flex self-center items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#6c63ff]/20 bg-[#6c63ff]/10 backdrop-blur-md shadow-[0_0_25px_rgba(108,99,255,0.12)]">
             <Sparkles className="w-3.5 h-3.5 text-[#8b84ff] animate-pulse" />
-            <span className="text-[10px] font-semibold tracking-wider text-[#8b84ff] uppercase font-mono">v1.0.1 Stable Release</span>
+            <span className="text-[10px] font-semibold tracking-wider text-[#8b84ff] uppercase font-mono">
+              {release
+                ? `${release.tag_name} Stable Release`
+                : "Latest Stable Release"}
+            </span>
           </div>
 
           {/* Heading */}
           <h2 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.08] font-outfit text-white">
             A Premium
             <br />
-            <span className="bg-linear-to-r from-[#6c63ff] via-[#8b84ff] to-[#a9a4ff] bg-clip-text text-transparent shimmer-bg">Video Editor.</span>
+            <span className="bg-linear-to-r from-[#6c63ff] via-[#8b84ff] to-[#a9a4ff] bg-clip-text text-transparent shimmer-bg">
+              Video Editor.
+            </span>
           </h2>
 
           {/* Subheading */}
-          <p className="text-sm sm:text-base md:text-lg text-[#a1a1aa] leading-relaxed max-w-2xl mx-auto font-sans">Clypra is a modern, high-performance video editor engineered using Tauri, React, and Rust. Experience a professional desktop-class NLE timeline, hardware-accelerated rendering, and visual asset pools directly on your machine—with mobile versions coming soon.</p>
+          <p className="text-sm sm:text-base md:text-lg text-[#a1a1aa] leading-relaxed max-w-2xl mx-auto font-sans">
+            Clypra is a modern, high-performance video editor engineered using
+            Tauri, React, and Rust. Experience a professional desktop-class NLE
+            timeline, hardware-accelerated rendering, and visual asset pools
+            directly on your machine—with mobile versions coming soon.
+          </p>
 
           {/* Quick Platform Badges */}
           <div className="flex flex-wrap justify-center gap-3 mt-4 text-[10px] text-[#666] font-mono">
-            <span className={`px-2.5 py-1 rounded border transition-all ${userOS === "mac" ? "bg-[#6c63ff]/10 border-[#6c63ff]/30 text-[#8b84ff]" : "bg-white/2 border-white/4"}`}>macOS Universal</span>
-            <span className={`px-2.5 py-1 rounded border transition-all ${userOS === "win" ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400" : "bg-white/2 border-white/4"}`}>Windows x64</span>
-            <span className={`px-2.5 py-1 rounded border transition-all ${userOS === "linux" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-white/2 border-white/4"}`}>Linux AppImage</span>
+            <span
+              className={`px-2.5 py-1 rounded border transition-all ${
+                userOS === "mac"
+                  ? "bg-[#6c63ff]/10 border-[#6c63ff]/30 text-[#8b84ff]"
+                  : "bg-white/2 border-white/4"
+              }`}
+            >
+              macOS Universal
+            </span>
+            <span
+              className={`px-2.5 py-1 rounded border transition-all ${
+                userOS === "win"
+                  ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
+                  : "bg-white/2 border-white/4"
+              }`}
+            >
+              Windows x64
+            </span>
+            <span
+              className={`px-2.5 py-1 rounded border transition-all ${
+                userOS === "linux"
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                  : "bg-white/2 border-white/4"
+              }`}
+            >
+              Linux AppImage
+            </span>
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center gap-3 mt-2 items-center">
-            <a href="/studio" className="h-12 rounded-xl bg-[#6c63ff] px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:bg-[#7b73ff] shadow-[0_10px_35px_rgba(108,99,255,0.28)]">
+            <a
+              href="/studio"
+              className="h-12 rounded-xl bg-[#6c63ff] px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:bg-[#7b73ff] shadow-[0_10px_35px_rgba(108,99,255,0.28)]"
+            >
               Launch Clypra Studio
               <ArrowRight className="w-4 h-4" />
             </a>
             <div className="flex flex-col gap-1.5 items-center">
-              <a href={downloadUrl} className="h-12 rounded-xl border border-white/8 bg-white/3 px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:bg-white/[0.07] group">
-                <Download className="w-4 h-4 group-hover:animate-bounce" />
-                <span>Download for {userOS === "mac" ? "macOS" : userOS === "win" ? "Windows" : "Linux"}</span>
-              </a>
+              <button
+                onClick={handleDownload}
+                disabled={releaseLoading || isDownloading || !downloadUrl}
+                className={`h-12 rounded-xl border px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 group min-w-[220px]
+                  ${
+                    downloadStarted
+                      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+                      : isDownloading
+                      ? "border-[#6c63ff]/40 bg-[#6c63ff]/15 cursor-wait"
+                      : "border-white/8 bg-white/3 hover:bg-white/[0.07] hover:border-white/15 active:scale-95"
+                  } disabled:opacity-50`}
+              >
+                {downloadStarted ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Download Started!</span>
+                  </>
+                ) : isDownloading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Starting download…</span>
+                  </>
+                ) : releaseLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin opacity-50" />
+                    <span>Fetching latest…</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 group-hover:animate-bounce" />
+                    <span>
+                      Download for{" "}
+                      {userOS === "mac"
+                        ? "macOS"
+                        : userOS === "win"
+                        ? "Windows"
+                        : "Linux"}
+                    </span>
+                  </>
+                )}
+              </button>
               <p className="text-[9px] text-[#666] text-center font-mono">
-                {userOS === "mac" && "Universal binary • Apple Silicon & Intel"}
-                {userOS === "win" && "MSI installer • x64 architecture"}
-                {userOS === "linux" && "AppImage • Portable executable"}
+                {downloadStarted ? (
+                  "Check your browser downloads bar ↓"
+                ) : (
+                  <>
+                    {userOS === "mac" &&
+                      `Apple Silicon • DMG${
+                        downloadSize ? ` • ${downloadSize}` : ""
+                      }`}
+                    {userOS === "win" &&
+                      `MSI installer • x64${
+                        downloadSize ? ` • ${downloadSize}` : ""
+                      }`}
+                    {userOS === "linux" &&
+                      `AppImage • Portable${
+                        downloadSize ? ` • ${downloadSize}` : ""
+                      }`}
+                  </>
+                )}
               </p>
             </div>
           </div>
         </section>
 
         {/* ── Native Downloads Section ───────────────────────────── */}
-        <section className="flex flex-col gap-10 animate-fade-up" style={{ animationDelay: "200ms" }}>
+        <section
+          className="flex flex-col gap-10 animate-fade-up"
+          style={{ animationDelay: "200ms" }}
+        >
           <div className="text-center flex flex-col gap-3">
-            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">Get Clypra Desktop</h3>
-            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-xl mx-auto leading-relaxed">Clypra compiles to optimized native executables for hardware acceleration, native file explorer integration, and robust multithreading.</p>
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">
+              Get Clypra Desktop
+            </h3>
+            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-xl mx-auto leading-relaxed">
+              Clypra compiles to optimized native executables for hardware
+              acceleration, native file explorer integration, and robust
+              multithreading.
+            </p>
           </div>
 
           {/* Platform Cards Grid */}
@@ -387,15 +634,21 @@ export const WebShowcase: React.FC = () => {
               <div className="flex justify-between items-start z-10">
                 <div>
                   <h4 className="font-bold text-white text-xl">macOS</h4>
-                  <p className="text-[10px] text-[#8b84ff] font-mono tracking-wider uppercase mt-0.5">Universal DMG (.dmg)</p>
+                  <p className="text-[10px] text-[#8b84ff] font-mono tracking-wider uppercase mt-0.5">
+                    Universal DMG (.dmg)
+                  </p>
                 </div>
-                <div className="w-11 h-11 rounded-xl bg-white/3 border border-white/6 flex items-center justify-center text-white text-lg font-semibold group-hover:scale-110 transition-transform duration-300"></div>
+                <div className="w-11 h-11 rounded-xl bg-white/3 border border-white/6 flex items-center justify-center text-white text-lg font-semibold group-hover:scale-110 transition-transform duration-300">
+                  
+                </div>
               </div>
 
               <ul className="text-xs text-[#a1a1aa] flex flex-col gap-3 list-none p-0 my-2 grow">
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-[#8b84ff] shrink-0 mt-0.5" />
-                  <span>Supports both Apple Silicon & Intel processors natively.</span>
+                  <span>
+                    Supports both Apple Silicon & Intel processors natively.
+                  </span>
                 </li>
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-[#8b84ff] shrink-0 mt-0.5" />
@@ -404,20 +657,47 @@ export const WebShowcase: React.FC = () => {
               </ul>
 
               <div className="mt-auto pt-5 border-t border-white/4 flex flex-col gap-3 z-10">
-                <a href="https://github.com/AIEraDev/Clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="w-full h-12 rounded-xl bg-[#6c63ff]/80 hover:bg-[#6c63ff] border border-[#8b84ff]/30 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_4px_20px_rgba(108,99,255,0.25)] hover:shadow-[0_4px_25px_rgba(108,99,255,0.4)]">
+                <a
+                  href={
+                    release
+                      ? pickAsset(release.assets, "mac")
+                          ?.browser_download_url ??
+                        "https://github.com/AIEraDev/Clypra/releases/latest"
+                      : "https://github.com/AIEraDev/Clypra/releases/latest"
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-12 rounded-xl bg-[#6c63ff]/80 hover:bg-[#6c63ff] border border-[#8b84ff]/30 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_4px_20px_rgba(108,99,255,0.25)] hover:shadow-[0_4px_25px_rgba(108,99,255,0.4)]"
+                >
                   <Download className="w-4 h-4" />
-                  Download DMG
+                  {releaseLoading
+                    ? "Loading…"
+                    : `Download DMG${release ? ` · ${release.tag_name}` : ""}`}
                 </a>
 
                 {/* Homebrew Box */}
                 <div className="p-3 rounded-xl bg-[#09090b]/80 border border-white/3 flex flex-col gap-1.5 text-[11px] text-left transition-colors group-hover:border-white/6">
                   <span className="font-mono text-neutral-400 font-medium flex items-center justify-between">
                     <span>Or run brew command:</span>
-                    <button onClick={() => copyToClipboard("brew install AIEraDev/tap/clypra", "mac")} className="text-[#8b84ff] hover:text-white transition-colors cursor-pointer">
-                      {copiedMac ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <button
+                      onClick={() =>
+                        copyToClipboard(
+                          "brew install AIEraDev/tap/clypra",
+                          "mac",
+                        )
+                      }
+                      className="text-[#8b84ff] hover:text-white transition-colors cursor-pointer"
+                    >
+                      {copiedMac ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   </span>
-                  <code className="text-[#8b84ff] font-mono select-all break-all bg-white/2 p-1.5 rounded border border-white/4 block text-[10px]">brew install AIEraDev/tap/clypra</code>
+                  <code className="text-[#8b84ff] font-mono select-all break-all bg-white/2 p-1.5 rounded border border-white/4 block text-[10px]">
+                    brew install AIEraDev/tap/clypra
+                  </code>
                 </div>
               </div>
             </div>
@@ -429,7 +709,9 @@ export const WebShowcase: React.FC = () => {
               <div className="flex justify-between items-start z-10">
                 <div>
                   <h4 className="font-bold text-white text-xl">Windows</h4>
-                  <p className="text-[10px] text-cyan-400 font-mono tracking-wider uppercase mt-0.5">x64 MSI Installer (.msi)</p>
+                  <p className="text-[10px] text-cyan-400 font-mono tracking-wider uppercase mt-0.5">
+                    x64 MSI Installer (.msi)
+                  </p>
                 </div>
                 <div className="w-11 h-11 rounded-xl bg-white/3 border border-white/6 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform duration-300">
                   <Monitor className="w-5 h-5" />
@@ -443,14 +725,31 @@ export const WebShowcase: React.FC = () => {
                 </li>
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>Packaged with pre-compiled high performance libraries.</span>
+                  <span>
+                    Packaged with pre-compiled high performance libraries.
+                  </span>
                 </li>
               </ul>
 
               <div className="mt-auto pt-5 border-t border-white/4 z-10">
-                <a href="https://github.com/AIEraDev/clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="w-full h-12 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/12 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_4px_25px_rgba(6,182,212,0.15)]">
+                <a
+                  href={
+                    release
+                      ? pickAsset(release.assets, "win")
+                          ?.browser_download_url ??
+                        "https://github.com/AIEraDev/clypra/releases/latest"
+                      : "https://github.com/AIEraDev/clypra/releases/latest"
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-12 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/12 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_4px_25px_rgba(6,182,212,0.15)]"
+                >
                   <Download className="w-4 h-4" />
-                  Download for Windows
+                  {releaseLoading
+                    ? "Loading…"
+                    : `Download for Windows${
+                        release ? ` · ${release.tag_name}` : ""
+                      }`}
                 </a>
               </div>
             </div>
@@ -462,7 +761,9 @@ export const WebShowcase: React.FC = () => {
               <div className="flex justify-between items-start z-10">
                 <div>
                   <h4 className="font-bold text-white text-xl">Linux</h4>
-                  <p className="text-[10px] text-emerald-400 font-mono tracking-wider uppercase mt-0.5">x64 AppImage (.AppImage)</p>
+                  <p className="text-[10px] text-emerald-400 font-mono tracking-wider uppercase mt-0.5">
+                    x64 AppImage (.AppImage)
+                  </p>
                 </div>
                 <div className="w-11 h-11 rounded-xl bg-white/3 border border-white/6 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform duration-300">
                   <Terminal className="w-5 h-5" />
@@ -472,18 +773,37 @@ export const WebShowcase: React.FC = () => {
               <ul className="text-xs text-[#a1a1aa] flex flex-col gap-3 list-none p-0 my-2 grow">
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>Sandbox-compatible executable with no installation needed.</span>
+                  <span>
+                    Sandbox-compatible executable with no installation needed.
+                  </span>
                 </li>
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>Lightweight distribution compatible with major distros.</span>
+                  <span>
+                    Lightweight distribution compatible with major distros.
+                  </span>
                 </li>
               </ul>
 
               <div className="mt-auto pt-5 border-t border-white/4 z-10">
-                <a href="https://github.com/AIEraDev/clypra/releases/latest" target="_blank" rel="noopener noreferrer" className="w-full h-12 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/12 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_4px_25px_rgba(16,185,129,0.15)]">
+                <a
+                  href={
+                    release
+                      ? pickAsset(release.assets, "linux")
+                          ?.browser_download_url ??
+                        "https://github.com/AIEraDev/clypra/releases/latest"
+                      : "https://github.com/AIEraDev/clypra/releases/latest"
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-12 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/12 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_4px_25px_rgba(16,185,129,0.15)]"
+                >
                   <Download className="w-4 h-4" />
-                  Download for Linux
+                  {releaseLoading
+                    ? "Loading…"
+                    : `Download for Linux${
+                        release ? ` · ${release.tag_name}` : ""
+                      }`}
                 </a>
               </div>
             </div>
@@ -497,35 +817,58 @@ export const WebShowcase: React.FC = () => {
               <div className="flex flex-col gap-4 text-left max-w-2xl z-10">
                 <div className="inline-flex self-start items-center gap-2 px-3 py-1 rounded-full border border-pink-500/20 bg-pink-500/10 backdrop-blur-md">
                   <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
-                  <span className="text-[9px] font-bold tracking-wider text-pink-400 uppercase font-mono">Mobile Development</span>
+                  <span className="text-[9px] font-bold tracking-wider text-pink-400 uppercase font-mono">
+                    Mobile Development
+                  </span>
                 </div>
 
                 <h4 className="font-extrabold text-white text-2xl md:text-3xl font-outfit">
-                  Clypra Mobile <span className="bg-linear-to-r from-pink-400 to-[#8b84ff] bg-clip-text text-transparent shimmer-bg">Coming Soon</span>
+                  Clypra Mobile{" "}
+                  <span className="bg-linear-to-r from-pink-400 to-[#8b84ff] bg-clip-text text-transparent shimmer-bg">
+                    Coming Soon
+                  </span>
                 </h4>
 
-                <p className="text-xs md:text-sm text-[#a1a1aa] leading-relaxed">We are actively bringing the desktop-class native performance of Clypra to your pocket. Built on the brand-new Tauri v2 mobile core, Clypra Mobile will deliver lightning-fast, GPU-accelerated video editing directly on iOS and Android with local-first project portability.</p>
+                <p className="text-xs md:text-sm text-[#a1a1aa] leading-relaxed">
+                  We are actively bringing the desktop-class native performance
+                  of Clypra to your pocket. Built on the brand-new Tauri v2
+                  mobile core, Clypra Mobile will deliver lightning-fast,
+                  GPU-accelerated video editing directly on iOS and Android with
+                  local-first project portability.
+                </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
                     <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-white">Tauri Mobile Core</span>
-                      <span className="text-[10px] text-[#666]">Native Rust performance</span>
+                      <span className="text-xs font-semibold text-white">
+                        Tauri Mobile Core
+                      </span>
+                      <span className="text-[10px] text-[#666]">
+                        Native Rust performance
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
                     <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-white">Touch-Optimized NLE</span>
-                      <span className="text-[10px] text-[#666]">Intuitive gesture timeline</span>
+                      <span className="text-xs font-semibold text-white">
+                        Touch-Optimized NLE
+                      </span>
+                      <span className="text-[10px] text-[#666]">
+                        Intuitive gesture timeline
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
                     <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-white">Local Portability</span>
-                      <span className="text-[10px] text-[#666]">Seamless edit handover</span>
+                      <span className="text-xs font-semibold text-white">
+                        Local Portability
+                      </span>
+                      <span className="text-[10px] text-[#666]">
+                        Seamless edit handover
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -534,12 +877,20 @@ export const WebShowcase: React.FC = () => {
               <div className="flex flex-col sm:flex-row lg:flex-col gap-4 w-full sm:w-auto lg:w-72 justify-center items-stretch z-10">
                 {/* iOS coming soon */}
                 <div className="flex items-center gap-3.5 p-4 rounded-xl bg-white/2 border border-white/4 relative group/item hover:bg-white/4 hover:border-white/8 transition-all">
-                  <div className="w-10 h-10 rounded-lg bg-white/3 border border-white/6 flex items-center justify-center text-white text-lg font-bold"></div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-bold text-white">iOS App Store</span>
-                    <span className="text-[9px] text-[#666] font-mono tracking-wide uppercase mt-0.5">For iPhone and iPad</span>
+                  <div className="w-10 h-10 rounded-lg bg-white/3 border border-white/6 flex items-center justify-center text-white text-lg font-bold">
+                    
                   </div>
-                  <div className="absolute right-4 top-4 text-[8px] font-semibold text-[#8b84ff] bg-[#8b84ff]/10 border border-[#8b84ff]/20 px-1.5 py-0.5 rounded uppercase font-mono">Coming Soon</div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-xs font-bold text-white">
+                      iOS App Store
+                    </span>
+                    <span className="text-[9px] text-[#666] font-mono tracking-wide uppercase mt-0.5">
+                      For iPhone and iPad
+                    </span>
+                  </div>
+                  <div className="absolute right-4 top-4 text-[8px] font-semibold text-[#8b84ff] bg-[#8b84ff]/10 border border-[#8b84ff]/20 px-1.5 py-0.5 rounded uppercase font-mono">
+                    Coming Soon
+                  </div>
                 </div>
 
                 {/* Android coming soon */}
@@ -548,10 +899,16 @@ export const WebShowcase: React.FC = () => {
                     <Smartphone className="w-5 h-5" />
                   </div>
                   <div className="flex flex-col text-left">
-                    <span className="text-xs font-bold text-white">Google Play Store</span>
-                    <span className="text-[9px] text-[#666] font-mono tracking-wide uppercase mt-0.5">For Android Devices</span>
+                    <span className="text-xs font-bold text-white">
+                      Google Play Store
+                    </span>
+                    <span className="text-[9px] text-[#666] font-mono tracking-wide uppercase mt-0.5">
+                      For Android Devices
+                    </span>
                   </div>
-                  <div className="absolute right-4 top-4 text-[8px] font-semibold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-1.5 py-0.5 rounded uppercase font-mono">Coming Soon</div>
+                  <div className="absolute right-4 top-4 text-[8px] font-semibold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-1.5 py-0.5 rounded uppercase font-mono">
+                    Coming Soon
+                  </div>
                 </div>
               </div>
             </div>
@@ -559,27 +916,56 @@ export const WebShowcase: React.FC = () => {
         </section>
 
         {/* ── Detailed Installation Bypass Guidelines ──────────────── */}
-        <section className="flex flex-col gap-8 animate-fade-up" style={{ animationDelay: "300ms" }}>
+        <section
+          className="flex flex-col gap-8 animate-fade-up"
+          style={{ animationDelay: "300ms" }}
+        >
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/5 pb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#6c63ff]/10 flex items-center justify-center text-[#8b84ff]">
                 <Shield className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xl font-bold text-white font-outfit">Installation Assistant</h4>
-                <p className="text-xs text-[#a1a1aa]">How to bypass system Gatekeeper & SmartScreen security controls</p>
+                <h4 className="text-xl font-bold text-white font-outfit">
+                  Installation Assistant
+                </h4>
+                <p className="text-xs text-[#a1a1aa]">
+                  How to bypass system Gatekeeper & SmartScreen security
+                  controls
+                </p>
               </div>
             </div>
 
             {/* Tabs Selector */}
             <div className="flex bg-[#0c0c10] border border-white/3 p-1 rounded-xl">
-              <button onClick={() => setActiveTab("mac")} className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${activeTab === "mac" ? "bg-[#6c63ff] text-white" : "text-[#a1a1aa] hover:text-white"}`}>
+              <button
+                onClick={() => setActiveTab("mac")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  activeTab === "mac"
+                    ? "bg-[#6c63ff] text-white"
+                    : "text-[#a1a1aa] hover:text-white"
+                }`}
+              >
                 macOS
               </button>
-              <button onClick={() => setActiveTab("win")} className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${activeTab === "win" ? "bg-cyan-500/80 text-white" : "text-[#a1a1aa] hover:text-white"}`}>
+              <button
+                onClick={() => setActiveTab("win")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  activeTab === "win"
+                    ? "bg-cyan-500/80 text-white"
+                    : "text-[#a1a1aa] hover:text-white"
+                }`}
+              >
                 Windows
               </button>
-              <button onClick={() => setActiveTab("linux")} className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${activeTab === "linux" ? "bg-emerald-500/80 text-white" : "text-[#a1a1aa] hover:text-white"}`}>
+              <button
+                onClick={() => setActiveTab("linux")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  activeTab === "linux"
+                    ? "bg-emerald-500/80 text-white"
+                    : "text-[#a1a1aa] hover:text-white"
+                }`}
+              >
                 Linux
               </button>
             </div>
@@ -588,28 +974,66 @@ export const WebShowcase: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Steps Left Panel */}
             <div className="lg:col-span-5 flex flex-col gap-4">
-              <div onClick={() => setActiveTab("mac")} className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${activeTab === "mac" ? "bg-[#6c63ff]/5 border-[#6c63ff]/20 text-white" : "bg-white/1 border-transparent opacity-65 hover:opacity-90"}`}>
+              <div
+                onClick={() => setActiveTab("mac")}
+                className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${
+                  activeTab === "mac"
+                    ? "bg-[#6c63ff]/5 border-[#6c63ff]/20 text-white"
+                    : "bg-white/1 border-transparent opacity-65 hover:opacity-90"
+                }`}
+              >
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-mono text-[#8b84ff]">01</span>
+                  <span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-mono text-[#8b84ff]">
+                    01
+                  </span>
                   <h5 className="font-bold text-sm">macOS Gatekeeper Bypass</h5>
                 </div>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed pl-9">Drag the downloaded DMG application to your Applications folder, Control-click (Right-click) the Clypra icon, and select **Open** to authorize developer execution.</p>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed pl-9">
+                  Drag the downloaded DMG application to your Applications
+                  folder, Control-click (Right-click) the Clypra icon, and
+                  select **Open** to authorize developer execution.
+                </p>
               </div>
 
-              <div onClick={() => setActiveTab("win")} className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${activeTab === "win" ? "bg-cyan-500/5 border-cyan-500/20 text-white" : "bg-white/1 border-transparent opacity-65 hover:opacity-90"}`}>
+              <div
+                onClick={() => setActiveTab("win")}
+                className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${
+                  activeTab === "win"
+                    ? "bg-cyan-500/5 border-cyan-500/20 text-white"
+                    : "bg-white/1 border-transparent opacity-65 hover:opacity-90"
+                }`}
+              >
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-mono text-cyan-400">02</span>
+                  <span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-mono text-cyan-400">
+                    02
+                  </span>
                   <h5 className="font-bold text-sm">Windows SmartScreen</h5>
                 </div>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed pl-9">Windows may warn that Clypra is unrecognized. Click **More Info** in the SmartScreen dialogue, and choose **Run Anyway** to execute.</p>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed pl-9">
+                  Windows may warn that Clypra is unrecognized. Click **More
+                  Info** in the SmartScreen dialogue, and choose **Run Anyway**
+                  to execute.
+                </p>
               </div>
 
-              <div onClick={() => setActiveTab("linux")} className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${activeTab === "linux" ? "bg-emerald-500/5 border-emerald-500/20 text-white" : "bg-white/1 border-transparent opacity-65 hover:opacity-90"}`}>
+              <div
+                onClick={() => setActiveTab("linux")}
+                className={`p-5 rounded-2xl transition-all duration-300 border cursor-pointer ${
+                  activeTab === "linux"
+                    ? "bg-emerald-500/5 border-emerald-500/20 text-white"
+                    : "bg-white/1 border-transparent opacity-65 hover:opacity-90"
+                }`}
+              >
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-mono text-emerald-400">03</span>
+                  <span className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-mono text-emerald-400">
+                    03
+                  </span>
                   <h5 className="font-bold text-sm">Linux Executable Rights</h5>
                 </div>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed pl-9">Make the downloaded `.AppImage` file executable via permissions tab or terminal, then run immediately.</p>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed pl-9">
+                  Make the downloaded `.AppImage` file executable via
+                  permissions tab or terminal, then run immediately.
+                </p>
               </div>
             </div>
 
@@ -623,7 +1047,9 @@ export const WebShowcase: React.FC = () => {
                     <div className="w-3 h-3 rounded-full bg-[#eab308] opacity-80" />
                     <div className="w-3 h-3 rounded-full bg-[#22c55e] opacity-80" />
                   </div>
-                  <span className="text-[10px] font-mono text-[#666]">bash - installation_helper</span>
+                  <span className="text-[10px] font-mono text-[#666]">
+                    bash - installation_helper
+                  </span>
                   <div className="w-10" />
                 </div>
 
@@ -633,15 +1059,35 @@ export const WebShowcase: React.FC = () => {
                     <div className="flex flex-col gap-4">
                       <div>
                         <span className="text-[#666] select-none">$ </span>
-                        <span className="text-neutral-300"># Install Clypra globally via Homebrew Tap</span>
+                        <span className="text-neutral-300">
+                          # Install Clypra globally via Homebrew Tap
+                        </span>
                       </div>
                       <div className="flex items-center justify-between bg-white/1 p-3 rounded-lg border border-white/3">
-                        <code className="text-[#8b84ff] select-all break-all">brew install AIEraDev/tap/clypra</code>
-                        <button onClick={() => copyToClipboard("brew install AIEraDev/tap/clypra", "mac")} className="text-[#666] hover:text-white transition-colors p-1">
-                          {copiedMac ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        <code className="text-[#8b84ff] select-all break-all">
+                          brew install AIEraDev/tap/clypra
+                        </code>
+                        <button
+                          onClick={() =>
+                            copyToClipboard(
+                              "brew install AIEraDev/tap/clypra",
+                              "mac",
+                            )
+                          }
+                          className="text-[#666] hover:text-white transition-colors p-1"
+                        >
+                          {copiedMac ? (
+                            <Check className="w-4 h-4 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
-                      <div className="text-[#666] leading-relaxed text-[11px]">Homebrew automatically builds the architecture package for your CPU (ARM64 M1/M2/M3 or Intel x86_64) and verifies dependencies.</div>
+                      <div className="text-[#666] leading-relaxed text-[11px]">
+                        Homebrew automatically builds the architecture package
+                        for your CPU (ARM64 M1/M2/M3 or Intel x86_64) and
+                        verifies dependencies.
+                      </div>
                     </div>
                   )}
 
@@ -649,7 +1095,9 @@ export const WebShowcase: React.FC = () => {
                     <div className="flex flex-col gap-4">
                       <div>
                         <span className="text-[#666] select-none">&gt; </span>
-                        <span className="text-neutral-300">rem Open PowerShell and install desktop package</span>
+                        <span className="text-neutral-300">
+                          rem Open PowerShell and install desktop package
+                        </span>
                       </div>
                       <div className="bg-white/1 p-4 rounded-lg border border-white/3 text-cyan-400 leading-relaxed text-[11px]">
                         Double click "clypra_1.0.1_x64_en-US.msi"
@@ -657,7 +1105,10 @@ export const WebShowcase: React.FC = () => {
                         ↳ Click "More Info"
                         <br />↳ Click "Run Anyway" to bypass MS protection.
                       </div>
-                      <div className="text-[#666] leading-relaxed text-[11px]">Windows binary installs full media codec filters and registers native window processes.</div>
+                      <div className="text-[#666] leading-relaxed text-[11px]">
+                        Windows binary installs full media codec filters and
+                        registers native window processes.
+                      </div>
                     </div>
                   )}
 
@@ -665,15 +1116,34 @@ export const WebShowcase: React.FC = () => {
                     <div className="flex flex-col gap-3">
                       <div>
                         <span className="text-[#666] select-none">$ </span>
-                        <span className="text-neutral-300"># Authorize application execution permissions</span>
+                        <span className="text-neutral-300">
+                          # Authorize application execution permissions
+                        </span>
                       </div>
                       <div className="flex items-center justify-between bg-white/1 p-3 rounded-lg border border-white/3">
-                        <code className="text-emerald-400 select-all break-all">chmod +x Clypra*.AppImage && ./Clypra*.AppImage</code>
-                        <button onClick={() => copyToClipboard("chmod +x Clypra*.AppImage && ./Clypra*.AppImage", "linux")} className="text-[#666] hover:text-white transition-colors p-1">
-                          {copiedLinux ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        <code className="text-emerald-400 select-all break-all">
+                          chmod +x Clypra*.AppImage && ./Clypra*.AppImage
+                        </code>
+                        <button
+                          onClick={() =>
+                            copyToClipboard(
+                              "chmod +x Clypra*.AppImage && ./Clypra*.AppImage",
+                              "linux",
+                            )
+                          }
+                          className="text-[#666] hover:text-white transition-colors p-1"
+                        >
+                          {copiedLinux ? (
+                            <Check className="w-4 h-4 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
-                      <div className="text-[#666] leading-relaxed text-[11px]">Or right-click AppImage → Properties → Permissions → Allow executing file as program.</div>
+                      <div className="text-[#666] leading-relaxed text-[11px]">
+                        Or right-click AppImage → Properties → Permissions →
+                        Allow executing file as program.
+                      </div>
                     </div>
                   )}
                 </div>
@@ -683,10 +1153,18 @@ export const WebShowcase: React.FC = () => {
         </section>
 
         {/* ── Key Editor Features ────────────────────────────────── */}
-        <section className="flex flex-col gap-12 animate-fade-up" style={{ animationDelay: "400ms" }}>
+        <section
+          className="flex flex-col gap-12 animate-fade-up"
+          style={{ animationDelay: "400ms" }}
+        >
           <div className="text-center flex flex-col gap-3">
-            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">Core NLE Platform Architecture</h3>
-            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-lg mx-auto">Clypra features premium architectural layers that rival industry-standard desktop non-linear editors.</p>
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">
+              Core NLE Platform Architecture
+            </h3>
+            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-lg mx-auto">
+              Clypra features premium architectural layers that rival
+              industry-standard desktop non-linear editors.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -697,8 +1175,14 @@ export const WebShowcase: React.FC = () => {
                 <Layers className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-bold text-white text-base">Infinite Multi-Track Sequencing</h4>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Arrange and sequence video, audio, text, and visual overlays on layers with clean, responsive drag-and-drop clips and snap-to-edge alignment precision.</p>
+                <h4 className="font-bold text-white text-base">
+                  Infinite Multi-Track Sequencing
+                </h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
+                  Arrange and sequence video, audio, text, and visual overlays
+                  on layers with clean, responsive drag-and-drop clips and
+                  snap-to-edge alignment precision.
+                </p>
               </div>
             </div>
 
@@ -709,8 +1193,14 @@ export const WebShowcase: React.FC = () => {
                 <Play className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-bold text-white text-base">High-Performance Frame Renderer</h4>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">A canvas-based, real-time render surface that accurately updates, scales, and renders visual clip layers using custom DPR scaling configurations.</p>
+                <h4 className="font-bold text-white text-base">
+                  High-Performance Frame Renderer
+                </h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
+                  A canvas-based, real-time render surface that accurately
+                  updates, scales, and renders visual clip layers using custom
+                  DPR scaling configurations.
+                </p>
               </div>
             </div>
 
@@ -721,18 +1211,33 @@ export const WebShowcase: React.FC = () => {
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-bold text-white text-base">Preset-Driven FFmpeg Exporters</h4>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Redesigned premium video export flow featuring custom aspect presets (YouTube, TikTok, Instagram, Custom), project renaming, and animated SVG export progress circles.</p>
+                <h4 className="font-bold text-white text-base">
+                  Preset-Driven FFmpeg Exporters
+                </h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
+                  Redesigned premium video export flow featuring custom aspect
+                  presets (YouTube, TikTok, Instagram, Custom), project
+                  renaming, and animated SVG export progress circles.
+                </p>
               </div>
             </div>
           </div>
         </section>
 
         {/* ── Clypra Studio Platform Section ────────────────────────── */}
-        <section className="flex flex-col gap-12 animate-fade-up" style={{ animationDelay: "450ms" }}>
+        <section
+          className="flex flex-col gap-12 animate-fade-up"
+          style={{ animationDelay: "450ms" }}
+        >
           <div className="text-center flex flex-col gap-3">
-            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">Clypra Studio - Effect Development Platform</h3>
-            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-2xl mx-auto">Where every visual feature is designed, tested, benchmarked, validated, and published before reaching the editor. Three specialized labs, one unified runtime architecture.</p>
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">
+              Clypra Studio - Effect Development Platform
+            </h3>
+            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-2xl mx-auto">
+              Where every visual feature is designed, tested, benchmarked,
+              validated, and published before reaching the editor. Three
+              specialized labs, one unified runtime architecture.
+            </p>
           </div>
 
           <div className="glass-panel rounded-3xl p-8 md:p-12 transition-all duration-500 border-[#6c63ff]/10 hover:border-[#6c63ff]/20 relative overflow-hidden group">
@@ -745,14 +1250,27 @@ export const WebShowcase: React.FC = () => {
                   <Layers className="w-6 h-6 text-purple-400" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-white text-lg">Video Effect Lab</h4>
-                  <p className="text-xs text-[#666] mt-1">Single-input video effects</p>
+                  <h4 className="font-bold text-white text-lg">
+                    Video Effect Lab
+                  </h4>
+                  <p className="text-xs text-[#666] mt-1">
+                    Single-input video effects
+                  </p>
                 </div>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed">Foundation for validating that effects render correctly with live parameter editing, frame stepper, and GPU profiling.</p>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed">
+                  Foundation for validating that effects render correctly with
+                  live parameter editing, frame stepper, and GPU profiling.
+                </p>
                 <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
-                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">Film Grain</span>
-                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">VHS</span>
-                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">Bloom</span>
+                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    Film Grain
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    VHS
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    Bloom
+                  </span>
                 </div>
               </div>
 
@@ -762,14 +1280,27 @@ export const WebShowcase: React.FC = () => {
                   <Sparkles className="w-6 h-6 text-blue-400" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-white text-lg">Transition Lab</h4>
-                  <p className="text-xs text-[#666] mt-1">Dual-input transitions</p>
+                  <h4 className="font-bold text-white text-lg">
+                    Transition Lab
+                  </h4>
+                  <p className="text-xs text-[#666] mt-1">
+                    Dual-input transitions
+                  </p>
                 </div>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed">Specialized editor for temporal effects with progress control, dual-input preview, and timeline scrubbing.</p>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed">
+                  Specialized editor for temporal effects with progress control,
+                  dual-input preview, and timeline scrubbing.
+                </p>
                 <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
-                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Dissolve</span>
-                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Push</span>
-                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Glitch</span>
+                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    Dissolve
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    Push
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    Glitch
+                  </span>
                 </div>
               </div>
 
@@ -779,23 +1310,42 @@ export const WebShowcase: React.FC = () => {
                   <Shield className="w-6 h-6 text-emerald-400" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-white text-lg">Body Effect Lab</h4>
-                  <p className="text-xs text-[#666] mt-1">Feature provider effects</p>
+                  <h4 className="font-bold text-white text-lg">
+                    Body Effect Lab
+                  </h4>
+                  <p className="text-xs text-[#666] mt-1">
+                    Feature provider effects
+                  </p>
                 </div>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed">Future-proof effects through extensible providers with pose tracking, segmentation, and mask overlays.</p>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed">
+                  Future-proof effects through extensible providers with pose
+                  tracking, segmentation, and mask overlays.
+                </p>
                 <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Neon Outline</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">BG Blur</span>
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    Neon Outline
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    BG Blur
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center relative z-10">
-              <a href="/studio" className="h-11 rounded-xl bg-[#6c63ff]/90 hover:bg-[#6c63ff] px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_8px_30px_rgba(108,99,255,0.3)]">
+              <a
+                href="/studio"
+                className="h-11 rounded-xl bg-[#6c63ff]/90 hover:bg-[#6c63ff] px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_8px_30px_rgba(108,99,255,0.3)]"
+              >
                 <Sparkles className="w-4 h-4" />
                 Launch Studio
               </a>
-              <a href="https://github.com/AIEraDev/clypra-studio" target="_blank" rel="noopener noreferrer" className="h-11 rounded-xl border border-white/10 bg-white/3 hover:bg-white/5 px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300">
+              <a
+                href="https://github.com/AIEraDev/clypra-studio"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-11 rounded-xl border border-white/10 bg-white/3 hover:bg-white/5 px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300"
+              >
                 View Studio on GitHub
                 <ArrowRight className="w-4 h-4" />
               </a>
@@ -804,14 +1354,23 @@ export const WebShowcase: React.FC = () => {
         </section>
 
         {/* ── Recent Achievements & Updates Section ──────────────────── */}
-        <section className="flex flex-col gap-12 animate-fade-up" style={{ animationDelay: "475ms" }}>
+        <section
+          className="flex flex-col gap-12 animate-fade-up"
+          style={{ animationDelay: "475ms" }}
+        >
           <div className="text-center flex flex-col gap-3">
             <div className="inline-flex self-center items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 backdrop-blur-md">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-[10px] font-semibold tracking-wider text-emerald-400 uppercase font-mono">Latest Updates</span>
+              <span className="text-[10px] font-semibold tracking-wider text-emerald-400 uppercase font-mono">
+                Latest Updates
+              </span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">Recent Achievements</h3>
-            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-2xl mx-auto">Latest improvements across the Clypra ecosystem</p>
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">
+              Recent Achievements
+            </h3>
+            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-2xl mx-auto">
+              Latest improvements across the Clypra ecosystem
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -821,11 +1380,19 @@ export const WebShowcase: React.FC = () => {
                 <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
                   <CheckCircle2 className="w-5 h-5 text-purple-400" />
                 </div>
-                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">DEPLOYED</span>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">
+                  DEPLOYED
+                </span>
               </div>
               <div>
-                <h4 className="font-bold text-white text-sm">Automated Release Pipeline</h4>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Complete CI/CD with GitHub Actions for multi-platform releases: Windows (.msi/.nsis), macOS Universal (.dmg), Linux (.AppImage). Tauri code signing enabled.</p>
+                <h4 className="font-bold text-white text-sm">
+                  Automated Release Pipeline
+                </h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
+                  Complete CI/CD with GitHub Actions for multi-platform
+                  releases: Windows (.msi/.nsis), macOS Universal (.dmg), Linux
+                  (.AppImage). Tauri code signing enabled.
+                </p>
               </div>
             </div>
 
@@ -835,11 +1402,19 @@ export const WebShowcase: React.FC = () => {
                 <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 </div>
-                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">FIXED</span>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">
+                  FIXED
+                </span>
               </div>
               <div>
-                <h4 className="font-bold text-white text-sm">Export Pipeline Overhaul</h4>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Fixed aspect-ratio preservation and frame accuracy in video exports. Includes aspect-correct dimension resolver, locked WebGL canvas sizing, and comprehensive unit tests.</p>
+                <h4 className="font-bold text-white text-sm">
+                  Export Pipeline Overhaul
+                </h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
+                  Fixed aspect-ratio preservation and frame accuracy in video
+                  exports. Includes aspect-correct dimension resolver, locked
+                  WebGL canvas sizing, and comprehensive unit tests.
+                </p>
               </div>
             </div>
 
@@ -849,11 +1424,19 @@ export const WebShowcase: React.FC = () => {
                 <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                   <CheckCircle2 className="w-5 h-5 text-blue-400" />
                 </div>
-                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">PUBLISHED</span>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">
+                  PUBLISHED
+                </span>
               </div>
               <div>
-                <h4 className="font-bold text-white text-sm">@clypra-studio/engine v1.0.2</h4>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Published to npm registry with workspace dependencies resolved. Semantic versioning and auto-deployment via CLI for easy integration.</p>
+                <h4 className="font-bold text-white text-sm">
+                  @clypra-studio/engine v1.0.2
+                </h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
+                  Published to npm registry with workspace dependencies
+                  resolved. Semantic versioning and auto-deployment via CLI for
+                  easy integration.
+                </p>
               </div>
             </div>
 
@@ -863,11 +1446,18 @@ export const WebShowcase: React.FC = () => {
                 <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
                   <CheckCircle2 className="w-5 h-5 text-yellow-400" />
                 </div>
-                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">ENHANCED</span>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">
+                  ENHANCED
+                </span>
               </div>
               <div>
-                <h4 className="font-bold text-white text-sm">Enhanced CI/CD Workflows</h4>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Upgraded to Node.js 22, fixed vitest hanging issues, added frontend + Rust test coverage, and build verification checks.</p>
+                <h4 className="font-bold text-white text-sm">
+                  Enhanced CI/CD Workflows
+                </h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
+                  Upgraded to Node.js 22, fixed vitest hanging issues, added
+                  frontend + Rust test coverage, and build verification checks.
+                </p>
               </div>
             </div>
 
@@ -877,11 +1467,19 @@ export const WebShowcase: React.FC = () => {
                 <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
                   <CheckCircle2 className="w-5 h-5 text-orange-400" />
                 </div>
-                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">TRACKED</span>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">
+                  TRACKED
+                </span>
               </div>
               <div>
-                <h4 className="font-bold text-white text-sm">Performance Monitoring</h4>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Comprehensive tracking across video pipeline: decoder pool metrics, export profiling, render performance, 30+ tracked metrics.</p>
+                <h4 className="font-bold text-white text-sm">
+                  Performance Monitoring
+                </h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
+                  Comprehensive tracking across video pipeline: decoder pool
+                  metrics, export profiling, render performance, 30+ tracked
+                  metrics.
+                </p>
               </div>
             </div>
 
@@ -891,21 +1489,36 @@ export const WebShowcase: React.FC = () => {
                 <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
                   <CheckCircle2 className="w-5 h-5 text-cyan-400" />
                 </div>
-                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">OPTIMIZED</span>
+                <span className="text-[9px] font-mono text-[#666] bg-white/2 px-2 py-1 rounded">
+                  OPTIMIZED
+                </span>
               </div>
               <div>
-                <h4 className="font-bold text-white text-sm">Hardware Acceleration</h4>
-                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">Native GPU decode via FFmpeg (VideoToolbox/D3D11VA/VAAPI), decoder prewarming with sub-10ms latency, and parallel thumbnail generation.</p>
+                <h4 className="font-bold text-white text-sm">
+                  Hardware Acceleration
+                </h4>
+                <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
+                  Native GPU decode via FFmpeg (VideoToolbox/D3D11VA/VAAPI),
+                  decoder prewarming with sub-10ms latency, and parallel
+                  thumbnail generation.
+                </p>
               </div>
             </div>
           </div>
         </section>
 
         {/* ── Meet the Creator & Socials Section ───────────────────── */}
-        <section className="flex flex-col gap-12 animate-fade-up" style={{ animationDelay: "500ms" }}>
+        <section
+          className="flex flex-col gap-12 animate-fade-up"
+          style={{ animationDelay: "500ms" }}
+        >
           <div className="text-center flex flex-col gap-3">
-            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">Meet the Creator</h3>
-            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-lg mx-auto">Behind Clypra's high-performance architecture and user experience.</p>
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-outfit">
+              Meet the Creator
+            </h3>
+            <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-lg mx-auto">
+              Behind Clypra's high-performance architecture and user experience.
+            </p>
           </div>
 
           <div className="glass-panel creator-card rounded-3xl p-4 pt-8 md:p-12 transition-all duration-500 relative overflow-hidden group">
@@ -921,7 +1534,11 @@ export const WebShowcase: React.FC = () => {
                   <div className="absolute inset-0 bg-linear-to-t from-[#030305]/60 via-transparent to-transparent z-10" />
 
                   {/* Creator photo */}
-                  <img src="/founder.jpg" alt="Abdul Kabir Musa - Clypra Creator" className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/img:scale-105" />
+                  <img
+                    src="/founder.jpg"
+                    alt="Abdul Kabir Musa - Clypra Creator"
+                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/img:scale-105"
+                  />
 
                   {/* Animated border outline */}
                   <div className="absolute inset-0 border border-white/0 group-hover/img:border-[#6c63ff]/30 rounded-2xl transition-all duration-500 z-20 pointer-events-none" />
@@ -933,88 +1550,157 @@ export const WebShowcase: React.FC = () => {
                 <div className="flex flex-col gap-2">
                   <div className="inline-flex self-start items-center gap-2 px-3 py-1 rounded-full border border-[#6c63ff]/20 bg-[#6c63ff]/10 backdrop-blur-md">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#6c63ff] animate-pulse" />
-                    <span className="text-[9px] font-bold tracking-wider text-[#8b84ff] uppercase font-mono">Creator & Lead Architect</span>
+                    <span className="text-[9px] font-bold tracking-wider text-[#8b84ff] uppercase font-mono">
+                      Creator & Lead Architect
+                    </span>
                   </div>
 
-                  <h4 className="text-3xl sm:text-4xl font-extrabold text-white font-outfit">Abdul Kabir Musa</h4>
+                  <h4 className="text-3xl sm:text-4xl font-extrabold text-white font-outfit">
+                    Abdul Kabir Musa
+                  </h4>
                 </div>
 
-                <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed max-w-2xl">Clypra began as an ambitious endeavor to build a premium, desktop-class NLE video editor that combines the performance of Rust with the agility of React and Tauri. As a developer passionate about building high-performance creative tools, I engineered Clypra from the ground up to reduce export bottlenecks, offer robust Procedural Canvas 2D Text effects, and deliver a smooth layout system for creators.</p>
+                <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed max-w-2xl">
+                  Clypra began as an ambitious endeavor to build a premium,
+                  desktop-class NLE video editor that combines the performance
+                  of Rust with the agility of React and Tauri. As a developer
+                  passionate about building high-performance creative tools, I
+                  engineered Clypra from the ground up to reduce export
+                  bottlenecks, offer robust Procedural Canvas 2D Text effects,
+                  and deliver a smooth layout system for creators.
+                </p>
 
-                <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed max-w-2xl">Follow my developer updates, explore my repositories, or get in touch to see what features are coming next to Clypra.</p>
+                <p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed max-w-2xl">
+                  Follow my developer updates, explore my repositories, or get
+                  in touch to see what features are coming next to Clypra.
+                </p>
 
                 {/* Follow Socials Grid */}
                 <div className="flex flex-col gap-3 mt-2">
-                  <span className="text-xs font-semibold text-neutral-400 font-mono tracking-wider uppercase">Follow & Connect</span>
+                  <span className="text-xs font-semibold text-neutral-400 font-mono tracking-wider uppercase">
+                    Follow & Connect
+                  </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {/* GitHub */}
-                    <a href="https://github.com/AIEraDev" target="_blank" rel="noopener noreferrer" className="social-card social-card-github flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
+                    <a
+                      href="https://github.com/AIEraDev"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-card social-card-github flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
                       <div className="flex items-center gap-3">
                         <Github className="w-5 h-5 text-white" />
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-white">GitHub</span>
-                          <span className="text-[10px] text-[#666]">@AIEraDev</span>
+                          <span className="text-xs font-bold text-white">
+                            GitHub
+                          </span>
+                          <span className="text-[10px] text-[#666]">
+                            @AIEraDev
+                          </span>
                         </div>
                       </div>
                       <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
                     </a>
 
                     {/* Twitter/X */}
-                    <a href="https://x.com/AIEraDev" target="_blank" rel="noopener noreferrer" className="social-card social-card-twitter flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
+                    <a
+                      href="https://x.com/AIEraDev"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-card social-card-twitter flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
                       <div className="flex items-center gap-3">
                         <Twitter className="w-5 h-5 text-[#1d9bf0]" />
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-white">Twitter / X</span>
-                          <span className="text-[10px] text-[#666]">@AIEraDev</span>
+                          <span className="text-xs font-bold text-white">
+                            Twitter / X
+                          </span>
+                          <span className="text-[10px] text-[#666]">
+                            @AIEraDev
+                          </span>
                         </div>
                       </div>
                       <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
                     </a>
 
                     {/* Website */}
-                    <a href="https://abdulkabirmusa.com" target="_blank" rel="noopener noreferrer" className="social-card social-card-website flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
+                    <a
+                      href="https://abdulkabirmusa.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-card social-card-website flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
                       <div className="flex items-center gap-3">
                         <Globe className="w-5 h-5 text-pink-400" />
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-white">Website</span>
-                          <span className="text-[10px] text-[#666]">abdulkabirmusa.com</span>
+                          <span className="text-xs font-bold text-white">
+                            Website
+                          </span>
+                          <span className="text-[10px] text-[#666]">
+                            abdulkabirmusa.com
+                          </span>
                         </div>
                       </div>
                       <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
                     </a>
 
                     {/* YouTube */}
-                    <a href="https://www.youtube.com/@AIEraDev" target="_blank" rel="noopener noreferrer" className="social-card social-card-youtube flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
+                    <a
+                      href="https://www.youtube.com/@AIEraDev"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-card social-card-youtube flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
                       <div className="flex items-center gap-3">
                         <Youtube className="w-5 h-5 text-[#ff0000]" />
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-white">YouTube</span>
-                          <span className="text-[10px] text-[#666]">@AIEraDev</span>
+                          <span className="text-xs font-bold text-white">
+                            YouTube
+                          </span>
+                          <span className="text-[10px] text-[#666]">
+                            @AIEraDev
+                          </span>
                         </div>
                       </div>
                       <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
                     </a>
 
                     {/* LinkedIn */}
-                    <a href="https://www.linkedin.com/in/abdulkabirmusa" target="_blank" rel="noopener noreferrer" className="social-card social-card-linkedin flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
+                    <a
+                      href="https://www.linkedin.com/in/abdulkabirmusa"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-card social-card-linkedin flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
                       <div className="flex items-center gap-3">
                         <Linkedin className="w-5 h-5 text-[#0a66c2]" />
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-white">LinkedIn</span>
-                          <span className="text-[10px] text-[#666]">AbdulKabir Musa</span>
+                          <span className="text-xs font-bold text-white">
+                            LinkedIn
+                          </span>
+                          <span className="text-[10px] text-[#666]">
+                            AbdulKabir Musa
+                          </span>
                         </div>
                       </div>
                       <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
                     </a>
 
                     {/* Email */}
-                    <a href="mailto:musaabdulkabeer19@gmail.com" className="social-card social-card-mail flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300">
+                    <a
+                      href="mailto:musaabdulkabeer19@gmail.com"
+                      className="social-card social-card-mail flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/4 transition-all duration-300"
+                    >
                       <div className="flex items-center gap-3">
                         <Mail className="w-5 h-5 text-[#a855f7]" />
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-white">Email</span>
-                          <span className="text-[10px] text-[#666]">musaabdulkabeer19...</span>
+                          <span className="text-xs font-bold text-white">
+                            Email
+                          </span>
+                          <span className="text-[10px] text-[#666]">
+                            musaabdulkabeer19...
+                          </span>
                         </div>
                       </div>
                       <ArrowRight className="w-3.5 h-3.5 text-[#666] group-hover:text-white transition-colors" />
@@ -1030,10 +1716,18 @@ export const WebShowcase: React.FC = () => {
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className="relative z-10 w-full border-t border-white/3 mt-24">
         <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#666]">
-          <div>© {new Date().getFullYear()} Clypra Contributors. Released under the MIT License.</div>
+          <div>
+            © {new Date().getFullYear()} Clypra Contributors. Released under the
+            MIT License.
+          </div>
           <div className="flex items-center gap-6">
             <span>Built with Tauri, React & Rust</span>
-            <a href="https://github.com/AIEraDev/clypra" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+            <a
+              href="https://github.com/AIEraDev/clypra"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors"
+            >
               GitHub Code
             </a>
           </div>
