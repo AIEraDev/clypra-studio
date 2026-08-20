@@ -2,12 +2,20 @@ import React, { useState } from "react";
 import { ArrowUpDown, Beaker, Copy, Download, Loader2, Sparkles, UploadCloud } from "lucide-react";
 import type { Preset, TextEffectConfig } from "@clypra-studio/engine";
 import type { SceneDocument } from "@clypra-studio/engine";
-import { ExportBadge } from "./StudioChrome";
 import { getEffectRepresentation } from "../codeGenerator";
 import { PublishEffectModal } from "./PublishEffectModal";
 import type { EffectApiCategory as ModalEffectApiCategory } from "./PublishEffectModal";
 
 type CodeTab = "engine" | "definition" | "lab";
+
+function ExportBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-(--studio-muted)">
+      <Download size={11} />
+      Developer export
+    </span>
+  );
+}
 
 const EFFECT_API_CATEGORIES = [
   "essentials", // plain bold/clean text — every editor's starting point
@@ -84,22 +92,7 @@ export function ExportLabPanel({ isMobile, mobileActiveTab, activeTab, onActiveT
   };
 
   return (
-    <section id="right-code-panel" className={`${isMobile && mobileActiveTab !== "code" ? "hidden" : "flex"} relative w-full shrink-0 flex-col overflow-hidden border-l border-[#2A2A38] bg-[#15151C] md:w-[${isMobile ? "full" : "360px"}]`}>
-      <div className="flex shrink-0 items-center justify-between border-b border-[#2A2A38] bg-[#1E1E26] p-1">
-        <div className="flex w-full rounded-lg border border-[#2A2A38]/60 bg-[#0D0D11] p-0.5">
-          {[
-            { id: "engine" as const, label: "Engine Code" },
-            { id: "definition" as const, label: "Clypra Spec" },
-            { id: "lab" as const, label: "Lab & Extend", icon: Beaker },
-          ].map((tab) => (
-            <button key={tab.id} type="button" onClick={() => onActiveTabChange(tab.id)} className={`flex flex-1 items-center justify-center gap-1 rounded py-1.5 text-center font-sans text-[10px] font-semibold uppercase tracking-wide transition-all ${activeTab === tab.id ? (tab.id === "lab" ? "bg-teal-500 text-black" : "bg-[#7C6FFF] text-white") : tab.id === "lab" ? "text-teal-400 hover:text-teal-300" : "text-clypra-muted hover:text-white"}`}>
-              {tab.icon ? <tab.icon size={10} /> : null}
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
+    <section id="right-code-panel" className={`${isMobile && mobileActiveTab !== "code" ? "hidden" : "flex"} relative min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-b-xl bg-[#15151C]`}>
       {activeTab === "lab" ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#111116] font-sans text-[#A0A0B0]">
           <div className="shrink-0 border-b border-[#2A2A38] bg-[#16161F] p-4">

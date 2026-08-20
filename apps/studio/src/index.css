@@ -821,73 +821,6 @@ pre {
   background: var(--studio-accent);
 }
 
-/* ── Left Rail ── */
-.studio-left-rail {
-  width: 52px;
-  background: var(--studio-shell);
-  border-right: 1px solid var(--studio-border);
-}
-
-.studio-rail-btn {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  transition: background 0.15s, color 0.15s;
-  color: var(--studio-muted);
-  cursor: pointer;
-}
-
-.studio-rail-btn:hover {
-  background: var(--studio-hover);
-  color: var(--studio-text);
-}
-
-.studio-rail-btn.active {
-  background: var(--studio-active-soft);
-  color: var(--studio-accent);
-  box-shadow: inset 0 0 0 1px rgba(124, 111, 255, 0.2);
-}
-
-/* Active indicator bar on the left edge */
-.studio-rail-btn.active::before {
-  content: "";
-  position: absolute;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  background: var(--studio-accent);
-  border-radius: 0 3px 3px 0;
-  box-shadow: 0 0 8px var(--studio-accent);
-}
-
-/* GPU status dot on rail icon */
-.studio-rail-gpu-dot {
-  position: absolute;
-  bottom: 6px;
-  right: 6px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--gpu-ready);
-  box-shadow: 0 0 6px var(--gpu-ready);
-  border: 1px solid var(--studio-shell);
-}
-
-.studio-rail-gpu-dot.live {
-  background: var(--gpu-live);
-  box-shadow: 0 0 6px var(--gpu-live);
-}
-.studio-rail-gpu-dot.error {
-  background: var(--gpu-error);
-  box-shadow: 0 0 6px var(--gpu-error);
-}
-
 /* ── Header ── */
 .studio-header {
   height: 48px;
@@ -895,6 +828,7 @@ pre {
   border-bottom: 1px solid var(--studio-border);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 16px;
   gap: 12px;
   user-select: none;
@@ -925,6 +859,25 @@ pre {
 .studio-header-btn:disabled:hover {
   background: transparent;
   color: var(--studio-muted);
+}
+
+/* ── Composition toolbar ── */
+.studio-composition-toolbar {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--studio-shell);
+  border-bottom: 1px solid var(--studio-border);
+  scrollbar-width: none;
+  gap: 4px;
+  padding: 0 12px;
+}
+
+.studio-composition-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* ── GPU pill in header ── */
@@ -1409,30 +1362,6 @@ pre {
 
 .canvas-toolbar-btn.primary:hover {
   background: var(--studio-active-strong);
-}
-
-/* ── Drawer intro ── */
-.drawer-intro {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--studio-border);
-  background: var(--studio-panel);
-  flex-shrink: 0;
-}
-
-.drawer-intro-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: var(--studio-control);
-  border: 1px solid var(--studio-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--studio-accent);
-  flex-shrink: 0;
 }
 
 /* ── Autosave pill ── */

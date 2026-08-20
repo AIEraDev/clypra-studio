@@ -12,7 +12,9 @@ export function useStudioWorkspaceState() {
   const [uiMode, setUiMode] = useState<"basic" | "advanced">("basic");
 
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<StudioPanelTab>("engine");
+  // Native Clypra Spec is the canonical export surface. Engine code remains
+  // available as generated output, but is no longer a primary workspace tab.
+  const [activeTab, setActiveTab] = useState<StudioPanelTab>("definition");
 
   const legacyQueryRailItem = useMemo(() => {
     const queryItem = new URLSearchParams(location.search).get("q");

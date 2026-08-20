@@ -7,20 +7,21 @@ import React, {
   useMemo,
 } from "react";
 import {
+  ChevronDown,
+  LayoutGrid,
+  MoreHorizontal,
   Download,
   Copy,
   Undo2,
   Redo2,
   Sparkles,
-  Camera,
   Loader2,
   HelpCircle,
-  Beaker,
   Video,
-  KeyRound,
   User,
   Shield,
   Cpu,
+  X,
 } from "lucide-react";
 
 import { TextEffectConfig, Preset } from "@clypra-studio/engine";
@@ -38,7 +39,6 @@ import {
 import { GOOGLE_FONTS, GOOGLE_FONTS_LINK } from "./constants";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
-import { DrawerIntro, LeftRail } from "./components/StudioChrome";
 import { AdminPurgeSettings } from "./components/settings/AdminPurgeSettings";
 import { AdminTransitionsSettings } from "./components/settings/AdminTransitionsSettings";
 import { LabsPanel } from "./components/LabsPanel";
@@ -62,14 +62,13 @@ import { useCollapsibleSections } from "./hooks/useCollapsibleSections";
 import { useResponsiveMobileTab } from "./hooks/useResponsiveMobileTab";
 import { useStudioWorkspaceState } from "./hooks/useStudioWorkspaceState";
 import {
-  analyzeStyleFromImage,
-  generateStyleFromPrompt,
   generateEffectName,
   performDeepResearch,
 } from "./services/geminiService";
 import { getStudioApiBaseUrl } from "./services/apiConfig";
 import { getNativeLabClient } from "./services/nativeLabClient";
 import { TextEffectCatalogPanel } from "./components/TextEffectCatalogPanel";
+import { CompositionToolbar } from "./components/CompositionToolbar";
 
 const FontCompare = lazy(() =>
   import("./components/FontCompare").then((module) => ({
@@ -92,24 +91,9 @@ const SavePresetModal = lazy(() =>
     default: module.SavePresetModal,
   })),
 );
-const ImageScanModal = lazy(() =>
-  import("./components/StudioModals").then((module) => ({
-    default: module.ImageScanModal,
-  })),
-);
-const PromptStyleModal = lazy(() =>
-  import("./components/StudioModals").then((module) => ({
-    default: module.PromptStyleModal,
-  })),
-);
 const TutorialModal = lazy(() =>
   import("./components/StudioModals").then((module) => ({
     default: module.TutorialModal,
-  })),
-);
-const GeminiKeyModal = lazy(() =>
-  import("./components/GeminiKeyModal").then((module) => ({
-    default: module.GeminiKeyModal,
   })),
 );
 import { LoginModal } from "./components/LoginModal";
@@ -165,6 +149,7 @@ if (
 }
 
 const CREATOR_SESSION_KEY = "clypra_studio_creator_session";
+
 
 // Admin Settings Tabs Component
 function AdminSettingsTabs() {
@@ -233,10 +218,8 @@ export default function App() {
     uiMode,
   } = useStudioWorkspaceState();
   // Text styling and layer authoring live exclusively in the right Inspector.
-  // The left drawer is intentionally limited to library/navigation actions.
-  const [textSubTab, setTextSubTab] = useState<"templates" | "export">(
-    "templates",
-  );
+  // Export is opened from the composition toolbar, so there is no secondary
+  // export tab competing with the library or Inspector.
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
   const skipConfigToScene = useRef(false);
@@ -262,6 +245,7 @@ export default function App() {
     "checkerboard",
   );
   const [zoom, setZoom] = useState<number>(100);
+  const [effectiveZoom, setEffectiveZoom] = useState<number>(100);
   const [zoomMode, setZoomMode] = useState<"fit" | "manual">("fit");
   // The text-design workspace is intentionally native-daemon-only so the
   // preview cannot silently diverge from the editor's native composition path.
@@ -405,32 +389,10 @@ export default function App() {
   const [showSavePresetModal, setShowSavePresetModal] =
     useState<boolean>(false);
   const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
-  const [showGeminiKeyModal, setShowGeminiKeyModal] = useState<boolean>(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [tutorialActiveTab, setTutorialActiveTab] =
     useState<string>("typography");
   const [isGeneratingName, setIsGeneratingName] = useState<boolean>(false);
-
-  // Modern AI image styling scanner states
-  const [showImageScanModal, setShowImageScanModal] = useState<boolean>(false);
-  const [scanImage, setScanImage] = useState<string | null>(null);
-  const [scanStatus, setScanStatus] = useState<
-    "idle" | "reading" | "analyzing" | "completed" | "failed"
-  >("idle");
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [scanResultConfig, setScanResultConfig] =
-    useState<TextEffectConfig | null>(null);
-  const [scanLogs, setScanLogs] = useState<string[]>([]);
-
-  // Modern AI Prompt-to-Style states
-  const [showPromptModal, setShowPromptModal] = useState<boolean>(false);
-  const [promptInput, setPromptInput] = useState<string>("");
-  const [promptStatus, setPromptStatus] = useState<
-    "idle" | "generating" | "completed" | "failed"
-  >("idle");
-  const [promptError, setPromptError] = useState<string | null>(null);
-  const [promptResultConfig, setPromptResultConfig] =
-    useState<TextEffectConfig | null>(null);
-  const [promptLogs, setPromptLogs] = useState<string[]>([]);
 
   // Active Mobile View Tab (Controls | Preview | Code)
   const { mobileActiveTab, setMobileActiveTab, isMobile, isTablet, isNarrow } =
@@ -509,9 +471,10 @@ export default function App() {
           // The active rail is route-owned. Restoring it from the editor
           // session would overwrite direct URLs such as /studio/admin with
           // the last creative workspace, usually /studio/text-effects.
-          if (session.ui.textSubTab === "export") setTextSubTab("export");
-          else if (session.ui.textSubTab) setTextSubTab("templates");
-          if (session.ui.activeTab) setActiveTab(session.ui.activeTab);
+          // `/studio/text-effects` is the dedicated lab entry point, so it
+          // must always open its native effect library rather than inheriting
+          // a previously selected publish/export view.
+          setActiveTab("definition");
           if (session.ui.selectedLayerId !== undefined)
             setSelectedLayerId(session.ui.selectedLayerId);
           if (session.ui.mobileActiveTab)
@@ -665,23 +628,19 @@ export default function App() {
         }
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
           e.preventDefault();
-          setActiveRailItem("text-effects");
-          setTextSubTab("export");
+          setShowExportModal(true);
         }
         if (e.key.toLowerCase() === "t") {
           setActiveRailItem("text-effects");
-          setTextSubTab("templates");
         }
         if (e.key.toLowerCase() === "e") {
           setActiveRailItem("text-effects");
-          setTextSubTab("templates");
         }
         if (e.key.toLowerCase() === "v") {
           setActiveRailItem("video-effects");
         }
         if (e.key.toLowerCase() === "a") {
-          setActiveRailItem("text-effects");
-          setTextSubTab("export");
+          setShowExportModal(true);
         }
       }
 
@@ -837,7 +796,6 @@ export default function App() {
             activeTab,
             selectedLayerId,
             mobileActiveTab,
-            textSubTab,
           },
           exportSettings: {
             engineFormat,
@@ -888,7 +846,6 @@ export default function App() {
     activeTab,
     selectedLayerId,
     mobileActiveTab,
-    textSubTab,
     engineFormat,
     definitionFormat,
     bgMode,
@@ -1437,239 +1394,6 @@ export default function App() {
     }
   };
 
-  // AI image style analyzer helper
-  const handleAnalyzeStyle = async () => {
-    if (!scanImage) return;
-    setScanStatus("analyzing");
-    setScanError(null);
-    setScanResultConfig(null);
-    setScanLogs(["Processing base64 canvas stream..."]);
-
-    const appendLog = (msg: string) => {
-      setScanLogs((prev) => [...prev, msg]);
-    };
-
-    const timer1 = setTimeout(
-      () => appendLog("AI is analyzing image with Gemini model..."),
-      600,
-    );
-    const timer2 = setTimeout(
-      () =>
-        appendLog(
-          "Deconstructing font styling, letter family & stroke boundaries...",
-        ),
-      1500,
-    );
-    const timer3 = setTimeout(
-      () =>
-        appendLog(
-          "Evaluating pixel maps, primary colors and linear gradients...",
-        ),
-      2400,
-    );
-    const timer4 = setTimeout(
-      () =>
-        appendLog(
-          "Parsing shadow displacements, depths, panel properties and glow layers...",
-        ),
-      3300,
-    );
-
-    try {
-      const resultConfig = await analyzeStyleFromImage(scanImage);
-
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
-
-      // Guarantee retention of user's core custom typed words and canvas dimensions
-      const mergedConfig: TextEffectConfig = {
-        ...config,
-        ...resultConfig,
-        text: config.text || "STUDIO EFFECT",
-      };
-
-      // Auto-name the effect based on its visual characteristics
-      appendLog("Generating effect name and category...");
-      try {
-        const { name: aiName } = await generateEffectName(mergedConfig);
-        mergedConfig.effectName = aiName;
-      } catch {
-        // Non-fatal — keep going without a name
-      }
-
-      appendLog(
-        "AI deconstruction succeeded! Custom configuration mappings resolved.",
-      );
-      setScanResultConfig(mergedConfig);
-      setScanStatus("completed");
-    } catch (err: any) {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
-      setScanStatus("failed");
-      setScanError(
-        err.message || "Failed to process style deconstruction request.",
-      );
-    }
-  };
-
-  const handleApplyAnalyzedConfig = () => {
-    if (!scanResultConfig) return;
-    forceSaveHistoryImmediately(scene);
-    const nextScene = textEffectConfigToScene(scanResultConfig);
-    skipConfigToScene.current = true;
-    setConfig(scanResultConfig);
-    setScene(nextScene);
-    setShowImageScanModal(false);
-  };
-
-  // AI Prompt-to-Style Helper
-  const handleGeneratePromptStyle = async () => {
-    if (!promptInput.trim()) return;
-    setPromptStatus("generating");
-    setPromptError(null);
-    setPromptResultConfig(null);
-    setPromptLogs(["Initializing Prompt Engine..."]);
-
-    const appendLog = (msg: string) => {
-      setPromptLogs((prev) => [...prev, msg]);
-    };
-
-    const timer1 = setTimeout(
-      () => appendLog("Sending visual styling seed to Gemini LLM..."),
-      500,
-    );
-    const timer2 = setTimeout(
-      () =>
-        appendLog(
-          "Synthesizing responsive font-weights and visual contrasts...",
-        ),
-      1200,
-    );
-    const timer3 = setTimeout(
-      () =>
-        appendLog("Designing custom multi-layer glows and canvas gradients..."),
-      2000,
-    );
-    const timer4 = setTimeout(
-      () => appendLog("Configuring optimal bevel displacements and shadows..."),
-      2850,
-    );
-
-    try {
-      const resultConfig = await generateStyleFromPrompt(promptInput);
-
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
-
-      // Guarantee retention of user's core custom typed words and canvas dimensions
-      const mergedConfig: TextEffectConfig = {
-        ...config,
-        ...resultConfig,
-        text: config.text || "STUDIO EFFECT",
-      };
-
-      // Auto-name the effect based on its visual characteristics
-      appendLog("Generating effect name and category...");
-      try {
-        const { name: aiName } = await generateEffectName(mergedConfig);
-        mergedConfig.effectName = aiName;
-      } catch {
-        // Non-fatal — keep going without a name
-      }
-
-      appendLog(
-        "AI generation succeeded! Visual configuration loaded successfully.",
-      );
-      setPromptResultConfig(mergedConfig);
-      setPromptStatus("completed");
-    } catch (err: any) {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
-      setPromptStatus("failed");
-      setPromptError(err.message || "Failed to generate styling parameters.");
-    }
-  };
-
-  const handleApplyPromptConfig = () => {
-    if (!promptResultConfig) return;
-    forceSaveHistoryImmediately(scene);
-    const nextScene = textEffectConfigToScene(promptResultConfig);
-    skipConfigToScene.current = true;
-    setConfig(promptResultConfig);
-    setScene(nextScene);
-    setShowPromptModal(false);
-  };
-
-  // Drag-and-drop & clipboard processing helpers
-  const processFileForScan = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setScanError(
-        "Please select a valid image file. Common form formats: PNG, JPG, WEBP.",
-      );
-      return;
-    }
-    setScanStatus("reading");
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setScanImage(event.target?.result as string);
-      setScanStatus("idle");
-      setScanError(null);
-    };
-    reader.onerror = () => {
-      setScanError("Failed reading file stream from system storage.");
-      setScanStatus("idle");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleCustomDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      processFileForScan(files[0]);
-    }
-  };
-
-  const handleFileSelectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      processFileForScan(files[0]);
-    }
-  };
-
-  useEffect(() => {
-    const handleGlobalPaste = (e: ClipboardEvent) => {
-      if (!showImageScanModal) return;
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of items) {
-        if (item.type.indexOf("image") !== -1) {
-          const file = item.getAsFile();
-          if (file) {
-            processFileForScan(file);
-            break;
-          }
-        }
-      }
-    };
-    window.addEventListener("paste", handleGlobalPaste);
-    return () => {
-      window.removeEventListener("paste", handleGlobalPaste);
-    };
-  }, [showImageScanModal]);
-
   // Copy code tab to clipboard
   const copyCodeToClipboard = async () => {
     const codeToCopy = getCurrentCodeText();
@@ -1894,73 +1618,27 @@ export default function App() {
     >
       {/* ── TOP HEADER ──────────────────────────────────────────────────────── */}
       <header id="studio-header" className="studio-header">
-        {/* Left: brand + autosave */}
-        <div className="flex items-center gap-3 min-w-0">
+        {/* Left: brand */}
+        <div className="flex min-w-0 items-center">
           <a
             href="/studio"
             aria-label="Back to Clypra Studio hub"
-            className="flex items-center gap-2 group shrink-0"
+            className="group flex shrink-0 items-center gap-2"
           >
             <img
               src="/clypra.svg"
               alt="Clypra"
-              className="w-7 h-7 select-none transition-transform group-hover:scale-105"
+              className="h-7 w-7 select-none transition-transform group-hover:scale-105"
             />
-            <span className="text-[13px] font-bold text-white tracking-tight hidden sm:block">
+            <span className="hidden text-[13px] font-bold tracking-tight text-white sm:block">
               Clypra{" "}
               <span style={{ color: "var(--studio-accent)" }}>Studio</span>
             </span>
           </a>
-
-          {/* Autosave pill */}
-          <span
-            className={`autosave-pill hidden sm:inline-flex${
-              creatorSaveStatus === "saving" ? " saving" : ""
-            }`}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{
-                background:
-                  creatorSaveStatus === "saving"
-                    ? "#fbbf24"
-                    : "var(--gpu-ready)",
-                boxShadow:
-                  creatorSaveStatus === "saving"
-                    ? "none"
-                    : "0 0 5px var(--gpu-ready)",
-              }}
-            />
-            {creatorSaveStatus === "saving" ? "Saving…" : "Autosaved"}
-          </span>
-
-          {/* GPU pipeline status pill */}
-          {activeRailItem === "text-effects" && (
-            <span
-              className={`studio-gpu-pill hidden md:inline-flex ${
-                nativePreviewState === "ready"
-                  ? "ready"
-                  : nativePreviewState === "error"
-                  ? "error"
-                  : "live"
-              }`}
-              title={
-                nativePreviewError ?? "Clypra native lab daemon · Metal GPU"
-              }
-            >
-              <span className="studio-gpu-pill-dot" />
-              <Cpu size={9} style={{ flexShrink: 0 }} />
-              {nativePreviewState === "ready"
-                ? "GPU · Ready"
-                : nativePreviewState === "error"
-                ? "GPU · Error"
-                : "GPU · Live"}
-            </span>
-          )}
         </div>
 
         {/* Centre: undo/redo */}
-        <div className="flex items-center gap-0.5 absolute left-1/2 -translate-x-1/2">
+        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 sm:flex">
           <button
             id="global-undo-btn"
             aria-label="Undo"
@@ -1983,17 +1661,56 @@ export default function App() {
           </button>
         </div>
 
-        {/* Right: utilities */}
-        <div className="flex items-center gap-1.5">
-          <button
-            id="gemini-key-header-btn"
-            onClick={() => setShowGeminiKeyModal(true)}
-            className="studio-header-btn"
-            title="Gemini API Key"
+        {/* Right: status, utilities, and account actions */}
+        <div className="ml-auto flex items-center gap-1.5">
+          <span
+            className={`autosave-pill hidden sm:inline-flex${
+              creatorSaveStatus === "saving" ? " saving" : ""
+            }`}
           >
-            <KeyRound size={14} />
-          </button>
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{
+                background:
+                  creatorSaveStatus === "saving"
+                    ? "#fbbf24"
+                    : "var(--gpu-ready)",
+                boxShadow:
+                  creatorSaveStatus === "saving"
+                    ? "none"
+                    : "0 0 5px var(--gpu-ready)",
+              }}
+            />
+            {creatorSaveStatus === "saving" ? "Saving…" : "Autosaved"}
+          </span>
 
+          {activeRailItem === "text-effects" && (
+            <span
+              className={`studio-gpu-pill hidden md:inline-flex ${
+                nativePreviewState === "ready"
+                  ? "ready"
+                  : nativePreviewState === "error"
+                  ? "error"
+                  : "live"
+              }`}
+              title={
+                nativePreviewError ?? "Clypra native lab daemon · Metal GPU"
+              }
+            >
+              <span className="studio-gpu-pill-dot" />
+              <Cpu size={9} style={{ flexShrink: 0 }} />
+              {nativePreviewState === "ready"
+                ? "GPU · Ready"
+                : nativePreviewState === "error"
+                ? "GPU · Error"
+                : "GPU · Live"}
+            </span>
+          )}
+
+          <div
+            className="mx-1 hidden h-4 w-px shrink-0 sm:block"
+            style={{ background: "var(--studio-border)" }}
+          />
           <button
             id="open-tutorial-btn"
             onClick={() => setShowTutorialModal(true)}
@@ -2003,9 +1720,8 @@ export default function App() {
             <HelpCircle size={14} />
           </button>
 
-          {/* Separator */}
           <div
-            className="w-px h-4 mx-1 shrink-0"
+            className="mx-1 h-4 w-px shrink-0"
             style={{ background: "var(--studio-border)" }}
           />
 
@@ -2072,37 +1788,58 @@ export default function App() {
             </button>
           )}
 
-          {isAdmin && (
-            <a
-              href="/studio/admin"
-              className="flex items-center gap-1.5 rounded-lg px-2.5 h-8 text-[11px] font-semibold no-underline cursor-pointer transition-colors"
-              style={{
-                background: "rgba(59,130,246,0.1)",
-                border: "1px solid rgba(59,130,246,0.2)",
-                color: "#93c5fd",
-              }}
-              title="AI Effects Moderator Portal"
-            >
-              <Sparkles size={13} />
-              <span className="hidden md:inline">Moderate</span>
-            </a>
-          )}
-
-          <a
-            href="/lottie"
-            className="flex items-center gap-1.5 rounded-lg px-2.5 h-8 text-[11px] font-semibold no-underline cursor-pointer transition-colors"
-            style={{
-              background: "rgba(139,92,246,0.1)",
-              border: "1px solid rgba(139,92,246,0.2)",
-              color: "#c4b5fd",
-            }}
-            title="Text Templates"
-          >
-            <Video size={13} />
-            <span className="hidden md:inline">Text Templates</span>
-          </a>
+          <details className="relative">
+            <summary className="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg border border-(--studio-border) bg-(--studio-control) px-2.5 text-[11px] font-semibold text-(--studio-muted) transition-colors hover:border-(--studio-accent) hover:text-white [&::-webkit-details-marker]:hidden">
+              <MoreHorizontal size={15} />
+              <span className="hidden md:inline">Navigate</span>
+              <ChevronDown size={12} />
+            </summary>
+            <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-52 rounded-xl border border-(--studio-border) bg-(--studio-raised) p-1.5 shadow-2xl">
+              <p className="px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-(--studio-subtle)">
+                Studio navigation
+              </p>
+              <a href="/studio" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)">
+                <LayoutGrid size={13} className="text-(--studio-accent)" />
+                All labs
+              </a>
+              <a href="/lottie" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)">
+                <Video size={13} className="text-violet-300" />
+                Text Templates
+              </a>
+              {isAdmin && (
+                <a href="/studio/admin" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)">
+                  <Shield size={13} className="text-blue-300" />
+                  Admin Console
+                </a>
+              )}
+            </div>
+          </details>
         </div>
       </header>
+
+      {activeRailItem === "text-effects" && (
+        <CompositionToolbar
+          config={config}
+          effectiveZoom={effectiveZoom}
+          zoomMode={zoomMode}
+          bgMode={bgMode}
+          gpuState={nativePreviewState}
+          gpuError={nativePreviewError}
+          onZoomChange={setZoom}
+          onZoomModeChange={setZoomMode}
+          onBgModeChange={setBgMode}
+          toolbarExtras={
+            <button
+              id="open-export-modal-btn"
+              type="button"
+              onClick={() => setShowExportModal(true)}
+              className="canvas-toolbar-btn primary px-3"
+            >
+              <Download size={11} className="mr-1" /> Export
+            </button>
+          }
+        />
+      )}
 
       {/* Mobile tab bar */}
       {isNarrow && (
@@ -2115,7 +1852,7 @@ export default function App() {
           }}
         >
           {(["controls", "preview", "code"] as const).map((tab, i) => {
-            const labels = ["Controls", "Preview", "Export"];
+            const labels = ["Controls", "Preview", "Inspector"];
             const active = mobileActiveTab === tab;
             return (
               <button
@@ -2146,16 +1883,6 @@ export default function App() {
         id="primary-workspace-layout"
         className="flex flex-1 overflow-hidden"
       >
-        {/* Left icon rail */}
-        {!isMobile && (
-          <LeftRail
-            activeItem={activeRailItem}
-            onSelectItem={setActiveRailItem}
-            isAdmin={isAdmin}
-            gpuState={nativePreviewState}
-          />
-        )}
-
         {activeRailItem === "admin" ? (
           <div className="min-w-0 flex-1 overflow-y-auto bg-[#0B0B10]">
             {isAdmin ? (
@@ -2190,43 +1917,27 @@ export default function App() {
                     Only logged-in administrators are allowed to access the
                     Labs.
                   </p>
-                  <button
-                    onClick={() => setActiveRailItem("text-effects")}
-                    className="mt-4 px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors"
+                  <a
+                    href="/studio/text-effects"
+                    className="mt-4 inline-block no-underline px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors"
                   >
                     Go to Text Effects
-                  </button>
+                  </a>
                 </div>
               </div>
             )}
           </div>
         ) : (
           <>
-            {/* LEFT DRAWER — CREATION LIBRARY
-              Mobile:  full-width, shown only when mobileActiveTab === "controls"
-              Tablet:  fixed 300px, shown only when mobileActiveTab === "controls"
-              Desktop: fixed 360px, always visible */}
             <aside
               id="left-controls-panel"
-              data-rail={activeRailItem}
               className={`
               ${isNarrow && mobileActiveTab !== "controls" ? "hidden" : "flex"}
               ${isMobile ? "w-full" : isTablet ? "w-[300px]" : "w-[360px]"}
               flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 select-none
-              ${activeRailItem === "text-effects" && textSubTab === "templates" ? "overflow-hidden" : "overflow-y-auto"}
+              ${activeRailItem === "text-effects" ? "overflow-hidden" : "overflow-y-auto"}
             `}
             >
-              <DrawerIntro
-                activeItem={activeRailItem}
-                showExport={
-                  activeRailItem === "text-effects" && textSubTab !== "export"
-                }
-                onOpenExport={() => {
-                  setActiveRailItem("text-effects");
-                  setTextSubTab("export");
-                }}
-              />
-
               {activeRailItem === "text-effects" && (
                 <>
                   {/* ── Compact GPU pipeline strip ── */}
@@ -2283,29 +1994,13 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* ── Library navigation ──
-                      Style and Layers are owned by the Inspector. */}
-                  <div className="studio-tabs">
-                    {(["templates", "export"] as const).map(
-                      (tab) => (
-                        <button
-                          key={tab}
-                          type="button"
-                          onClick={() => setTextSubTab(tab)}
-                          className={`studio-tab${
-                            textSubTab === tab ? " active" : ""
-                          }`}
-                        >
-                          {tab === "templates" ? "Library" : "Publish & Export"}
-                        </button>
-                      ),
-                    )}
+                  <div className="border-b border-(--studio-border) px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-(--studio-muted)">
+                    Native effect library
                   </div>
                 </>
               )}
 
-              {activeRailItem === "text-effects" &&
-                textSubTab === "templates" && (
+              {activeRailItem === "text-effects" && (
                   <div
                     className="flex min-h-0 flex-1 flex-col border-b"
                     style={{ borderColor: "var(--studio-border)" }}
@@ -2319,7 +2014,6 @@ export default function App() {
                       onSortByChange={setSortBy}
                       onApplyPreset={(presetToApply) => {
                         handleApplyPreset(presetToApply);
-                        setTextSubTab("templates");
                       }}
                       onDeletePreset={handleDeletePreset}
                       onStartFromScratch={handleStartFromScratch}
@@ -2328,27 +2022,6 @@ export default function App() {
                   </div>
                 )}
 
-              {activeRailItem === "text-effects" && textSubTab === "export" && (
-                <div className="flex flex-col gap-2 p-3 border-b" style={{ borderColor: "var(--studio-border)" }}>
-                  {[
-                    { id: "gemini-key-settings-btn", onClick: () => setShowGeminiKeyModal(true), icon: KeyRound, label: "Gemini API Key", accent: "var(--studio-accent)", bg: "var(--studio-active-soft)", border: "rgba(124,111,255,0.25)" },
-                    { id: "prompt-effect-btn", onClick: () => { setPromptInput(""); setPromptStatus("idle"); setPromptResultConfig(null); setPromptError(null); setPromptLogs([]); setShowPromptModal(true); }, icon: Sparkles, label: "Prompt Style", accent: "var(--gpu-ready)", bg: "rgba(52,211,153,0.07)", border: "rgba(52,211,153,0.2)" },
-                    { id: "scan-effect-btn", onClick: () => { setScanImage(null); setScanStatus("idle"); setScanResultConfig(null); setScanError(null); setScanLogs([]); setShowImageScanModal(true); }, icon: Camera, label: "Scan Image", accent: "var(--studio-text)", bg: "var(--studio-control)", border: "var(--studio-border)" },
-                    { id: "research-blend-btn", onClick: () => setActiveTab("lab"), icon: Beaker, label: "Research & Blend", accent: "var(--studio-text)", bg: "var(--studio-control)", border: "var(--studio-border)" },
-                  ].map(({ id, onClick, icon: Icon, label, accent, bg, border }) => (
-                    <button
-                      key={id}
-                      id={id}
-                      type="button"
-                      onClick={onClick}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg py-2 text-[11px] font-bold transition-colors"
-                      style={{ background: bg, border: `1px solid ${border}`, color: accent }}
-                    >
-                      <Icon size={13} /> {label}
-                    </button>
-                  ))}
-                </div>
-              )}
             </aside>
 
             {/* CENTER — CANVAS + TIMELINE
@@ -2368,60 +2041,7 @@ export default function App() {
                 onZoomChange={setZoom}
                 onZoomModeChange={setZoomMode}
                 onBgModeChange={setBgMode}
-                toolbarExtras={
-                  <>
-                    <button
-                      id="copy-to-clipboard-image-btn"
-                      type="button"
-                      onClick={copyImageToClipboard}
-                      className="canvas-toolbar-btn"
-                    >
-                      <Copy size={11} className={`mr-1 ${copiedImageFeedback ? "text-green-400" : ""}`} />
-                      {copiedImageFeedback ? "Copied" : "Copy"}
-                    </button>
-                    <button
-                      id="download-canvas-image-btn"
-                      type="button"
-                      onClick={downloadPng}
-                      className="canvas-toolbar-btn primary"
-                    >
-                      <Download size={11} className="mr-1" /> PNG
-                    </button>
-                    <button
-                      id="download-png-sequence-btn"
-                      type="button"
-                      onClick={downloadPngSequence}
-                      className="canvas-toolbar-btn"
-                      title={`Export ${webmFrameCount} PNG frames as ZIP`}
-                    >
-                      <Download size={11} className="mr-1" /> Seq
-                    </button>
-                    {webmExportSupported && (
-                      <button
-                        id="download-webm-btn"
-                        type="button"
-                        onClick={downloadWebM}
-                        disabled={isExportingWebM}
-                        className="canvas-toolbar-btn"
-                        title={`Export ${webmFrameCount} frames as WebM`}
-                      >
-                        {isExportingWebM
-                          ? <Loader2 size={11} className="mr-1 animate-spin" />
-                          : <Video size={11} className="mr-1" />}
-                        {isExportingWebM ? "…" : "WebM"}
-                      </button>
-                    )}
-                    {webmExportError && (
-                      <span
-                        className="text-[10px] max-w-[120px] truncate"
-                        style={{ color: "var(--gpu-error)" }}
-                        title={webmExportError}
-                      >
-                        {webmExportError}
-                      </span>
-                    )}
-                  </>
-                }
+                onEffectiveZoomChange={setEffectiveZoom}
               />
 
               {showFontCompare && (
@@ -2446,7 +2066,7 @@ export default function App() {
               />
             </div>
 
-            {/* RIGHT PANEL — INSPECTOR / EXPORT LAB
+            {/* RIGHT PANEL — INSPECTOR
               Mobile/Tablet: shown only when mobileActiveTab === "code", full-width on mobile
               Desktop: always visible, fixed 344px */}
             <Suspense
@@ -2467,65 +2087,24 @@ export default function App() {
                   isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"
                 } ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}
               >
-                {activeRailItem === "text-effects" &&
-                textSubTab === "export" ? (
-                  <ExportLabPanel
-                    isMobile={isMobile}
-                    mobileActiveTab={mobileActiveTab}
-                    activeTab={activeTab}
-                    onActiveTabChange={setActiveTab}
-                    engineFormat={engineFormat}
-                    onEngineFormatChange={setEngineFormat}
-                    definitionFormat={definitionFormat}
-                    onDefinitionFormatChange={setDefinitionFormat}
-                    activeEffectId={activeEffectId}
-                    config={config}
-                    scene={scene}
-                    highlightedCode={highlightedCode}
-                    currentCodeText={getCurrentCodeText()}
-                    copiedCodeFeedback={copiedCodeFeedback}
-                    onCopyCode={copyCodeToClipboard}
-                    onDownloadCode={downloadCodeAsFile}
-                    researchTopic={researchTopic}
-                    onResearchTopicChange={setResearchTopic}
-                    researchStatus={researchStatus}
-                    researchError={researchError}
-                    researchLogs={researchLogs}
-                    researchResult={researchResult}
-                    onExecuteResearch={handleExecuteDeepResearch}
-                    onApplyResearchResult={handleApplyResearchResult}
-                    blendAId={blendAId}
-                    blendBId={blendBId}
-                    blendRatio={blendRatio}
-                    onBlendAIdChange={setBlendAId}
-                    onBlendBIdChange={setBlendBId}
-                    onBlendRatioChange={setBlendRatio}
-                    onPerformBlend={handlePerformBlend}
-                    presets={[...customPresets, ...builtInPresets]}
-                    onCaptureEffectThumbnail={getPreviewPngDataUrl}
-                    effectApiCategory={effectApiCategory}
-                    onEffectApiCategoryChange={setEffectApiCategory}
-                  />
-                ) : (
-                  <InspectorPanel
-                    config={config}
-                    scene={scene}
-                    selectedLayerId={selectedLayerId}
-                    onSelectLayer={setSelectedLayerId}
-                    onConfigChange={modifyConfig}
-                    onSceneChange={modifyScene}
-                    onSavePreset={() => setShowSavePresetModal(true)}
-                    onStartFromScratch={handleStartFromScratch}
-                    onFitText={fitTextToComposition}
-                    onOpenFontCompare={() => setShowFontCompare(true)}
-                    activeEffectId={activeEffectId}
-                    collapsedSections={collapsedSections}
-                    isGeneratingName={isGeneratingName}
-                    onToggleSection={toggleSection}
-                    onGenerateEffectName={handleGenerateAiEffectName}
-                    onApplyCompositionPreset={applyCompositionPreset}
-                  />
-                )}
+                <InspectorPanel
+                  config={config}
+                  scene={scene}
+                  selectedLayerId={selectedLayerId}
+                  onSelectLayer={setSelectedLayerId}
+                  onConfigChange={modifyConfig}
+                  onSceneChange={modifyScene}
+                  onSavePreset={() => setShowSavePresetModal(true)}
+                  onStartFromScratch={handleStartFromScratch}
+                  onFitText={fitTextToComposition}
+                  onOpenFontCompare={() => setShowFontCompare(true)}
+                  activeEffectId={activeEffectId}
+                  collapsedSections={collapsedSections}
+                  isGeneratingName={isGeneratingName}
+                  onToggleSection={toggleSection}
+                  onGenerateEffectName={handleGenerateAiEffectName}
+                  onApplyCompositionPreset={applyCompositionPreset}
+                />
               </div>
             </Suspense>
           </>
@@ -2548,55 +2127,78 @@ export default function App() {
           onSave={handleSaveCustomPreset}
         />
 
-        <ImageScanModal
-          open={showImageScanModal}
-          scanImage={scanImage}
-          scanStatus={scanStatus}
-          scanError={scanError}
-          scanResultConfig={scanResultConfig}
-          scanLogs={scanLogs}
-          onClose={() => {
-            setScanImage(null);
-            setScanStatus("idle");
-            setScanResultConfig(null);
-            setScanError(null);
-            setShowImageScanModal(false);
-          }}
-          onClearImage={() => {
-            setScanImage(null);
-            setScanResultConfig(null);
-            setScanError(null);
-          }}
-          onAnalyze={handleAnalyzeStyle}
-          onApply={handleApplyAnalyzedConfig}
-          onDragOver={handleDragOver}
-          onDrop={handleCustomDrop}
-          onFileSelect={handleFileSelectChange}
-        />
-
-        <PromptStyleModal
-          open={showPromptModal}
-          promptInput={promptInput}
-          promptStatus={promptStatus}
-          promptError={promptError}
-          promptResultConfig={promptResultConfig}
-          promptLogs={promptLogs}
-          onPromptChange={setPromptInput}
-          onClose={() => {
-            setPromptInput("");
-            setPromptStatus("idle");
-            setPromptResultConfig(null);
-            setPromptError(null);
-            setShowPromptModal(false);
-          }}
-          onGenerate={handleGeneratePromptStyle}
-          onApply={handleApplyPromptConfig}
-        />
-
-        <GeminiKeyModal
-          open={showGeminiKeyModal}
-          onClose={() => setShowGeminiKeyModal(false)}
-        />
+        {showExportModal && (
+          <div
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Export text effect"
+            onMouseDown={() => setShowExportModal(false)}
+          >
+            <div
+              className="flex max-h-[min(88vh,900px)] w-full max-w-[760px] flex-col overflow-hidden rounded-xl border border-(--studio-border) bg-(--studio-panel) shadow-2xl"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="flex shrink-0 items-center justify-between border-b border-(--studio-border) px-4 py-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-(--studio-subtle)">
+                    Export
+                  </p>
+                  <h2 className="mt-0.5 text-sm font-semibold text-white">
+                    Editor-ready effect package
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowExportModal(false)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-(--studio-border) text-(--studio-muted) transition-colors hover:bg-(--studio-hover) hover:text-white"
+                  aria-label="Close export dialog"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <ExportLabPanel
+                  isMobile={false}
+                  mobileActiveTab="code"
+                  activeTab={activeTab}
+                  onActiveTabChange={setActiveTab}
+                  engineFormat={engineFormat}
+                  onEngineFormatChange={setEngineFormat}
+                  definitionFormat={definitionFormat}
+                  onDefinitionFormatChange={setDefinitionFormat}
+                  activeEffectId={activeEffectId}
+                  config={config}
+                  scene={scene}
+                  highlightedCode={highlightedCode}
+                  currentCodeText={getCurrentCodeText()}
+                  copiedCodeFeedback={copiedCodeFeedback}
+                  onCopyCode={copyCodeToClipboard}
+                  onDownloadCode={downloadCodeAsFile}
+                  researchTopic={researchTopic}
+                  onResearchTopicChange={setResearchTopic}
+                  researchStatus={researchStatus}
+                  researchError={researchError}
+                  researchLogs={researchLogs}
+                  researchResult={researchResult}
+                  onExecuteResearch={handleExecuteDeepResearch}
+                  onApplyResearchResult={handleApplyResearchResult}
+                  blendAId={blendAId}
+                  blendBId={blendBId}
+                  blendRatio={blendRatio}
+                  onBlendAIdChange={setBlendAId}
+                  onBlendBIdChange={setBlendBId}
+                  onBlendRatioChange={setBlendRatio}
+                  onPerformBlend={handlePerformBlend}
+                  presets={[...customPresets, ...builtInPresets]}
+                  onCaptureEffectThumbnail={getPreviewPngDataUrl}
+                  effectApiCategory={effectApiCategory}
+                  onEffectApiCategoryChange={setEffectApiCategory}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <TutorialModal
           open={showTutorialModal}

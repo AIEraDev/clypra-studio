@@ -13,7 +13,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import type { Preset, TextEffectConfig } from "@clypra-studio/engine";
-import { defaultConfig } from "@clypra-studio/engine";
+import { _buildConfig, defaultConfig } from "@clypra-studio/engine";
 import { getStudioApiBaseUrl } from "../services/apiConfig";
 
 type CatalogSort = "recency" | "name" | "category";
@@ -58,6 +58,45 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+function normalizeSummaryPayload(payload: unknown, fallbackCategory?: string): RemoteEffectSummary[] {
+  const candidates: unknown[] = [];
+
+  if (Array.isArray(payload)) {
+    candidates.push(...payload);
+  } else if (isRecord(payload)) {
+    // Support the array response used by clypra-api as well as common
+    // envelope shapes from local R2 mirrors and older API deployments.
+    for (const key of ["effects", "items", "data", "results"]) {
+      const value = payload[key];
+      if (Array.isArray(value)) candidates.push(...value);
+    }
+    if (candidates.length === 0) {
+      for (const [category, value] of Object.entries(payload)) {
+        if (Array.isArray(value)) {
+          candidates.push(
+            ...value.map((item) =>
+              isRecord(item) ? { ...item, category: item.category ?? category } : item,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  return candidates.flatMap((candidate) => {
+    if (!isRecord(candidate) || typeof candidate.id !== "string") return [];
+    return [{
+      ...candidate,
+      id: candidate.id,
+      name: typeof candidate.name === "string" ? candidate.name : candidate.id,
+      category:
+        typeof candidate.category === "string" && candidate.category.length > 0
+          ? candidate.category
+          : fallbackCategory ?? "uncategorized",
+    } as RemoteEffectSummary];
+  });
+}
+
 function normalizeConfig(definition: unknown, summary: RemoteEffectSummary): TextEffectConfig | null {
   const root = isRecord(definition) ? definition : {};
   const nested = isRecord(root.config)
@@ -65,6 +104,25 @@ function normalizeConfig(definition: unknown, summary: RemoteEffectSummary): Tex
     : isRecord(root.definition)
       ? root.definition
       : root;
+
+  // API-published definitions use the canonical { font, fills, strokes,
+  // glows, ... } contract. Convert that contract through the same native
+  // migration used by the editor instead of approximating it in the Studio.
+  if (isRecord(nested.font) && Array.isArray(nested.fills)) {
+    const nativeConfig = _buildConfig(
+      nested as never,
+      typeof nested.text === "string" ? nested.text : defaultConfig.text,
+      typeof nested.fontSize === "number" ? nested.fontSize : defaultConfig.fontSize,
+      typeof nested.canvasWidth === "number" ? nested.canvasWidth : defaultConfig.canvasWidth,
+      typeof nested.canvasHeight === "number" ? nested.canvasHeight : defaultConfig.canvasHeight,
+    );
+    return {
+      ...defaultConfig,
+      ...nativeConfig,
+      effectName: summary.name,
+      text: typeof nested.text === "string" ? nested.text : defaultConfig.text,
+    } as TextEffectConfig;
+  }
 
   // Published definitions are intentionally accepted in both historical
   // shapes: top-level config fields and { config: TextEffectConfig }.
@@ -249,28 +307,28 @@ export function TextEffectCatalogPanel({
         rootError = cause;
       }
 
-      let summaries = Array.isArray(payload) ? (payload as RemoteEffectSummary[]) : [];
-      // The aggregate index is an optimization, not the source of truth. In
-      // local R2/Wrangler environments category indexes can exist first, so
-      // discover those definitions before showing an empty library.
-      if (summaries.length === 0) {
-        const categoryPayloads = await Promise.all(
-          TEXT_EFFECT_CATEGORIES.map(async (category) => {
-            try {
-              const categoryPayload = await request(`${apiBase}/text-effects/${category}`);
-              return Array.isArray(categoryPayload) ? (categoryPayload as RemoteEffectSummary[]) : [];
-            } catch {
-              return [];
-            }
-          }),
-        );
-        const byKey = new Map<string, RemoteEffectSummary>();
-        categoryPayloads.flat().forEach((effect) => byKey.set(`${effect.category}:${effect.id}`, effect));
-        summaries = Array.from(byKey.values());
-      }
+      // The aggregate index is an optimization, not the source of truth.
+      // Always merge category indexes so newly published neon/outline assets
+      // appear even when the global index is stale in R2 or KV.
+      const summaries = normalizeSummaryPayload(payload);
+      const categoryPayloads = await Promise.all(
+        TEXT_EFFECT_CATEGORIES.map(async (category) => {
+          try {
+            const categoryPayload = await request(`${apiBase}/text-effects/${category}`);
+            return normalizeSummaryPayload(categoryPayload, category);
+          } catch {
+            return [];
+          }
+        }),
+      );
+      const byKey = new Map<string, RemoteEffectSummary>();
+      [...summaries, ...categoryPayloads.flat()].forEach((effect) => {
+        byKey.set(`${effect.category}:${effect.id}`, effect);
+      });
+      const mergedSummaries = Array.from(byKey.values());
 
-      if (summaries.length === 0 && rootError) throw rootError;
-      setRemoteEffects(summaries);
+      if (mergedSummaries.length === 0 && rootError) throw rootError;
+      setRemoteEffects(mergedSummaries);
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === "AbortError") return;
       setError(cause instanceof Error ? cause.message : "Unable to load published effects");

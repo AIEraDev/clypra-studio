@@ -166,7 +166,7 @@ describe("Studio Workspace System Flow — OverlayStudioWorkspace Route & Panels
     expect(screen.getByText(/Save/i)).toBeInTheDocument();
     expect(screen.getByText(/Export/i)).toBeInTheDocument();
 
-    // Verify left rail navigation tabs
+    // Verify workspace navigation tabs
     expect(screen.getByText("Add")).toBeInTheDocument();
     expect(screen.getByText("Layers")).toBeInTheDocument();
     expect(screen.getByText("Data")).toBeInTheDocument();
