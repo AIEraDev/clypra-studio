@@ -12,12 +12,10 @@ import {
   Undo2,
   Redo2,
   Sparkles,
-  Plus,
   Camera,
   Loader2,
   HelpCircle,
   Beaker,
-  FolderPlus,
   Video,
   KeyRound,
   User,
@@ -40,7 +38,6 @@ import {
 import { GOOGLE_FONTS, GOOGLE_FONTS_LINK } from "./constants";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
-import { PresetChip } from "./components/PresetChip";
 import { DrawerIntro, LeftRail } from "./components/StudioChrome";
 import { AdminPurgeSettings } from "./components/settings/AdminPurgeSettings";
 import { AdminTransitionsSettings } from "./components/settings/AdminTransitionsSettings";
@@ -72,6 +69,7 @@ import {
 } from "./services/geminiService";
 import { getStudioApiBaseUrl } from "./services/apiConfig";
 import { getNativeLabClient } from "./services/nativeLabClient";
+import { TextEffectCatalogPanel } from "./components/TextEffectCatalogPanel";
 
 const FontCompare = lazy(() =>
   import("./components/FontCompare").then((module) => ({
@@ -2214,7 +2212,8 @@ export default function App() {
               className={`
               ${isNarrow && mobileActiveTab !== "controls" ? "hidden" : "flex"}
               ${isMobile ? "w-full" : isTablet ? "w-[300px]" : "w-[360px]"}
-              flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 overflow-y-auto select-none
+              flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 select-none
+              ${activeRailItem === "text-effects" && textSubTab === "templates" ? "overflow-hidden" : "overflow-y-auto"}
             `}
             >
               <DrawerIntro
@@ -2297,7 +2296,7 @@ export default function App() {
                             textSubTab === tab ? " active" : ""
                           }`}
                         >
-                          {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                          {tab === "templates" ? "Library" : "Publish & Export"}
                         </button>
                       ),
                     )}
@@ -2308,53 +2307,24 @@ export default function App() {
               {activeRailItem === "text-effects" &&
                 textSubTab === "templates" && (
                   <div
-                    className="flex flex-col p-3 gap-2 border-b"
+                    className="flex min-h-0 flex-1 flex-col border-b"
                     style={{ borderColor: "var(--studio-border)" }}
                   >
-                    <button
-                      id="start-scratch-header-btn"
-                      onClick={handleStartFromScratch}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg py-2 text-[11px] font-bold transition-colors"
-                      style={{
-                        background: "rgba(52,211,153,0.07)",
-                        border: "1px solid rgba(52,211,153,0.2)",
-                        color: "var(--gpu-ready)",
+                    <TextEffectCatalogPanel
+                      localPresets={displayPresets}
+                      activePresetId={activePresetId}
+                      selectedCategory={selectedCategory}
+                      sortBy={sortBy}
+                      onSelectedCategoryChange={setSelectedCategory}
+                      onSortByChange={setSortBy}
+                      onApplyPreset={(presetToApply) => {
+                        handleApplyPreset(presetToApply);
+                        setTextSubTab("templates");
                       }}
-                      title="Reset and start on a blank canvas"
-                    >
-                      <FolderPlus size={13} /> Blank Slate
-                    </button>
-
-                    <div className="flex items-center justify-between">
-                      <span
-                        className="text-[9px] font-bold uppercase tracking-widest"
-                        style={{ color: "var(--studio-muted)" }}
-                      >
-                        Templates
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowSavePresetModal(true)}
-                        className="canvas-toolbar-btn"
-                      >
-                        <Plus size={10} className="mr-1" /> Save
-                      </button>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5 overflow-y-auto">
-                      {displayPresets.slice(0, 20).map((preset) => (
-                        <PresetChip
-                          key={preset.id}
-                          preset={preset}
-                          activePresetId={activePresetId}
-                          handleApplyPreset={(presetToApply) => {
-                            handleApplyPreset(presetToApply);
-                            setTextSubTab("templates");
-                          }}
-                          handleDeletePreset={handleDeletePreset}
-                        />
-                      ))}
-                    </div>
+                      onDeletePreset={handleDeletePreset}
+                      onStartFromScratch={handleStartFromScratch}
+                      onSavePreset={() => setShowSavePresetModal(true)}
+                    />
                   </div>
                 )}
 
