@@ -1,24 +1,34 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Lock, Mail, X, Loader2, Sparkles } from "lucide-react";
+import { Lock, Mail, X, Loader2, Sparkles, UserRound } from "lucide-react";
+import { getStudioApiBaseUrl } from "../services/apiConfig";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+const API_BASE_URL = getStudioApiBaseUrl();
 
-interface UserInfo {
+export interface UserInfo {
   id: number;
   username: string;
   email: string;
   createdAt: string;
+  isAdmin?: boolean;
 }
 
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: (token: string, user: UserInfo) => void;
+  allowRegistration?: boolean;
 }
 
-export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
+export function LoginModal({
+  open,
+  onClose,
+  onSuccess,
+  allowRegistration = true,
+}: LoginModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [mode, setMode] = useState<"login" | "register">("login");
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +41,8 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
     if (open) {
       setEmail("");
       setPassword("");
+      setUsername("");
+      setMode("login");
       setError(null);
       setSuccessMsg(null);
       setLoading(false);
@@ -64,8 +76,10 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
     setLoading(true);
 
     try {
-      const endpoint = `${API_BASE_URL}/auth/login`;
-      const payload = { email, password };
+      const endpoint = `${API_BASE_URL}/auth/${mode}`;
+      const payload = mode === "register"
+        ? { username, email, password }
+        : { email, password };
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -81,7 +95,7 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
         throw new Error(data.error || "Authentication failed. Please check your credentials.");
       }
 
-      setSuccessMsg("Signed in successfully!");
+      setSuccessMsg(mode === "register" ? "Account created successfully!" : "Signed in successfully!");
       
       // Delay success action slightly to allow user to see success state
       setTimeout(() => {
@@ -124,10 +138,12 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
             <Sparkles size={20} className="animate-pulse" />
           </div>
           <h3 className="font-sans text-lg font-bold tracking-tight text-white">
-            Access Clypra Studio
+            {mode === "register" ? "Create your Clypra account" : "Access Clypra Studio"}
           </h3>
           <p className="mt-1 font-sans text-xs text-gray-400">
-            Sign in to sync your presets and templates
+            {mode === "register"
+              ? "Create a normal creator account to access every Studio lab."
+              : "Sign in to sync your presets and templates"}
           </p>
         </div>
 
@@ -147,6 +163,28 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 font-sans">
+          {mode === "register" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="font-mono text-[9px] uppercase tracking-wider text-gray-400 font-semibold">
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center text-gray-500">
+                  <UserRound size={14} />
+                </span>
+                <input
+                  type="text"
+                  required
+                  minLength={3}
+                  disabled={loading}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="your creator name"
+                  className="w-full rounded-lg border border-[#2A2A38] bg-[#0E0E12] py-2 pl-9 pr-3 text-xs text-white placeholder-gray-600 focus:border-[#7C6FFF] focus:outline-none focus:ring-1 focus:ring-[#7C6FFF] transition-all"
+                />
+              </div>
+            </div>
+          )}
           
           {/* Email Input */}
           <div className="flex flex-col gap-1.5">
@@ -199,9 +237,26 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
             {loading ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
-              <span>Sign In</span>
+              <span>{mode === "register" ? "Create account" : "Sign In"}</span>
             )}
           </button>
+
+          {allowRegistration && (
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                setMode((current) => current === "login" ? "register" : "login");
+                setError(null);
+                setSuccessMsg(null);
+              }}
+              className="text-[11px] font-semibold text-[#B9B2FF] transition-colors hover:text-white disabled:opacity-50"
+            >
+              {mode === "register"
+                ? "Already have an account? Sign in"
+                : "New to Clypra? Create a normal user account"}
+            </button>
+          )}
         </form>
       </div>
     </div>

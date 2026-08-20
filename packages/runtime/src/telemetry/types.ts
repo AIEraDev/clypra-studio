@@ -2,7 +2,7 @@
  * @clypra/runtime — Telemetry Types
  *
  * Backend-neutral telemetry interface.
- * Both Pixi and future Rust backends emit the same events.
+ * Native backends emit the same events across preview and export.
  */
 
 export interface RuntimeTelemetry {

@@ -33,7 +33,7 @@ import { documentValidator } from "../validation/validateDocument.js";
  *
  * Guaranteed Invariants:
  *  - Deterministic: (doc, context, time) => identical EvaluatedScene.
- *  - Renderer-neutral: Zero DOM, PixiJS, WebGL, React, or GPU objects in EvaluatedScene.
+ *  - Renderer-neutral: Zero DOM, React, or GPU objects in EvaluatedScene.
  *  - No wall-clock dependencies: Never calls Date.now(), performance.now(), or rAF.
  */
 export function evaluateOverlayDocument(

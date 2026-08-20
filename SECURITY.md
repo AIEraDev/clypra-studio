@@ -95,7 +95,7 @@ Please include the following information in your report:
 ### Admin Access
 
 - Admin routes are protected with JWT authentication
-- Filter Lab and MPG Playground require admin privileges
+- Filter Lab requires admin privileges
 - Verify `isAdmin` claim server-side for sensitive operations
 
 ## Dependency Security

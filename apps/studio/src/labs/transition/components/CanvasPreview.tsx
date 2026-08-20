@@ -17,6 +17,7 @@ interface CanvasPreviewProps {
   redHeight: number;
   greenHeight: number;
   blueHeight: number;
+  nativeLabState: "probing" | "ready" | "fallback";
   onSetPlaying: (playing: boolean) => void;
   onSkipStart: () => void;
   onSkipEnd: () => void;
@@ -59,6 +60,7 @@ export function CanvasPreview({
   redHeight,
   greenHeight,
   blueHeight,
+  nativeLabState,
   onSetPlaying,
   onSkipStart,
   onSkipEnd,
@@ -109,6 +111,13 @@ export function CanvasPreview({
 
         <div className="relative aspect-video h-[420px] border border-outline-variant bg-black shadow-inner flex items-center justify-center overflow-hidden">
           <canvas ref={canvasRef} width={1280} height={720} className="w-full h-full object-contain" />
+
+          <div className={`absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded border text-[9px] font-mono-data backdrop-blur ${
+            nativeLabState === "ready" ? "bg-secondary/10 border-secondary/30 text-secondary" : nativeLabState === "probing" ? "bg-primary/10 border-primary/30 text-primary" : "bg-tertiary/10 border-tertiary/30 text-tertiary"
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${nativeLabState === "ready" ? "bg-secondary animate-pulse" : nativeLabState === "probing" ? "bg-primary animate-pulse" : "bg-tertiary"}`} />
+            {nativeLabState === "ready" ? "NATIVE_GPU" : nativeLabState === "probing" ? "NATIVE_PROBE..." : "BROWSER_FALLBACK"}
+          </div>
 
           {/* Target Crosshair */}
           <div className="absolute inset-0 pointer-events-none border border-white/5 flex items-center justify-center">

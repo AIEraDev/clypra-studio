@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Shield, RefreshCw, AlertCircle, CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+import { getStudioApiBaseUrl } from "../../services/apiConfig";
 
 interface Transition {
   id: string;
@@ -17,7 +18,7 @@ export function AdminTransitionsSettings() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const getAuthToken = () => localStorage.getItem("clypra_auth_token");
-  const getApiBaseUrl = () => import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+  const getApiBaseUrl = getStudioApiBaseUrl;
 
   // Load all transitions
   const loadTransitions = async () => {

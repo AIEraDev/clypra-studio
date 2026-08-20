@@ -6,6 +6,7 @@
  */
 
 import type { TextEffectConfig } from "@clypra-studio/engine";
+import { getStudioApiBaseUrl } from "./apiConfig";
 
 export interface VideoEffectPresetSuggestion {
   id: string;
@@ -19,13 +20,7 @@ export interface VideoEffectPresetSuggestion {
 }
 
 function getApiBaseUrl(): string {
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (host === "localhost" || host === "127.0.0.1") {
-      return "http://localhost:8787";
-    }
-  }
-  return "https://clypra-worker-api.abdulkabirmusa.com";
+  return getStudioApiBaseUrl();
 }
 
 async function apiPost(endpoint: string, body: any): Promise<any> {

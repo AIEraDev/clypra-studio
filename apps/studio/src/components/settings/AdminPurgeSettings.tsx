@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Shield, Trash2, RefreshCw, AlertCircle, CheckCircle, Database, Server, Zap } from "lucide-react";
+import { getStudioApiBaseUrl } from "../../services/apiConfig";
 
 interface PurgeResult {
   success: boolean;
@@ -17,7 +18,7 @@ export function AdminPurgeSettings() {
   const [details, setDetails] = useState<PurgeResult | null>(null);
 
   const getAuthToken = () => localStorage.getItem("clypra_auth_token");
-  const getApiBaseUrl = () => import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+  const getApiBaseUrl = getStudioApiBaseUrl;
 
   const handlePurge = async (type: "all" | "kv" | "cache") => {
     setLoading(true);

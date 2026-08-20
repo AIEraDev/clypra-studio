@@ -9,7 +9,7 @@
  *     ├── computeLinePaths()  → "line" | "area"
  *     └── computeArcs()       → "pie" | "donut"
  *
- * No Pixi, no DOM, no async. Deterministic and fully testable.
+ * No DOM, no async. Deterministic and fully testable.
  */
 
 import type {

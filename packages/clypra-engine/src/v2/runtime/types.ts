@@ -4,7 +4,7 @@
  * @deprecated These types are interfaces only. Full implementations exist in @clypra/runtime
  * Import from @clypra/runtime instead:
  * ```ts
- * import { PixiRenderer, NullRenderer, Executor } from "@clypra/runtime/renderer";
+ * import { NativeRenderer, NullRenderer, Executor } from "@clypra/runtime";
  * ```
  * This file will be removed in v3.0.0
  *

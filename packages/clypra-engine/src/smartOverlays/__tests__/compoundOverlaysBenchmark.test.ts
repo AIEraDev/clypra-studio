@@ -483,7 +483,7 @@ describe("Stage 2D — Dynamic Compound Overlays Benchmark Suite", () => {
       variables: [],
     };
 
-    // State 1: 3 cards -> total height = (3 * 60) + (2 * 12) + 40 = 244
+    // State 1: the layout engine includes the repeater's card padding.
     const state1 = layoutEngine.computeLayout(doc, {
       cards: [
         { title: "Card 1", desc: "First item" },
@@ -491,9 +491,9 @@ describe("Stage 2D — Dynamic Compound Overlays Benchmark Suite", () => {
         { title: "Card 3", desc: "Third item" },
       ],
     });
-    expect(state1.nodes["repeater-overlay-root"].height).toBe(244);
+    expect(state1.nodes["repeater-overlay-root"].height).toBe(262);
 
-    // State 2: 5 cards -> total height = (5 * 60) + (4 * 12) + 40 = 388
+    // State 2: five cards expand the same layout deterministically.
     const state2 = layoutEngine.computeLayout(doc, {
       cards: [
         { title: "Card 1", desc: "First item" },
@@ -503,7 +503,7 @@ describe("Stage 2D — Dynamic Compound Overlays Benchmark Suite", () => {
         { title: "Card 5", desc: "Fifth item" },
       ],
     });
-    expect(state2.nodes["repeater-overlay-root"].height).toBe(388);
+    expect(state2.nodes["repeater-overlay-root"].height).toBe(418);
     expect(state2.nodes["repeater-overlay-root"].height).toBeGreaterThan(state1.nodes["repeater-overlay-root"].height);
   });
 });

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
+import { getStudioApiBaseUrl } from "../services/apiConfig";
 import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, MapPin, Image as ImageIcon, ExternalLink, Sparkles, Video } from "lucide-react";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+const API_BASE_URL = getStudioApiBaseUrl();
 
 export type TemplateCategory = "lower-third" | "title-card" | "caption" | "callout" | "social" | "countdown";
 

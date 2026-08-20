@@ -4,5 +4,5 @@
  * To test the Filter Lab, navigate to /filter-lab route or import this component.
  */
 
-export { FilterLabView } from "./FilterLabView";
-export { FilterLabView as default } from "./FilterLabView";
+export { NativeFilterLabView as FilterLabView } from "./NativeFilterLabView";
+export { NativeFilterLabView as default } from "./NativeFilterLabView";

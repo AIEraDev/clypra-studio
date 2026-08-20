@@ -145,18 +145,9 @@ const result = validator.validate(graph);
 
 ### Render Backends
 
-**Before:**
-
-```typescript
-import { PixiRenderBackend } from "@clypra/engine/v2/backends";
-import { NullBackend } from "@clypra/engine/v2/runtime/NullBackend";
-```
-
-**After:**
-
-```typescript
-import { PixiRenderer, NullRenderer } from "@clypra/runtime/renderer";
-```
+The desktop application owns native rendering in the Rust compositor. This
+package keeps the graph contracts and the headless null backend used by tests;
+Studio-side validation uses the shared WebGPU pipeline from `@clypra/runtime`.
 
 ---
 
@@ -177,7 +168,7 @@ The V2 pipeline has been consolidated from a split architecture:
   - `/compiler` - ProjectCompiler for NLE → MPG
   - `/graph` - Graph types, NodeRegistry, validator
   - `/planner` - Frame graph planning
-  - `/renderer` - Execution backends (Pixi, Null)
+  - `/runtime` - Command-buffer contracts and headless validation backend
   - `/job` - RenderJob system
   - `/snapshot` - Runtime state management
 

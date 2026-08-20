@@ -8,7 +8,6 @@ export default defineConfig({
     "job/index": "src/job/index.ts",
     "executor/index": "src/executor/index.ts",
     "state/index": "src/state/index.ts",
-    "pixi/index": "src/pixi/index.ts",
     "null/index": "src/null/index.ts",
     "resources/index": "src/resources/index.ts",
     "validation/index": "src/validation/index.ts",

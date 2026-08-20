@@ -234,7 +234,7 @@ export interface CacheStatistics {
  * Replay Packet
  *
  * Everything needed to replay a frame deterministically.
- * No renderer. No Pixi. No WebGL.
+ * No renderer or browser graphics dependency.
  * Can replay anywhere.
  */
 export interface ReplayPacket {

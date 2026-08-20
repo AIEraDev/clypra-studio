@@ -16,7 +16,7 @@ pnpm add @clypra-studio/engine
 - 🔀 **Transitions**: Dual-input temporal transition renderers and definitions.
 - 🖌️ **Procedural Engines**: Procedural `InkBrushEngine` and canvas rasterization utilities.
 - 🖼️ **Smart Overlays**: Declarative canvas templates, keyframe presets, and overlay document renderer.
-- ⚡ **Pipeline V2**: Media processing graph node registry, frame graph builder, and `MPGFrameRenderer`.
+- ⚡ **Native pipeline**: Media processing graph node registry and frame graph builder for the shared native runtime.
 
 ## Usage
 

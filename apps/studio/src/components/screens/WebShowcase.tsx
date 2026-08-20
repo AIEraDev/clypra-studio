@@ -435,16 +435,13 @@ export const WebShowcase: React.FC = () => {
               <img
                 src="/clypra.svg"
                 alt="Clypra Logo"
-                className="w-9 h-9 object-contain relative z-10 group-hover:rotate-6 transition-transform duration-500"
+                className="w-14 h-14 object-contain relative z-10 group-hover:rotate-6 transition-transform duration-500"
               />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight bg-linear-to-r from-white to-neutral-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-white to-neutral-400 bg-clip-text text-transparent">
                 Clypra
               </h1>
-              <p className="text-[9px] text-[#666] font-mono tracking-widest uppercase">
-                Premium Video Editor
-              </p>
             </div>
           </div>
 
@@ -453,7 +450,6 @@ export const WebShowcase: React.FC = () => {
               href="/studio"
               className="h-9 rounded-full border border-[#6c63ff]/30 bg-[#6c63ff]/15 px-4 text-xs font-semibold text-white flex items-center gap-2 hover:bg-[#6c63ff]/25 transition-all duration-300 shadow-[0_0_18px_rgba(108,99,255,0.16)]"
             >
-              <Sparkles className="w-3.5 h-3.5 text-[#a9a4ff]" />
               Open Studio
             </a>
             <a

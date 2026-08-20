@@ -3,12 +3,9 @@
  *
  * Directed Acyclic Graph evaluator for effect chains.
  * Uses Kahn's algorithm for topological ordering.
- * Supports both Canvas2D and PixiJS effect nodes transparently.
- *
- * Unchanged public API from v1 — new PixiJS nodes slot in automatically.
+ * Supports native effect metadata and explicit Canvas2D source-preview nodes.
  */
 
-import type { EffectDefinition } from "./EffectDefinition";
 import { EasingFunction } from "./types.js";
 
 export interface KeyframePoint {
@@ -19,7 +16,8 @@ export interface KeyframePoint {
 
 export interface GraphNode {
   id: string;
-  effect?: EffectDefinition;
+  /** Native effect metadata attached by the Studio graph editor. */
+  effect?: { backend?: "native" | "canvas2d"; id?: string; [key: string]: unknown };
   type?: string;
   params?: Record<string, any>;
   keyframes?: Record<string, KeyframePoint[]>;
@@ -175,20 +173,9 @@ export class EffectGraph {
     return Array.from(new Set([...deps, ...connected]));
   }
 
-  /**
-   * Returns only the PixiJS nodes in resolved order.
-   * Used by EffectRenderer to build the PixiJS filter + motion pipeline.
-   */
-  resolvePixi(): GraphNode[] {
-    return this.resolve().filter((n) => n.effect?.backend === "pixi");
-  }
-
-  /**
-   * Returns only the Canvas2D nodes in resolved order.
-   * Used by EffectRenderer for text effect overlays.
-   */
+  /** Returns nodes that can execute in the browser-side authoring raster path. */
   resolveCanvas2D(): GraphNode[] {
-    return this.resolve().filter((n) => n.effect?.backend === "canvas2d");
+    return this.resolve().filter((n) => n.effect?.backend !== "native");
   }
 
   get size(): number {

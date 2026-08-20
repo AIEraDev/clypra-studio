@@ -7,6 +7,8 @@
 
 import React from "react";
 import { Video, Zap, User, Palette, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { STUDIO_LAB_ROUTES } from "../app/studioRoutes";
 
 interface LabCard {
   id: string;
@@ -23,7 +25,7 @@ const LABS: LabCard[] = [
     id: "video-lab",
     name: "Video Lab",
     description: "Design and test single-input video effects with unified runtime",
-    route: "/studio/video-lab",
+    route: STUDIO_LAB_ROUTES.video,
     icon: Video,
     color: "#10b981",
     gradient: "linear-gradient(135deg, #10b981, #059669)",
@@ -32,7 +34,7 @@ const LABS: LabCard[] = [
     id: "transition-lab",
     name: "Transition Lab",
     description: "Design and test dual-input transition effects with unified runtime",
-    route: "/studio/transition-lab",
+    route: STUDIO_LAB_ROUTES.transition,
     icon: Zap,
     color: "#3b82f6",
     gradient: "linear-gradient(135deg, #3b82f6, #2563eb)",
@@ -41,7 +43,7 @@ const LABS: LabCard[] = [
     id: "body-lab",
     name: "Body Lab",
     description: "Design and test mask-based body effects with extensible feature providers",
-    route: "/studio/body-lab",
+    route: STUDIO_LAB_ROUTES.body,
     icon: User,
     color: "#10b981",
     gradient: "linear-gradient(135deg, #10b981, #3b82f6)",
@@ -50,7 +52,7 @@ const LABS: LabCard[] = [
     id: "filter-lab",
     name: "Filter Lab",
     description: "Design and test color grading presets and looks with GPU rendering pipeline",
-    route: "/studio/filter-lab",
+    route: STUDIO_LAB_ROUTES.filter,
     icon: Palette,
     color: "#7c6fff",
     gradient: "linear-gradient(135deg, #7c6fff, #6366f1)",
@@ -58,9 +60,7 @@ const LABS: LabCard[] = [
 ];
 
 export function LabsPanel() {
-  const handleNavigate = (route: string) => {
-    window.location.href = route;
-  };
+  const navigate = useNavigate();
 
   return (
     <div className="flex-1 overflow-y-auto bg-(--studio-bg) p-6">
@@ -89,7 +89,7 @@ export function LabsPanel() {
             return (
               <button
                 key={lab.id}
-                onClick={() => handleNavigate(lab.route)}
+                onClick={() => navigate(lab.route)}
                 className="group relative overflow-hidden rounded-lg border border-(--studio-border) bg-(--studio-panel) p-6 text-left transition-all hover:border-(--studio-accent) hover:shadow-lg"
                 style={{
                   background: `linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95))`,

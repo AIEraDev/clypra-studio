@@ -3,8 +3,9 @@
  */
 
 import { useState } from "react";
+import { getStudioApiBaseUrl } from "../services/apiConfig";
 
-const API_BASE_URL = "https://clypra-worker-api.abdulkabirmusa.com";
+const API_BASE_URL = getStudioApiBaseUrl();
 
 export interface TransitionUploadPayload {
   transition: {

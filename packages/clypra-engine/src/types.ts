@@ -26,6 +26,13 @@ export interface TextEffectConfig {
   letterSpacing: number; // -10 - 30
   lineHeight: number; // 0.8 - 2.5
 
+  // Decorative geometry used by the Studio comparison tool. Optional so
+  // older published effect definitions remain valid.
+  fireFlameHeight?: number;
+  iceIcicleHeight?: number;
+  iceSnowHeight?: number;
+  auraReach?: number;
+
   // Fill
   fillType: "solid" | "linear" | "radial" | "pattern" | "none";
   fillColor: string;
@@ -393,6 +400,8 @@ export interface TemplateTextLayer {
   role?: "primary" | "secondary" | "accent" | "none";
   overflow?: "wrap" | "shrink" | "expand-panel" | "clip";
   verticalAlign?: "top" | "middle" | "bottom";
+  /** Studio-only UI state; ignored by render/export. */
+  _paddingLinked?: boolean;
 }
 
 export interface TemplateShapeLayer {
@@ -446,6 +455,8 @@ export interface TextTemplate {
   preview?: string;
   layers: TemplateLayer[];
   published?: boolean;
+  description?: string;
+  tags?: string[];
   creatorName?: string;
   creatorLink?: string;
 }

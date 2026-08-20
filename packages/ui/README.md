@@ -10,9 +10,8 @@ pnpm add @clypra-studio/ui
 
 ## Component Overview
 
-### Studio Master & Harness
-- `StudioMasterApp` — Full studio application harness
-- `StudioControlPanel` — Lab navigation & master controls
+### Studio Diagnostics & Controls
+- `StudioControlPanel` — Lab navigation & runtime controls
 - `StudioDiagnosticsOverlay` — Real-time performance & diagnostic overlay
 
 ### Developer Inspectors & Observatories
@@ -33,25 +32,24 @@ pnpm add @clypra-studio/ui
 - `ResponsivePreviewCanvas` & `Timeline` — Interactive canvas & keyframe timeline
 
 ### Hooks
-- `usePixiRenderer` — React hook for PixiJS canvas initialization & frame loop management
+- Preview canvas components use the native preview boundary and do not initialize a browser renderer.
 
 ## Usage
 
 ```tsx
-import { 
-  StudioMasterApp, 
-  BezierCurveEditor, 
+import {
+  BezierCurveEditor,
   ColorGradingStudioPanel,
   RuntimeObservatory 
 } from "@clypra-studio/ui";
 
 function App() {
   return (
-    <StudioMasterApp>
+    <div>
       <ColorGradingStudioPanel />
       <BezierCurveEditor />
       <RuntimeObservatory />
-    </StudioMasterApp>
+    </div>
   );
 }
 ```

@@ -9,8 +9,8 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { initializeFontSystem, ALL_TRANSITIONS, transitionEffectsById } from "@clypra-studio/engine";
-import { Texture } from "pixi.js";
+import { initializeFontSystem, ALL_TRANSITIONS } from "@clypra-studio/engine";
+import type { NativeLabFrameRequest } from "@clypra-studio/native-lab-client";
 
 import { TopNavBar } from "./components/TopNavBar";
 import { SidebarLeft } from "./components/SidebarLeft";
@@ -18,7 +18,7 @@ import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
 import { PublishTransitionModal } from "../../components/PublishTransitionModal";
 
-import { usePixiRenderer } from "@clypra-studio/ui";
+import { getNativeLabClient } from "../../services/nativeLabClient";
 
 const DEFAULT_CLIP_A = "";
 const DEFAULT_CLIP_B = "";
@@ -56,13 +56,14 @@ export function TransitionLabView() {
       name: string;
       category: string;
       description: string;
+      defaultDurationMs: number;
       renderer: string;
-      params?: Record<string, any>;
+      params: any;
       easing?: string;
       duration?: { min: number; max: number; default: number; step?: number };
       thumbnail?: string;
       preview?: string;
-      tags?: string[];
+      tags: string[];
       isPremium?: boolean;
     }>
   >([]);
@@ -116,6 +117,7 @@ export function TransitionLabView() {
   const [previewDataUrl, setPreviewDataUrl] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [nativeLabState, setNativeLabState] = useState<"probing" | "ready" | "fallback">("probing");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -178,6 +180,9 @@ export function TransitionLabView() {
   // Persistent placeholder canvases to prevent blank rendering
   const placeholderARef = useRef<HTMLCanvasElement | null>(null);
   const placeholderBRef = useRef<HTMLCanvasElement | null>(null);
+  const nativeRequestInFlightRef = useRef(false);
+  const nativeLastFrameKeyRef = useRef("");
+  const nativeFallbackLoggedRef = useRef(false);
 
   const addLog = useCallback((msg: string) => {
     setLogs((prev) => {
@@ -208,13 +213,27 @@ export function TransitionLabView() {
     };
   }, []);
 
-  const pixiRendererRef = usePixiRenderer(
-    canvasRef,
-    1280,
-    720,
-    () => addLog("[INIT] WebGL PixiRenderer successfully initialized."),
-    (err) => addLog(`[WARN] WebGL initialization failed: ${err.message}`),
-  );
+  useEffect(() => {
+    let cancelled = false;
+    getNativeLabClient()
+      .handshake()
+      .then((handshake) => {
+        if (cancelled) return;
+        if (handshake.gpu.available && handshake.gpu.state === "ready") {
+          setNativeLabState("ready");
+          addLog(`[NATIVE] GPU ready: ${handshake.gpu.adapterName ?? "unknown adapter"} (${handshake.gpu.backend ?? "unknown backend"})`);
+        } else {
+          setNativeLabState("fallback");
+          addLog(`[NATIVE] Unavailable: ${handshake.gpu.failureReason ?? "GPU adapter unavailable"}. Browser fallback enabled.`);
+        }
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setNativeLabState("fallback");
+        addLog(`[NATIVE] Daemon unavailable: ${error instanceof Error ? error.message : String(error)}. Browser fallback enabled.`);
+      });
+    return () => { cancelled = true; };
+  }, [addLog]);
 
   const handleClipAImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -399,421 +418,213 @@ export function TransitionLabView() {
     placeholderBRef.current = canvasB;
   }, []);
 
-  // Main Preview Render loop
+  // Native-first dual-raster render loop. Video decode remains at the browser
+  // boundary for this lab; composition and transition evaluation run in the
+  // shared native GPU daemon.
   useEffect(() => {
     let animId: number;
+    let disposed = false;
     let lastTime = performance.now();
     let statsTimer = performance.now();
-
-    // Clear diagnostic log each time the render loop restarts (e.g. transition switch)
     diagRef.current = [];
     diagFrameRef.current = 0;
 
-    /**
-     * logDiagnostic — captures one snapshot of the render state.
-     * Fires a console.group summary at phase boundaries (event != null).
-     * Batches frame snapshots into the ref so they can be dumped on demand.
-     */
-    const logDiagnostic = (sec: number, phase: string, mixProgress: number, activeTransitionId: string | null, hasVideoA: boolean, hasVideoB: boolean, videoA: HTMLVideoElement | null, videoB: HTMLVideoElement | null, sourceAType: string, sourceBType: string, event?: string) => {
-      if (!DIAG_ENABLED) return;
-      const frame = diagFrameRef.current++;
-      const snap = {
-        frame,
-        sec: parseFloat(sec.toFixed(4)),
-        phase,
-        mixProgress: parseFloat(mixProgress.toFixed(4)),
-        activeTransitionId,
-        hasVideoA,
-        hasVideoB,
-        videoAReadyState: videoA?.readyState ?? -1,
-        videoBReadyState: videoB?.readyState ?? -1,
-        videoACurrentTime: parseFloat((videoA?.currentTime ?? 0).toFixed(4)),
-        videoBCurrentTime: parseFloat((videoB?.currentTime ?? 0).toFixed(4)),
-        sourceAType,
-        sourceBType,
-        event,
-      };
-      diagRef.current.push(snap);
-
-      // Always log phase-boundary events to console
-      if (event) {
-        console.group(`%c[TRANSITION DIAG] ${event}`, "color:#adc6ff;font-weight:bold;background:#060a14;padding:2px 6px;border-radius:3px");
-        console.log("⏱  seq time   :", sec.toFixed(4), "s  |  frame:", frame);
-        console.log("🎬 phase       :", phase, "|  mixProgress:", mixProgress.toFixed(4));
-        console.log("📹 videoA      : readyState=", videoA?.readyState ?? "N/A", " currentTime=", videoA?.currentTime?.toFixed(4) ?? "N/A", " paused=", videoA?.paused);
-        console.log("📹 videoB      : readyState=", videoB?.readyState ?? "N/A", " currentTime=", videoB?.currentTime?.toFixed(4) ?? "N/A", " paused=", videoB?.paused);
-        console.log("🖼  sourceA     :", sourceAType);
-        console.log("🖼  sourceB     :", sourceBType);
-        console.groupEnd();
-
-        // Mirror to in-app log panel
-        addLog(`[DIAG:${frame}] ${event} | sec=${sec.toFixed(3)} phase=${phase} mix=${mixProgress.toFixed(3)} A.rs=${videoA?.readyState ?? "?"} B.rs=${videoB?.readyState ?? "?"} activeId=${activeTransitionId ?? "none"}`);
+    type Source = HTMLVideoElement | HTMLCanvasElement;
+    const nativeTransitionType = (id: string): string | null => {
+      const normalized = id.toLowerCase();
+      if (normalized.includes("cross") || normalized.includes("dissolve") || normalized.includes("fade")) return "cross-dissolve";
+      if (normalized.includes("wipe")) return "directional-wipe";
+      if (normalized.includes("zoom")) return "zoom-blur";
+      return null;
+    };
+    const drawSource = (ctx: CanvasRenderingContext2D, source: Source, width: number, height: number) => {
+      const sourceWidth = source instanceof HTMLVideoElement ? source.videoWidth : source.width;
+      const sourceHeight = source instanceof HTMLVideoElement ? source.videoHeight : source.height;
+      if (!sourceWidth || !sourceHeight) return;
+      const sourceRatio = sourceWidth / sourceHeight;
+      const targetRatio = width / height;
+      let drawW = width;
+      let drawH = height;
+      let drawX = 0;
+      let drawY = 0;
+      if (fitMode === "crop") {
+        if (sourceRatio > targetRatio) { drawW = height * sourceRatio; drawX = (width - drawW) / 2; }
+        else { drawH = width / sourceRatio; drawY = (height - drawH) / 2; }
+      } else if (fitMode === "fit") {
+        if (sourceRatio > targetRatio) { drawH = width / sourceRatio; drawY = (height - drawH) / 2; }
+        else { drawW = height * sourceRatio; drawX = (width - drawW) / 2; }
       }
+      ctx.drawImage(source, drawX, drawY, drawW, drawH);
+    };
+    const drawFallback = (ctx: CanvasRenderingContext2D, sourceA: Source, sourceB: Source, phase: "pre" | "transition" | "post", p: number, width: number, height: number) => {
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, width, height);
+      if (phase === "transition") {
+        ctx.save();
+        ctx.globalAlpha = 1 - p;
+        drawSource(ctx, sourceA, width, height);
+        ctx.globalAlpha = p;
+        drawSource(ctx, sourceB, width, height);
+        ctx.restore();
+      } else {
+        drawSource(ctx, phase === "pre" ? sourceA : sourceB, width, height);
+      }
+    };
+    const capturePublishFrame = (canvas: HTMLCanvasElement, currentSec: number, mixProgress: number, recordStartTime: number, recordEndTime: number) => {
+      if (recordingStateRef.current === "requested" && currentSec >= recordStartTime) {
+        const stream = canvas.captureStream(30);
+        let options = { mimeType: "video/webm;codecs=vp9" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: "video/webm;codecs=vp8" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: "video/webm" };
+        try {
+          recordedChunksRef.current = [];
+          const recorder = new MediaRecorder(stream, { mimeType: options.mimeType, videoBitsPerSecond: 1500000 });
+          recorder.ondataavailable = (event) => { if (event.data?.size) recordedChunksRef.current.push(event.data); };
+          recorder.onstop = () => {
+            const reader = new FileReader();
+            reader.onloadend = () => { setPreviewDataUrl(reader.result as string); setShowPublishModal(true); setIsRecording(false); addLog("[PUBLISH] Video recording completed! Form is ready."); };
+            reader.readAsDataURL(new Blob(recordedChunksRef.current, { type: options.mimeType }));
+          };
+          recorder.start();
+          mediaRecorderRef.current = recorder;
+          recordingStateRef.current = "recording";
+          addLog(`[PUBLISH] MediaRecorder started recording ${nativeLabState === "ready" ? "native" : "browser"} transition canvas.`);
+        } catch (error: any) {
+          recordingStateRef.current = "idle";
+          setIsRecording(false);
+          addLog(`[WARN] MediaRecorder start error: ${error.message}`);
+        }
+      }
+      if (recordingStateRef.current === "recording" && mixProgress >= 0.5 && !thumbnailCapturedRef.current) {
+        thumbnailCapturedRef.current = true;
+        setThumbnailDataUrl(canvas.toDataURL("image/png"));
+        addLog("[PUBLISH] Mid-transition thumbnail captured.");
+      }
+      if (recordingStateRef.current === "recording" && currentSec >= recordEndTime) {
+        if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+        recordingStateRef.current = "idle";
+      }
+    };
+
+    const renderNative = async (canvas: HTMLCanvasElement, sourceA: Source, sourceB: Source, phase: "pre" | "transition" | "post", mixProgress: number, easedP: number, frameKey: string, recordStartTime: number, recordEndTime: number, currentSec: number) => {
+      const rasterA = document.createElement("canvas");
+      const rasterB = document.createElement("canvas");
+      rasterA.width = rasterB.width = 640;
+      rasterA.height = rasterB.height = 360;
+      const ctxA = rasterA.getContext("2d", { willReadFrequently: true });
+      const ctxB = rasterB.getContext("2d", { willReadFrequently: true });
+      if (!ctxA || !ctxB) throw new Error("Unable to create native transition raster contexts");
+      ctxA.fillStyle = ctxB.fillStyle = "#000";
+      ctxA.fillRect(0, 0, 640, 360);
+      ctxB.fillRect(0, 0, 640, 360);
+      drawSource(ctxA, sourceA, 640, 360);
+      drawSource(ctxB, sourceB, 640, 360);
+      const transitionType = nativeTransitionType(selectedTransition);
+      const request: NativeLabFrameRequest = {
+        contractVersion: 1,
+        requestId: `studio-transition-${Date.now()}-${diagFrameRef.current}`,
+        frameTime: { frameIndex: Math.floor(currentSec * 60), ticks: Math.floor(currentSec * 1_000_000), timescale: 1_000_000 },
+        project: {
+          schemaVersion: 1,
+          projectRevision: `transition-lab-${frameKey}`,
+          canvasWidth: canvas.width,
+          canvasHeight: canvas.height,
+          clearColor: [0, 0, 0, 1],
+          videoLayers: [],
+          rasterLayers: [
+            { assetId: "clip-a", rgba: Array.from(ctxA.getImageData(0, 0, 640, 360).data), width: 640, height: 360, x: 0, y: 0, rotation: 0, opacity: 1, zIndex: 0, blendMode: "normal" },
+            { assetId: "clip-b", rgba: Array.from(ctxB.getImageData(0, 0, 640, 360).data), width: 640, height: 360, x: 0, y: 0, rotation: 0, opacity: 1, zIndex: 1, blendMode: "normal" },
+          ],
+          transition: phase === "transition" && transitionType ? { outgoingLayer: "clip-a", incomingLayer: "clip-b", transitionType, progress: easedP, feather: Number(parameters.feather ?? 0.1), intensity: Number(parameters.intensity ?? 1), fadeColor: [0, 0, 0, 1] } : null,
+        },
+        outputWidth: canvas.width,
+        outputHeight: canvas.height,
+        quality: "full",
+        colorPolicy: { version: 1, workingSpace: "linear-rec709", outputFormat: "rgba8Srgb", toneMapHdrToSdr: true, displayProfile: "srgb-reference" },
+        renderGraphVersion: 1,
+      };
+      nativeRequestInFlightRef.current = true;
+      const result = await getNativeLabClient().renderFrame(request);
+      if (disposed) return;
+      const bitmap = await createImageBitmap(result.image);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Transition preview canvas context unavailable");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      nativeLastFrameKeyRef.current = frameKey;
+      capturePublishFrame(canvas, currentSec, mixProgress, recordStartTime, recordEndTime);
     };
 
     const render = (time: number) => {
       const videoA = videoARef.current;
       const videoB = videoBRef.current;
       const canvas = canvasRef.current;
-      const renderer = pixiRendererRef.current;
-
-      if (!canvas || !renderer || !renderer.isReady) {
-        animId = requestAnimationFrame(render);
-        return;
-      }
-
-      renderer.setFitMode(fitMode);
-
-      const startGpuTime = performance.now();
+      if (!canvas) { animId = requestAnimationFrame(render); return; }
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { animId = requestAnimationFrame(render); return; }
+      const start = performance.now();
       const delta = (time - lastTime) / 1000;
       lastTime = time;
-
       const transitionStart = 5.0;
       const transitionEnd = transitionStart + duration;
       const totalDuration = transitionEnd + 5.0;
-
       let currentSec = sequenceTimeRef.current;
-
       if (playingRef.current && !isScrubbing) {
-        // Master Clock synchronization: align timeline to video native audio/video clock
-        if (currentSec < transitionEnd) {
-          if (videoA && videoA.readyState >= 1) {
-            const targetA = Math.min(currentSec, videoA.duration);
-            if (Math.abs(videoA.currentTime - targetA) > 0.3) {
-              videoA.currentTime = targetA;
-            } else {
-              currentSec = videoA.currentTime;
-            }
-          } else {
-            currentSec += delta;
-          }
-        } else {
-          if (videoB && videoB.readyState >= 1) {
-            const targetB = Math.min(currentSec - 5.0, videoB.duration);
-            if (Math.abs(videoB.currentTime - targetB) > 0.3) {
-              videoB.currentTime = targetB;
-            } else {
-              const rawSec = 5.0 + videoB.currentTime;
-              // ─────────────────────────────────────────────────────────────
-              // ROOT-CAUSE FIX: videoB's native clock can lag a few ms behind
-              // the last recorded sequenceTime. If sequenceTimeRef has already
-              // crossed transitionEnd, clamp the computed value so the phase
-              // logic never sees a backward drift back into the transition
-              // window. Without this clamp, every frame after the boundary
-              // oscillates between "transition" and "post", causing
-              // mount → unmount → blank flash → mount → unmount → …
-              // ─────────────────────────────────────────────────────────────
-              currentSec = sequenceTimeRef.current >= transitionEnd ? Math.max(transitionEnd, rawSec) : rawSec;
-            }
-          } else {
-            currentSec += delta;
-          }
-        }
-
-        if (currentSec >= totalDuration) {
-          currentSec = totalDuration;
-          setPlaying(false);
-        }
-
+        if (currentSec < transitionEnd && videoA?.readyState && videoA.readyState >= 1) currentSec = Math.abs(videoA.currentTime - currentSec) > 0.3 ? currentSec + delta : videoA.currentTime;
+        else if (currentSec >= transitionEnd && videoB?.readyState && videoB.readyState >= 1) currentSec = Math.max(transitionEnd, 5.0 + videoB.currentTime);
+        else currentSec += delta;
+        if (currentSec >= totalDuration) { currentSec = totalDuration; setPlaying(false); }
         sequenceTimeRef.current = currentSec;
         setProgress(currentSec / totalDuration);
       } else {
-        currentSec = progress * totalDuration;
+        currentSec = sequenceTimeRef.current;
         sequenceTimeRef.current = currentSec;
       }
-
-      // Transition progress mixProgress (goes from 0.0 to 1.0 during transition phase)
-      let mixProgress = 0.0;
-      if (currentSec >= transitionEnd) {
-        mixProgress = 1.0;
-      } else if (currentSec >= transitionStart) {
-        mixProgress = (currentSec - transitionStart) / duration;
-      }
+      const mixProgress = currentSec >= transitionEnd ? 1 : currentSec >= transitionStart ? Math.max(0, Math.min(1, (currentSec - transitionStart) / duration)) : 0;
       const easedP = getProgressVal(mixProgress);
-
-      const playVideo = (v: HTMLVideoElement) => {
-        if (v.paused) {
-          v.play().catch(() => {});
-        }
+      const phase: "pre" | "transition" | "post" = currentSec < transitionStart ? "pre" : currentSec < transitionEnd ? "transition" : "post";
+      const syncVideo = (video: HTMLVideoElement | null, target: number, shouldPlay: boolean) => {
+        if (!video || video.readyState < 1) return;
+        if (shouldPlay && playingRef.current && video.paused) video.play().catch(() => {});
+        if (!shouldPlay && !video.paused) video.pause();
+        if (Math.abs(video.currentTime - target) > 0.15) video.currentTime = Math.max(0, target);
       };
-
-      const pauseVideo = (v: HTMLVideoElement) => {
-        if (!v.paused) {
-          v.pause();
-        }
-      };
-
-      if (playingRef.current && !isScrubbing) {
-        if (currentSec < transitionStart) {
-          if (videoA && videoA.readyState >= 1) {
-            playVideo(videoA);
-            const targetA = Math.min(currentSec, videoA.duration);
-            if (Math.abs(videoA.currentTime - targetA) > 0.15) {
-              videoA.currentTime = targetA;
-            }
-            videoA.volume = 1.0;
-          }
-          if (videoB && videoB.readyState >= 1) {
-            pauseVideo(videoB);
-            if (Math.abs(videoB.currentTime) > 0.1) {
-              videoB.currentTime = 0;
-            }
-            videoB.volume = 0.0;
-          }
-        } else if (currentSec < transitionEnd) {
-          if (videoA && videoA.readyState >= 1) {
-            playVideo(videoA);
-            const targetA = Math.min(currentSec, videoA.duration);
-            if (Math.abs(videoA.currentTime - targetA) > 0.15) {
-              videoA.currentTime = targetA;
-            }
-            videoA.volume = Math.max(0, Math.min(1, 1.0 - mixProgress));
-          }
-          if (videoB && videoB.readyState >= 1) {
-            playVideo(videoB);
-            const targetB = Math.min(currentSec - 5.0, videoB.duration);
-            if (Math.abs(videoB.currentTime - targetB) > 0.15) {
-              videoB.currentTime = targetB;
-            }
-            videoB.volume = Math.max(0, Math.min(1, mixProgress));
-          }
-        } else {
-          if (videoA && videoA.readyState >= 1) {
-            pauseVideo(videoA);
-            videoA.volume = 0.0;
-          }
-          if (videoB && videoB.readyState >= 1) {
-            playVideo(videoB);
-            const targetB = Math.min(currentSec - 5.0, videoB.duration);
-            if (Math.abs(videoB.currentTime - targetB) > 0.15) {
-              videoB.currentTime = targetB;
-            }
-            videoB.volume = 1.0;
-          }
-        }
-      } else {
-        if (videoA && videoA.readyState >= 1) {
-          pauseVideo(videoA);
-          const targetA = Math.min(Math.min(currentSec, transitionEnd), videoA.duration);
-          if (Math.abs(videoA.currentTime - targetA) > 0.05) {
-            videoA.currentTime = isNaN(targetA) ? 0 : targetA;
-          }
-        }
-        if (videoB && videoB.readyState >= 1) {
-          pauseVideo(videoB);
-          const targetB = Math.min(Math.max(0, currentSec - transitionStart), videoB.duration);
-          if (Math.abs(videoB.currentTime - targetB) > 0.05) {
-            videoB.currentTime = isNaN(targetB) ? 0 : targetB;
-          }
-        }
-      }
-
-      // Check video stream readiness
-      // readyState >= 2 (HAVE_CURRENT_DATA) ensures a decoded frame is available
-      // for GPU upload — readyState == 1 (HAVE_METADATA) only gives dimensions/duration,
-      // not pixel data, which would render as a black frame on the canvas.
+      syncVideo(videoA, Math.min(currentSec, transitionEnd), phase !== "post");
+      syncVideo(videoB, Math.max(0, currentSec - transitionStart), phase !== "pre");
       const hasVideoA = !!(videoA && videoA.readyState >= 2);
       const hasVideoB = !!(videoB && videoB.readyState >= 2);
-
-      // Select active texture sources (video if imported, fallback canvas placeholder otherwise)
-      const sourceA = hasVideoA ? videoA : placeholderARef.current;
-      const sourceB = hasVideoB ? videoB : placeholderBRef.current;
-
-      const sourceAType = hasVideoA ? `video(rs=${videoA!.readyState},t=${videoA!.currentTime.toFixed(3)})` : "placeholder-canvas";
-      const sourceBType = hasVideoB ? `video(rs=${videoB!.readyState},t=${videoB!.currentTime.toFixed(3)})` : "placeholder-canvas";
-
-      // Log every 60 frames (~1 second) so we have ambient breadcrumbs without spam
-      if (DIAG_ENABLED && diagFrameRef.current % 60 === 0) {
-        logDiagnostic(currentSec, renderPhaseRef.current, mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType);
-      }
-
+      const sourceA = (hasVideoA ? videoA : placeholderARef.current) as Source | null;
+      const sourceB = (hasVideoB ? videoB : placeholderBRef.current) as Source | null;
       if (sourceA && sourceB) {
-        const texA = Texture.from(sourceA);
-        const texB = Texture.from(sourceB);
-
-        // Signal PixiJS to upload the current frame to GPU
-        texA.source.update();
-        texB.source.update();
-
-        if (currentSec >= transitionStart && currentSec < transitionEnd) {
-          // ── TRANSITION PHASE ──────────────────────────────────────────────
-          // Get the actual GPU TransitionDefinition from the engine registry
-          const gpuTransition = transitionEffectsById[selectedTransition];
-          if (gpuTransition) {
-            if (renderPhaseRef.current !== "transition" || renderer.getActiveTransitionId() !== selectedTransition) {
-              logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `ENTERING TRANSITION PHASE — mounting "${selectedTransition}" (prev phase: ${renderPhaseRef.current}, prevActiveId: ${renderer.getActiveTransitionId() ?? "none"})`);
-
-              // Entering transition phase (or switching transition mid-flight):
-              // Prime the video sprite with texB BEFORE mounting so it is never
-              // textureless when unmountTransition() re-shows it later.
-              if (hasVideoB) {
-                renderer.setVideoSource(videoB!);
-                logDiagnostic(currentSec, "transition", mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "PRE-PRIME: setVideoSource(videoB) called before mountTransition");
-              } else if (placeholderBRef.current) {
-                renderer.setImageSource(placeholderBRef.current);
-                logDiagnostic(currentSec, "transition", mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "PRE-PRIME: setImageSource(placeholderB) called — videoB not ready (readyState=" + (videoB?.readyState ?? "N/A") + ")");
-              } else {
-                logDiagnostic(currentSec, "transition", mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "WARNING: Neither videoB nor placeholderB available for pre-prime!");
-              }
-
-              // Mount the GPU transition with the actual TransitionDefinition
-              renderer.mountTransition(gpuTransition, texA, texB, parameters);
-              renderPhaseRef.current = "transition";
-
-              logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `mountTransition() complete — activeId is now: ${renderer.getActiveTransitionId() ?? "STILL NULL (mount failed?)"}`);
-            }
-            renderer.updateTransitionProgress(selectedTransition, easedP, parameters);
-          } else {
-            logDiagnostic(currentSec, "transition", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `WARNING: No GPU transition found for id="${selectedTransition}" — transition skipped!`);
-          }
-        } else if (currentSec < transitionStart) {
-          // ── PRE-TRANSITION PHASE ──────────────────────────────────────────
-          if (renderPhaseRef.current !== "pre") {
-            logDiagnostic(currentSec, "pre", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `ENTERING PRE PHASE — unmounting (prev phase: ${renderPhaseRef.current}, activeId: ${renderer.getActiveTransitionId() ?? "none"})`);
-            // Crossed back into pre phase — unmount any active transition
-            if (renderer.getActiveTransitionId() !== null) {
-              renderer.unmountTransition();
-            }
-            renderPhaseRef.current = "pre";
-          }
-          // Update source every frame so the sprite tracks the live video
-          if (hasVideoA) {
-            renderer.setVideoSource(videoA!);
-          } else if (placeholderARef.current) {
-            renderer.setImageSource(placeholderARef.current);
-          } else {
-            logDiagnostic(currentSec, "pre", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "WARNING: No sourceA available in pre phase!");
-          }
-        } else {
-          // ── POST-TRANSITION PHASE ─────────────────────────────────────────
-          if (renderPhaseRef.current !== "post") {
-            logDiagnostic(currentSec, "post", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `ENTERING POST PHASE — unmounting (prev phase: ${renderPhaseRef.current}, activeId: ${renderer.getActiveTransitionId() ?? "none"})`);
-            // Crossing the transitionEnd boundary: unmount the transition filter.
-            // The video sprite was already primed with texB when we entered the
-            // transition phase, so it will show the correct clip immediately.
-            if (renderer.getActiveTransitionId() !== null) {
-              renderer.unmountTransition();
-              logDiagnostic(currentSec, "post", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, `unmountTransition() complete — activeId after unmount: ${renderer.getActiveTransitionId() ?? "null (OK)"}`);
-            } else {
-              logDiagnostic(currentSec, "post", mixProgress, null, hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "POST PHASE: No active transition to unmount — transition may have never mounted?");
-            }
-            renderPhaseRef.current = "post";
-          }
-          // Update source every frame so the sprite tracks the live video
-          if (hasVideoB) {
-            renderer.setVideoSource(videoB!);
-          } else if (placeholderBRef.current) {
-            renderer.setImageSource(placeholderBRef.current);
-          } else {
-            logDiagnostic(currentSec, "post", mixProgress, renderer.getActiveTransitionId(), hasVideoA, hasVideoB, videoA, videoB, sourceAType, sourceBType, "WARNING: No sourceB available in post phase!");
-          }
+        const transitionType = nativeTransitionType(selectedTransition);
+        const frameKey = `${phase}:${currentSec.toFixed(4)}:${selectedTransition}:${JSON.stringify(parameters)}:${fitMode}`;
+        if (nativeLabState === "ready" && !nativeRequestInFlightRef.current && nativeLastFrameKeyRef.current !== frameKey) {
+          renderNative(canvas, sourceA, sourceB, phase, mixProgress, easedP, frameKey, 5.0 - (Math.max(3, duration + 1) - duration) / 2, 5.0 + duration + (Math.max(3, duration + 1) - duration) / 2, currentSec).catch((error: unknown) => {
+            nativeRequestInFlightRef.current = false;
+            setNativeLabState("fallback");
+            if (!nativeFallbackLoggedRef.current) { nativeFallbackLoggedRef.current = true; addLog(`[NATIVE] Transition frame rejected: ${error instanceof Error ? error.message : String(error)}. Browser fallback enabled.`); }
+          }).finally(() => { nativeRequestInFlightRef.current = false; });
+        } else if (nativeLabState !== "ready" || !transitionType || phase !== "transition") {
+          if (nativeLabState === "ready" && phase === "transition" && !transitionType && !nativeFallbackLoggedRef.current) { nativeFallbackLoggedRef.current = true; addLog(`[NATIVE] Transition '${selectedTransition}' is not implemented in the native contract yet. Using explicit Canvas2D fallback.`); }
+          drawFallback(ctx, sourceA, sourceB, phase, easedP, canvas.width, canvas.height);
+          capturePublishFrame(canvas, currentSec, mixProgress, 5.0 - (Math.max(3, duration + 1) - duration) / 2, 5.0 + duration + (Math.max(3, duration + 1) - duration) / 2);
         }
-      }
-
-      // Run PixiJS rendering pass
-      renderer.render();
-
-      // Hook for MediaRecorder and thumbnail capture
-      const totalRecordDuration = Math.max(3.0, duration + 1.0);
-      const startOffset = (totalRecordDuration - duration) / 2;
-      const recordStartTime = 5.0 - startOffset;
-      const recordEndTime = 5.0 + duration + startOffset;
-
-      if (recordingStateRef.current === "requested" && currentSec >= recordStartTime) {
-        const stream = canvas.captureStream(30);
-        let options = { mimeType: "video/webm;codecs=vp9" };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-          options = { mimeType: "video/webm;codecs=vp8" };
-        }
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-          options = { mimeType: "video/webm" };
-        }
-
-        try {
-          recordedChunksRef.current = [];
-          const recorder = new MediaRecorder(stream, {
-            mimeType: options.mimeType,
-            videoBitsPerSecond: 1500000,
-          });
-
-          recorder.ondataavailable = (event) => {
-            if (event.data && event.data.size > 0) {
-              recordedChunksRef.current.push(event.data);
-            }
-          };
-
-          recorder.onstop = () => {
-            const blob = new Blob(recordedChunksRef.current, { type: options.mimeType });
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              setPreviewDataUrl(reader.result as string);
-              setShowPublishModal(true);
-              setIsRecording(false);
-              addLog("[PUBLISH] Video recording completed! Form is ready.");
-            };
-            reader.readAsDataURL(blob);
-          };
-
-          recorder.start();
-          mediaRecorderRef.current = recorder;
-          recordingStateRef.current = "recording";
-          addLog("[PUBLISH] MediaRecorder started recording canvas.");
-        } catch (e: any) {
-          console.error("Failed to start MediaRecorder", e);
-          recordingStateRef.current = "idle";
-          setIsRecording(false);
-          addLog(`[WARN] MediaRecorder start error: ${e.message}`);
-        }
-      }
-
-      // Capture thumbnail frame at exactly 50% progress
-      if (recordingStateRef.current === "recording" && mixProgress >= 0.5 && !thumbnailCapturedRef.current) {
-        thumbnailCapturedRef.current = true;
-        const thumbUrl = canvas.toDataURL("image/png");
-        setThumbnailDataUrl(thumbUrl);
-        addLog("[PUBLISH] Mid-transition thumbnail captured.");
-      }
-
-      // Stop recording once transition ends
-      if (recordingStateRef.current === "recording" && currentSec >= recordEndTime) {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-          mediaRecorderRef.current.stop();
-        }
-        recordingStateRef.current = "idle";
-      }
-
+      } else drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIPS A/B (SIGNAL PENDING)");
       const now = performance.now();
-      const frameDelta = now - startGpuTime;
-
       if (now - statsTimer >= 500) {
-        setLatency(parseFloat(frameDelta.toFixed(2)));
+        setLatency(parseFloat((now - start).toFixed(2)));
         setCpuUsage(Math.round(9 + Math.random() * 8));
-        setGpuUsage(Math.round(20 + Math.random() * 15));
-        if (playingRef.current) {
-          setRedHeight(Math.round(20 + Math.random() * 70));
-          setGreenHeight(Math.round(30 + Math.random() * 60));
-          setBlueHeight(Math.round(40 + Math.random() * 50));
-        }
+        setGpuUsage(nativeLabState === "ready" ? Math.round(25 + Math.random() * 15) : Math.round(8 + Math.random() * 10));
+        if (playingRef.current) { setRedHeight(Math.round(20 + Math.random() * 70)); setGreenHeight(Math.round(30 + Math.random() * 60)); setBlueHeight(Math.round(40 + Math.random() * 50)); }
         statsTimer = now;
       }
       animId = requestAnimationFrame(render);
     };
-
     animId = requestAnimationFrame(render);
-    return () => {
-      cancelAnimationFrame(animId);
-      if (videoARef.current) videoARef.current.pause();
-      if (videoBRef.current) videoBRef.current.pause();
-      // Reset phase tracking so the next loop starts fresh
-      renderPhaseRef.current = "pre";
-      // Dump full diagnostic snapshot to console on cleanup
-      if (DIAG_ENABLED && diagRef.current.length > 0) {
-        console.group("%c[TRANSITION DIAG] Full session snapshot (" + diagRef.current.length + " frames)", "color:#4edea3;font-weight:bold");
-        console.table(diagRef.current.filter((s) => s.event != null));
-        console.groupEnd();
-      }
-    };
-  }, [selectedTransition, duration, parameters, isScrubbing, fitMode]);
+    return () => { disposed = true; cancelAnimationFrame(animId); videoARef.current?.pause(); videoBRef.current?.pause(); renderPhaseRef.current = "pre"; };
+  }, [selectedTransition, duration, parameters, isScrubbing, fitMode, nativeLabState, addLog]);
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
@@ -951,6 +762,7 @@ export function TransitionLabView() {
           redHeight={redHeight}
           greenHeight={greenHeight}
           blueHeight={blueHeight}
+          nativeLabState={nativeLabState}
           onSetPlaying={handleSetPlaying}
           onSkipStart={() => {
             setProgress(0);

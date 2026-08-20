@@ -200,7 +200,7 @@ export interface ProgressNode extends PrimitiveBase {
 
 export type ChartType = "line" | "bar" | "area" | "donut" | "pie" | "radar" | "scatter";
 
-// Phase 4Q — Visualization Engine geometry output types (consumed by Pixi projection and tests)
+// Phase 4Q — Visualization Engine geometry output types (consumed by native projection and tests)
 export interface LinePoint {
   seriesId: string;
   categoryIndex: number;

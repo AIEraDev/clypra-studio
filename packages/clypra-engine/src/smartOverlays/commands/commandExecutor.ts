@@ -21,6 +21,18 @@ export class CommandExecutor {
         };
       }
 
+      case "UPDATE_DOCUMENT_META": {
+        const previousPatch: Record<string, unknown> = {};
+        for (const key of Object.keys(command.patch) as Array<keyof typeof command.patch>) {
+          previousPatch[key] = docCopy[key];
+          if (command.patch[key] !== undefined) docCopy[key] = command.patch[key] as never;
+        }
+        return {
+          nextDocument: docCopy,
+          inverseCommand: { type: "UPDATE_DOCUMENT_META", patch: previousPatch },
+        };
+      }
+
       case "ADD_NODE": {
         if (command.parentId) {
           const parentNode = this.findNode(docCopy.nodes, command.parentId);

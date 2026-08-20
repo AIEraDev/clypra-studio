@@ -17,6 +17,7 @@ interface CanvasPreviewProps {
   greenHeight: number;
   blueHeight: number;
   bodyTrackingStatus: "idle" | "loading" | "active" | "error";
+  nativeLabState: "probing" | "ready" | "fallback";
   selectedEffectId: string;
   selectedMeta: { name: string; category: string } | null;
   identityEffectId: string;
@@ -61,6 +62,7 @@ export function CanvasPreview({
   greenHeight,
   blueHeight,
   bodyTrackingStatus,
+  nativeLabState,
   selectedEffectId,
   selectedMeta,
   identityEffectId,
@@ -138,10 +140,22 @@ export function CanvasPreview({
             </div>
           )}
 
+          {/* Native pipeline status */}
+          <div className={`absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded border text-[9px] font-mono-data backdrop-blur ${
+            nativeLabState === "ready"
+              ? "bg-secondary/10 border-secondary/30 text-secondary"
+              : nativeLabState === "probing"
+                ? "bg-primary/10 border-primary/30 text-primary"
+                : "bg-tertiary/10 border-tertiary/30 text-tertiary"
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${nativeLabState === "ready" ? "bg-secondary animate-pulse" : nativeLabState === "probing" ? "bg-primary animate-pulse" : "bg-tertiary"}`} />
+            {nativeLabState === "ready" ? "NATIVE_GPU" : nativeLabState === "probing" ? "NATIVE_PROBE..." : "BROWSER_FALLBACK"}
+          </div>
+
           {/* Body tracking badge */}
           {bodyTrackingStatus !== "idle" && (
             <div
-              className={`absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded border text-[9px] font-mono-data backdrop-blur ${
+              className={`absolute top-10 left-2 flex items-center gap-1.5 px-2 py-1 rounded border text-[9px] font-mono-data backdrop-blur ${
                 bodyTrackingStatus === "active"
                   ? "bg-secondary/10 border-secondary/30 text-secondary"
                   : bodyTrackingStatus === "loading"

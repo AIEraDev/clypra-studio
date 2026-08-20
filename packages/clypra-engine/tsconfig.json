@@ -16,6 +16,25 @@
       "@clypra-studio/types": ["../types/src/index.ts"]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "dist", "node_modules"]
+  "include": ["src/index.ts"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/effects/**",
+    "src/media/mediaSpriteFactory.ts",
+    "src/overlays/overlayBridge.ts",
+    "src/smartOverlays/annotationVisualization.ts",
+    "src/smartOverlays/gaugeVisualization.ts",
+    "src/smartOverlays/timelineVisualization.ts",
+    "src/smartOverlays/visualizationProjection.ts",
+    "src/smartOverlays/export/renderEngine.ts",
+    "src/stickers/**",
+    "src/text/textBridge.ts",
+    "src/types/TransitionDefinition.ts",
+    "src/v2/backends/**",
+    "src/videoEffects/EffectDefinition.ts",
+    "src/videoEffects/example.ts",
+    "dist",
+    "node_modules"
+  ]
 }

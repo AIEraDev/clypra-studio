@@ -18,7 +18,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignVerticalSpaceAround, AlignHorizontalSpaceAround,
   MoveHorizontal, MoveVertical, RotateCw, Layers, ArrowUp, ArrowDown, Trash2, Copy
 } from "lucide-react";
-import { usePixiApp } from "../hooks/usePixiApp";
+import { useNativeOverlayApp } from "../hooks/useNativeOverlayApp";
 import { InsertPalette } from "./InsertPalette";
 
 type HandleType = "tl" | "tr" | "bl" | "br" | "t" | "b" | "l" | "r" | "rot" | null;
@@ -168,8 +168,8 @@ export function CanvasViewport({
     return () => ro.disconnect();
   }, [doc.canvas.width, doc.canvas.height, viewport.zoom, handleAutoFit]);
 
-  // Mount PixiApplication to canvas — 60 FPS loop runs completely outside React
-  usePixiApp(canvasRef, doc, currentTime, selectedNode, !!referenceVideo);
+  // Native compositor preview; editing interactions remain in this DOM layer.
+  const nativeOverlayState = useNativeOverlayApp(canvasRef, doc, currentTime, !!referenceVideo);
 
   // Drag & Marquee & Handle States
   const dragModeRef = useRef<"move" | "resize" | "rotate" | "marquee" | null>(null);
@@ -198,7 +198,7 @@ export function CanvasViewport({
   const dragStartRef = useRef<{
     startX: number;
     startY: number;
-    nodeStarts: Array<{ id: string; x: number; y: number; width: number; height: number; rotation: number }>;
+    nodeStarts: Array<{ id: string; x: number; y: number; width: number; height: number; rotation: number; origX: number; origY: number; origW: number; origH: number }>;
   } | null>(null);
 
   // Compute layout state using layoutEngine for accurate bounding boxes (Fill/Hug/Auto-Layout)
@@ -1037,6 +1037,16 @@ export function CanvasViewport({
               }}
             />
 
+            <div className={`absolute top-2 left-2 z-30 rounded border px-2 py-1 font-mono text-[9px] ${
+              nativeOverlayState === "native"
+                ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                : nativeOverlayState === "probing"
+                  ? "border-blue-400/30 bg-blue-400/10 text-blue-300"
+                  : "border-amber-400/30 bg-amber-400/10 text-amber-300"
+            } pointer-events-none`}>
+              {nativeOverlayState === "native" ? "NATIVE_GPU" : nativeOverlayState === "probing" ? "NATIVE_PROBE..." : "CANVAS_FALLBACK"}
+            </div>
+
             {/* Marquee Selection Box Overlay */}
             {marqueeBox && (
               <div
@@ -1051,7 +1061,7 @@ export function CanvasViewport({
               />
             )}
 
-            {/* Smart Alignment Guides (DOM overlay — above PixiJS canvas) */}
+            {/* Smart Alignment Guides (DOM overlay — above native canvas) */}
             {activeGuides.map((guide, i) => (
               <div
                 key={i}

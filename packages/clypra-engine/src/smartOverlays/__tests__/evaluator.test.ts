@@ -88,16 +88,15 @@ describe("Ticket 2: Renderer-Neutral Runtime Evaluator Contract", () => {
     expect(scene.metadata.documentId).toBe("doc-test-001");
   });
 
-  it("should enforce pure data representation without PixiJS, DOM, or WebGL instances", () => {
+  it("should enforce pure data representation without renderer instances", () => {
     const scene = evaluateOverlayDocument(mockDoc, {}, 0.5);
 
     // Deep inspect JSON serializability
     const jsonString = JSON.stringify(scene);
     expect(jsonString).toBeDefined();
 
-    // Verify no DOM, Window, or Pixi objects leaked
+    // Verify no DOM, Window, or canvas objects leaked
     expect(jsonString).not.toContain("HTMLDivElement");
-    expect(jsonString).not.toContain("PIXI");
     expect(jsonString).not.toContain("CanvasRenderingContext2D");
 
     // Verify EvaluatedNode data model

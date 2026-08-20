@@ -13,7 +13,6 @@
  *  - ctx.roundRect        (absent on older WebView2 and Safari < 15.4)
  *  - ctx.letterSpacing    (absent on older WebView2 and Safari < 16.1)
  *  - OffscreenCanvas      (absent on WKWebView < Safari 16.4)
- *  - WebGL2               (absent on very old WebView2 builds)
  */
 
 // ─── Cache ────────────────────────────────────────────────────────────────────
@@ -22,8 +21,6 @@ let _ctxFilter: boolean | null = null;
 let _roundRect: boolean | null = null;
 let _letterSpacing: boolean | null = null;
 let _offscreenCanvas: boolean | null = null;
-let _webgl2: boolean | null = null;
-
 function probe2d(): CanvasRenderingContext2D | null {
   if (typeof document === "undefined") return null;
   try {
@@ -39,8 +36,8 @@ function probe2d(): CanvasRenderingContext2D | null {
  * Returns true when CanvasRenderingContext2D.filter is supported and
  * actually applies (some WebViews accept the assignment silently but ignore it).
  *
- * Used to decide whether stroke-blur and glow effects should go through
- * the WebGLCompositor fallback path.
+ * Used to decide whether the browser-only Canvas2D preview can apply
+ * lightweight blur and glow fallbacks.
  */
 export function supportsCtxFilter(): boolean {
   if (_ctxFilter !== null) return _ctxFilter;
@@ -109,29 +106,6 @@ export function supportsOffscreenCanvas(): boolean {
 }
 
 /**
- * Returns true when WebGL2 is available.
- *
- * When false, WebGLCompositor.isSupported will also be false.
- * Bloom/blur post-FX will be silently skipped.
- */
-export function supportsWebGL2(): boolean {
-  if (_webgl2 !== null) return _webgl2;
-  if (typeof document === "undefined") {
-    _webgl2 = false;
-    return false;
-  }
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1;
-    canvas.height = 1;
-    _webgl2 = !!canvas.getContext("webgl2");
-  } catch {
-    _webgl2 = false;
-  }
-  return _webgl2;
-}
-
-/**
  * Create a canvas of the given size using the best available API.
  *
  * Priority: OffscreenCanvas → document.createElement('canvas')
@@ -191,7 +165,6 @@ export function _resetPlatformCache(): void {
   _roundRect = null;
   _letterSpacing = null;
   _offscreenCanvas = null;
-  _webgl2 = null;
 }
 
 /**
@@ -242,4 +215,3 @@ export class CanvasDevice {
     }
   }
 }
-

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { X, UploadCloud, Loader2, AlertTriangle, CheckCircle, FileJson, Tag, FolderOpen, Image as ImageIcon, Sparkles } from "lucide-react";
 import { useTextEffectR2Upload } from "../hooks/useTextEffectR2Upload";
 import type { TextEffectConfig } from "@clypra-studio/engine";
+import { getStudioApiBaseUrl } from "../services/apiConfig";
 
 export type EffectApiCategory = "essentials" | "neon" | "3d" | "glitch" | "gradient" | "outline";
 
@@ -93,7 +94,7 @@ export function PublishEffectModal({ open, onClose, config, thumbnailDataUrl, ca
 
     try {
       // Call backend AI API endpoint
-      const response = await fetch("https://clypra-worker-api.abdulkabirmusa.com/ai/text-effect-name", {
+      const response = await fetch(`${getStudioApiBaseUrl()}/ai/text-effect-name`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

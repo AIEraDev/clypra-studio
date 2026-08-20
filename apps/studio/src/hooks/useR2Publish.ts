@@ -3,15 +3,16 @@
  *
  * Handles content publishing across all asset types:
  * - Text effects, templates, audio, stickers, overlays, video effects → direct R2 via S3 API
- * - Filters (GPU gradingParams) and MPG stacks (v2 pipeline) → Clypra API (POST /filters/upload)
+ * - Filters (GPU gradingParams) → Clypra API (POST /filters/upload)
  *   The API handles R2 writes, index management, and KV cache invalidation in one atomic step.
  */
 
-const CLYPRA_API_BASE = "https://clypra-worker-api.abdulkabirmusa.com";
-
+import { getStudioApiBaseUrl } from "../services/apiConfig";
 import { type R2UploadConfig, getR2Config, saveR2Config, uploadFileFromDataUrl, uploadR2Json, getR2Json, upsertById, getPublicUrl, uploadBatch } from "../services/r2Service";
 
-import type { AudioPublishPayload, StickerPublishPayload, OverlayPublishPayload, VideoEffectPresetPublishPayload, VideoEffectPresetBatchPublishPayload, FilterPublishPayload, MpgStackPublishPayload } from "../types/publish";
+import type { AudioPublishPayload, StickerPublishPayload, OverlayPublishPayload, VideoEffectPresetPublishPayload, VideoEffectPresetBatchPublishPayload, FilterPublishPayload } from "../types/publish";
+
+const CLYPRA_API_BASE = getStudioApiBaseUrl();
 
 export interface R2PublishResult {
   files: string[];
@@ -607,63 +608,6 @@ export function useR2Publish() {
     };
   };
 
-  /**
-   * Publish V2 MPG effect stack via API (POST /filters/upload with pipeline:"v2")
-   * Centralises auth, index management, and KV cache invalidation in the API layer.
-   */
-  const publishMpgStack = async (payload: MpgStackPublishPayload): Promise<R2PublishResult> => {
-    if (!payload.metadata.name.trim()) throw new Error("Effect name is required.");
-    if (!payload.metadata.effectStack.length) throw new Error("Effect stack cannot be empty.");
-
-    const adminToken = localStorage.getItem("clypra_auth_token");
-    if (!adminToken) throw new Error("Admin session required to publish filters. Please log in.");
-
-    const category = payload.category.toLowerCase();
-    const intensityDefault = payload.metadata.intensity.default;
-    const intensityLabel = intensityDefault >= 85 ? "Bold" : intensityDefault >= 65 ? "Medium" : "Light";
-
-    const body: Record<string, unknown> = {
-      filter: {
-        id: payload.id,
-        name: payload.metadata.name,
-        category,
-        description: payload.metadata.description || "",
-        intensity: intensityLabel,
-        published: payload.metadata.published ?? true,
-        pipeline: "v2",
-        effectStack: payload.metadata.effectStack,
-        tags: payload.metadata.tags || [],
-      },
-      thumbnailDataUrl: payload.thumbnailDataUrl || null,
-    };
-
-    const response = await fetch(`${CLYPRA_API_BASE}/filters/upload`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${adminToken}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error((err as any).error || `MPG stack upload failed: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    const thumbnailUrl = `${CLYPRA_API_BASE}/media/filters/${category}/${payload.id}.png`;
-
-    return {
-      files: [`filters/${category}/${payload.id}.json`, `filters/${category}/index.json`],
-      urls: {
-        definition: `${CLYPRA_API_BASE}/filters/${category}/${payload.id}`,
-        ...(payload.thumbnailDataUrl ? { thumbnail: thumbnailUrl } : {}),
-      },
-      message: result.message || `MPG filter "${payload.metadata.name}" published to filters/${category}`,
-    };
-  };
-
   return {
     publishEffect,
     publishTemplate,
@@ -673,7 +617,6 @@ export function useR2Publish() {
     publishVideoEffectPreset,
     publishVideoEffectPresetBatch,
     publishFilter,
-    publishMpgStack,
     getR2Config,
     saveR2Config,
   };

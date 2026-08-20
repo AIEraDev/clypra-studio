@@ -1,11 +1,11 @@
 /**
  * PreviewCanvas Styles
  * 
- * Override Pixi.js inline styles to ensure responsive canvas sizing
+ * Keep the native preview canvas responsive within its container.
  */
 
 .preview-canvas-responsive {
-  /* Override Pixi.js inline styles with !important */
+  /* Canvas sizing is controlled by the viewport component. */
   max-width: 100% !important;
   width: 100% !important;
   height: auto !important;

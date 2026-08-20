@@ -4,7 +4,7 @@
  * Tests the pure geometry evaluation pipeline:
  * (ChartNode, width, height, t) → EvaluatedChartGeometry
  *
- * No Pixi, no DOM — all geometry is deterministic and testable in isolation.
+ * No DOM — all geometry is deterministic and testable in isolation.
  */
 
 import { describe, it, expect } from "vitest";

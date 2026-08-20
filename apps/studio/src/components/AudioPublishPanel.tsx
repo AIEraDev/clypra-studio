@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle, Loader2, Music, Zap, FileAudio, Image as ImageIcon, Sparkles } from "lucide-react";
+import { getStudioApiBaseUrl } from "../services/apiConfig";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+const API_BASE_URL = getStudioApiBaseUrl();
 const AUDIO_CATEGORIES = [
   "music", // catch-all browsable music library — the primary tab
   "cinematic", // YouTube creators, vlogs, montages — highest demand

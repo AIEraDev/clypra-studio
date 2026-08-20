@@ -3,6 +3,9 @@ import { Download, Copy, Plus, Play, Pause, Loader2, FolderPlus, ArrowLeft, Spar
 
 import { TemplateRenderer, BUILTIN_CANVAS_TEMPLATES, TemplateCategory, TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer, LayerAnimation, AnimationPreset, AnimatableValue, TemplateKeyframe, TemplateEasingFunction, addKeyframe, removeTemplateKeyframe, isKeyframed, getSupportedWebMMimeType } from "@clypra-studio/engine";
 import { PublishTemplateModal } from "./PublishTemplateModal";
+import { getStudioApiBaseUrl } from "../services/apiConfig";
+import { ClypraLogo } from "./ClypraLogo";
+import { Link } from "react-router-dom";
 
 export interface TemplateWorkspaceProps {
   onBackToDesign: () => void;
@@ -141,7 +144,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const fetchApiTemplates = async () => {
     setApiTemplatesLoading(true);
     try {
-      const response = await fetch("https://clypra-worker-api.abdulkabirmusa.com/text-templates");
+      const response = await fetch(`${getStudioApiBaseUrl()}/text-templates`);
       if (!response.ok) throw new Error("Failed to fetch API templates index");
       const data = await response.json();
       setApiTemplates(Array.isArray(data) ? data : []);
@@ -158,7 +161,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     }
     setPublishingApiTemplateId(id);
     try {
-      const response = await fetch(`https://clypra-worker-api.abdulkabirmusa.com/text-templates/${category}/${id}/publish`, {
+      const response = await fetch(`${getStudioApiBaseUrl()}/text-templates/${category}/${id}/publish`, {
         method: "POST",
       });
       if (!response.ok) {
@@ -178,7 +181,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const handleLoadApiTemplate = async (category: string, id: string) => {
     setIsLoadingApiTemplate(true);
     try {
-      const response = await fetch(`https://clypra-worker-api.abdulkabirmusa.com/text-templates/${category}/${id}`);
+      const response = await fetch(`${getStudioApiBaseUrl()}/text-templates/${category}/${id}`);
       if (!response.ok) throw new Error("Failed to fetch template from API");
       const lottieData = await response.json();
       
@@ -319,7 +322,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
     // Draw selection bounding outline on active layer
     if (selectedLayerId) {
-      const activeLayer = template.layers.find((l) => l.id === selectedLayerId);
+      const activeLayer = template.layers.find((l) => l.id === selectedLayerId) as any;
       if (activeLayer) {
         ctx.save();
         ctx.strokeStyle = "#3b82f6";
@@ -1017,7 +1020,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
       setPublishMessage("Uploading files to clypra-api…");
 
-      const response = await fetch("https://clypra-worker-api.abdulkabirmusa.com/text-templates/upload", {
+      const response = await fetch(`${getStudioApiBaseUrl()}/text-templates/upload`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1047,7 +1050,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       if (result.template) {
         setTemplate(result.template);
       }
-      const lottieUrl = `https://clypra-worker-api.abdulkabirmusa.com/media/text-templates/${template.category}/${template.id}.json`;
+      const lottieUrl = `${getStudioApiBaseUrl()}/media/text-templates/${template.category}/${template.id}.json`;
       setPublishPrUrl(lottieUrl);
       setPublishMessage(`${result.message || "Template published successfully"}`);
     } catch (error) {
@@ -1072,7 +1075,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   };
 
   // Active layer properties
-  const selectedLayer = template?.layers.find((l) => l.id === selectedLayerId);
+  const selectedLayer = template?.layers.find((l) => l.id === selectedLayerId) as any;
 
   return (
     <div className="flex h-screen w-screen flex-col bg-[#09090D] text-white overflow-hidden font-sans">
@@ -1082,8 +1085,11 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           <button onClick={onBackToDesign} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2A2A38] hover:bg-[#2A2A38] transition-colors">
             <ArrowLeft size={16} />
           </button>
+          <Link to="/studio" aria-label="Back to Clypra Studio" className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2A2A38] hover:bg-[#2A2A38] transition-colors">
+            <ClypraLogo size={23} />
+          </Link>
           <div className="flex items-center gap-2">
-            <Sparkle size={18} className="text-teal-400" />
+            <ClypraLogo size={20} />
             <h1 className="text-sm font-bold text-white tracking-tight">Clypra Canvas Template Studio</h1>
           </div>
           {template && <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border border-[#2A2A38] bg-[#1A1A26] text-teal-300">{template.category}</span>}

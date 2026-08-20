@@ -7,7 +7,6 @@
     "clypra-studio",
     "video-effects",
     "gpu-accelerated",
-    "pixijs",
     "webgl",
     "webgpu",
     "open-source"
@@ -84,8 +83,6 @@
     "@clypra-studio/types": "^0.5.0",
     "jszip": "^3.10.1",
     "lottie-web": "^5.13.0",
-    "pixi-filters": "^6.0.0",
-    "pixi.js": "^8.0.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

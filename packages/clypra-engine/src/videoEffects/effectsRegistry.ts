@@ -360,7 +360,7 @@ export const EFFECTS_REGISTRY: Record<string, EffectMetadata> = {
     tags: ["body", "segmentation", "glow"]
   },
 
-  // PixiJS Video Filter Effects (Unified Registry Metadata)
+  // Native video filter effects (unified registry metadata)
   "light-leak": {
     id: "light-leak",
     name: "Light Leak",
@@ -1094,7 +1094,7 @@ export function getEffectsByCategory(category: EffectMetadata["category"]): Effe
  * Get effect renderer function by ID
  */
 export function getEffectRenderer(id: EffectRendererType): ((ctx: CanvasRenderingContext2D, params: EffectParameters, intensity: number, time: number, bodyMask?: ImageData) => void) | null {
-  // Map effect IDs to renderer functions (including unified PixiJS variants as Canvas 2D fallbacks)
+  // Map effect IDs to Canvas2D source-preview renderer functions.
   const renderers: Record<string, any> = {
     // Light
     flash: LightEffects.renderFlash,
@@ -1113,7 +1113,7 @@ export function getEffectRenderer(id: EffectRendererType): ((ctx: CanvasRenderin
     body_particles: renderBodyParticles,
     "body-segmentation-glow": renderBodySegmentationGlow,
 
-    // PixiJS variant fallbacks (supporting both kebab-case and underscore normalized variants)
+    // Normalized aliases retained for existing saved projects.
     "light-leak": LightEffects.renderLightLeak,
     "lens-flare": LightEffects.renderLightLeak2,
     "lens_flare": LightEffects.renderLightLeak2,

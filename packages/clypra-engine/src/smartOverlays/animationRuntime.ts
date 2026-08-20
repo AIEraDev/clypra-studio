@@ -39,7 +39,7 @@ export interface AnimationEvaluationOptions {
 
 /**
  * Canonical output contract of the animation runtime.
- * PixiSceneProjection must consume ONLY this — no preset/marker/keyframe logic.
+ * Native scene projection must consume ONLY this — no preset/marker/keyframe logic.
  */
 export interface EvaluatedSceneState {
   time: number;
@@ -178,7 +178,7 @@ export class AnimationRuntime {
 
   /**
    * Evaluate the full document scene graph at a given time, producing a flat
-   * node map. PixiSceneProjection should consume this exclusively.
+   * node map. Native scene projection should consume this exclusively.
    */
   public evaluateScene(
     doc: OverlayDocument,

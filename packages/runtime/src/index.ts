@@ -29,14 +29,10 @@ export * from "./executor";
 export * from "./state";
 
 // Renderers
-export * from "./pixi";
 export * from "./null";
 
 // Resource management
 export * from "./resources";
-
-// Runtime validation
-export * from "./validation";
 
 // Telemetry (event-oriented, complementary to state)
 export * from "./telemetry";

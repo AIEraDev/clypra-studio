@@ -4,6 +4,8 @@
  * Provides direct file uploads to R2 bucket without GitHub intermediary
  */
 
+import { getStudioApiBaseUrl } from "./apiConfig";
+
 export interface R2UploadConfig {
   accountId: string;
   apiToken: string;
@@ -230,6 +232,8 @@ export function upsertById<T extends { id: string }>(items: T[], item: T): T[] {
  * Uses the clypra-api worker URL instead of direct R2 URL
  */
 export function getPublicUrl(bucketName: string, key: string): string {
-  // Use the API worker domain that serves R2 content
-  return `https://clypra-worker-api.abdulkabirmusa.com/media/${key}`;
+  // Use the configured API origin so local Studio/API runs keep published
+  // catalog URLs on the same environment instead of silently pointing at prod.
+  void bucketName;
+  return `${getStudioApiBaseUrl()}/media/${key}`;
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle, Loader2, Video, Sparkles, UploadCloud } from "lucide-react";
 import type { OverlayPublishPayload } from "../types/publish";
+import { getStudioApiBaseUrl } from "../services/apiConfig";
 
 const OVERLAY_CATEGORIES: OverlayPublishPayload["category"][] = ["fire", "light-leak", "particle", "weather", "glitch", "texture"];
 const BLEND_MODES: OverlayPublishPayload["metadata"]["blendMode"][] = ["normal", "screen", "multiply", "overlay", "soft-light", "hard-light", "color-dodge", "color-burn", "lighten", "darken", "difference"];
@@ -213,7 +214,7 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
       const videoDataUrl = await fileToDataUrl(videoFile);
       const thumbnailDataUrl = thumbnailFile ? await fileToDataUrl(thumbnailFile) : autoThumbnail || undefined;
 
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+      const API_BASE_URL = getStudioApiBaseUrl();
 
       const payload: OverlayPublishPayload = {
         id: id.trim(),

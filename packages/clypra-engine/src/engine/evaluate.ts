@@ -4,32 +4,11 @@ import { sceneToConfig, textEffectConfigToScene } from "./migrate";
 import { applyTimelineAtTime } from "./animation";
 import type { SceneDocument } from "./schema";
 import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, DEFAULT_FPS, DEFAULT_DURATION } from "./schema";
-import { WebGLCompositor } from "../compositor";
 import { applyMaskReveal } from "./mask";
-import { CanvasDevice } from "../platform";
+import { CanvasDevice, supportsCtxFilter } from "../platform";
 
 export interface EvaluateOptions {
-  compositor?: WebGLCompositor | null;
   skipPostFx?: boolean;
-}
-
-let sharedCompositor: WebGLCompositor | null = null;
-
-function getCompositor(): WebGLCompositor | null {
-  if (typeof document === "undefined") return null;
-  if (!sharedCompositor) {
-    sharedCompositor = new WebGLCompositor();
-  }
-  return sharedCompositor;
-}
-
-/**
- * Dispose the shared module-level compositor and release GPU resources.
- * Call on hot-module-reload or application teardown to prevent WebGL context leaks.
- */
-export function disposeSharedCompositor(): void {
-  sharedCompositor?.dispose();
-  sharedCompositor = null;
 }
 
 /**
@@ -68,11 +47,24 @@ export function evaluateScene(doc: SceneDocument, time: number, ctx: CanvasRende
     tctx.clearRect(0, 0, w, h);
     renderTextEffectCore(tctx, cfg);
     applyMaskReveal(tctx, animated, w, h);
-    const compositor = options.compositor ?? getCompositor();
-    if (compositor?.isSupported) {
-      compositor.renderToContext(ctx, temp, comp);
+    // Browser/Studio fallback stays Canvas2D-only. Desktop production preview
+    // and export use the native Rust renderer; this path is intentionally a
+    // lightweight source preview and must never create a second GPU renderer.
+    ctx.clearRect(0, 0, w, h);
+    if (supportsCtxFilter()) {
+      ctx.save();
+      const blur = Math.max(0, comp.blur);
+      const bloom = Math.max(0, comp.bloom);
+      if (blur > 0) ctx.filter = `blur(${blur}px)`;
+      ctx.drawImage(temp as unknown as CanvasImageSource, 0, 0);
+      if (bloom > 0) {
+        ctx.globalCompositeOperation = "screen";
+        ctx.globalAlpha = Math.min(0.8, bloom * 0.25);
+        ctx.filter = `blur(${Math.max(1, bloom * 4)}px)`;
+        ctx.drawImage(temp as unknown as CanvasImageSource, 0, 0);
+      }
+      ctx.restore();
     } else {
-      ctx.clearRect(0, 0, w, h);
       ctx.drawImage(temp as unknown as CanvasImageSource, 0, 0);
     }
     CanvasDevice.release(temp);

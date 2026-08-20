@@ -2,7 +2,7 @@
  * Phase 4R.2 — Platform-independent Visualization Definition & Registry
  *
  * Pure evaluation contract: (node, context) → evaluated geometry.
- * Completely decoupled from PixiJS or DOM renderer implementations.
+ * Completely decoupled from DOM renderer implementations.
  */
 
 import type { OverlayDocument } from "./overlayDocumentSchema.js";

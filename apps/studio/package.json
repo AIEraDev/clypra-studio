@@ -15,6 +15,7 @@
   "dependencies": {
     "@clypra-studio/engine": "^1.3.0",
     "@clypra-studio/feature-providers": "^0.1.1",
+    "@clypra-studio/native-lab-client": "workspace:*",
     "@clypra-studio/runtime": "^0.2.2",
     "@clypra-studio/types": "^0.5.0",
     "@clypra-studio/ui": "^0.3.0",
@@ -28,7 +29,7 @@
     "jszip": "^3.10.1",
     "lottie-web": "^5.13.0",
     "lucide-react": "^0.546.0",
-    "pixi.js": "^8.0.0",
+    "react-router-dom": "^6.30.4",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "^6.2.3"

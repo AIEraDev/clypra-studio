@@ -5,7 +5,6 @@
  * Consumes an AsyncIterable<EvaluatedExportFrame> stream and produces EncodedOutput.
  */
 
-import { renderEngine } from "./renderEngine.js";
 import type {
   ExportConfig,
   ExportFormat,

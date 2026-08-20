@@ -8,7 +8,7 @@
 
 Where visual effects, transitions, and shader filters are authored, benchmarked, and validated before reaching the editor runtime.
 
-[![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev) [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org) [![PixiJS 8](https://img.shields.io/badge/PixiJS-8-E60010?logo=pixijs&logoColor=white)](https://pixijs.com) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev) [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org) [![Native Rendering](https://img.shields.io/badge/Rendering-Native%20Pipeline-7C6FFF)](https://github.com/AIEraDev/clypra) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 [Architecture](#architecture) • [The Three Labs](#the-three-labs) • [Getting Started](#getting-started) • [Documentation](./docs/STUDIO_ARCHITECTURE.md) • [Contributing](CONTRIBUTING.md)
 
@@ -20,7 +20,7 @@ Where visual effects, transitions, and shader filters are authored, benchmarked,
 
 **Three Labs. One Runtime.**
 
-Clypra Studio is built on a shared execution infrastructure (graph compilation, frame planning, and PixiJS GPU execution) powering three specialized labs:
+Clypra Studio is built on a shared execution infrastructure (graph compilation, frame planning, and native GPU execution) powering specialized labs:
 
 - 📽️ **Video Effect Lab** — Validates single-input frame rendering (Film Grain, VHS, Bloom, Chromatic Aberration, Heat Distortion).
 - 🔀 **Transition Lab** — Validates dual-input temporal transitions (Cross Dissolve, Push, Zoom, Luma Wipe, Glitch).
@@ -36,7 +36,7 @@ Clypra Studio is built on a shared execution infrastructure (graph compilation, 
 │         └──────────────────┼─────────────────┘          │
 │                            ▼                            │
 │                 Shared Runtime Layer                    │
-│          (Graph Builder → Planner → PixiJS)             │
+│          (Graph Builder → Planner → Native GPU)         │
 └────────────────────────────┬────────────────────────────┘
                              ▼
                     @clypra/engine
@@ -50,7 +50,7 @@ Clypra Studio is built on a shared execution infrastructure (graph compilation, 
 clypra-studio/
 ├── packages/
 │   ├── clypra-engine/       # @clypra/engine - Effect registry & definitions
-│   ├── runtime/             # Shared graph compilation & PixiJS execution
+│   ├── runtime/             # Shared graph compilation & native execution
 │   ├── shaders/             # Reusable GLSL shader library
 │   ├── feature-providers/   # Segmentation & keying providers
 │   └── ui/                  # Shared studio UI components

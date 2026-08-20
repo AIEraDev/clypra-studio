@@ -16,11 +16,6 @@ export * from "./effectsRegistry";
 export * from "./utils";
 export * from "./api";
 
-// Export PixiJS integration systems
-export * from "./EffectDefinition.js";
-export { PixiRenderer } from "./PixiRenderer.js";
-export * as ExamplePixiEffects from "./example.js";
-
 // Re-export renderer functions for direct use
 export * as CameraEffects from "./renderers/camera";
 export * as LightEffects from "./renderers/light";

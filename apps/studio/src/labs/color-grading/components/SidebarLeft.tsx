@@ -67,7 +67,7 @@ export function SidebarLeft({
         <div className="min-w-0">
           <h2 className="text-label-sm font-bold text-on-surface truncate font-sans">PRJ_02_COLOR_GRADING</h2>
           <p className="text-[9px] font-mono-data text-on-surface-variant uppercase">
-            pixi_glsl_color_grading
+            native_gpu_color_grading
           </p>
         </div>
       </div>

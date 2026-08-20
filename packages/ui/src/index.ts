@@ -62,11 +62,10 @@ export type { ColorWheelProps, ColorGradingStudioPanelProps } from "./components
 export { BodyEffectsStudioPanel } from "./components/BodyEffectsStudio";
 export type { BodyEffectsStudioPanelProps } from "./components/BodyEffectsStudio";
 
-// Studio Master Harness, Diagnostics, and Control Bar
+// Studio diagnostics and control bar
 export { StudioDiagnosticsOverlay } from "./components/StudioDiagnosticsOverlay";
 export { StudioControlPanel } from "./components/StudioControlPanel";
 export type { StudioControlPanelProps } from "./components/StudioControlPanel";
-export { StudioMasterApp } from "./components/StudioMasterApp";
 
 // Clypra Color Picker Component Suite
 export {
@@ -110,8 +109,5 @@ export type {
   PresetGridProps,
   ColorPickerSlice,
 } from "@clypra/ui-color-picker";
-
-// Reusable Hooks
-export { usePixiRenderer } from "./hooks/usePixiRenderer";
 
 export const UI_VERSION = "0.1.0";

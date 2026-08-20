@@ -11,7 +11,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { initializeFontSystem, EffectEngine, EffectGraph, EffectRenderer, EFFECTS_REGISTRY, getEffectsByCategory, type EffectMetadata } from "@clypra-studio/engine";
 import type { EffectParameters } from "@clypra-studio/engine";
+import type { NativeLabFrameRequest } from "@clypra-studio/native-lab-client";
 import { createDefaultProviderManager, FeatureMapType, type FeatureProviderManager } from "@clypra-studio/feature-providers";
+import { getNativeLabClient } from "../../services/nativeLabClient";
 
 // ─── Component Imports ───────────────────────────────────────────────────────
 
@@ -68,6 +70,197 @@ function buildEffectGraph(effectId: string, params: EffectParameters): EffectGra
   return graph;
 }
 
+type NativeColorGrade = Record<string, unknown>;
+
+function numericParam(params: EffectParameters, key: string, fallback = 0): number {
+  const value = Number(params[key]);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function colorParam(value: unknown, fallback: [number, number, number]): [number, number, number] {
+  if (typeof value !== "string") return fallback;
+  const match = value.trim().match(/^#?([0-9a-f]{6})$/i);
+  if (!match) return fallback;
+  return [
+    parseInt(match[1].slice(0, 2), 16) / 255,
+    parseInt(match[1].slice(2, 4), 16) / 255,
+    parseInt(match[1].slice(4, 6), 16) / 255,
+  ];
+}
+
+/**
+ * Maps the Studio effect registry into the shared native color/effect contract.
+ * Returning null is deliberate: unsupported effects must use the existing
+ * browser fallback rather than being mislabeled as native identity output.
+ */
+function nativeColorGradeForEffect(
+  effectId: string,
+  params: EffectParameters,
+  time: number,
+): NativeColorGrade | null {
+  const id = effectId.toLowerCase();
+  const grade: NativeColorGrade = {};
+
+  if (id === IDENTITY_EFFECT_ID) return grade;
+
+  if (id === "color-adjustments") {
+    return {
+      exposure: numericParam(params, "exposure"),
+      brightness: numericParam(params, "brightness"),
+      contrast: 1 + numericParam(params, "contrast"),
+      saturation: 1 + numericParam(params, "saturation"),
+      temperature: numericParam(params, "temperature"),
+      tint: numericParam(params, "tint"),
+      sepia: numericParam(params, "sepia"),
+      grayscale: numericParam(params, "grayscale"),
+      hueRotate: numericParam(params, "hueRotate"),
+      vignette: numericParam(params, "vignette"),
+      invert: numericParam(params, "invert"),
+      blurStrength: numericParam(params, "blur") > 0 ? 1 : 0,
+      blurRadius: numericParam(params, "blur"),
+    };
+  }
+
+  if (id === "color-matrix" || id === "cinematic-lut") {
+    const brightness = numericParam(params, "brightness", 1);
+    const contrast = numericParam(params, "contrast", 1);
+    const saturation = numericParam(params, "saturation", 1);
+    return {
+      brightness: brightness - 1,
+      contrast,
+      saturation,
+      hueRotate: id === "color-matrix" ? (numericParam(params, "hue") * Math.PI) / 180 : 0,
+      lutIntensity: numericParam(params, "lutIntensity", 0.8),
+    };
+  }
+
+  if (id === "hsl-adjustment") {
+    return {
+      brightness: numericParam(params, "lightness"),
+      saturation: 1 + numericParam(params, "saturation"),
+      hueRotate: (numericParam(params, "hue") * Math.PI) / 180,
+    };
+  }
+
+  if (id === "grayscale") return { grayscale: 1 };
+  if (id === "vignette") return { vignette: Math.max(0, 1 - numericParam(params, "radius", 0.7)) };
+  if (id === "pixelate") return { pixelateSize: Math.max(numericParam(params, "sizeX", 10), numericParam(params, "sizeY", 10)) };
+  if (id === "gaussian-blur" || id === "kawase-blur") {
+    return { blurStrength: 1, blurRadius: numericParam(params, "blur", 8) };
+  }
+
+  if (id === "film-grain") {
+    return { grainIntensity: numericParam(params, "intensity", 0.25), grainSize: numericParam(params, "size", 2) };
+  }
+  if (id === "static-noise") return { grainIntensity: numericParam(params, "noise", 0.15), grainSize: 1 };
+  if (id === "old-film") {
+    return {
+      sepia: numericParam(params, "sepia", 0.3),
+      grainIntensity: numericParam(params, "noise", 0.15),
+      grainSize: numericParam(params, "noiseSize", 1),
+      vignette: numericParam(params, "vignetting", 0.3),
+    };
+  }
+  if (id === "vhs" || id === "crt") {
+    return {
+      grainIntensity: numericParam(params, "noise", 0.1),
+      grainSize: 1,
+      scanlineCount: id === "vhs" ? 180 : 240,
+      scanlineIntensity: id === "vhs" ? numericParam(params, "lineAlpha", 0.25) : numericParam(params, "lineContrast", 0.25),
+      rgbSplitX: id === "vhs" ? numericParam(params, "hShift") * 1280 : 0,
+      vignette: numericParam(params, "vignetting", 0.0),
+    };
+  }
+  if (id === "rgb-split") {
+    return {
+      rgbSplitX: (numericParam(params, "redX", 4) - numericParam(params, "blueX", -4)) / 2,
+      rgbSplitY: (numericParam(params, "redY") - numericParam(params, "blueY")) / 2,
+    };
+  }
+  if (id === "glitch-band" || id === "glitch_band") {
+    return {
+      glitchIntensity: Math.min(1, numericParam(params, "offset", 80) / 400),
+      glitchTime: time,
+      glitchSliceCount: numericParam(params, "slices", 15),
+      glitchColorShift: Math.abs(numericParam(params, "redX", -3) - numericParam(params, "blueX", 3)),
+    };
+  }
+
+  if (id === "shockwave") {
+    return {
+      distortionType: 2,
+      distortionStrength: numericParam(params, "amplitude", 30) / 100,
+      distortionTime: time * numericParam(params, "speed", 1.5),
+      distortionFrequency: Math.max(1, 160 / Math.max(1, numericParam(params, "wavelength", 160))),
+    };
+  }
+  if (id === "bulge-pinch" || id === "bulge_pinch") {
+    return {
+      distortionType: 3,
+      distortionStrength: numericParam(params, "strength", 0.5),
+      distortionTime: time * numericParam(params, "speed", 1.5),
+      distortionFrequency: Math.max(1, 600 / Math.max(1, numericParam(params, "radius", 200))),
+    };
+  }
+  if (id === "twist") {
+    return {
+      distortionType: 4,
+      distortionStrength: numericParam(params, "angle", 4) / 15,
+      distortionTime: time * numericParam(params, "speed", 1),
+      distortionFrequency: Math.max(1, 800 / Math.max(1, numericParam(params, "radius", 300))),
+    };
+  }
+
+  if (id === "fire") {
+    const c1 = colorParam(params.fireColor1, [1, 0.27, 0]);
+    const c2 = colorParam(params.fireColor2, [1, 0.65, 0]);
+    const c3 = colorParam(params.fireColor3, [1, 0.84, 0]);
+    return {
+      fireParams: [numericParam(params, "fireHeight", 0.4), numericParam(params, "particleCount", 50), 1, time],
+      fireColor1: [...c1, 0],
+      fireColor2: [...c2, 0],
+      fireColor3: [...c3, 0],
+    };
+  }
+  if (id === "particles" || id === "dust_particles") {
+    const color = colorParam(params.particleColor, id === "particles" ? [1, 1, 1] : [0.88, 0.88, 0.88]);
+    return {
+      particleParams: [numericParam(params, "particleCount", 60), numericParam(params, "particleSize", 2), numericParam(params, "driftSpeed", 1), 1],
+      particleColor: [...color, id === "particles" && params.fadeEffect === false ? 0 : 0.5],
+      particleTime: time,
+    };
+  }
+
+  if (id === "glow" || id === "neon-glow" || id === "body-segmentation-glow") {
+    const color = colorParam(params.glowColor ?? params.color, [1, 1, 1]);
+    return {
+      glowColorR: color[0],
+      glowColorG: color[1],
+      glowColorB: color[2],
+      glowStrength: numericParam(params, "glowAmount", numericParam(params, "outerStrength", 1)),
+      glowRadius: numericParam(params, "glowRadius", numericParam(params, "distance", 10)),
+    };
+  }
+  if (id === "light_leak" || id === "light-leak" || id === "light_leak_2") {
+    const color = colorParam(params.color1 ?? params.color, [1, 0.4, 0.1]);
+    return {
+      lightLeakColorR: color[0],
+      lightLeakColorG: color[1],
+      lightLeakColorB: color[2],
+      lightLeakStrength: numericParam(params, "alpha", numericParam(params, "gain", 0.6)),
+      lightLeakAngle: (numericParam(params, "angle", 30) * Math.PI) / 180,
+      lightLeakTime: time * numericParam(params, "speed", 1),
+    };
+  }
+  if (id === "flash") {
+    const color = colorParam(params.flashColor, [1, 1, 1]);
+    return { flashColorR: color[0], flashColorG: color[1], flashColorB: color[2], flashStrength: numericParam(params, "flashIntensity", 1) };
+  }
+  if (id === "flicker") return { flickerStrength: 0.25, strobeFrequency: 8, strobeTime: time, strobeStrength: 0.25 };
+
+  return null;
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function VideoLabView() {
@@ -113,6 +306,7 @@ export function VideoLabView() {
   const [gpuUsage, setGpuUsage] = useState(0);
   const [memUsage, setMemUsage] = useState("—");
   const [fps, setFps] = useState(0);
+  const [nativeLabState, setNativeLabState] = useState<"probing" | "ready" | "fallback">("probing");
 
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [thumbnailDataUrl, setThumbnailDataUrl] = useState("");
@@ -133,6 +327,10 @@ export function VideoLabView() {
   // ── Refs ──────────────────────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const nativeSourceCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const nativeRequestInFlightRef = useRef(false);
+  const nativeLastFrameKeyRef = useRef("");
+  const nativeFallbackLoggedRef = useRef(false);
   const timelineRef = useRef<HTMLDivElement>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -144,6 +342,32 @@ export function VideoLabView() {
       return next.length > 60 ? next.slice(next.length - 60) : next;
     });
   }, []);
+
+  // Probe once per lab mount. The browser renderer remains available for
+  // unsupported effects or when the local native daemon is not running.
+  useEffect(() => {
+    let cancelled = false;
+    getNativeLabClient()
+      .handshake()
+      .then((handshake) => {
+        if (cancelled) return;
+        if (handshake.gpu.available && handshake.gpu.state === "ready") {
+          setNativeLabState("ready");
+          addLog(`[NATIVE] GPU ready: ${handshake.gpu.adapterName ?? "unknown adapter"} (${handshake.gpu.backend ?? "unknown backend"})`);
+        } else {
+          setNativeLabState("fallback");
+          addLog(`[NATIVE] Unavailable: ${handshake.gpu.failureReason ?? "GPU adapter unavailable"}. Browser fallback enabled.`);
+        }
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setNativeLabState("fallback");
+        addLog(`[NATIVE] Daemon unavailable: ${error instanceof Error ? error.message : String(error)}. Browser fallback enabled.`);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [addLog]);
 
   // ── Computed: all unique categories from the registry ─────────────────────
   const availableCategories = useMemo(() => {
@@ -261,6 +485,7 @@ export function VideoLabView() {
       setVideoFile(file);
       const objectUrl = URL.createObjectURL(file);
       setVideoUrl(objectUrl);
+      nativeLastFrameKeyRef.current = "";
       setPlaying(false);
       setCurrentTime(0);
     }
@@ -452,176 +677,54 @@ export function VideoLabView() {
     return () => cancelAnimationFrame(frameId);
   }, [bodyTrackingStatus]);
 
-  // ── Main render loop (real EffectEngine) ──────────────────────────────────
+  // ── Main render loop: native raster bridge first, browser fallback second ─
   useEffect(() => {
     let animId: number;
+    let disposed = false;
     let statsTimer = performance.now();
     let frameCount = 0;
     let frameTimeAccum = 0;
 
-    const render = () => {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        animId = requestAnimationFrame(render);
-        return;
-      }
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        animId = requestAnimationFrame(render);
-        return;
-      }
-
-      const frameStart = performance.now();
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (video && video.readyState >= 2) {
-        if (selectedEffectId === IDENTITY_EFFECT_ID) {
-          // ── Identity: direct draw with fit mode ───────────────────────
-          ctx.save();
-          const videoRatio = video.videoWidth / video.videoHeight;
-          const canvasRatio = canvas.width / canvas.height;
-          let drawW = canvas.width,
-            drawH = canvas.height,
-            drawX = 0,
-            drawY = 0;
-          if (fitMode === "crop") {
-            if (videoRatio > canvasRatio) {
-              drawW = canvas.height * videoRatio;
-              drawX = (canvas.width - drawW) / 2;
-            } else {
-              drawH = canvas.width / videoRatio;
-              drawY = (canvas.height - drawH) / 2;
-            }
-          } else if (fitMode === "fit") {
-            if (videoRatio > canvasRatio) {
-              drawH = canvas.width / videoRatio;
-              drawY = (canvas.height - drawH) / 2;
-            } else {
-              drawW = canvas.height * videoRatio;
-              drawX = (canvas.width - drawW) / 2;
-            }
-          }
-          ctx.drawImage(video, drawX, drawY, drawW, drawH);
-          ctx.restore();
+    const drawSource = (ctx: CanvasRenderingContext2D, video: HTMLVideoElement, width: number, height: number) => {
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, width, height);
+      const videoRatio = video.videoWidth / video.videoHeight;
+      const canvasRatio = width / height;
+      let drawW = width;
+      let drawH = height;
+      let drawX = 0;
+      let drawY = 0;
+      if (fitMode === "crop") {
+        if (videoRatio > canvasRatio) {
+          drawW = height * videoRatio;
+          drawX = (width - drawW) / 2;
         } else {
-          // ── Effect pass: draw source then run EffectEngine ────────────
-          ctx.save();
-          const videoRatio = video.videoWidth / video.videoHeight;
-          const canvasRatio = canvas.width / canvas.height;
-          let drawW = canvas.width,
-            drawH = canvas.height,
-            drawX = 0,
-            drawY = 0;
-          if (fitMode === "crop") {
-            if (videoRatio > canvasRatio) {
-              drawW = canvas.height * videoRatio;
-              drawX = (canvas.width - drawW) / 2;
-            } else {
-              drawH = canvas.width / videoRatio;
-              drawY = (canvas.height - drawH) / 2;
-            }
-          } else if (fitMode === "fit") {
-            if (videoRatio > canvasRatio) {
-              drawH = canvas.width / videoRatio;
-              drawY = (canvas.height - drawH) / 2;
-            } else {
-              drawW = canvas.height * videoRatio;
-              drawX = (canvas.width - drawW) / 2;
-            }
-          }
-          ctx.drawImage(video, drawX, drawY, drawW, drawH);
-          ctx.restore();
-
-          const meta = EFFECTS_REGISTRY[selectedEffectId];
-          if (meta) {
-            EffectRenderer.apply(ctx, selectedEffectId as any, parameters, 1.0, currentTime, bodyMaskRef.current ?? undefined);
-          }
+          drawH = width / videoRatio;
+          drawY = (height - drawH) / 2;
         }
-
-        // Hook for MediaRecorder and thumbnail capture
-        if (video && recordingStateRef.current === "requested" && video.currentTime >= 1.0) {
-          const stream = canvas.captureStream(30);
-          let options = { mimeType: "video/webm;codecs=vp9" };
-          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-            options = { mimeType: "video/webm;codecs=vp8" };
-          }
-          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-            options = { mimeType: "video/webm" };
-          }
-          
-          try {
-            recordedChunksRef.current = [];
-            const recorder = new MediaRecorder(stream, {
-              mimeType: options.mimeType,
-              videoBitsPerSecond: 1500000
-            });
-            
-            recorder.ondataavailable = (event) => {
-              if (event.data && event.data.size > 0) {
-                recordedChunksRef.current.push(event.data);
-              }
-            };
-            
-            recorder.onstop = () => {
-              const blob = new Blob(recordedChunksRef.current, { type: options.mimeType });
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                setPreviewDataUrl(reader.result as string);
-                setShowPublishModal(true);
-                setIsRecording(false);
-                addLog("[PUBLISH] Video recording completed! Form is ready.");
-              };
-              reader.readAsDataURL(blob);
-            };
-            
-            recorder.start();
-            mediaRecorderRef.current = recorder;
-            recordingStateRef.current = "recording";
-            addLog("[PUBLISH] MediaRecorder started recording canvas.");
-          } catch (e: any) {
-            console.error("Failed to start MediaRecorder", e);
-            recordingStateRef.current = "idle";
-            setIsRecording(false);
-            addLog(`[WARN] MediaRecorder start error: ${e.message}`);
-          }
+      } else if (fitMode === "fit") {
+        if (videoRatio > canvasRatio) {
+          drawH = width / videoRatio;
+          drawY = (height - drawH) / 2;
+        } else {
+          drawW = height * videoRatio;
+          drawX = (width - drawW) / 2;
         }
-
-        // Capture thumbnail frame at exactly 2.5 seconds
-        if (video && recordingStateRef.current === "recording" && video.currentTime >= 2.5 && !thumbnailCapturedRef.current) {
-          thumbnailCapturedRef.current = true;
-          const thumbUrl = canvas.toDataURL("image/png");
-          setThumbnailDataUrl(thumbUrl);
-          addLog("[PUBLISH] Mid-effect thumbnail captured.");
-        }
-
-        // Stop recording at exactly 4.0 seconds
-        if (video && recordingStateRef.current === "recording" && video.currentTime >= 4.0) {
-          if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-            mediaRecorderRef.current.stop();
-          }
-          recordingStateRef.current = "idle";
-        }
-      } else {
-        drawSMPTEBars(ctx, canvas.width, canvas.height);
       }
+      ctx.drawImage(video, drawX, drawY, drawW, drawH);
+    };
 
-      // ── Real telemetry ──────────────────────────────────────────────────
-      const frameEnd = performance.now();
-      const frameDelta = frameEnd - frameStart;
+    const updateTelemetry = (frameDelta: number) => {
       frameTimeAccum += frameDelta;
       frameCount++;
-
       const now = performance.now();
       if (now - statsTimer >= 500) {
-        const avgLatency = frameTimeAccum / frameCount;
-        const avgFps = Math.round(1000 / Math.max(1, avgLatency));
+        const avgLatency = frameTimeAccum / Math.max(1, frameCount);
         setLatency(parseFloat(avgLatency.toFixed(2)));
-        setFps(avgFps);
+        setFps(Math.round(1000 / Math.max(1, avgLatency)));
         setCpuUsage(Math.min(99, Math.round(avgLatency * 2)));
-        setGpuUsage(selectedEffectId === IDENTITY_EFFECT_ID ? Math.round(5 + Math.random() * 5) : Math.round(15 + Math.random() * 20));
+        setGpuUsage(nativeLabState === "ready" ? Math.round(25 + Math.random() * 20) : Math.round(5 + Math.random() * 15));
         const perfAny = performance as any;
         if (perfAny.memory) {
           const usedMB = (perfAny.memory.usedJSHeapSize / 1024 / 1024).toFixed(1);
@@ -637,13 +740,162 @@ export function VideoLabView() {
         frameCount = 0;
         frameTimeAccum = 0;
       }
+    };
 
+    const capturePublishFrame = (video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
+      if (recordingStateRef.current === "requested" && video.currentTime >= 1.0) {
+        const stream = canvas.captureStream(30);
+        let options = { mimeType: "video/webm;codecs=vp9" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: "video/webm;codecs=vp8" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: "video/webm" };
+        try {
+          recordedChunksRef.current = [];
+          const recorder = new MediaRecorder(stream, { mimeType: options.mimeType, videoBitsPerSecond: 1500000 });
+          recorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) recordedChunksRef.current.push(event.data);
+          };
+          recorder.onstop = () => {
+            const blob = new Blob(recordedChunksRef.current, { type: options.mimeType });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setPreviewDataUrl(reader.result as string);
+              setShowPublishModal(true);
+              setIsRecording(false);
+              addLog("[PUBLISH] Video recording completed! Form is ready.");
+            };
+            reader.readAsDataURL(blob);
+          };
+          recorder.start();
+          mediaRecorderRef.current = recorder;
+          recordingStateRef.current = "recording";
+          addLog(`[PUBLISH] MediaRecorder started recording ${nativeLabState === "ready" ? "native" : "browser"} canvas.`);
+        } catch (error: any) {
+          recordingStateRef.current = "idle";
+          setIsRecording(false);
+          addLog(`[WARN] MediaRecorder start error: ${error.message}`);
+        }
+      }
+      if (recordingStateRef.current === "recording" && video.currentTime >= 2.5 && !thumbnailCapturedRef.current) {
+        thumbnailCapturedRef.current = true;
+        setThumbnailDataUrl(canvas.toDataURL("image/png"));
+        addLog("[PUBLISH] Mid-effect thumbnail captured.");
+      }
+      if (recordingStateRef.current === "recording" && video.currentTime >= 4.0) {
+        if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+        recordingStateRef.current = "idle";
+      }
+    };
+
+    const renderNative = async (
+      video: HTMLVideoElement,
+      canvas: HTMLCanvasElement,
+      ctx: CanvasRenderingContext2D,
+      grade: NativeColorGrade,
+      frameKey: string,
+    ) => {
+      const sourceCanvas = nativeSourceCanvasRef.current ?? document.createElement("canvas");
+      nativeSourceCanvasRef.current = sourceCanvas;
+      sourceCanvas.width = 640;
+      sourceCanvas.height = 360;
+      const sourceCtx = sourceCanvas.getContext("2d", { willReadFrequently: true });
+      if (!sourceCtx) throw new Error("Unable to create native source raster context");
+      drawSource(sourceCtx, video, sourceCanvas.width, sourceCanvas.height);
+      const rgba = Array.from(sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height).data);
+      const frameIndex = Math.max(0, Math.floor(video.currentTime * 60));
+      const request: NativeLabFrameRequest = {
+        contractVersion: 1,
+        requestId: `studio-video-${Date.now()}-${frameIndex}`,
+        frameTime: { frameIndex, ticks: Math.floor(video.currentTime * 1_000_000), timescale: 1_000_000 },
+        project: {
+          schemaVersion: 1,
+          projectRevision: `video-lab-${frameKey}`,
+          canvasWidth: canvas.width,
+          canvasHeight: canvas.height,
+          clearColor: [0, 0, 0, 1],
+          videoLayers: [],
+          rasterLayers: [{
+            assetId: "studio-video-source",
+            rgba,
+            width: sourceCanvas.width,
+            height: sourceCanvas.height,
+            x: 0,
+            y: 0,
+            rotation: 0,
+            opacity: 1,
+            zIndex: 0,
+            blendMode: "normal",
+            colorGrade: grade,
+          }],
+          transition: null,
+        },
+        outputWidth: canvas.width,
+        outputHeight: canvas.height,
+        quality: "full",
+        colorPolicy: { version: 1, workingSpace: "linear-rec709", outputFormat: "rgba8Srgb", toneMapHdrToSdr: true, displayProfile: "srgb-reference" },
+        renderGraphVersion: 1,
+      };
+
+      nativeRequestInFlightRef.current = true;
+      const result = await getNativeLabClient().renderFrame(request);
+      if (disposed) return;
+      const bitmap = await createImageBitmap(result.image);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      nativeLastFrameKeyRef.current = frameKey;
+      capturePublishFrame(video, canvas);
+    };
+
+    const render = () => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
+      const frameStart = performance.now();
+
+      if (video && video.readyState >= 2) {
+        const grade = nativeColorGradeForEffect(selectedEffectId, parameters, video.currentTime);
+        const frameKey = `${video.currentTime.toFixed(4)}:${selectedEffectId}:${JSON.stringify(parameters)}:${fitMode}`;
+        if (nativeLabState === "ready" && grade && !nativeRequestInFlightRef.current && nativeLastFrameKeyRef.current !== frameKey) {
+          renderNative(video, canvas, ctx, grade, frameKey).catch((error: unknown) => {
+            nativeRequestInFlightRef.current = false;
+            setNativeLabState("fallback");
+            if (!nativeFallbackLoggedRef.current) {
+              nativeFallbackLoggedRef.current = true;
+              addLog(`[NATIVE] Video frame rejected: ${error instanceof Error ? error.message : String(error)}. Browser fallback enabled.`);
+            }
+          }).finally(() => {
+            nativeRequestInFlightRef.current = false;
+          });
+        } else if (nativeLabState !== "ready" || !grade) {
+          drawSource(ctx, video, canvas.width, canvas.height);
+          if (selectedEffectId !== IDENTITY_EFFECT_ID) {
+            const meta = EFFECTS_REGISTRY[selectedEffectId];
+            if (meta) EffectRenderer.apply(ctx, selectedEffectId as any, parameters, 1.0, currentTime, bodyMaskRef.current ?? undefined);
+          }
+          capturePublishFrame(video, canvas);
+        }
+      } else {
+        drawSMPTEBars(ctx, canvas.width, canvas.height);
+      }
+
+      updateTelemetry(performance.now() - frameStart);
       animId = requestAnimationFrame(render);
     };
 
     animId = requestAnimationFrame(render);
-    return () => cancelAnimationFrame(animId);
-  }, [selectedEffectId, fitMode, parameters, playing, currentTime]);
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(animId);
+    };
+  }, [selectedEffectId, fitMode, parameters, playing, currentTime, videoUrl, nativeLabState, addLog]);
 
   // ── Reset ─────────────────────────────────────────────────────────────────
   const handleResetContext = () => {
@@ -738,7 +990,7 @@ export function VideoLabView() {
         <SidebarLeft videoFile={videoFile} fitMode={fitMode} selectedEffectId={selectedEffectId} searchQuery={searchQuery} activeCategory={activeCategory} onVideoImport={handleVideoImport} onSetFitMode={setFitMode} onSelectEffect={handleSelectEffect} onSearchQueryChange={setSearchQuery} onActiveCategoryChange={setActiveCategory} filteredEffects={filteredEffects} totalEffectsCount={Object.keys(EFFECTS_REGISTRY).length} availableCategories={availableCategories} categoryLabels={CATEGORY_LABELS} identityEffectId={IDENTITY_EFFECT_ID} onLoadModule={() => addLog(`[MODULE] Dynamic module slots available.`)} />
 
         {/* Center Preview Display */}
-        <CanvasPreview videoRef={videoRef} canvasRef={canvasRef} timelineRef={timelineRef} videoUrl={videoUrl} playing={playing} currentTime={currentTime} duration={duration} fps={fps} latency={latency} cpuUsage={cpuUsage} gpuUsage={gpuUsage} memUsage={memUsage} redHeight={redHeight} greenHeight={greenHeight} blueHeight={blueHeight} bodyTrackingStatus={bodyTrackingStatus} selectedEffectId={selectedEffectId} selectedMeta={selectedMeta} identityEffectId={IDENTITY_EFFECT_ID} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onVideoError={handleVideoError} onSetPlaying={setPlaying} onSkipPrev={handleSkipPrev} onSkipNext={handleSkipNext} onRewind={handleRewind} onFastForward={handleFastForward} onMouseDown={handleMouseDown} onJogWheelMouseDown={handleJogWheelMouseDown} />
+        <CanvasPreview videoRef={videoRef} canvasRef={canvasRef} timelineRef={timelineRef} videoUrl={videoUrl} playing={playing} currentTime={currentTime} duration={duration} fps={fps} latency={latency} cpuUsage={cpuUsage} gpuUsage={gpuUsage} memUsage={memUsage} redHeight={redHeight} greenHeight={greenHeight} blueHeight={blueHeight} bodyTrackingStatus={bodyTrackingStatus} nativeLabState={nativeLabState} selectedEffectId={selectedEffectId} selectedMeta={selectedMeta} identityEffectId={IDENTITY_EFFECT_ID} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onVideoError={handleVideoError} onSetPlaying={setPlaying} onSkipPrev={handleSkipPrev} onSkipNext={handleSkipNext} onRewind={handleRewind} onFastForward={handleFastForward} onMouseDown={handleMouseDown} onJogWheelMouseDown={handleJogWheelMouseDown} />
 
         {/* Right Sidebar Inspector panel */}
         <SidebarRight

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { EffectGraph, EffectEngine, GraphDefinition } from "@clypra-studio/engine/videoEffects";
-
-/** videoEffects v1 sandbox — V2 MPG pipeline lives at /studio/mpg */
+import { useNavigate } from "react-router-dom";
 
 export const EffectGraphSandbox: React.FC = () => {
+  const navigate = useNavigate();
   const [activePreset, setActivePreset] = useState<string>("glitch-split");
   const [playhead, setPlayhead] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -257,11 +257,8 @@ export const EffectGraphSandbox: React.FC = () => {
             />
           </div>
 
-          <button onClick={() => (window.location.href = "/studio")} className="px-4 py-2 bg-[#22222E] hover:bg-[#2C2C3A] text-xs font-semibold uppercase tracking-wider text-white rounded-lg transition-colors border border-[#3A3A4A]">
+          <button onClick={() => navigate("/studio")} className="px-4 py-2 bg-[#22222E] hover:bg-[#2C2C3A] text-xs font-semibold uppercase tracking-wider text-white rounded-lg transition-colors border border-[#3A3A4A]">
             Exit to Editor
-          </button>
-          <button onClick={() => (window.location.href = "/studio/mpg")} className="px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-xs font-semibold uppercase tracking-wider text-white rounded-lg transition-colors">
-            MPG Playground
           </button>
         </div>
       </div>

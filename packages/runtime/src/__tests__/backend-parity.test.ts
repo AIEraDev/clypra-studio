@@ -1,10 +1,8 @@
 /**
  * Backend Parity Test
  *
- * Proves the same RenderJob executes correctly across different backends:
- * - NullRenderer (validation only)
- * - PixiRenderer (WebGL)
- * - (Future) RustRenderer (wgpu)
+ * Proves the render contract executes correctly through the validation
+ * renderer while native Rust remains the production execution authority.
  */
 
 import { describe, it, expect } from "vitest";

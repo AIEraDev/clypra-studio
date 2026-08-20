@@ -1,52 +1,144 @@
-import React, { lazy, Suspense, useState, useEffect, useRef, useMemo } from "react";
-import { Download, Copy, Undo2, Redo2, Sparkles, Plus, Camera, Loader2, HelpCircle, Beaker, FolderPlus, Video, KeyRound, User, Shield } from "lucide-react";
+import React, {
+  lazy,
+  Suspense,
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
+import {
+  Download,
+  Copy,
+  Undo2,
+  Redo2,
+  Sparkles,
+  Plus,
+  Camera,
+  Loader2,
+  HelpCircle,
+  Beaker,
+  FolderPlus,
+  Video,
+  KeyRound,
+  User,
+  Shield,
+  Cpu,
+} from "lucide-react";
 
 import { TextEffectConfig, Preset } from "@clypra-studio/engine";
 import { defaultConfig, builtInPresets } from "@clypra-studio/engine";
-import { generateEngineClass, generateEffectDefinition, toKebabCase, toPascalCase, stripTypesToJS, generateHTMLFile, getEnrichedEffectName } from "./codeGenerator";
+import { nativeAuroraPreset } from "./samples/nativeAurora";
+import {
+  generateEngineClass,
+  generateEffectDefinition,
+  toKebabCase,
+  toPascalCase,
+  stripTypesToJS,
+  generateHTMLFile,
+  getEnrichedEffectName,
+} from "./codeGenerator";
 import { GOOGLE_FONTS, GOOGLE_FONTS_LINK } from "./constants";
-import { LayerPanel } from "./components/LayerPanel";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { PreviewCanvas } from "./components/PreviewCanvas";
 import { PresetChip } from "./components/PresetChip";
 import { DrawerIntro, LeftRail } from "./components/StudioChrome";
-import { AudioPublishPanel } from "./components/AudioPublishPanel";
-import { StickerPublishPanel } from "./components/StickerPublishPanel";
-import { OverlayStudioWorkspace } from "./components/OverlayStudioWorkspace";
 import { AdminPurgeSettings } from "./components/settings/AdminPurgeSettings";
 import { AdminTransitionsSettings } from "./components/settings/AdminTransitionsSettings";
 import { LabsPanel } from "./components/LabsPanel";
-import { textEffectConfigToScene, sceneToConfig, evaluateScene, blendConfigs, type SceneDocument, downloadPngSequenceZip, downloadSceneWebM, getWebMFrameCount, isWebMExportSupported, parseHistorySnapshot, snapshotScene, computeTextLayout, WebGLCompositor } from "@clypra-studio/engine";
+import {
+  textEffectConfigToScene,
+  sceneToConfig,
+  evaluateScene,
+  blendConfigs,
+  type SceneDocument,
+  downloadPngSequenceZip,
+  downloadSceneWebM,
+  getWebMFrameCount,
+  isWebMExportSupported,
+  parseHistorySnapshot,
+  snapshotScene,
+  computeTextLayout,
+} from "@clypra-studio/engine";
 import { getPresetScene } from "@clypra-studio/engine";
 import { COMPOSITION_PRESETS } from "@clypra-studio/engine";
 import { useCollapsibleSections } from "./hooks/useCollapsibleSections";
 import { useResponsiveMobileTab } from "./hooks/useResponsiveMobileTab";
 import { useStudioWorkspaceState } from "./hooks/useStudioWorkspaceState";
-import { analyzeStyleFromImage, generateStyleFromPrompt, generateEffectName, performDeepResearch } from "./services/geminiService";
+import {
+  analyzeStyleFromImage,
+  generateStyleFromPrompt,
+  generateEffectName,
+  performDeepResearch,
+} from "./services/geminiService";
+import { getStudioApiBaseUrl } from "./services/apiConfig";
+import { getNativeLabClient } from "./services/nativeLabClient";
 
-const FontCompare = lazy(() => import("./components/FontCompare").then((module) => ({ default: module.FontCompare })));
-const InspectorPanel = lazy(() => import("./components/InspectorPanel").then((module) => ({ default: module.InspectorPanel })));
-const ExportLabPanel = lazy(() => import("./components/ExportLabPanel").then((module) => ({ default: module.ExportLabPanel })));
+const FontCompare = lazy(() =>
+  import("./components/FontCompare").then((module) => ({
+    default: module.FontCompare,
+  })),
+);
+const InspectorPanel = lazy(() =>
+  import("./components/InspectorPanel").then((module) => ({
+    default: module.InspectorPanel,
+  })),
+);
+const ExportLabPanel = lazy(() =>
+  import("./components/ExportLabPanel").then((module) => ({
+    default: module.ExportLabPanel,
+  })),
+);
 import type { EffectApiCategory } from "./components/ExportLabPanel";
-const LegacyControlsPanel = lazy(() => import("./components/LegacyControlsPanel").then((module) => ({ default: module.LegacyControlsPanel })));
-const SavePresetModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.SavePresetModal })));
-const ImageScanModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.ImageScanModal })));
-const PromptStyleModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.PromptStyleModal })));
-const TutorialModal = lazy(() => import("./components/StudioModals").then((module) => ({ default: module.TutorialModal })));
-const GeminiKeyModal = lazy(() => import("./components/GeminiKeyModal").then((module) => ({ default: module.GeminiKeyModal })));
+const SavePresetModal = lazy(() =>
+  import("./components/StudioModals").then((module) => ({
+    default: module.SavePresetModal,
+  })),
+);
+const ImageScanModal = lazy(() =>
+  import("./components/StudioModals").then((module) => ({
+    default: module.ImageScanModal,
+  })),
+);
+const PromptStyleModal = lazy(() =>
+  import("./components/StudioModals").then((module) => ({
+    default: module.PromptStyleModal,
+  })),
+);
+const TutorialModal = lazy(() =>
+  import("./components/StudioModals").then((module) => ({
+    default: module.TutorialModal,
+  })),
+);
+const GeminiKeyModal = lazy(() =>
+  import("./components/GeminiKeyModal").then((module) => ({
+    default: module.GeminiKeyModal,
+  })),
+);
 import { LoginModal } from "./components/LoginModal";
 
 // Global Fetch Interceptor to automatically inject Authorization header and handle 401s
-if (typeof window !== "undefined" && !(window as any).__clypra_fetch_intercepted__) {
+if (
+  typeof window !== "undefined" &&
+  !(window as any).__clypra_fetch_intercepted__
+) {
   (window as any).__clypra_fetch_intercepted__ = true;
-  const originalFetch = window.fetch;
+  const originalFetch = window.fetch.bind(window);
   window.fetch = async function (input, init) {
     const token = localStorage.getItem("clypra_auth_token");
     let modifiedInit = init;
 
-    const urlStr = typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url || "";
+    const urlStr =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.href
+        : (input as Request).url || "";
 
-    const isClypraApi = urlStr.includes("clypra-worker-api.abdulkabirmusa.com") || urlStr.includes("localhost:8787") || urlStr.includes("127.0.0.1:8787") || urlStr.startsWith("/");
+    const isClypraApi =
+      urlStr.includes("clypra-worker-api.abdulkabirmusa.com") ||
+      urlStr.includes("localhost:8787") ||
+      urlStr.includes("127.0.0.1:8787") ||
+      urlStr.startsWith("/");
 
     if (token && isClypraApi) {
       modifiedInit = init ? { ...init } : {};
@@ -60,7 +152,12 @@ if (typeof window !== "undefined" && !(window as any).__clypra_fetch_intercepted
     const response = await originalFetch.call(this, input, modifiedInit);
 
     // If unauthorized (401), clear local session and dispatch event (except on login/register endpoints)
-    if (response.status === 401 && isClypraApi && !urlStr.includes("/auth/login") && !urlStr.includes("/auth/register")) {
+    if (
+      response.status === 401 &&
+      isClypraApi &&
+      !urlStr.includes("/auth/login") &&
+      !urlStr.includes("/auth/register")
+    ) {
       localStorage.removeItem("clypra_auth_token");
       window.dispatchEvent(new CustomEvent("clypra-unauthorized"));
     }
@@ -80,19 +177,43 @@ function AdminSettingsTabs() {
       {/* Tabs Header */}
       <div className="border-b border-(--studio-border) bg-(--studio-panel) px-6">
         <div className="flex gap-6">
-          <button onClick={() => setActiveTab("cache")} className={`relative px-1 py-4 text-sm font-medium transition-colors ${activeTab === "cache" ? "text-white" : "text-(--studio-muted) hover:text-white"}`}>
+          <button
+            onClick={() => setActiveTab("cache")}
+            className={`relative px-1 py-4 text-sm font-medium transition-colors ${
+              activeTab === "cache"
+                ? "text-white"
+                : "text-(--studio-muted) hover:text-white"
+            }`}
+          >
             Cache Control
-            {activeTab === "cache" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--studio-accent)" />}
+            {activeTab === "cache" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--studio-accent)" />
+            )}
           </button>
-          <button onClick={() => setActiveTab("transitions")} className={`relative px-1 py-4 text-sm font-medium transition-colors ${activeTab === "transitions" ? "text-white" : "text-(--studio-muted) hover:text-white"}`}>
+          <button
+            onClick={() => setActiveTab("transitions")}
+            className={`relative px-1 py-4 text-sm font-medium transition-colors ${
+              activeTab === "transitions"
+                ? "text-white"
+                : "text-(--studio-muted) hover:text-white"
+            }`}
+          >
             Transitions
-            {activeTab === "transitions" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--studio-accent)" />}
+            {activeTab === "transitions" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--studio-accent)" />
+            )}
           </button>
         </div>
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto">{activeTab === "cache" ? <AdminPurgeSettings /> : <AdminTransitionsSettings />}</div>
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === "cache" ? (
+          <AdminPurgeSettings />
+        ) : (
+          <AdminTransitionsSettings />
+        )}
+      </div>
     </div>
   );
 }
@@ -100,9 +221,24 @@ function AdminSettingsTabs() {
 export default function App() {
   // Primary state configuration
   const [config, setConfig] = useState<TextEffectConfig>(defaultConfig);
-  const [scene, setScene] = useState<SceneDocument>(() => textEffectConfigToScene(defaultConfig));
-  const { activeRailItem, activeTab, selectedLayerId, setActiveRailItem, setActiveTab, setSelectedLayerId, setUiMode, uiMode } = useStudioWorkspaceState();
-  const [textSubTab, setTextSubTab] = useState<"templates" | "style" | "layers" | "export">("templates");
+  const [scene, setScene] = useState<SceneDocument>(() =>
+    textEffectConfigToScene(defaultConfig),
+  );
+  const {
+    activeRailItem,
+    activeTab,
+    selectedLayerId,
+    setActiveRailItem,
+    setActiveTab,
+    setSelectedLayerId,
+    setUiMode,
+    uiMode,
+  } = useStudioWorkspaceState();
+  // Text styling and layer authoring live exclusively in the right Inspector.
+  // The left drawer is intentionally limited to library/navigation actions.
+  const [textSubTab, setTextSubTab] = useState<"templates" | "export">(
+    "templates",
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
   const skipConfigToScene = useRef(false);
@@ -111,29 +247,42 @@ export default function App() {
   const [customPresets, setCustomPresets] = useState<Preset[]>([]);
   const [activePresetId, setActivePresetId] = useState<string>("classic-ink");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [sortBy, setSortBy] = useState<"recency" | "name" | "category">("recency");
-  const [effectApiCategory, setEffectApiCategory] = useState<EffectApiCategory>("3d");
+  const [sortBy, setSortBy] = useState<"recency" | "name" | "category">(
+    "recency",
+  );
+  const [effectApiCategory, setEffectApiCategory] =
+    useState<EffectApiCategory>("3d");
 
   // Interaction workspace states
-  const [engineFormat, setEngineFormat] = useState<"ts" | "js" | "txt" | "html">("ts");
-  const [definitionFormat, setDefinitionFormat] = useState<"ts" | "json" | "txt" | "html">("ts");
-  const [bgMode, setBgMode] = useState<"checkerboard" | "black">("checkerboard");
+  const [engineFormat, setEngineFormat] = useState<
+    "ts" | "js" | "txt" | "html"
+  >("ts");
+  const [definitionFormat, setDefinitionFormat] = useState<
+    "ts" | "json" | "txt" | "html"
+  >("ts");
+  const [bgMode, setBgMode] = useState<"checkerboard" | "black">(
+    "checkerboard",
+  );
   const [zoom, setZoom] = useState<number>(100);
   const [zoomMode, setZoomMode] = useState<"fit" | "manual">("fit");
-  const [platformMode, setPlatformMode] = useState<"standard" | "mac-tauri" | "windows-tauri">("standard");
+  // The text-design workspace is intentionally native-daemon-only so the
+  // preview cannot silently diverge from the editor's native composition path.
+  const [nativePreviewState, setNativePreviewState] = useState<
+    "idle" | "rendering" | "ready" | "error"
+  >("idle");
+  const [nativePreviewError, setNativePreviewError] = useState<string | null>(
+    null,
+  );
 
-  const compositorRef = useRef<WebGLCompositor | null>(null);
-  const getCompositor = () => {
-    if (!compositorRef.current && typeof window !== "undefined") {
-      compositorRef.current = new WebGLCompositor();
-    }
-    return compositorRef.current;
-  };
+  const nativePreviewGeneration = useRef(0);
+  const nativePreviewAbort = useRef<AbortController | null>(null);
   const [showFontCompare, setShowFontCompare] = useState<boolean>(false);
 
   // Deep Design Research & Blending Lab states
   const [researchTopic, setResearchTopic] = useState<string>("");
-  const [researchStatus, setResearchStatus] = useState<"idle" | "researching" | "completed" | "failed">("idle");
+  const [researchStatus, setResearchStatus] = useState<
+    "idle" | "researching" | "completed" | "failed"
+  >("idle");
   const [researchError, setResearchError] = useState<string | null>(null);
   const [researchLogs, setResearchLogs] = useState<string[]>([]);
   const [researchResult, setResearchResult] = useState<{
@@ -151,7 +300,12 @@ export default function App() {
   const [blendRatio, setBlendRatio] = useState<number>(0.5);
 
   // User Authentication states
-  const [user, setUser] = useState<{ id: number; username: string; email: string; createdAt: string } | null>(null);
+  const [user, setUser] = useState<{
+    id: number;
+    username: string;
+    email: string;
+    createdAt: string;
+  } | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -176,7 +330,7 @@ export default function App() {
     const storedToken = localStorage.getItem("clypra_auth_token");
     if (storedToken) {
       setToken(storedToken);
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+      const API_BASE_URL = getStudioApiBaseUrl();
       fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
           Authorization: `Bearer ${storedToken}`,
@@ -207,13 +361,17 @@ export default function App() {
       setShowLoginModal(true);
     };
     window.addEventListener("clypra-unauthorized", handleUnauthorized);
-    return () => window.removeEventListener("clypra-unauthorized", handleUnauthorized);
+    return () =>
+      window.removeEventListener("clypra-unauthorized", handleUnauthorized);
   }, []);
 
   // Handle click outside of user dropdown to close it
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setShowUserDropdown(false);
       }
     };
@@ -238,44 +396,59 @@ export default function App() {
 
   // Feedbacks
   const [copiedCodeFeedback, setCopiedCodeFeedback] = useState<boolean>(false);
-  const [copiedImageFeedback, setCopiedImageFeedback] = useState<boolean>(false);
+  const [copiedImageFeedback, setCopiedImageFeedback] =
+    useState<boolean>(false);
   const [isExportingWebM, setIsExportingWebM] = useState(false);
   const [webmExportError, setWebmExportError] = useState<string | null>(null);
   const webmExportSupported = useMemo(() => isWebMExportSupported(), []);
   const [customPresetName, setCustomPresetName] = useState<string>("");
-  const [customPresetCategory, setCustomPresetCategory] = useState<string>("Classic");
-  const [showSavePresetModal, setShowSavePresetModal] = useState<boolean>(false);
+  const [customPresetCategory, setCustomPresetCategory] =
+    useState<string>("Classic");
+  const [showSavePresetModal, setShowSavePresetModal] =
+    useState<boolean>(false);
   const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
   const [showGeminiKeyModal, setShowGeminiKeyModal] = useState<boolean>(false);
-  const [tutorialActiveTab, setTutorialActiveTab] = useState<string>("typography");
+  const [tutorialActiveTab, setTutorialActiveTab] =
+    useState<string>("typography");
   const [isGeneratingName, setIsGeneratingName] = useState<boolean>(false);
 
   // Modern AI image styling scanner states
   const [showImageScanModal, setShowImageScanModal] = useState<boolean>(false);
   const [scanImage, setScanImage] = useState<string | null>(null);
-  const [scanStatus, setScanStatus] = useState<"idle" | "reading" | "analyzing" | "completed" | "failed">("idle");
+  const [scanStatus, setScanStatus] = useState<
+    "idle" | "reading" | "analyzing" | "completed" | "failed"
+  >("idle");
   const [scanError, setScanError] = useState<string | null>(null);
-  const [scanResultConfig, setScanResultConfig] = useState<TextEffectConfig | null>(null);
+  const [scanResultConfig, setScanResultConfig] =
+    useState<TextEffectConfig | null>(null);
   const [scanLogs, setScanLogs] = useState<string[]>([]);
 
   // Modern AI Prompt-to-Style states
   const [showPromptModal, setShowPromptModal] = useState<boolean>(false);
   const [promptInput, setPromptInput] = useState<string>("");
-  const [promptStatus, setPromptStatus] = useState<"idle" | "generating" | "completed" | "failed">("idle");
+  const [promptStatus, setPromptStatus] = useState<
+    "idle" | "generating" | "completed" | "failed"
+  >("idle");
   const [promptError, setPromptError] = useState<string | null>(null);
-  const [promptResultConfig, setPromptResultConfig] = useState<TextEffectConfig | null>(null);
+  const [promptResultConfig, setPromptResultConfig] =
+    useState<TextEffectConfig | null>(null);
   const [promptLogs, setPromptLogs] = useState<string[]>([]);
 
   // Active Mobile View Tab (Controls | Preview | Code)
-  const { mobileActiveTab, setMobileActiveTab, isMobile, isTablet, isNarrow } = useResponsiveMobileTab();
+  const { mobileActiveTab, setMobileActiveTab, isMobile, isTablet, isNarrow } =
+    useResponsiveMobileTab();
   const [isCreatorSessionLoaded, setIsCreatorSessionLoaded] = useState(false);
-  const [creatorSaveStatus, setCreatorSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [creatorSaveStatus, setCreatorSaveStatus] = useState<
+    "idle" | "saving" | "saved"
+  >("idle");
   const creatorSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Undo / Redo history stacks
   const undoStack = useRef<string[]>([]);
   const redoStack = useRef<string[]>([]);
-  const lastSavedStateString = useRef<string>(JSON.stringify(textEffectConfigToScene(defaultConfig)));
+  const lastSavedStateString = useRef<string>(
+    JSON.stringify(textEffectConfigToScene(defaultConfig)),
+  );
   const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [canUndo, setCanUndo] = useState<boolean>(false);
   const [canRedo, setCanRedo] = useState<boolean>(false);
@@ -322,7 +495,9 @@ export default function App() {
     if (savedSession) {
       try {
         const session = JSON.parse(savedSession);
-        const restoredScene = session.scene || textEffectConfigToScene(session.config || defaultConfig);
+        const restoredScene =
+          session.scene ||
+          textEffectConfigToScene(session.config || defaultConfig);
         const restoredConfig = session.config || sceneToConfig(restoredScene);
 
         skipConfigToScene.current = true;
@@ -333,35 +508,44 @@ export default function App() {
 
         if (session.ui) {
           if (session.ui.uiMode) setUiMode(session.ui.uiMode);
-          if (session.ui.activeRailItem) setActiveRailItem(session.ui.activeRailItem);
-          if (session.ui.textSubTab) setTextSubTab(session.ui.textSubTab);
+          if (session.ui.activeRailItem)
+            setActiveRailItem(session.ui.activeRailItem);
+          if (session.ui.textSubTab === "export") setTextSubTab("export");
+          else if (session.ui.textSubTab) setTextSubTab("templates");
           if (session.ui.activeTab) setActiveTab(session.ui.activeTab);
-          if (session.ui.selectedLayerId !== undefined) setSelectedLayerId(session.ui.selectedLayerId);
-          if (session.ui.mobileActiveTab) setMobileActiveTab(session.ui.mobileActiveTab);
+          if (session.ui.selectedLayerId !== undefined)
+            setSelectedLayerId(session.ui.selectedLayerId);
+          if (session.ui.mobileActiveTab)
+            setMobileActiveTab(session.ui.mobileActiveTab);
         }
 
         if (session.exportSettings) {
-          if (session.exportSettings.engineFormat) setEngineFormat(session.exportSettings.engineFormat);
-          if (session.exportSettings.definitionFormat) setDefinitionFormat(session.exportSettings.definitionFormat);
+          if (session.exportSettings.engineFormat)
+            setEngineFormat(session.exportSettings.engineFormat);
+          if (session.exportSettings.definitionFormat)
+            setDefinitionFormat(session.exportSettings.definitionFormat);
         }
 
         if (session.preview) {
           if (session.preview.bgMode) setBgMode(session.preview.bgMode);
-          if (typeof session.preview.zoom === "number") setZoom(session.preview.zoom);
+          if (typeof session.preview.zoom === "number")
+            setZoom(session.preview.zoom);
           if (session.preview.zoomMode) setZoomMode(session.preview.zoomMode);
-          if (session.preview.platformMode) setPlatformMode(session.preview.platformMode);
         }
 
         if (session.blend) {
           if (session.blend.blendAId) setBlendAId(session.blend.blendAId);
           if (session.blend.blendBId) setBlendBId(session.blend.blendBId);
-          if (typeof session.blend.blendRatio === "number") setBlendRatio(session.blend.blendRatio);
+          if (typeof session.blend.blendRatio === "number")
+            setBlendRatio(session.blend.blendRatio);
         }
 
         if (session.library) {
-          if (session.library.selectedCategory) setSelectedCategory(session.library.selectedCategory);
+          if (session.library.selectedCategory)
+            setSelectedCategory(session.library.selectedCategory);
           if (session.library.sortBy) setSortBy(session.library.sortBy);
-          if (session.library.effectApiCategory) setEffectApiCategory(session.library.effectApiCategory);
+          if (session.library.effectApiCategory)
+            setEffectApiCategory(session.library.effectApiCategory);
         }
 
         setCreatorSaveStatus("saved");
@@ -399,7 +583,7 @@ export default function App() {
 
   // Sync effect names and kebab IDs
   const activeEffectId = toKebabCase(getEnrichedEffectName(config));
-  const timelinePanelMode = activeRailItem === "text-effects" && textSubTab === "layers" ? "advanced" : uiMode;
+  const timelinePanelMode = uiMode;
 
   // Unified, filtered, and sorted presets
   const getPresetRecency = (preset: Preset) => {
@@ -417,7 +601,10 @@ export default function App() {
   };
 
   const displayPresets = useMemo(() => {
-    let items = [...customPresets.map((p) => ({ ...p, isCustom: true })), ...builtInPresets];
+    let items = [
+      ...customPresets.map((p) => ({ ...p, isCustom: true })),
+      ...builtInPresets,
+    ];
 
     // Filter by Category
     if (selectedCategory !== "All") {
@@ -453,17 +640,18 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeEl = document.activeElement;
       // Check if user is typing in an input field or contentEditable element
-      const isInput = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.tagName === "SELECT" || (activeEl as HTMLElement).contentEditable === "true");
+      const isInput =
+        activeEl &&
+        (activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          activeEl.tagName === "SELECT" ||
+          (activeEl as HTMLElement).contentEditable === "true");
 
       if (!isInput) {
-        // Space -> toggle play when layers panel is active
+        // Space -> toggle play from the central timeline.
         if (e.key === " ") {
           e.preventDefault();
-          if (activeRailItem === "text-effects" && textSubTab === "layers") {
-            setIsPlaying((prev) => !prev);
-          } else {
-            setBgMode((prev) => (prev === "checkerboard" ? "black" : "checkerboard"));
-          }
+          setIsPlaying((prev) => !prev);
         }
         // Ctrl/Cmd + Z -> Undo
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
@@ -483,15 +671,11 @@ export default function App() {
         }
         if (e.key.toLowerCase() === "t") {
           setActiveRailItem("text-effects");
-          setTextSubTab("style");
+          setTextSubTab("templates");
         }
         if (e.key.toLowerCase() === "e") {
           setActiveRailItem("text-effects");
-          setTextSubTab("style");
-        }
-        if (e.key.toLowerCase() === "l") {
-          setActiveRailItem("text-effects");
-          setTextSubTab("layers");
+          setTextSubTab("templates");
         }
         if (e.key.toLowerCase() === "v") {
           setActiveRailItem("video-effects");
@@ -504,7 +688,11 @@ export default function App() {
 
       // Ctrl + C on code block container to copy
       const isCodeFocused = activeEl?.closest("#right-code-panel");
-      if (isCodeFocused && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+      if (
+        isCodeFocused &&
+        (e.ctrlKey || e.metaKey) &&
+        e.key.toLowerCase() === "c"
+      ) {
         e.preventDefault();
         copyCodeToClipboard();
       }
@@ -526,7 +714,10 @@ export default function App() {
     }
 
     historyTimeoutRef.current = setTimeout(() => {
-      undoStack.current = [...undoStack.current, lastSavedStateString.current].slice(-20);
+      undoStack.current = [
+        ...undoStack.current,
+        lastSavedStateString.current,
+      ].slice(-20);
       redoStack.current = [];
       lastSavedStateString.current = newStateStr;
       setCanUndo(undoStack.current.length > 0);
@@ -539,7 +730,10 @@ export default function App() {
     const sourceStr = JSON.stringify(sourceScene);
     if (sourceStr === lastSavedStateString.current) return;
 
-    undoStack.current = [...undoStack.current, lastSavedStateString.current].slice(-20);
+    undoStack.current = [
+      ...undoStack.current,
+      lastSavedStateString.current,
+    ].slice(-20);
     redoStack.current = [];
     lastSavedStateString.current = sourceStr;
     setCanUndo(undoStack.current.length > 0);
@@ -552,7 +746,8 @@ export default function App() {
     redoStack.current.push(snapshotScene(scene));
 
     try {
-      const { scene: prevScene, config: prevConfig } = parseHistorySnapshot(previousStateStr);
+      const { scene: prevScene, config: prevConfig } =
+        parseHistorySnapshot(previousStateStr);
       skipConfigToScene.current = true;
       setScene(prevScene);
       setConfig(prevConfig);
@@ -570,7 +765,8 @@ export default function App() {
     undoStack.current.push(snapshotScene(scene));
 
     try {
-      const { scene: nextScene, config: nextConfig } = parseHistorySnapshot(nextStateStr);
+      const { scene: nextScene, config: nextConfig } =
+        parseHistorySnapshot(nextStateStr);
       skipConfigToScene.current = true;
       setScene(nextScene);
       setConfig(nextConfig);
@@ -583,9 +779,14 @@ export default function App() {
   };
 
   // Safe configuration modification
-  const modifyConfig = (updater: Partial<TextEffectConfig> | ((p: TextEffectConfig) => TextEffectConfig)) => {
+  const modifyConfig = (
+    updater:
+      | Partial<TextEffectConfig>
+      | ((p: TextEffectConfig) => TextEffectConfig),
+  ) => {
     setConfig((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : { ...prev, ...updater };
+      const next =
+        typeof updater === "function" ? updater(prev) : { ...prev, ...updater };
 
       // Handle auto-generation fonts or effects outside the updater to comply with pure-function paradigms
       setTimeout(() => pushHistoryState(textEffectConfigToScene(next)), 0);
@@ -593,7 +794,9 @@ export default function App() {
     });
   };
 
-  const modifyScene = (updater: SceneDocument | ((prev: SceneDocument) => SceneDocument)) => {
+  const modifyScene = (
+    updater: SceneDocument | ((prev: SceneDocument) => SceneDocument),
+  ) => {
     setScene((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
       skipConfigToScene.current = true;
@@ -645,7 +848,6 @@ export default function App() {
             bgMode,
             zoom,
             zoomMode,
-            platformMode,
           },
           blend: {
             blendAId,
@@ -660,7 +862,10 @@ export default function App() {
         };
 
         localStorage.setItem(CREATOR_SESSION_KEY, JSON.stringify(sessionData));
-        localStorage.setItem("clypra_active_session_config", JSON.stringify(config));
+        localStorage.setItem(
+          "clypra_active_session_config",
+          JSON.stringify(config),
+        );
         localStorage.setItem("clypra_active_preset_id", activePresetId);
         setCreatorSaveStatus("saved");
       } catch (e) {
@@ -674,7 +879,29 @@ export default function App() {
         clearTimeout(creatorSaveTimeoutRef.current);
       }
     };
-  }, [isCreatorSessionLoaded, config, scene, activePresetId, uiMode, activeRailItem, activeTab, selectedLayerId, mobileActiveTab, textSubTab, engineFormat, definitionFormat, bgMode, zoom, zoomMode, platformMode, blendAId, blendBId, blendRatio, selectedCategory, sortBy, effectApiCategory]);
+  }, [
+    isCreatorSessionLoaded,
+    config,
+    scene,
+    activePresetId,
+    uiMode,
+    activeRailItem,
+    activeTab,
+    selectedLayerId,
+    mobileActiveTab,
+    textSubTab,
+    engineFormat,
+    definitionFormat,
+    bgMode,
+    zoom,
+    zoomMode,
+    blendAId,
+    blendBId,
+    blendRatio,
+    selectedCategory,
+    sortBy,
+    effectApiCategory,
+  ]);
 
   // Animation preview loop
   useEffect(() => {
@@ -697,59 +924,147 @@ export default function App() {
     return () => cancelAnimationFrame(raf);
   }, [isPlaying, scene.timeline.duration, scene.timeline.loop]);
 
-  // Trigger immediate Canvas Ref Redraws whenever parameters modify
+  // Render every text-design frame through the local native lab daemon.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    nativePreviewAbort.current?.abort();
+    const controller = new AbortController();
+    nativePreviewAbort.current = controller;
+    const generation = ++nativePreviewGeneration.current;
+    setNativePreviewState("rendering");
+    setNativePreviewError(null);
+
     // Set canvas dimensions first
     canvas.width = config.canvasWidth || 800;
     canvas.height = config.canvasHeight || 200;
 
-    const draw = () => {
+    const draw = async () => {
+      if (controller.signal.aborted) return;
       const w = config.canvasWidth || 800;
       const h = config.canvasHeight || 200;
 
-      if (platformMode === "mac-tauri") {
-        // Mac WKWebView simulation: ctx.filter is unsupported, WebGLCompositor fallback is used.
-        const compositor = getCompositor();
-
-        // Use OffscreenCanvas or regular canvas
-        let off: HTMLCanvasElement | OffscreenCanvas;
-        if (typeof OffscreenCanvas !== "undefined") {
-          off = new OffscreenCanvas(w, h);
-        } else {
-          off = document.createElement("canvas");
-          off.width = w;
-          off.height = h;
-        }
-
-        const offCtx = off.getContext("2d");
-        if (offCtx) {
-          // Force ctx.filter support to be false by overriding the filter property
-          Object.defineProperty(offCtx, "filter", {
-            get: () => "none",
-            set: () => {},
-            configurable: true,
-          });
-
-          offCtx.clearRect(0, 0, w, h);
-          evaluateScene(scene, previewTime, offCtx as unknown as CanvasRenderingContext2D);
-
-          if (compositor && compositor.isSupported) {
-            compositor.renderToContext(ctx, off, { blur: 0, bloom: 0, bloomThreshold: 0.6 });
-          } else {
-            ctx.clearRect(0, 0, w, h);
-            ctx.drawImage(off as unknown as CanvasImageSource, 0, 0);
-          }
-        }
+      // The browser engine remains the authoring/input boundary. The native
+      // daemon owns the final composition and readback, exactly like the
+      // editor's native frame service.
+      let off: HTMLCanvasElement | OffscreenCanvas;
+      if (typeof OffscreenCanvas !== "undefined") {
+        off = new OffscreenCanvas(w, h);
       } else {
-        // standard or windows-tauri: ctx.filter is supported natively by the browser
-        ctx.clearRect(0, 0, w, h);
-        evaluateScene(scene, previewTime, ctx);
+        off = document.createElement("canvas");
+        off.width = w;
+        off.height = h;
       }
+
+      const offCtx = off.getContext("2d");
+      if (!offCtx)
+        throw new Error("Unable to create the text authoring raster context");
+
+      // Force the authoring raster to expose unsupported browser filter paths
+      // instead of masking a native capability gap.
+      Object.defineProperty(offCtx, "filter", {
+        get: () => "none",
+        set: () => {},
+        configurable: true,
+      });
+
+      offCtx.clearRect(0, 0, w, h);
+      evaluateScene(
+        scene,
+        previewTime,
+        offCtx as unknown as CanvasRenderingContext2D,
+      );
+      if (controller.signal.aborted) return;
+
+      const pixels = offCtx.getImageData(0, 0, w, h);
+      const result = await getNativeLabClient().renderFrame(
+        {
+          contractVersion: 1,
+          requestId: `studio-text:${generation}`,
+          frameTime: {
+            frameIndex: Math.max(0, Math.round(previewTime * 60)),
+            ticks: Math.max(0, Math.round(previewTime * 1_000_000)),
+            timescale: 1_000_000,
+          },
+          project: {
+            schemaVersion: 1,
+            projectRevision: `studio-text:${generation}`,
+            canvasWidth: w,
+            canvasHeight: h,
+            clearColor: [0, 0, 0, 0],
+            videoLayers: [],
+            rasterLayers: [
+              {
+                assetId: `studio-text:${generation}`,
+                rgba: Array.from(pixels.data),
+                width: w,
+                height: h,
+                x: 0,
+                y: 0,
+                rotation: 0,
+                opacity: 1,
+                zIndex: 0,
+                blendMode: "normal",
+                isText: true,
+              },
+            ],
+            transition: null,
+          },
+          outputWidth: w,
+          outputHeight: h,
+          quality: "full",
+          colorPolicy: {
+            version: 1,
+            workingSpace: "linear-rec709",
+            outputFormat: "rgba8Srgb",
+            toneMapHdrToSdr: true,
+            displayProfile: "srgb-reference",
+          },
+          renderGraphVersion: 1,
+        },
+        controller.signal,
+      );
+
+      if (
+        controller.signal.aborted ||
+        generation !== nativePreviewGeneration.current
+      )
+        return;
+      if (typeof createImageBitmap !== "function")
+        throw new Error("createImageBitmap is unavailable");
+      const bitmap = await createImageBitmap(result.image);
+      if (
+        controller.signal.aborted ||
+        generation !== nativePreviewGeneration.current
+      ) {
+        bitmap.close();
+        return;
+      }
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      bitmap.close();
+      setNativePreviewState("ready");
+    };
+
+    const reportError = (error: unknown) => {
+      if (
+        controller.signal.aborted ||
+        generation !== nativePreviewGeneration.current
+      )
+        return;
+      const message = error instanceof Error ? error.message : String(error);
+      setNativePreviewState("error");
+      setNativePreviewError(message);
+      ctx.clearRect(
+        0,
+        0,
+        config.canvasWidth || 800,
+        config.canvasHeight || 200,
+      );
+      console.error("Native Studio text preview failed:", error);
     };
 
     if (GOOGLE_FONTS.includes(config.fontFamily)) {
@@ -761,7 +1076,10 @@ export default function App() {
         const link = document.createElement("link");
         link.id = fontId;
         link.rel = "stylesheet";
-        link.href = `https://fonts.googleapis.com/css2?family=${family.replace(/\s+/g, "+")}:wght@400;500;600;700;800;900&display=swap`;
+        link.href = `https://fonts.googleapis.com/css2?family=${family.replace(
+          /\s+/g,
+          "+",
+        )}:wght@400;500;600;700;800;900&display=swap`;
         document.head.appendChild(link);
       }
 
@@ -770,12 +1088,16 @@ export default function App() {
       // fixing the race condition where fonts.ready resolved before the
       // newly injected stylesheet was parsed and the face downloaded.
       const fontSpec = `${config.fontWeight} ${config.fontSize}px "${family}"`;
-      document.fonts.load(fontSpec).then(draw).catch(draw);
+      document.fonts
+        .load(fontSpec)
+        .then(() => draw().catch(reportError))
+        .catch(reportError);
     } else {
       // System font — draw immediately, no loading needed
-      draw();
+      void draw().catch(reportError);
     }
-  }, [config, scene, previewTime, platformMode]);
+    return () => controller.abort();
+  }, [config, scene, previewTime]);
 
   // Format code strings
   const engineCode = generateEngineClass(config);
@@ -792,7 +1114,9 @@ export default function App() {
       return engineCode;
     } else {
       if (definitionFormat === "json") {
-        const match = definitionCode.match(/TextEffectDefinition\s*=\s*(\{[\s\S]*?\});/);
+        const match = definitionCode.match(
+          /TextEffectDefinition\s*=\s*(\{[\s\S]*?\});/,
+        );
         return match && match[1] ? match[1] : definitionCode;
       }
       if (definitionFormat === "html") {
@@ -838,7 +1162,14 @@ export default function App() {
     } else {
       setHighlightedCode(rawCode);
     }
-  }, [config, activeTab, engineCode, definitionCode, engineFormat, definitionFormat]);
+  }, [
+    config,
+    activeTab,
+    engineCode,
+    definitionCode,
+    engineFormat,
+    definitionFormat,
+  ]);
 
   // Preset Applicator
   const handleApplyPreset = (preset: Preset) => {
@@ -872,7 +1203,12 @@ export default function App() {
   };
 
   const handleResetCreatorSession = () => {
-    if (!confirm("Clear the autosaved creator session and start from a blank slate?")) return;
+    if (
+      !confirm(
+        "Clear the autosaved creator session and start from a blank slate?",
+      )
+    )
+      return;
     localStorage.removeItem(CREATOR_SESSION_KEY);
     localStorage.removeItem("clypra_active_session_config");
     localStorage.removeItem("clypra_active_preset_id");
@@ -890,8 +1226,15 @@ export default function App() {
 
     forceSaveHistoryImmediately(scene);
 
-    const blended = blendConfigs({ ...presetA.config, text: config.text }, { ...presetB.config, text: config.text }, blendRatio);
-    blended.effectName = `Blend ${presetA.name.substring(0, 8)} × ${presetB.name.substring(0, 8)}`;
+    const blended = blendConfigs(
+      { ...presetA.config, text: config.text },
+      { ...presetB.config, text: config.text },
+      blendRatio,
+    );
+    blended.effectName = `Blend ${presetA.name.substring(
+      0,
+      8,
+    )} × ${presetB.name.substring(0, 8)}`;
     const blendedScene = textEffectConfigToScene(blended);
     skipConfigToScene.current = true;
     setConfig(blended);
@@ -905,9 +1248,37 @@ export default function App() {
     setResearchStatus("researching");
     setResearchError(null);
     setResearchResult(null);
-    setResearchLogs(["Constructing deep analytical research criteria...", "Connecting to Gemini Design Specialist..."]);
+    setResearchLogs([
+      "Constructing deep analytical research criteria...",
+      "Connecting to Gemini Design Specialist...",
+    ]);
 
-    const timers = [setTimeout(() => setResearchLogs((prev) => [...prev, "Deconstructing visual history and key styling laws..."]), 800), setTimeout(() => setResearchLogs((prev) => [...prev, "Extracting professional hexagonal color palette offsets..."]), 1600), setTimeout(() => setResearchLogs((prev) => [...prev, "Synthesizing custom Canvas2D tool extension code snippet..."]), 2400)];
+    const timers = [
+      setTimeout(
+        () =>
+          setResearchLogs((prev) => [
+            ...prev,
+            "Deconstructing visual history and key styling laws...",
+          ]),
+        800,
+      ),
+      setTimeout(
+        () =>
+          setResearchLogs((prev) => [
+            ...prev,
+            "Extracting professional hexagonal color palette offsets...",
+          ]),
+        1600,
+      ),
+      setTimeout(
+        () =>
+          setResearchLogs((prev) => [
+            ...prev,
+            "Synthesizing custom Canvas2D tool extension code snippet...",
+          ]),
+        2400,
+      ),
+    ];
 
     try {
       const resData = await performDeepResearch(researchTopic);
@@ -923,10 +1294,15 @@ export default function App() {
         extensionCode: resData.extensionCode || "",
       });
       setResearchStatus("completed");
-      setResearchLogs((prev) => [...prev, "Research completed successfully! Visual models mapped."]);
+      setResearchLogs((prev) => [
+        ...prev,
+        "Research completed successfully! Visual models mapped.",
+      ]);
     } catch (err: any) {
       timers.forEach(clearTimeout);
-      setResearchError(err.message || "An unexpected error occurred during deep research.");
+      setResearchError(
+        err.message || "An unexpected error occurred during deep research.",
+      );
       setResearchStatus("failed");
     }
   };
@@ -978,8 +1354,30 @@ export default function App() {
     } catch (err: any) {
       console.error("AI Naming error:", err);
       // Fallback
-      const adjectives = ["Phantom", "Cyber", "Cosmic", "Glitch", "Solar", "Velvet", "Liquid", "Chroma", "Volcanic", "Sublime"];
-      const nouns = ["Glow", "Chrome", "Aura", "Nebula", "Vortex", "Slab", "Aspect", "Flux", "Shimmer", "Vibe"];
+      const adjectives = [
+        "Phantom",
+        "Cyber",
+        "Cosmic",
+        "Glitch",
+        "Solar",
+        "Velvet",
+        "Liquid",
+        "Chroma",
+        "Volcanic",
+        "Sublime",
+      ];
+      const nouns = [
+        "Glow",
+        "Chrome",
+        "Aura",
+        "Nebula",
+        "Vortex",
+        "Slab",
+        "Aspect",
+        "Flux",
+        "Shimmer",
+        "Vibe",
+      ];
       const rAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
       const rNoun = nouns[Math.floor(Math.random() * nouns.length)];
       setCustomPresetName(`${rAdj} ${rNoun}`);
@@ -996,8 +1394,30 @@ export default function App() {
       modifyConfig({ effectName: suggestedName });
     } catch (err: any) {
       console.error("AI Naming error:", err);
-      const adjectives = ["Vesper", "Cyber", "Super", "Aether", "Cosmos", "Lumen", "Hydro", "Pyro", "Tox", "Magma"];
-      const nouns = ["Prism", "Edge", "Core", "Drift", "Strobe", "Glow", "Chrome", "Brim", "Lava", "Pulse"];
+      const adjectives = [
+        "Vesper",
+        "Cyber",
+        "Super",
+        "Aether",
+        "Cosmos",
+        "Lumen",
+        "Hydro",
+        "Pyro",
+        "Tox",
+        "Magma",
+      ];
+      const nouns = [
+        "Prism",
+        "Edge",
+        "Core",
+        "Drift",
+        "Strobe",
+        "Glow",
+        "Chrome",
+        "Brim",
+        "Lava",
+        "Pulse",
+      ];
       const rAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
       const rNoun = nouns[Math.floor(Math.random() * nouns.length)];
       modifyConfig({ effectName: `${rAdj}${rNoun}` });
@@ -1030,10 +1450,31 @@ export default function App() {
       setScanLogs((prev) => [...prev, msg]);
     };
 
-    const timer1 = setTimeout(() => appendLog("AI is analyzing image with Gemini model..."), 600);
-    const timer2 = setTimeout(() => appendLog("Deconstructing font styling, letter family & stroke boundaries..."), 1500);
-    const timer3 = setTimeout(() => appendLog("Evaluating pixel maps, primary colors and linear gradients..."), 2400);
-    const timer4 = setTimeout(() => appendLog("Parsing shadow displacements, depths, panel properties and glow layers..."), 3300);
+    const timer1 = setTimeout(
+      () => appendLog("AI is analyzing image with Gemini model..."),
+      600,
+    );
+    const timer2 = setTimeout(
+      () =>
+        appendLog(
+          "Deconstructing font styling, letter family & stroke boundaries...",
+        ),
+      1500,
+    );
+    const timer3 = setTimeout(
+      () =>
+        appendLog(
+          "Evaluating pixel maps, primary colors and linear gradients...",
+        ),
+      2400,
+    );
+    const timer4 = setTimeout(
+      () =>
+        appendLog(
+          "Parsing shadow displacements, depths, panel properties and glow layers...",
+        ),
+      3300,
+    );
 
     try {
       const resultConfig = await analyzeStyleFromImage(scanImage);
@@ -1059,7 +1500,9 @@ export default function App() {
         // Non-fatal — keep going without a name
       }
 
-      appendLog("AI deconstruction succeeded! Custom configuration mappings resolved.");
+      appendLog(
+        "AI deconstruction succeeded! Custom configuration mappings resolved.",
+      );
       setScanResultConfig(mergedConfig);
       setScanStatus("completed");
     } catch (err: any) {
@@ -1068,7 +1511,9 @@ export default function App() {
       clearTimeout(timer3);
       clearTimeout(timer4);
       setScanStatus("failed");
-      setScanError(err.message || "Failed to process style deconstruction request.");
+      setScanError(
+        err.message || "Failed to process style deconstruction request.",
+      );
     }
   };
 
@@ -1094,10 +1539,26 @@ export default function App() {
       setPromptLogs((prev) => [...prev, msg]);
     };
 
-    const timer1 = setTimeout(() => appendLog("Sending visual styling seed to Gemini LLM..."), 500);
-    const timer2 = setTimeout(() => appendLog("Synthesizing responsive font-weights and visual contrasts..."), 1200);
-    const timer3 = setTimeout(() => appendLog("Designing custom multi-layer glows and canvas gradients..."), 2000);
-    const timer4 = setTimeout(() => appendLog("Configuring optimal bevel displacements and shadows..."), 2850);
+    const timer1 = setTimeout(
+      () => appendLog("Sending visual styling seed to Gemini LLM..."),
+      500,
+    );
+    const timer2 = setTimeout(
+      () =>
+        appendLog(
+          "Synthesizing responsive font-weights and visual contrasts...",
+        ),
+      1200,
+    );
+    const timer3 = setTimeout(
+      () =>
+        appendLog("Designing custom multi-layer glows and canvas gradients..."),
+      2000,
+    );
+    const timer4 = setTimeout(
+      () => appendLog("Configuring optimal bevel displacements and shadows..."),
+      2850,
+    );
 
     try {
       const resultConfig = await generateStyleFromPrompt(promptInput);
@@ -1123,7 +1584,9 @@ export default function App() {
         // Non-fatal — keep going without a name
       }
 
-      appendLog("AI generation succeeded! Visual configuration loaded successfully.");
+      appendLog(
+        "AI generation succeeded! Visual configuration loaded successfully.",
+      );
       setPromptResultConfig(mergedConfig);
       setPromptStatus("completed");
     } catch (err: any) {
@@ -1149,7 +1612,9 @@ export default function App() {
   // Drag-and-drop & clipboard processing helpers
   const processFileForScan = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      setScanError("Please select a valid image file. Common form formats: PNG, JPG, WEBP.");
+      setScanError(
+        "Please select a valid image file. Common form formats: PNG, JPG, WEBP.",
+      );
       return;
     }
     setScanStatus("reading");
@@ -1220,11 +1685,14 @@ export default function App() {
 
   // Download code as a localized file with Dual-Output Export feature
   const downloadCodeAsFile = () => {
-    const pascalName = toPascalCase(getEnrichedEffectName(config)) || "MyEffect";
+    const pascalName =
+      toPascalCase(getEnrichedEffectName(config)) || "MyEffect";
 
     // 1. Interactive standalone [EffectName]Sandbox.html
     const htmlContent = generateHTMLFile(config);
-    const htmlBlob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const htmlBlob = new Blob([htmlContent], {
+      type: "text/html;charset=utf-8",
+    });
     const htmlUrl = URL.createObjectURL(htmlBlob);
     const htmlLink = document.createElement("a");
     htmlLink.href = htmlUrl;
@@ -1294,7 +1762,17 @@ export default function App() {
     cropCanvas.height = cropHeight;
     const cropCtx = cropCanvas.getContext("2d");
     if (cropCtx) {
-      cropCtx.drawImage(canvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+      cropCtx.drawImage(
+        canvas,
+        minX,
+        minY,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        cropWidth,
+        cropHeight,
+      );
       return cropCanvas;
     }
     return canvas;
@@ -1399,124 +1877,287 @@ export default function App() {
         autoFit: true,
       },
     );
-    modifyConfig({ fontSize: layout.fontSize, autoFitText: true, wrapText: true });
+    modifyConfig({
+      fontSize: layout.fontSize,
+      autoFitText: true,
+      wrapText: true,
+    });
   };
 
-  // ── Overlay Studio: full-screen breakout — render completely outside the
-  //    StudioChrome wrapper so nothing clips or constrains the workspace.
-  if (activeRailItem === "overlays") {
-    return (
-      <OverlayStudioWorkspace onExit={() => setActiveRailItem("text-effects")} />
-    );
-  }
-
   return (
-    <div id="studio-workspace-wrapper" className="flex flex-col h-screen bg-[#0E0E12]" style={{ fontFamily: "Inter, sans-serif" }}>
-      {/* ──────────────────────────────────────────────────────────────────
-      {/* TOP MENUBAR
-          ────────────────────────────────────────────────────────────────── */}
-      <header id="studio-header" className="flex h-14 items-center justify-between border-b border-(--studio-border) bg-(--studio-shell) px-4 select-none shrink-0 z-20">
-        {/* Left: Brand Mark & Autosave Pill */}
-        <div className="flex items-center gap-3">
-          <a href="/" aria-label="Back to home" title="Back to Clypra home" className="flex items-center gap-2 group">
-            <img src="/clypra.svg" alt="Clypra" className="w-8 h-8 select-none transition-transform group-hover:scale-105" />
-            <span className="text-base font-bold text-white tracking-tight">Clypra Studio</span>
+    <div
+      id="studio-workspace-wrapper"
+      className="flex flex-col h-screen"
+      style={{
+        background: "var(--studio-bg)",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      {/* ── TOP HEADER ──────────────────────────────────────────────────────── */}
+      <header id="studio-header" className="studio-header">
+        {/* Left: brand + autosave */}
+        <div className="flex items-center gap-3 min-w-0">
+          <a
+            href="/studio"
+            aria-label="Back to Clypra Studio hub"
+            className="flex items-center gap-2 group shrink-0"
+          >
+            <img
+              src="/clypra.svg"
+              alt="Clypra"
+              className="w-7 h-7 select-none transition-transform group-hover:scale-105"
+            />
+            <span className="text-[13px] font-bold text-white tracking-tight hidden sm:block">
+              Clypra{" "}
+              <span style={{ color: "var(--studio-accent)" }}>Studio</span>
+            </span>
           </a>
-          <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-0.5 text-[9px] text-emerald-400">
-            <span className={`inline-block h-1.5 w-1.5 rounded-full ${creatorSaveStatus === "saving" ? "bg-amber-400 animate-pulse" : "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]"}`} />
-            <span className="font-mono uppercase tracking-wider font-semibold">{creatorSaveStatus === "saving" ? "Saving..." : "Autosaved"}</span>
-          </div>
+
+          {/* Autosave pill */}
+          <span
+            className={`autosave-pill hidden sm:inline-flex${
+              creatorSaveStatus === "saving" ? " saving" : ""
+            }`}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{
+                background:
+                  creatorSaveStatus === "saving"
+                    ? "#fbbf24"
+                    : "var(--gpu-ready)",
+                boxShadow:
+                  creatorSaveStatus === "saving"
+                    ? "none"
+                    : "0 0 5px var(--gpu-ready)",
+              }}
+            />
+            {creatorSaveStatus === "saving" ? "Saving…" : "Autosaved"}
+          </span>
+
+          {/* GPU pipeline status pill */}
+          {activeRailItem === "text-effects" && (
+            <span
+              className={`studio-gpu-pill hidden md:inline-flex ${
+                nativePreviewState === "ready"
+                  ? "ready"
+                  : nativePreviewState === "error"
+                  ? "error"
+                  : "live"
+              }`}
+              title={
+                nativePreviewError ?? "Clypra native lab daemon · Metal GPU"
+              }
+            >
+              <span className="studio-gpu-pill-dot" />
+              <Cpu size={9} style={{ flexShrink: 0 }} />
+              {nativePreviewState === "ready"
+                ? "GPU · Ready"
+                : nativePreviewState === "error"
+                ? "GPU · Error"
+                : "GPU · Live"}
+            </span>
+          )}
         </div>
 
-        {/* Right: Consolidated Visual Utilities */}
-        <div className="flex items-center gap-3">
-          {/* Undo/Redo Queue */}
-          <div className="flex items-center gap-0.5 border-r border-(--studio-border) pr-2">
-            <button id="global-undo-btn" aria-label="Undo" title="Undo parameter edit (Ctrl+Z)" onClick={triggerUndo} disabled={!canUndo} className={`p-1.5 rounded transition-all ${!canUndo ? "text-gray-700 hover:bg-transparent cursor-not-allowed" : "text-white hover:bg-(--studio-hover) hover:text-(--studio-accent) cursor-pointer"}`}>
-              <Undo2 size={14} />
-            </button>
-            <button id="global-redo-btn" aria-label="Redo" title="Redo parameters (Ctrl+Y)" onClick={triggerRedo} disabled={!canRedo} className={`p-1.5 rounded transition-all ${!canRedo ? "text-gray-700 hover:bg-transparent cursor-not-allowed" : "text-white hover:bg-(--studio-hover) hover:text-(--studio-accent) cursor-pointer"}`}>
-              <Redo2 size={14} />
-            </button>
-          </div>
+        {/* Centre: undo/redo */}
+        <div className="flex items-center gap-0.5 absolute left-1/2 -translate-x-1/2">
+          <button
+            id="global-undo-btn"
+            aria-label="Undo"
+            title="Undo (Ctrl+Z)"
+            onClick={triggerUndo}
+            disabled={!canUndo}
+            className="studio-header-btn"
+          >
+            <Undo2 size={14} />
+          </button>
+          <button
+            id="global-redo-btn"
+            aria-label="Redo"
+            title="Redo (Ctrl+Y)"
+            onClick={triggerRedo}
+            disabled={!canRedo}
+            className="studio-header-btn"
+          >
+            <Redo2 size={14} />
+          </button>
+        </div>
 
-          {/* Config & Help Utilities */}
-          <button id="gemini-key-header-btn" onClick={() => setShowGeminiKeyModal(true)} className="p-1.5 hover:bg-(--studio-hover) rounded transition-all text-white cursor-pointer" title="Gemini API Key">
+        {/* Right: utilities */}
+        <div className="flex items-center gap-1.5">
+          <button
+            id="gemini-key-header-btn"
+            onClick={() => setShowGeminiKeyModal(true)}
+            className="studio-header-btn"
+            title="Gemini API Key"
+          >
             <KeyRound size={14} />
           </button>
 
-          <button id="open-tutorial-btn" onClick={() => setShowTutorialModal(true)} className="p-1.5 hover:bg-(--studio-hover) rounded transition-all text-white cursor-pointer" title="Help Guide & Shortcuts">
+          <button
+            id="open-tutorial-btn"
+            onClick={() => setShowTutorialModal(true)}
+            className="studio-header-btn"
+            title="Help & Shortcuts"
+          >
             <HelpCircle size={14} />
           </button>
 
-          {/* User Auth Section */}
+          {/* Separator */}
+          <div
+            className="w-px h-4 mx-1 shrink-0"
+            style={{ background: "var(--studio-border)" }}
+          />
+
+          {/* User auth */}
           {user ? (
             <div className="relative" ref={dropdownRef}>
-              <button onClick={() => setShowUserDropdown(!showUserDropdown)} className="h-8 flex items-center gap-2 rounded border border-[#2A2A38] bg-[#1E1E26] px-2.5 text-xs font-semibold text-white hover:bg-[#2A2A38] cursor-pointer" title={`Logged in as ${user.username}`}>
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#7C6FFF] text-[10px] font-bold text-white uppercase">{user.username.charAt(0)}</span>
+              <button
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="flex items-center gap-2 rounded-lg px-2.5 h-8 text-[11px] font-semibold text-white cursor-pointer transition-colors"
+                style={{
+                  background: "var(--studio-raised)",
+                  border: "1px solid var(--studio-border)",
+                }}
+                title={`Logged in as ${user.username}`}
+              >
+                <span
+                  className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white uppercase shrink-0"
+                  style={{ background: "var(--studio-accent)" }}
+                >
+                  {user.username.charAt(0)}
+                </span>
                 <span className="hidden sm:inline">{user.username}</span>
               </button>
               {showUserDropdown && (
-                <div className="absolute right-0 mt-1.5 w-40 origin-top-right rounded-lg border border-[#2A2A38] bg-[#1E1E26] p-1.5 shadow-xl z-50">
-                  <div className="px-2 py-1.5 text-[9px] text-gray-500 border-b border-[#2A2A38] mb-1 truncate">{user.email}</div>
-                  <button onClick={handleLogout} className="w-full text-left rounded px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer">
+                <div
+                  className="absolute right-0 mt-1.5 w-40 rounded-lg p-1.5 shadow-xl z-50"
+                  style={{
+                    background: "var(--studio-raised)",
+                    border: "1px solid var(--studio-border)",
+                  }}
+                >
+                  <div
+                    className="px-2 py-1.5 text-[9px] border-b mb-1 truncate"
+                    style={{
+                      color: "var(--studio-muted)",
+                      borderColor: "var(--studio-border)",
+                    }}
+                  >
+                    {user.email}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left rounded px-2 py-1.5 text-xs cursor-pointer transition-colors"
+                    style={{ color: "var(--gpu-error)" }}
+                  >
                     Log Out
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <button onClick={() => setShowLoginModal(true)} className="h-8 rounded border border-[#7C6FFF]/20 bg-[#7C6FFF]/10 px-2.5 text-xs font-semibold text-[#7C6FFF] hover:bg-[#7C6FFF]/15 flex items-center gap-1.5 cursor-pointer" title="Sign In / Register">
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 h-8 text-[11px] font-semibold cursor-pointer transition-colors"
+              style={{
+                background: "var(--studio-active-soft)",
+                border: "1px solid rgba(124,111,255,0.25)",
+                color: "var(--studio-accent)",
+              }}
+              title="Sign In / Register"
+            >
               <User size={13} />
-              <span>Sign In</span>
+              Sign In
             </button>
           )}
 
-          {/* Moderator Link */}
           {isAdmin && (
-            <a href="/admin/effects" className="h-8 rounded border border-blue-500/20 bg-blue-500/10 px-2.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/15 flex items-center gap-1.5 cursor-pointer font-sans no-underline" title="AI Effects Moderator Portal">
+            <a
+              href="/studio/admin"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 h-8 text-[11px] font-semibold no-underline cursor-pointer transition-colors"
+              style={{
+                background: "rgba(59,130,246,0.1)",
+                border: "1px solid rgba(59,130,246,0.2)",
+                color: "#93c5fd",
+              }}
+              title="AI Effects Moderator Portal"
+            >
               <Sparkles size={13} />
-              <span className="hidden md:inline">Moderate AI Effects</span>
+              <span className="hidden md:inline">Moderate</span>
             </a>
           )}
 
-          {/* Text Templates Workspace Link */}
-          <a href="/lottie" className="h-8 rounded border border-purple-500/20 bg-purple-500/10 px-2.5 text-xs font-semibold text-purple-300 hover:bg-purple-500/15 flex items-center gap-1.5 cursor-pointer font-sans no-underline" title="Go to Text Templates">
+          <a
+            href="/lottie"
+            className="flex items-center gap-1.5 rounded-lg px-2.5 h-8 text-[11px] font-semibold no-underline cursor-pointer transition-colors"
+            style={{
+              background: "rgba(139,92,246,0.1)",
+              border: "1px solid rgba(139,92,246,0.2)",
+              color: "#c4b5fd",
+            }}
+            title="Text Templates"
+          >
             <Video size={13} />
             <span className="hidden md:inline">Text Templates</span>
           </a>
         </div>
       </header>
 
-      {/* Mobile / Tablet viewport navigation tab-selector */}
+      {/* Mobile tab bar */}
       {isNarrow && (
-        <div id="mobile-views-tabbar" className="flex border-b border-[#2A2A38] bg-[#1E1E26] text-xs font-semibold shrink-0 select-none">
-          <button id="mobile-tab-controls" onClick={() => setMobileActiveTab("controls")} className={`flex-1 py-3 text-center transition-all ${mobileActiveTab === "controls" ? "text-[#7C6FFF] bg-[#0E0E12] border-b-2 border-[#7C6FFF]" : "text-clypra-muted"}`}>
-            1. Controls
-          </button>
-          <button id="mobile-tab-preview" onClick={() => setMobileActiveTab("preview")} className={`flex-1 py-3 text-center transition-all ${mobileActiveTab === "preview" ? "text-[#7C6FFF] bg-[#0E0E12] border-b-2 border-[#7C6FFF]" : "text-clypra-muted"}`}>
-            2. Preview
-          </button>
-          <button id="mobile-tab-code" onClick={() => setMobileActiveTab("code")} className={`flex-1 py-3 text-center transition-all ${mobileActiveTab === "code" ? "text-[#7C6FFF] bg-[#0E0E12] border-b-2 border-[#7C6FFF]" : "text-clypra-muted"}`}>
-            3. Export
-          </button>
+        <div
+          id="mobile-views-tabbar"
+          className="flex shrink-0 select-none border-b"
+          style={{
+            background: "var(--studio-panel)",
+            borderColor: "var(--studio-border)",
+          }}
+        >
+          {(["controls", "preview", "code"] as const).map((tab, i) => {
+            const labels = ["Controls", "Preview", "Export"];
+            const active = mobileActiveTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => setMobileActiveTab(tab)}
+                className="flex-1 py-2.5 text-center text-[11px] font-bold transition-all relative"
+                style={{
+                  color: active
+                    ? "var(--studio-accent)"
+                    : "var(--studio-muted)",
+                }}
+              >
+                {labels[i]}
+                {active && (
+                  <span
+                    className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full"
+                    style={{ background: "var(--studio-accent)" }}
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
       {/* ────────────────────────────────────────────────────────────────── WORK WORKSPACE CANVAS ────────────────────────────────────────────────────────────────── */}
-      <main id="primary-workspace-layout" className="flex flex-1 overflow-hidden">
-        {/* Left icon rail — hidden on mobile only, visible on tablet + desktop */}
-        {!isMobile && <LeftRail activeItem={activeRailItem} onSelectItem={setActiveRailItem} isAdmin={isAdmin} />}
+      <main
+        id="primary-workspace-layout"
+        className="flex flex-1 overflow-hidden"
+      >
+        {/* Left icon rail */}
+        {!isMobile && (
+          <LeftRail
+            activeItem={activeRailItem}
+            onSelectItem={setActiveRailItem}
+            isAdmin={isAdmin}
+            gpuState={nativePreviewState}
+          />
+        )}
 
-        {activeRailItem === "audio" ? (
-          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
-            <AudioPublishPanel variant="workspace" />
-          </div>
-        ) : activeRailItem === "stickers" ? (
-          <div className="min-w-0 flex-1 overflow-hidden bg-[#0B0B10]">
-            <StickerPublishPanel variant="workspace" />
-          </div>
-        ) : activeRailItem === "admin" ? (
+        {activeRailItem === "admin" ? (
           <div className="min-w-0 flex-1 overflow-y-auto bg-[#0B0B10]">
             {isAdmin ? (
               <AdminSettingsTabs />
@@ -1524,8 +2165,13 @@ export default function App() {
               <div className="flex h-full items-center justify-center text-center p-6 text-(--studio-muted)">
                 <div className="max-w-md space-y-3">
                   <Shield size={48} className="mx-auto text-red-500/50" />
-                  <h3 className="text-sm font-semibold text-white">Unauthorized Access</h3>
-                  <p className="text-xs text-(--studio-muted)">Only logged-in administrators are allowed to access the admin panel.</p>
+                  <h3 className="text-sm font-semibold text-white">
+                    Unauthorized Access
+                  </h3>
+                  <p className="text-xs text-(--studio-muted)">
+                    Only logged-in administrators are allowed to access the
+                    admin panel.
+                  </p>
                 </div>
               </div>
             )}
@@ -1538,9 +2184,17 @@ export default function App() {
               <div className="flex h-full items-center justify-center text-center p-6 text-(--studio-muted)">
                 <div className="max-w-md space-y-3">
                   <Shield size={48} className="mx-auto text-red-500/50" />
-                  <h3 className="text-sm font-semibold text-white">Unauthorized Access</h3>
-                  <p className="text-xs text-(--studio-muted)">Only logged-in administrators are allowed to access the Labs.</p>
-                  <button onClick={() => setActiveRailItem("text-effects")} className="mt-4 px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors">
+                  <h3 className="text-sm font-semibold text-white">
+                    Unauthorized Access
+                  </h3>
+                  <p className="text-xs text-(--studio-muted)">
+                    Only logged-in administrators are allowed to access the
+                    Labs.
+                  </p>
+                  <button
+                    onClick={() => setActiveRailItem("text-effects")}
+                    className="mt-4 px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors"
+                  >
                     Go to Text Effects
                   </button>
                 </div>
@@ -1564,7 +2218,9 @@ export default function App() {
             >
               <DrawerIntro
                 activeItem={activeRailItem}
-                showExport={activeRailItem === "text-effects" && textSubTab !== "export"}
+                showExport={
+                  activeRailItem === "text-effects" && textSubTab !== "export"
+                }
                 onOpenExport={() => {
                   setActiveRailItem("text-effects");
                   setTextSubTab("export");
@@ -1572,111 +2228,166 @@ export default function App() {
               />
 
               {activeRailItem === "text-effects" && (
-                <div className="flex border-b border-(--studio-border) bg-(--studio-shell) text-xs font-semibold shrink-0 select-none p-1 gap-1">
-                  {[
-                    { id: "templates" as const, label: "Templates" },
-                    { id: "style" as const, label: "Style" },
-                    { id: "layers" as const, label: "Layers" },
-                    { id: "export" as const, label: "Export" },
-                  ].map((tab) => (
+                <>
+                  {/* ── Compact GPU pipeline strip ── */}
+                  <div
+                    className="flex items-center justify-between gap-2 px-3 py-2 border-b shrink-0"
+                    style={{
+                      borderColor: "var(--studio-border)",
+                      background: "var(--studio-panel)",
+                    }}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="flex items-center justify-center rounded shrink-0"
+                        style={{
+                          width: 22,
+                          height: 22,
+                          background: "var(--studio-control)",
+                          border: "1px solid var(--studio-border)",
+                          color: "var(--studio-accent)",
+                        }}
+                      >
+                        <Cpu size={12} />
+                      </span>
+                      <span className="text-[11px] font-semibold text-white truncate">
+                        Native authoring pipeline
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={`studio-gpu-pill ${
+                          nativePreviewState === "ready"
+                            ? "ready"
+                            : nativePreviewState === "error"
+                            ? "error"
+                            : "live"
+                        }`}
+                      >
+                        <span className="studio-gpu-pill-dot" />
+                        {nativePreviewState === "ready"
+                          ? "Ready"
+                          : nativePreviewState === "error"
+                          ? "Error"
+                          : "Live"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyPreset(nativeAuroraPreset)}
+                        className="canvas-toolbar-btn"
+                        title="Load Native Aurora sample"
+                      >
+                        <Sparkles size={10} className="mr-1" />
+                        Aurora
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ── Library navigation ──
+                      Style and Layers are owned by the Inspector. */}
+                  <div className="studio-tabs">
+                    {(["templates", "export"] as const).map(
+                      (tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setTextSubTab(tab)}
+                          className={`studio-tab${
+                            textSubTab === tab ? " active" : ""
+                          }`}
+                        >
+                          {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </>
+              )}
+
+              {activeRailItem === "text-effects" &&
+                textSubTab === "templates" && (
+                  <div
+                    className="flex flex-col p-3 gap-2 border-b"
+                    style={{ borderColor: "var(--studio-border)" }}
+                  >
                     <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => {
-                        setTextSubTab(tab.id);
-                        if (tab.id === "layers") setUiMode("advanced");
+                      id="start-scratch-header-btn"
+                      onClick={handleStartFromScratch}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg py-2 text-[11px] font-bold transition-colors"
+                      style={{
+                        background: "rgba(52,211,153,0.07)",
+                        border: "1px solid rgba(52,211,153,0.2)",
+                        color: "var(--gpu-ready)",
                       }}
-                      className={`flex-1 py-1.5 text-center rounded transition-all cursor-pointer text-[11px] font-sans ${textSubTab === tab.id ? "bg-[#7C6FFF] text-white font-bold" : "text-(--studio-muted) hover:text-white hover:bg-(--studio-hover)"}`}
+                      title="Reset and start on a blank canvas"
                     >
-                      {tab.label}
+                      <FolderPlus size={13} /> Blank Slate
+                    </button>
+
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="text-[9px] font-bold uppercase tracking-widest"
+                        style={{ color: "var(--studio-muted)" }}
+                      >
+                        Templates
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowSavePresetModal(true)}
+                        className="canvas-toolbar-btn"
+                      >
+                        <Plus size={10} className="mr-1" /> Save
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 overflow-y-auto">
+                      {displayPresets.slice(0, 20).map((preset) => (
+                        <PresetChip
+                          key={preset.id}
+                          preset={preset}
+                          activePresetId={activePresetId}
+                          handleApplyPreset={(presetToApply) => {
+                            handleApplyPreset(presetToApply);
+                            setTextSubTab("templates");
+                          }}
+                          handleDeletePreset={handleDeletePreset}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {activeRailItem === "text-effects" && textSubTab === "export" && (
+                <div className="flex flex-col gap-2 p-3 border-b" style={{ borderColor: "var(--studio-border)" }}>
+                  {[
+                    { id: "gemini-key-settings-btn", onClick: () => setShowGeminiKeyModal(true), icon: KeyRound, label: "Gemini API Key", accent: "var(--studio-accent)", bg: "var(--studio-active-soft)", border: "rgba(124,111,255,0.25)" },
+                    { id: "prompt-effect-btn", onClick: () => { setPromptInput(""); setPromptStatus("idle"); setPromptResultConfig(null); setPromptError(null); setPromptLogs([]); setShowPromptModal(true); }, icon: Sparkles, label: "Prompt Style", accent: "var(--gpu-ready)", bg: "rgba(52,211,153,0.07)", border: "rgba(52,211,153,0.2)" },
+                    { id: "scan-effect-btn", onClick: () => { setScanImage(null); setScanStatus("idle"); setScanResultConfig(null); setScanError(null); setScanLogs([]); setShowImageScanModal(true); }, icon: Camera, label: "Scan Image", accent: "var(--studio-text)", bg: "var(--studio-control)", border: "var(--studio-border)" },
+                    { id: "research-blend-btn", onClick: () => setActiveTab("lab"), icon: Beaker, label: "Research & Blend", accent: "var(--studio-text)", bg: "var(--studio-control)", border: "var(--studio-border)" },
+                  ].map(({ id, onClick, icon: Icon, label, accent, bg, border }) => (
+                    <button
+                      key={id}
+                      id={id}
+                      type="button"
+                      onClick={onClick}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg py-2 text-[11px] font-bold transition-colors"
+                      style={{ background: bg, border: `1px solid ${border}`, color: accent }}
+                    >
+                      <Icon size={13} /> {label}
                     </button>
                   ))}
                 </div>
               )}
-
-              {activeRailItem === "text-effects" && textSubTab === "templates" && (
-                <div className="border-b border-(--studio-border) p-3 flex flex-col">
-                  <button id="start-scratch-header-btn" onClick={handleStartFromScratch} className="mb-3 flex w-full items-center justify-center gap-2 rounded-md border border-teal-400/30 bg-teal-400/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-400/15" title="Reset active styles and start designing on a clean default canvas">
-                    <FolderPlus size={14} /> Blank Slate
-                  </button>
-
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Templates</span>
-                    <button type="button" onClick={() => setShowSavePresetModal(true)} className="flex items-center gap-1 rounded border border-(--studio-border) px-2 py-1 text-[10px] font-semibold text-white hover:bg-(--studio-hover)">
-                      <Plus size={11} />
-                      Save
-                    </button>
-                  </div>
-
-                  <div className="flex h-full flex-col gap-2 overflow-y-auto">
-                    {displayPresets.slice(0, 20).map((preset) => (
-                      <PresetChip
-                        key={preset.id}
-                        preset={preset}
-                        activePresetId={activePresetId}
-                        handleApplyPreset={(presetToApply) => {
-                          handleApplyPreset(presetToApply);
-                          setTextSubTab("style");
-                        }}
-                        handleDeletePreset={handleDeletePreset}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeRailItem === "text-effects" && textSubTab === "export" && (
-                <div className="border-b border-(--studio-border) p-3 space-y-2">
-                  <button id="gemini-key-settings-btn" onClick={() => setShowGeminiKeyModal(true)} className="flex w-full items-center justify-center gap-2 rounded-md border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-3 py-2 text-[12px] font-semibold text-[#B9B2FF] hover:bg-[#7C6FFF]/15">
-                    <KeyRound size={14} /> Gemini API Key
-                  </button>
-                  <button
-                    id="prompt-effect-btn"
-                    onClick={() => {
-                      setPromptInput("");
-                      setPromptStatus("idle");
-                      setPromptResultConfig(null);
-                      setPromptError(null);
-                      setPromptLogs([]);
-                      setShowPromptModal(true);
-                    }}
-                    className="flex w-full items-center justify-center gap-2 rounded-md border border-teal-500/30 bg-teal-500/10 px-3 py-2 text-[12px] font-semibold text-teal-300 hover:bg-teal-500/15"
-                  >
-                    <Sparkles size={14} /> Prompt Style
-                  </button>
-                  <button
-                    id="scan-effect-btn"
-                    onClick={() => {
-                      setScanImage(null);
-                      setScanStatus("idle");
-                      setScanResultConfig(null);
-                      setScanError(null);
-                      setScanLogs([]);
-                      setShowImageScanModal(true);
-                    }}
-                    className="flex w-full items-center justify-center gap-2 rounded-md border border-(--studio-border) bg-(--studio-control) px-3 py-2 text-[12px] font-semibold text-white hover:bg-(--studio-hover)"
-                  >
-                    <Camera size={14} /> Scan Image
-                  </button>
-                  <button type="button" onClick={() => setActiveTab("lab")} className="flex w-full items-center justify-center gap-2 rounded-md border border-(--studio-border) bg-(--studio-control) px-3 py-2 text-[12px] font-semibold text-white hover:bg-(--studio-hover)">
-                    <Beaker size={14} /> Research & Blend
-                  </button>
-                </div>
-              )}
-
-              {activeRailItem === "text-effects" && textSubTab === "layers" && <LayerPanel scene={scene} onSceneChange={modifyScene} uiMode="advanced" selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} />}
-
-              {activeRailItem === "text-effects" && textSubTab === "style" && <div className="border-b border-(--studio-border) px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-(--studio-muted)">Style Controls</div>}
-
-              <Suspense fallback={<div className="p-4 text-xs text-(--studio-muted)">Loading controls...</div>}>
-                <LegacyControlsPanel visible={activeRailItem === "text-effects" && textSubTab === "style"} config={config} activeEffectId={activeEffectId} collapsedSections={collapsedSections} isGeneratingName={isGeneratingName} modifyConfig={modifyConfig} toggleSection={toggleSection} handleGenerateAiEffectName={handleGenerateAiEffectName} applyCompositionPreset={applyCompositionPreset} fitTextToComposition={fitTextToComposition} />
-              </Suspense>
             </aside>
 
             {/* CENTER — CANVAS + TIMELINE
               Mobile/Tablet: shown only when mobileActiveTab === "preview"
               Desktop: always visible, fills remaining space */}
-            <div className={`${isNarrow && mobileActiveTab !== "preview" ? "hidden" : "flex"} flex-1 flex-col min-w-0`}>
+            <div
+              className={`${
+                isNarrow && mobileActiveTab !== "preview" ? "hidden" : "flex"
+              } flex-1 flex-col min-w-0`}
+            >
               <PreviewCanvas
                 canvasRef={canvasRef}
                 config={config}
@@ -1686,28 +2397,55 @@ export default function App() {
                 onZoomChange={setZoom}
                 onZoomModeChange={setZoomMode}
                 onBgModeChange={setBgMode}
-                platformMode={platformMode}
-                onPlatformModeChange={setPlatformMode}
                 toolbarExtras={
                   <>
-                    <button id="copy-to-clipboard-image-btn" type="button" onClick={copyImageToClipboard} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium border border-[#2A2A38] hover:border-[#7C6FFF] rounded flex items-center gap-1 transition-all cursor-pointer font-sans">
-                      <Copy size={12} className={copiedImageFeedback ? "text-green-500" : "text-white"} />
+                    <button
+                      id="copy-to-clipboard-image-btn"
+                      type="button"
+                      onClick={copyImageToClipboard}
+                      className="canvas-toolbar-btn"
+                    >
+                      <Copy size={11} className={`mr-1 ${copiedImageFeedback ? "text-green-400" : ""}`} />
                       {copiedImageFeedback ? "Copied" : "Copy"}
                     </button>
-                    <button id="download-canvas-image-btn" type="button" onClick={downloadPng} className="p-1.5 px-3 bg-[#7C6FFF] hover:bg-[#6859FF] text-white text-[11px] font-medium rounded flex items-center gap-1 cursor-pointer font-sans">
-                      <Download size={12} /> PNG
+                    <button
+                      id="download-canvas-image-btn"
+                      type="button"
+                      onClick={downloadPng}
+                      className="canvas-toolbar-btn primary"
+                    >
+                      <Download size={11} className="mr-1" /> PNG
                     </button>
-                    <button id="download-png-sequence-btn" type="button" onClick={downloadPngSequence} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium rounded border border-[#2A2A38] hover:border-[#7C6FFF] flex items-center gap-1 cursor-pointer font-sans" title={`Export ${webmFrameCount} PNG frames as ZIP`}>
-                      <Download size={12} /> Seq
+                    <button
+                      id="download-png-sequence-btn"
+                      type="button"
+                      onClick={downloadPngSequence}
+                      className="canvas-toolbar-btn"
+                      title={`Export ${webmFrameCount} PNG frames as ZIP`}
+                    >
+                      <Download size={11} className="mr-1" /> Seq
                     </button>
                     {webmExportSupported && (
-                      <button id="download-webm-btn" type="button" onClick={downloadWebM} disabled={isExportingWebM} className="p-1.5 px-3 bg-[#1E1E26] hover:bg-[#2A2A38] text-white text-[11px] font-medium rounded border border-[#2A2A38] hover:border-[#7C6FFF] flex items-center gap-1 cursor-pointer font-sans disabled:opacity-50 disabled:cursor-wait" title={`Export ${webmFrameCount} frames as WebM (~${(scene.timeline.duration || 2).toFixed(1)}s)`}>
-                        {isExportingWebM ? <Loader2 size={12} className="animate-spin" /> : <Video size={12} />}
+                      <button
+                        id="download-webm-btn"
+                        type="button"
+                        onClick={downloadWebM}
+                        disabled={isExportingWebM}
+                        className="canvas-toolbar-btn"
+                        title={`Export ${webmFrameCount} frames as WebM`}
+                      >
+                        {isExportingWebM
+                          ? <Loader2 size={11} className="mr-1 animate-spin" />
+                          : <Video size={11} className="mr-1" />}
                         {isExportingWebM ? "…" : "WebM"}
                       </button>
                     )}
                     {webmExportError && (
-                      <span className="text-[10px] text-red-400 max-w-[140px] truncate" title={webmExportError}>
+                      <span
+                        className="text-[10px] max-w-[120px] truncate"
+                        style={{ color: "var(--gpu-error)" }}
+                        title={webmExportError}
+                      >
                         {webmExportError}
                       </span>
                     )}
@@ -1717,18 +2455,107 @@ export default function App() {
 
               {showFontCompare && (
                 <Suspense fallback={null}>
-                  <FontCompare config={config} onSelectFont={(font) => modifyConfig({ fontFamily: font })} onClose={() => setShowFontCompare(false)} />
+                  <FontCompare
+                    config={config}
+                    onSelectFont={(font) => modifyConfig({ fontFamily: font })}
+                    onClose={() => setShowFontCompare(false)}
+                  />
                 </Suspense>
               )}
 
-              <TimelinePanel scene={scene} previewTime={previewTime} isPlaying={isPlaying} uiMode={timelinePanelMode} onPlayToggle={() => setIsPlaying((p) => !p)} onReset={() => setPreviewTime(0)} onTimeChange={setPreviewTime} onSceneChange={modifyScene} />
+              <TimelinePanel
+                scene={scene}
+                previewTime={previewTime}
+                isPlaying={isPlaying}
+                uiMode={timelinePanelMode}
+                onPlayToggle={() => setIsPlaying((p) => !p)}
+                onReset={() => setPreviewTime(0)}
+                onTimeChange={setPreviewTime}
+                onSceneChange={modifyScene}
+              />
             </div>
 
             {/* RIGHT PANEL — INSPECTOR / EXPORT LAB
               Mobile/Tablet: shown only when mobileActiveTab === "code", full-width on mobile
               Desktop: always visible, fixed 344px */}
-            <Suspense fallback={<aside className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0 border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted) flex-col`}>Loading panel...</aside>}>
-              <div className={`${isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"} ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}>{activeRailItem === "text-effects" && textSubTab === "export" ? <ExportLabPanel isMobile={isMobile} mobileActiveTab={mobileActiveTab} activeTab={activeTab} onActiveTabChange={setActiveTab} engineFormat={engineFormat} onEngineFormatChange={setEngineFormat} definitionFormat={definitionFormat} onDefinitionFormatChange={setDefinitionFormat} activeEffectId={activeEffectId} config={config} scene={scene} highlightedCode={highlightedCode} currentCodeText={getCurrentCodeText()} copiedCodeFeedback={copiedCodeFeedback} onCopyCode={copyCodeToClipboard} onDownloadCode={downloadCodeAsFile} researchTopic={researchTopic} onResearchTopicChange={setResearchTopic} researchStatus={researchStatus} researchError={researchError} researchLogs={researchLogs} researchResult={researchResult} onExecuteResearch={handleExecuteDeepResearch} onApplyResearchResult={handleApplyResearchResult} blendAId={blendAId} blendBId={blendBId} blendRatio={blendRatio} onBlendAIdChange={setBlendAId} onBlendBIdChange={setBlendBId} onBlendRatioChange={setBlendRatio} onPerformBlend={handlePerformBlend} presets={[...customPresets, ...builtInPresets]} onCaptureEffectThumbnail={getPreviewPngDataUrl} effectApiCategory={effectApiCategory} onEffectApiCategoryChange={setEffectApiCategory} /> : <InspectorPanel config={config} scene={scene} selectedLayerId={selectedLayerId} onSelectLayer={setSelectedLayerId} onConfigChange={modifyConfig} onSceneChange={modifyScene} onSavePreset={() => setShowSavePresetModal(true)} onStartFromScratch={handleStartFromScratch} onFitText={fitTextToComposition} onOpenFontCompare={() => setShowFontCompare(true)} />}</div>
+            <Suspense
+              fallback={
+                <aside
+                  className={`${
+                    isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"
+                  } ${
+                    isMobile ? "w-full" : "w-[344px]"
+                  } shrink-0 border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted) flex-col`}
+                >
+                  Loading panel...
+                </aside>
+              }
+            >
+              <div
+                className={`${
+                  isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"
+                } ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}
+              >
+                {activeRailItem === "text-effects" &&
+                textSubTab === "export" ? (
+                  <ExportLabPanel
+                    isMobile={isMobile}
+                    mobileActiveTab={mobileActiveTab}
+                    activeTab={activeTab}
+                    onActiveTabChange={setActiveTab}
+                    engineFormat={engineFormat}
+                    onEngineFormatChange={setEngineFormat}
+                    definitionFormat={definitionFormat}
+                    onDefinitionFormatChange={setDefinitionFormat}
+                    activeEffectId={activeEffectId}
+                    config={config}
+                    scene={scene}
+                    highlightedCode={highlightedCode}
+                    currentCodeText={getCurrentCodeText()}
+                    copiedCodeFeedback={copiedCodeFeedback}
+                    onCopyCode={copyCodeToClipboard}
+                    onDownloadCode={downloadCodeAsFile}
+                    researchTopic={researchTopic}
+                    onResearchTopicChange={setResearchTopic}
+                    researchStatus={researchStatus}
+                    researchError={researchError}
+                    researchLogs={researchLogs}
+                    researchResult={researchResult}
+                    onExecuteResearch={handleExecuteDeepResearch}
+                    onApplyResearchResult={handleApplyResearchResult}
+                    blendAId={blendAId}
+                    blendBId={blendBId}
+                    blendRatio={blendRatio}
+                    onBlendAIdChange={setBlendAId}
+                    onBlendBIdChange={setBlendBId}
+                    onBlendRatioChange={setBlendRatio}
+                    onPerformBlend={handlePerformBlend}
+                    presets={[...customPresets, ...builtInPresets]}
+                    onCaptureEffectThumbnail={getPreviewPngDataUrl}
+                    effectApiCategory={effectApiCategory}
+                    onEffectApiCategoryChange={setEffectApiCategory}
+                  />
+                ) : (
+                  <InspectorPanel
+                    config={config}
+                    scene={scene}
+                    selectedLayerId={selectedLayerId}
+                    onSelectLayer={setSelectedLayerId}
+                    onConfigChange={modifyConfig}
+                    onSceneChange={modifyScene}
+                    onSavePreset={() => setShowSavePresetModal(true)}
+                    onStartFromScratch={handleStartFromScratch}
+                    onFitText={fitTextToComposition}
+                    onOpenFontCompare={() => setShowFontCompare(true)}
+                    activeEffectId={activeEffectId}
+                    collapsedSections={collapsedSections}
+                    isGeneratingName={isGeneratingName}
+                    onToggleSection={toggleSection}
+                    onGenerateEffectName={handleGenerateAiEffectName}
+                    onApplyCompositionPreset={applyCompositionPreset}
+                  />
+                )}
+              </div>
             </Suspense>
           </>
         )}
@@ -1795,11 +2622,23 @@ export default function App() {
           onApply={handleApplyPromptConfig}
         />
 
-        <GeminiKeyModal open={showGeminiKeyModal} onClose={() => setShowGeminiKeyModal(false)} />
+        <GeminiKeyModal
+          open={showGeminiKeyModal}
+          onClose={() => setShowGeminiKeyModal(false)}
+        />
 
-        <TutorialModal open={showTutorialModal} activeTab={tutorialActiveTab} onTabChange={setTutorialActiveTab} onClose={() => setShowTutorialModal(false)} />
+        <TutorialModal
+          open={showTutorialModal}
+          activeTab={tutorialActiveTab}
+          onTabChange={setTutorialActiveTab}
+          onClose={() => setShowTutorialModal(false)}
+        />
 
-        <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} onSuccess={handleLoginSuccess} />
+        <LoginModal
+          open={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onSuccess={handleLoginSuccess}
+        />
       </Suspense>
     </div>
   );

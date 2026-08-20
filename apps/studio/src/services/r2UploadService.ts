@@ -3,6 +3,8 @@
  * Allows immediate audio availability without GitHub PR workflow
  */
 
+import { getStudioApiBaseUrl } from "./apiConfig";
+
 export interface R2UploadConfig {
   accountId: string;
   accessKeyId: string;
@@ -264,8 +266,8 @@ export async function uploadAudioToR2(payload: {
         status: "approved",
         reviewedAt: new Date().toISOString(),
       },
-      audioUrl: `https://clypra-worker-api.abdulkabirmusa.com/media/${audioKey}`,
-      coverArtUrl: coverKey ? `https://clypra-worker-api.abdulkabirmusa.com/media/${coverKey}` : undefined,
+      audioUrl: `${getStudioApiBaseUrl()}/media/${audioKey}`,
+      coverArtUrl: coverKey ? `${getStudioApiBaseUrl()}/media/${coverKey}` : undefined,
     };
 
     // Upload metadata JSON

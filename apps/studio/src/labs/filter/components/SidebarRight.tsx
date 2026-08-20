@@ -611,7 +611,7 @@ export function SidebarRight({
               Pipeline Diagnostics
             </h4>
             <div className="font-mono-data text-[9px] leading-relaxed text-secondary/90 space-y-1">
-              <div><span className="text-outline">Engine:</span> PixiRenderer (WebGL v2)</div>
+              <div><span className="text-outline">Engine:</span> Native Rust/wgpu</div>
               <div><span className="text-outline">Active Look:</span> {selectedFilter?.name ?? "CUSTOM (ADJUSTMENTS)"}</div>
               <div><span className="text-outline">Params Sync:</span> Dynamic (GPU Uniforms)</div>
               <div className="border-t border-outline-variant/10 my-1 pt-1" />

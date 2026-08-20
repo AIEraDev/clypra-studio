@@ -2,6 +2,7 @@ import type { OverlayDocument, SceneNode, DocumentVariable, DataPreviewSet, Time
 
 export type CommandType =
   | "SET_DOCUMENT"
+  | "UPDATE_DOCUMENT_META"
   | "ADD_NODE"
   | "DELETE_NODE"
   | "UPDATE_NODE_PROPERTY"
@@ -42,6 +43,12 @@ export interface BaseCommand {
 export interface SetDocumentCommand extends BaseCommand {
   type: "SET_DOCUMENT";
   doc: OverlayDocument;
+}
+
+export interface UpdateDocumentMetaCommand extends BaseCommand {
+  type: "UPDATE_DOCUMENT_META";
+  patch: Partial<Pick<OverlayDocument, "title" | "description" | "category">>;
+  previousPatch?: Partial<Pick<OverlayDocument, "title" | "description" | "category">>;
 }
 
 export interface AddNodeCommand extends BaseCommand {
@@ -262,6 +269,7 @@ export interface ReparentNodeCommand extends BaseCommand {
 
 export type DocumentCommand =
   | SetDocumentCommand
+  | UpdateDocumentMetaCommand
   | AddNodeCommand
   | DeleteNodeCommand
   | UpdateNodePropertyCommand

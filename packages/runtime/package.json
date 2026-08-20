@@ -23,7 +23,6 @@
     "./job": "./dist/job/index.js",
     "./executor": "./dist/executor/index.js",
     "./state": "./dist/state/index.js",
-    "./pixi": "./dist/pixi/index.js",
     "./null": "./dist/null/index.js",
     "./resources": "./dist/resources/index.js",
     "./validation": "./dist/validation/index.js",
@@ -47,9 +46,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clypra-studio/types": "workspace:^0.5.0",
-    "pixi-filters": "^6.0.4",
-    "pixi.js": "^8.6.6"
+    "@clypra-studio/types": "workspace:^0.5.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

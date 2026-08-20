@@ -35,21 +35,18 @@ export * from "./engine/mask.js";
 export * from "./engine/timelineDefaults.js";
 export * from "./engine/timelineMutations.js";
 export * from "./engine/api.js";
-export * from "./compositor/index.js";
 // Platform capability detection and canvas utilities
 export * from "./platform.js";
 export * from "./canvas-utils.js";
 // Procedural engines
 export { InkBrushEngine } from "./engine/procedural/InkBrushEngine.js";
 
-// Video & Body Effects (NEW)
+// Native effect metadata and Canvas2D execution
 export * from "./videoEffects";
-export * from "./effects/index.js";
 export * from "./bodyEffects";
 
 // Transitions (NEW - separated from videoEffects for clarity)
 export * from "./transitions";
-export * from "./types/TransitionDefinition.js";
 
 // Declarative Canvas Templates (NEW)
 export * from "./templates/TemplateRenderer.js";
@@ -79,18 +76,8 @@ export * from "./v2/planner/types.js";
 export * from "./v2/planner/FrameGraphBuilder.js";
 export * from "./v2/validation/GraphValidator.js";
 export * from "./v2/runtime/CommandBufferBuilder.js";
-export { MPGFrameRenderer, type FrameSource } from "./v2/runtime/MPGFrameRenderer.js";
-export * from "./v2/backends/index.js";
-
-// Shared Preview/Compositor Utilities (NEW)
-export * from "./renderer/sharedPixiRenderer.js";
+// Shared preview utilities
 export * from "./media/mediaLayout.js";
-export * from "./media/mediaSpriteFactory.js";
 export * from "./media/conform.js";
 export * from "./media/sourceCapture.js";
-export * from "./text/textBridge.js";
-export * from "./stickers/stickerBridge.js";
-export * from "./effects/body/bodyEffectFilters.js";
-export * from "./effects/body/bodyEffectMask.js";
-export * from "./overlays/index.js";
 export * from "./smartOverlays/index.js";

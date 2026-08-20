@@ -39,6 +39,7 @@ import { FontManagerPanel } from "./OverlayStudioWorkspace/assets/FontManagerPan
 import { BreakpointBar } from "./OverlayStudioWorkspace/breakpoints/BreakpointBar";
 import { ExportModal } from "./OverlayStudioWorkspace/export/ExportModal";
 import type { ExportJobRecord } from "@clypra-studio/engine";
+import { ClypraLogo } from "./ClypraLogo";
 
 interface OverlayStudioWorkspaceProps {
   onExit?: () => void;
@@ -392,9 +393,14 @@ export function OverlayStudioWorkspace({
       >
         {/* Left — Branding + Editable Project Title */}
         <div className="flex items-center gap-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-500/30">
-            <Sparkles size={14} className="text-white" />
-          </div>
+          <button
+            type="button"
+            onClick={onExit}
+            aria-label="Back to Clypra Studio"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-[#1A1A23] shadow-lg shadow-violet-500/20"
+          >
+            <ClypraLogo size={22} />
+          </button>
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-semibold text-gray-400 tracking-widest uppercase">
               Clypra
@@ -412,7 +418,7 @@ export function OverlayStudioWorkspace({
                     executeCommand({
                       type: "UPDATE_DOCUMENT_META",
                       patch: { title: titleInput.trim() },
-                    });
+                    } as any);
                   }
                 }}
                 onKeyDown={(e) => {
@@ -422,7 +428,7 @@ export function OverlayStudioWorkspace({
                       executeCommand({
                         type: "UPDATE_DOCUMENT_META",
                         patch: { title: titleInput.trim() },
-                      });
+                      } as any);
                     }
                   } else if (e.key === "Escape") {
                     setIsEditingTitle(false);

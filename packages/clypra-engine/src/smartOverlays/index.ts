@@ -8,8 +8,6 @@ export * from "./componentRegistry.js";
 export * from "./primitiveRegistry.js";
 export * from "./dataBindingEngine.js";
 export * from "./animationRuntime.js";
-export * from "./pixiSceneProjection.js";
-export * from "./pixiSelectionOverlay.js";
 export * from "./commands/commandTypes.js";
 export * from "./commands/commandExecutor.js";
 export * from "./commands/commandHistory.js";
@@ -39,20 +37,12 @@ export * from "./responsiveResolver.js";
 export * from "./export/exportTypes.js";
 export * from "./export/exportValidator.js";
 export * from "./export/framePipeline.js";
-export * from "./export/renderEngine.js";
 export * from "./export/streamingFramePipeline.js";
 export * from "./export/mediaEncoder.js";
 export * from "./export/exportJob.js";
 export * from "./export/liveBroadcastBridge.js";
 
 // Phase 4R — Visual Primitive System & Visualization Registry
-export * from "./visualizationRegistry.js";
-export * from "./visualizationProjection.js";
-export * from "./visualizationEngine.js";
-export * from "./gaugeVisualization.js";
-export * from "./timelineVisualization.js";
-export * from "./annotationVisualization.js";
-export * from "./capabilityRegistry.js";
 
 // Ticket 2 — Runtime Evaluation & EvaluatedScene Contract
 export * from "./runtime/evaluatedScene.js";

@@ -1,7 +1,17 @@
 import React from "react";
-import { Download, FileCode, Music, Shield, Sticker, Type, Beaker, Layers } from "lucide-react";
+import {
+  Download,
+  FileCode,
+  Music,
+  Shield,
+  Sticker,
+  Type,
+  Beaker,
+  Layers,
+} from "lucide-react";
+import type { RailItem } from "../app/studioRoutes";
 
-export type RailItem = "text-effects" | "audio" | "stickers" | "overlays" | "video-effects" | "body-effects" | "filters" | "transitions" | "admin" | "labs";
+export type { RailItem } from "../app/studioRoutes";
 
 const RAIL_ITEMS: Array<{
   id: RailItem;
@@ -17,22 +27,55 @@ const RAIL_ITEMS: Array<{
   { id: "admin", label: "Admin Settings", icon: Shield, adminOnly: true },
 ];
 
+type GpuState = "idle" | "rendering" | "ready" | "error";
+
 interface LeftRailProps {
   activeItem: RailItem;
   onSelectItem: (item: RailItem) => void;
   isAdmin?: boolean;
+  gpuState?: GpuState;
 }
 
-export function LeftRail({ activeItem, onSelectItem, isAdmin = false }: LeftRailProps) {
+export function LeftRail({
+  activeItem,
+  onSelectItem,
+  isAdmin = false,
+  gpuState = "idle",
+}: LeftRailProps) {
   const visibleItems = RAIL_ITEMS.filter((item) => !item.adminOnly || isAdmin);
 
+  const gpuDotClass =
+    gpuState === "ready"
+      ? "studio-rail-gpu-dot"
+      : gpuState === "rendering"
+      ? "studio-rail-gpu-dot live"
+      : gpuState === "error"
+      ? "studio-rail-gpu-dot error"
+      : "";
+
   return (
-    <nav className="studio-left-rail flex w-14 shrink-0 flex-col items-center gap-1 border-r border-(--studio-border) bg-(--studio-shell) py-2" aria-label="Creation library">
-      {visibleItems.map(({ id, label, icon: Icon }) => (
-        <button key={id} type="button" aria-label={label} title={label} onClick={() => onSelectItem(id)} className={`flex h-10 w-10 items-center justify-center rounded-md transition-colors cursor-pointer ${activeItem === id ? "bg-(--studio-active-soft) text-white" : "text-(--studio-muted) hover:bg-(--studio-hover) hover:text-white"}`}>
-          <Icon size={18} className={activeItem === id ? "text-(--studio-accent)" : ""} />
-        </button>
-      ))}
+    <nav
+      className="studio-left-rail flex shrink-0 flex-col items-center gap-1 py-3"
+      aria-label="Creation library"
+    >
+      {visibleItems.map(({ id, label, icon: Icon }) => {
+        const isActive = activeItem === id;
+        const showGpuDot = id === "text-effects" && gpuState !== "idle";
+
+        return (
+          <button
+            key={id}
+            type="button"
+            aria-label={label}
+            title={label}
+            onClick={() => onSelectItem(id)}
+            className={`studio-rail-btn${isActive ? " active" : ""}`}
+          >
+            <Icon size={17} />
+            {showGpuDot && <span className={gpuDotClass} />}
+          </button>
+        );
+      })}
     </nav>
   );
 }
@@ -43,27 +86,37 @@ interface DrawerIntroProps {
   onOpenExport: () => void;
 }
 
-export function DrawerIntro({ activeItem, showExport = false, onOpenExport }: DrawerIntroProps) {
-  const active = RAIL_ITEMS.find((item) => item.id === activeItem) ?? RAIL_ITEMS[0];
+export function DrawerIntro({
+  activeItem,
+  showExport = false,
+  onOpenExport,
+}: DrawerIntroProps) {
+  const active =
+    RAIL_ITEMS.find((item) => item.id === activeItem) ?? RAIL_ITEMS[0];
   const Icon = active.icon;
 
   return (
-    <div className="border-b border-(--studio-border) bg-(--studio-panel) px-4 py-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-(--studio-control) text-(--studio-accent)">
-            <Icon size={14} />
-          </span>
-          <h2 className="truncate text-[13px] font-semibold text-white">{active.label}</h2>
-        </div>
-
-        {showExport && (
-          <button type="button" onClick={onOpenExport} className="shrink-0 flex items-center gap-1 rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1 text-[10px] font-semibold text-(--studio-muted) hover:text-white hover:bg-(--studio-hover) transition-colors" title="Export &amp; Code panel">
-            <Download size={11} />
-            Export
-          </button>
-        )}
+    <div className="drawer-intro">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="drawer-intro-icon">
+          <Icon size={13} />
+        </span>
+        <h2 className="truncate text-[13px] font-semibold text-white tracking-tight">
+          {active.label}
+        </h2>
       </div>
+
+      {showExport && (
+        <button
+          type="button"
+          onClick={onOpenExport}
+          title="Export &amp; Code panel"
+          className="canvas-toolbar-btn shrink-0"
+        >
+          <Download size={11} className="mr-1" />
+          Export
+        </button>
+      )}
     </div>
   );
 }

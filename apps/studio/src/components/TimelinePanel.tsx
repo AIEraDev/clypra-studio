@@ -1,9 +1,38 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Diamond, Pause, Play, Plus, RotateCcw, Trash2, Wand2 } from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  Diamond,
+  Pause,
+  Play,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Wand2,
+} from "lucide-react";
 import type { Keyframe, SceneDocument } from "@clypra-studio/engine";
 import { ensureDefaultTimeline } from "@clypra-studio/engine";
-import { getAnimatableParamDef, getAnimatableParamsForLayer, readLayerScalar } from "@clypra-studio/engine";
-import { addKeyframeAtTime, addTrack, duplicateTrackAtPlayhead, findTrackIndex, getLayerById, moveKeyframe, removeKeyframe, removeTrack, updateKeyframe, updateTimeline } from "@clypra-studio/engine";
+import {
+  getAnimatableParamDef,
+  getAnimatableParamsForLayer,
+  readLayerScalar,
+} from "@clypra-studio/engine";
+import {
+  addKeyframeAtTime,
+  addTrack,
+  duplicateTrackAtPlayhead,
+  findTrackIndex,
+  getLayerById,
+  moveKeyframe,
+  removeKeyframe,
+  removeTrack,
+  updateKeyframe,
+  updateTimeline,
+} from "@clypra-studio/engine";
 
 interface TimelinePanelProps {
   scene: SceneDocument;
@@ -29,7 +58,6 @@ function timeToX(time: number, duration: number): number {
 }
 
 function xToTime(x: number, duration: number): number {
-  if (duration <= 0) return 0;
   return Math.max(0, Math.min(duration, (x / LANE_WIDTH) * duration));
 }
 
@@ -38,12 +66,19 @@ function formatTrackLabel(doc: SceneDocument, trackIndex: number): string {
   if (!track) return "Track";
   const layer = getLayerById(doc, track.layerId);
   const def = layer ? getAnimatableParamDef(layer, track.paramPath) : undefined;
-  const layerName = layer?.name ?? "Layer";
-  const paramLabel = def?.label ?? track.paramPath;
-  return `${layerName} · ${paramLabel}`;
+  return `${layer?.name ?? "Layer"} · ${def?.label ?? track.paramPath}`;
 }
 
-export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayToggle, onReset, onTimeChange, onSceneChange }: TimelinePanelProps) {
+export function TimelinePanel({
+  scene,
+  previewTime,
+  isPlaying,
+  uiMode,
+  onPlayToggle,
+  onReset,
+  onTimeChange,
+  onSceneChange,
+}: TimelinePanelProps) {
   const duration = Math.max(0.1, scene.timeline.duration || 2);
   const fps = scene.timeline.fps || 30;
   const tracks = scene.timeline.tracks;
@@ -62,13 +97,14 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
   const addableParams = useMemo(() => {
     const layer = scene.effectLayers.find((l) => l.id === addLayerId);
     if (!layer) return [];
-    return getAnimatableParamsForLayer(layer).filter((p) => findTrackIndex(scene, layer.id, p.path) < 0);
+    return getAnimatableParamsForLayer(layer).filter(
+      (p) => findTrackIndex(scene, layer.id, p.path) < 0,
+    );
   }, [scene, addLayerId]);
 
   useEffect(() => {
-    if (!addLayerId && scene.effectLayers.length > 0) {
+    if (!addLayerId && scene.effectLayers.length > 0)
       setAddLayerId(scene.effectLayers[0].id);
-    }
   }, [addLayerId, scene.effectLayers]);
 
   useEffect(() => {
@@ -78,36 +114,41 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
 
   const selectedKeyframe: Keyframe | null = useMemo(() => {
     if (!selection) return null;
-    const track = tracks[selection.trackIndex];
-    return track?.keyframes[selection.keyframeIndex] ?? null;
+    return (
+      tracks[selection.trackIndex]?.keyframes[selection.keyframeIndex] ?? null
+    );
   }, [selection, tracks]);
 
   const selectedParamDef = useMemo(() => {
     if (!selection) return undefined;
     const track = tracks[selection.trackIndex];
     const layer = track ? getLayerById(scene, track.layerId) : undefined;
-    return layer && track ? getAnimatableParamDef(layer, track.paramPath) : undefined;
+    return layer && track
+      ? getAnimatableParamDef(layer, track.paramPath)
+      : undefined;
   }, [selection, scene, tracks]);
 
   const patchScene = useCallback(
-    (updater: (doc: SceneDocument) => SceneDocument) => {
-      onSceneChange(updater(scene));
-    },
+    (updater: (doc: SceneDocument) => SceneDocument) =>
+      onSceneChange(updater(scene)),
     [onSceneChange, scene],
   );
 
   const addKeyframeAtPlayhead = useCallback(() => {
     if (tracks.length === 0) return;
-    const trackIndex = selection?.trackIndex ?? 0;
-    patchScene((doc) => duplicateTrackAtPlayhead(doc, trackIndex, previewTime));
+    patchScene((doc) =>
+      duplicateTrackAtPlayhead(doc, selection?.trackIndex ?? 0, previewTime),
+    );
   }, [patchScene, previewTime, selection, tracks.length]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "k" && e.key !== "K") return;
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
         return;
-      }
       e.preventDefault();
       addKeyframeAtPlayhead();
     };
@@ -120,9 +161,10 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
       const drag = dragRef.current;
       if (!drag || !laneRef.current) return;
       const rect = laneRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const time = xToTime(x, duration);
-      patchScene((doc) => moveKeyframe(doc, drag.trackIndex, drag.keyframeIndex, time, duration));
+      const time = xToTime(e.clientX - rect.left, duration);
+      patchScene((doc) =>
+        moveKeyframe(doc, drag.trackIndex, drag.keyframeIndex, time, duration),
+      );
     };
     const onUp = () => {
       dragRef.current = null;
@@ -140,7 +182,10 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
     return Array.from({ length: count + 1 }, (_, i) => (i / count) * duration);
   }, [duration]);
 
-  const handleLaneClick = (trackIndex: number, e: React.MouseEvent<HTMLDivElement>) => {
+  const handleLaneClick = (
+    trackIndex: number,
+    e: React.MouseEvent<HTMLDivElement>,
+  ) => {
     if ((e.target as HTMLElement).closest(".timeline-kf")) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const time = xToTime(e.clientX - rect.left, duration);
@@ -149,88 +194,314 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
     const value = layer ? readLayerScalar(layer, track.paramPath) : 0;
     patchScene((doc) => addKeyframeAtTime(doc, trackIndex, time, value));
     const nextTrack = tracks[trackIndex];
-    const kfIndex = nextTrack ? nextTrack.keyframes.findIndex((k) => Math.abs(k.time - time) < 0.05) : -1;
+    const kfIndex = nextTrack
+      ? nextTrack.keyframes.findIndex((k) => Math.abs(k.time - time) < 0.05)
+      : -1;
     if (kfIndex >= 0) setSelection({ trackIndex, keyframeIndex: kfIndex });
   };
 
+  // ── Shared control styles ──────────────────────────────────────────────────
+  const ctrlInput = {
+    background: "var(--studio-bg)",
+    border: "1px solid var(--studio-border)",
+    borderRadius: 5,
+    color: "var(--studio-text)",
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: 10,
+    padding: "2px 6px",
+    outline: "none",
+  } as React.CSSProperties;
+
+  // ── Transport bar ──────────────────────────────────────────────────────────
   const transport = (
-    <div className="timeline-transport flex items-center gap-2 px-3 py-2 border-t border-[#2A2A38] bg-[#15151C] shrink-0">
-      <button type="button" onClick={onPlayToggle} className="p-1.5 rounded bg-[#7C6FFF] text-white hover:bg-[#6B5CE7] cursor-pointer" title={isPlaying ? "Pause" : "Play preview"}>
-        {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+    <div
+      className="flex items-center gap-2 px-3 shrink-0"
+      style={{
+        height: 44,
+        background: "var(--studio-shell)",
+        borderTop: "1px solid var(--studio-border)",
+      }}
+    >
+      {/* Play/pause */}
+      <button
+        type="button"
+        onClick={onPlayToggle}
+        title={isPlaying ? "Pause" : "Play preview"}
+        className="timeline-play-btn"
+      >
+        {isPlaying ? <Pause size={13} /> : <Play size={13} />}
       </button>
-      <button type="button" onClick={onReset} className="p-1.5 rounded border border-[#2A2A38] text-gray-400 hover:text-white cursor-pointer" title="Reset time">
-        <RotateCcw size={14} />
+
+      {/* Reset */}
+      <button
+        type="button"
+        onClick={onReset}
+        title="Reset to start"
+        className="canvas-toolbar-btn"
+        style={{ width: 28, padding: 0 }}
+      >
+        <RotateCcw size={12} />
       </button>
-      <input type="range" min={0} max={duration} step={0.01} value={Math.min(previewTime, duration)} onChange={(e) => onTimeChange(parseFloat(e.target.value))} className="flex-1 h-1 accent-[#7C6FFF] min-w-0" />
-      <span className="text-[10px] font-mono text-gray-500 w-[72px] text-right shrink-0">{previewTime.toFixed(2)}s</span>
-      <label className="flex items-center gap-1 text-[10px] text-gray-500 shrink-0">
-        <input type="checkbox" checked={scene.timeline.loop} onChange={(e) => patchScene((doc) => updateTimeline(doc, { loop: e.target.checked }))} className="accent-[#7C6FFF]" />
+
+      {/* Scrubber */}
+      <input
+        type="range"
+        min={0}
+        max={duration}
+        step={0.01}
+        value={Math.min(previewTime, duration)}
+        onChange={(e) => onTimeChange(parseFloat(e.target.value))}
+        className="timeline-scrubber"
+        style={{ flex: 1, minWidth: 0 }}
+      />
+
+      {/* Time display */}
+      <span
+        className="font-mono text-[10px] shrink-0 tabular-nums"
+        style={{
+          color: "var(--studio-accent)",
+          minWidth: 52,
+          textAlign: "right",
+        }}
+      >
+        {previewTime.toFixed(2)}s
+      </span>
+
+      {/* Loop toggle */}
+      <label
+        className="flex items-center gap-1.5 shrink-0 text-[10px] cursor-pointer select-none"
+        style={{ color: "var(--studio-muted)" }}
+      >
+        <input
+          type="checkbox"
+          checked={scene.timeline.loop}
+          onChange={(e) =>
+            patchScene((doc) => updateTimeline(doc, { loop: e.target.checked }))
+          }
+          className="accent-(--studio-accent)"
+        />
         Loop
       </label>
     </div>
   );
 
+  // ── Basic mode ─────────────────────────────────────────────────────────────
   if (uiMode === "basic") {
     return (
       <div className="shrink-0">
         {transport}
-        <p className="px-4 py-2 text-[10px] text-gray-500 border-t border-[#1A1A26] bg-[#12121A]">
-          Select <span className="text-[#7C6FFF]">Layers</span> from the left rail to enable the full keyframe timeline (press <kbd className="px-1 rounded bg-[#1E1E26] border border-[#2A2A38]">K</kbd> to add keyframes).
+        <p
+          className="px-4 py-2 text-[10px] border-t"
+          style={{
+            color: "var(--studio-muted)",
+            background: "var(--studio-bg)",
+            borderColor: "var(--studio-border)",
+          }}
+        >
+          Select <span style={{ color: "var(--studio-accent)" }}>Layers</span>{" "}
+          to enable the keyframe timeline{" "}
+          <kbd
+            className="px-1 rounded text-[9px]"
+            style={{
+              background: "var(--studio-raised)",
+              border: "1px solid var(--studio-border)",
+              color: "var(--studio-text)",
+            }}
+          >
+            K
+          </kbd>{" "}
+          to add keyframes.
         </p>
       </div>
     );
   }
 
+  // ── Advanced mode ──────────────────────────────────────────────────────────
   return (
-    <div className="timeline-panel shrink-0 flex flex-col border-t border-[#2A2A38] bg-[#12121A] max-h-[min(42vh,320px)]">
+    <div
+      className="timeline-panel shrink-0 flex flex-col border-t"
+      style={{
+        background: "var(--studio-bg)",
+        borderColor: "var(--studio-border)",
+        maxHeight: "min(42vh, 320px)",
+      }}
+    >
       {transport}
 
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-[#1A1A26] text-[10px]">
-        <label className="flex items-center gap-1 text-gray-500">
+      {/* Controls row */}
+      <div
+        className="flex flex-wrap items-center gap-2 px-3 py-1.5 border-b text-[10px]"
+        style={{
+          borderColor: "var(--studio-border)",
+          background: "var(--studio-panel)",
+        }}
+      >
+        <label
+          className="flex items-center gap-1.5"
+          style={{ color: "var(--studio-muted)" }}
+        >
           Duration
-          <input type="number" min={0.25} max={60} step={0.25} value={duration} onChange={(e) => patchScene((doc) => updateTimeline(doc, { duration: Math.max(0.25, parseFloat(e.target.value) || 2) }))} className="w-14 px-1 py-0.5 rounded bg-[#0D0D11] border border-[#2A2A38] text-white font-mono" />s
+          <input
+            type="number"
+            min={0.25}
+            max={60}
+            step={0.25}
+            value={duration}
+            onChange={(e) =>
+              patchScene((doc) =>
+                updateTimeline(doc, {
+                  duration: Math.max(0.25, parseFloat(e.target.value) || 2),
+                }),
+              )
+            }
+            style={{ ...ctrlInput, width: 48 }}
+          />
+          s
         </label>
-        <label className="flex items-center gap-1 text-gray-500">
+        <label
+          className="flex items-center gap-1.5"
+          style={{ color: "var(--studio-muted)" }}
+        >
           FPS
-          <input type="number" min={12} max={60} step={1} value={fps} onChange={(e) => patchScene((doc) => updateTimeline(doc, { fps: Math.max(12, Math.min(60, parseInt(e.target.value, 10) || 30)) }))} className="w-12 px-1 py-0.5 rounded bg-[#0D0D11] border border-[#2A2A38] text-white font-mono" />
+          <input
+            type="number"
+            min={12}
+            max={60}
+            step={1}
+            value={fps}
+            onChange={(e) =>
+              patchScene((doc) =>
+                updateTimeline(doc, {
+                  fps: Math.max(
+                    12,
+                    Math.min(60, parseInt(e.target.value, 10) || 30),
+                  ),
+                }),
+              )
+            }
+            style={{ ...ctrlInput, width: 40 }}
+          />
         </label>
 
-        <select value={addLayerId} onChange={(e) => setAddLayerId(e.target.value)} className="max-w-[120px] px-1 py-0.5 rounded bg-[#0D0D11] border border-[#2A2A38] text-gray-300" title="Layer for new track">
+        <select
+          value={addLayerId}
+          onChange={(e) => setAddLayerId(e.target.value)}
+          style={{ ...ctrlInput, maxWidth: 120 }}
+          title="Layer for new track"
+        >
           {scene.effectLayers.map((l) => (
             <option key={l.id} value={l.id}>
               {l.name}
             </option>
           ))}
         </select>
-        <select value={addParamPath} onChange={(e) => setAddParamPath(e.target.value)} disabled={addableParams.length === 0} className="max-w-[120px] px-1 py-0.5 rounded bg-[#0D0D11] border border-[#2A2A38] text-gray-300 disabled:opacity-40" title="Parameter to animate">
+
+        <select
+          value={addParamPath}
+          onChange={(e) => setAddParamPath(e.target.value)}
+          disabled={addableParams.length === 0}
+          style={{ ...ctrlInput, maxWidth: 120 }}
+          title="Parameter to animate"
+        >
           {addableParams.map((p) => (
             <option key={p.path} value={p.path}>
               {p.label}
             </option>
           ))}
         </select>
-        <button type="button" disabled={!addLayerId || !addParamPath} onClick={() => patchScene((doc) => addTrack(doc, addLayerId, addParamPath))} className="flex items-center gap-1 px-2 py-1 rounded bg-[#2A2A38] text-gray-200 hover:bg-[#7C6FFF] hover:text-white disabled:opacity-40 cursor-pointer">
-          <Plus size={12} />
-          Track
+
+        <button
+          type="button"
+          disabled={!addLayerId || !addParamPath}
+          onClick={() =>
+            patchScene((doc) => addTrack(doc, addLayerId, addParamPath))
+          }
+          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold disabled:opacity-40 cursor-pointer transition-colors"
+          style={{
+            background: "var(--studio-raised)",
+            border: "1px solid var(--studio-border)",
+            color: "var(--studio-text)",
+          }}
+        >
+          <Plus size={11} /> Track
         </button>
-        <button type="button" onClick={addKeyframeAtPlayhead} disabled={tracks.length === 0} className="flex items-center gap-1 px-2 py-1 rounded border border-[#7C6FFF]/40 text-[#7C6FFF] hover:bg-[#7C6FFF]/15 disabled:opacity-40 cursor-pointer" title="Add keyframe at playhead (K)">
-          <Diamond size={12} />
-          Keyframe
+
+        <button
+          type="button"
+          onClick={addKeyframeAtPlayhead}
+          disabled={tracks.length === 0}
+          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold disabled:opacity-40 cursor-pointer transition-colors"
+          style={{
+            border: "1px solid rgba(124,111,255,0.4)",
+            color: "var(--studio-accent)",
+            background: "var(--studio-active-soft)",
+          }}
+          title="Add keyframe at playhead (K)"
+        >
+          <Diamond size={11} /> Keyframe
         </button>
-        <button type="button" onClick={() => patchScene((doc) => ensureDefaultTimeline(doc))} className="flex items-center gap-1 px-2 py-1 rounded border border-[#2A2A38] text-gray-400 hover:text-white cursor-pointer ml-auto" title="Add demo shadow + mask reveal tracks">
-          <Wand2 size={12} />
-          Demo tracks
+
+        <button
+          type="button"
+          onClick={() => patchScene((doc) => ensureDefaultTimeline(doc))}
+          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold cursor-pointer transition-colors ml-auto"
+          style={{
+            background: "var(--studio-control)",
+            border: "1px solid var(--studio-border)",
+            color: "var(--studio-muted)",
+          }}
+          title="Add demo shadow + mask reveal tracks"
+        >
+          <Wand2 size={11} /> Demo tracks
         </button>
       </div>
 
+      {/* Selected keyframe editor */}
       {selectedKeyframe && selection && (
-        <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 border-b border-[#1A1A26] bg-[#15151C] text-[10px]">
-          <span className="text-gray-500 truncate max-w-[180px]">{formatTrackLabel(scene, selection.trackIndex)}</span>
-          <label className="flex items-center gap-1 text-gray-400">
+        <div
+          className="flex flex-wrap items-center gap-2 px-3 py-1.5 border-b text-[10px]"
+          style={{
+            borderColor: "var(--studio-border)",
+            background: "var(--studio-raised)",
+          }}
+        >
+          <span
+            className="truncate max-w-[180px]"
+            style={{ color: "var(--studio-muted)" }}
+          >
+            {formatTrackLabel(scene, selection.trackIndex)}
+          </span>
+
+          <label
+            className="flex items-center gap-1"
+            style={{ color: "var(--studio-muted)" }}
+          >
             Time
-            <input type="number" min={0} max={duration} step={0.01} value={Number(selectedKeyframe.time.toFixed(3))} onChange={(e) => patchScene((doc) => moveKeyframe(doc, selection.trackIndex, selection.keyframeIndex, parseFloat(e.target.value) || 0, duration))} className="w-14 px-1 py-0.5 rounded bg-[#0D0D11] border border-[#2A2A38] text-white font-mono" />
+            <input
+              type="number"
+              min={0}
+              max={duration}
+              step={0.01}
+              value={Number(selectedKeyframe.time.toFixed(3))}
+              onChange={(e) =>
+                patchScene((doc) =>
+                  moveKeyframe(
+                    doc,
+                    selection.trackIndex,
+                    selection.keyframeIndex,
+                    parseFloat(e.target.value) || 0,
+                    duration,
+                  ),
+                )
+              }
+              style={{ ...ctrlInput, width: 52 }}
+            />
           </label>
-          <label className="flex items-center gap-1 text-gray-400">
+
+          <label
+            className="flex items-center gap-1"
+            style={{ color: "var(--studio-muted)" }}
+          >
             Value
             <input
               type="number"
@@ -240,27 +511,41 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
               value={selectedKeyframe.value}
               onChange={(e) =>
                 patchScene((doc) =>
-                  updateKeyframe(doc, selection.trackIndex, selection.keyframeIndex, {
-                    value: parseFloat(e.target.value) || 0,
-                  }),
+                  updateKeyframe(
+                    doc,
+                    selection.trackIndex,
+                    selection.keyframeIndex,
+                    { value: parseFloat(e.target.value) || 0 },
+                  ),
                 )
               }
-              className="w-16 px-1 py-0.5 rounded bg-[#0D0D11] border border-[#2A2A38] text-white font-mono"
+              style={{ ...ctrlInput, width: 60 }}
             />
-            {selectedParamDef?.unit ? <span className="text-gray-600">{selectedParamDef.unit}</span> : null}
+            {selectedParamDef?.unit && (
+              <span style={{ color: "var(--studio-subtle)" }}>
+                {selectedParamDef.unit}
+              </span>
+            )}
           </label>
-          <label className="flex items-center gap-1 text-gray-400">
+
+          <label
+            className="flex items-center gap-1"
+            style={{ color: "var(--studio-muted)" }}
+          >
             Easing
             <select
               value={selectedKeyframe.easing ?? "easeInOut"}
               onChange={(e) =>
                 patchScene((doc) =>
-                  updateKeyframe(doc, selection.trackIndex, selection.keyframeIndex, {
-                    easing: e.target.value as Keyframe["easing"],
-                  }),
+                  updateKeyframe(
+                    doc,
+                    selection.trackIndex,
+                    selection.keyframeIndex,
+                    { easing: e.target.value as Keyframe["easing"] },
+                  ),
                 )
               }
-              className="px-1 py-0.5 rounded bg-[#0D0D11] border border-[#2A2A38] text-gray-200"
+              style={ctrlInput}
             >
               <option value="linear">Linear</option>
               <option value="easeIn">Ease in</option>
@@ -268,32 +553,81 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
               <option value="easeInOut">Ease in-out</option>
             </select>
           </label>
+
           <button
             type="button"
             onClick={() => {
-              patchScene((doc) => removeKeyframe(doc, selection.trackIndex, selection.keyframeIndex));
+              patchScene((doc) =>
+                removeKeyframe(
+                  doc,
+                  selection.trackIndex,
+                  selection.keyframeIndex,
+                ),
+              );
               setSelection(null);
             }}
-            className="p-1 rounded text-red-400/80 hover:bg-red-500/10 cursor-pointer"
             title="Delete keyframe"
+            className="p-1 rounded cursor-pointer transition-colors"
+            style={{ color: "var(--studio-subtle)" }}
+            onMouseEnter={(e) =>
+              ((e.currentTarget as HTMLElement).style.color =
+                "var(--gpu-error)")
+            }
+            onMouseLeave={(e) =>
+              ((e.currentTarget as HTMLElement).style.color =
+                "var(--studio-subtle)")
+            }
           >
             <Trash2 size={12} />
           </button>
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-auto custom-scrollbar">
+      {/* Track scroll area */}
+      <div className="flex-1 min-h-0 overflow-auto">
         {tracks.length === 0 ? (
-          <p className="px-4 py-6 text-xs text-gray-500 text-center">
-            No animation tracks yet. Add a track or use <strong>Demo tracks</strong> to animate shadow drift and mask reveal.
+          <p
+            className="px-4 py-6 text-[11px] text-center"
+            style={{ color: "var(--studio-muted)" }}
+          >
+            No animation tracks yet. Add a track or click{" "}
+            <strong style={{ color: "var(--studio-text)" }}>Demo tracks</strong>{" "}
+            to get started.
           </p>
         ) : (
-          <div className="flex" style={{ minWidth: LABEL_WIDTH + LANE_WIDTH + 24 }}>
-            <div className="shrink-0 border-r border-[#1A1A26]" style={{ width: LABEL_WIDTH }}>
-              <div style={{ height: RULER_HEIGHT }} className="border-b border-[#1A1A26]" />
+          <div
+            className="flex"
+            style={{ minWidth: LABEL_WIDTH + LANE_WIDTH + 24 }}
+          >
+            {/* Labels column */}
+            <div
+              className="shrink-0 border-r"
+              style={{
+                width: LABEL_WIDTH,
+                borderColor: "var(--studio-border)",
+              }}
+            >
+              <div
+                style={{
+                  height: RULER_HEIGHT,
+                  borderColor: "var(--studio-border)",
+                }}
+                className="border-b"
+              />
               {tracks.map((_, trackIndex) => (
-                <div key={trackIndex} className="flex items-center justify-between gap-1 px-2 border-b border-[#1A1A26]/60 text-[10px] text-gray-400" style={{ height: ROW_HEIGHT }}>
-                  <span className="truncate" title={formatTrackLabel(scene, trackIndex)}>
+                <div
+                  key={trackIndex}
+                  className="flex items-center justify-between gap-1 px-2 border-b text-[10px]"
+                  style={{
+                    height: ROW_HEIGHT,
+                    borderColor: "rgba(34,34,48,0.6)",
+                    color: "var(--studio-muted)",
+                  }}
+                >
+                  <span
+                    className="truncate"
+                    title={formatTrackLabel(scene, trackIndex)}
+                  >
                     {formatTrackLabel(scene, trackIndex)}
                   </span>
                   <button
@@ -302,8 +636,17 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
                       patchScene((doc) => removeTrack(doc, trackIndex));
                       setSelection(null);
                     }}
-                    className="shrink-0 p-0.5 text-gray-600 hover:text-red-400 cursor-pointer"
                     title="Remove track"
+                    className="shrink-0 p-0.5 cursor-pointer transition-colors"
+                    style={{ color: "var(--studio-subtle)" }}
+                    onMouseEnter={(e) =>
+                      ((e.currentTarget as HTMLElement).style.color =
+                        "var(--gpu-error)")
+                    }
+                    onMouseLeave={(e) =>
+                      ((e.currentTarget as HTMLElement).style.color =
+                        "var(--studio-subtle)")
+                    }
                   >
                     <Trash2 size={10} />
                   </button>
@@ -311,24 +654,56 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
               ))}
             </div>
 
+            {/* Lane area */}
             <div className="relative flex-1" ref={laneRef}>
-              <div className="relative border-b border-[#1A1A26] bg-[#0D0D11]" style={{ height: RULER_HEIGHT, width: LANE_WIDTH }}>
+              {/* Ruler */}
+              <div
+                className="relative border-b"
+                style={{
+                  height: RULER_HEIGHT,
+                  width: LANE_WIDTH,
+                  background: "var(--studio-bg)",
+                  borderColor: "var(--studio-border)",
+                }}
+              >
                 {rulerTicks.map((t) => (
-                  <span key={t} className="absolute top-0 text-[9px] font-mono text-gray-600 -translate-x-1/2" style={{ left: timeToX(t, duration) }}>
+                  <span
+                    key={t}
+                    className="absolute top-1 font-mono text-[8px] -translate-x-1/2"
+                    style={{
+                      left: timeToX(t, duration),
+                      color: "var(--studio-subtle)",
+                    }}
+                  >
                     {t.toFixed(1)}s
                   </span>
                 ))}
               </div>
 
+              {/* Tracks */}
               {tracks.map((track, trackIndex) => (
-                <div key={`${track.layerId}-${track.paramPath}`} className="timeline-lane relative border-b border-[#1A1A26]/50 cursor-crosshair bg-[#15151C]/40 hover:bg-[#1A1A26]/30" style={{ height: ROW_HEIGHT, width: LANE_WIDTH }} onClick={(e) => handleLaneClick(trackIndex, e)}>
+                <div
+                  key={`${track.layerId}-${track.paramPath}`}
+                  className="timeline-lane relative border-b cursor-crosshair"
+                  style={{
+                    height: ROW_HEIGHT,
+                    width: LANE_WIDTH,
+                    borderColor: "rgba(34,34,48,0.5)",
+                    background: "var(--studio-bg)",
+                  }}
+                  onClick={(e) => handleLaneClick(trackIndex, e)}
+                >
                   {track.keyframes.map((kf, keyframeIndex) => {
-                    const isSelected = selection?.trackIndex === trackIndex && selection?.keyframeIndex === keyframeIndex;
+                    const isSelected =
+                      selection?.trackIndex === trackIndex &&
+                      selection?.keyframeIndex === keyframeIndex;
                     return (
                       <button
                         key={`${kf.time}-${keyframeIndex}`}
                         type="button"
-                        className={`timeline-kf absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rotate-45 border cursor-grab active:cursor-grabbing ${isSelected ? "bg-[#7C6FFF] border-white shadow-[0_0_8px_rgba(124,111,255,0.6)]" : "bg-[#2A2A38] border-[#7C6FFF]/60 hover:bg-[#7C6FFF]/40"}`}
+                        className={`timeline-kf absolute${
+                          isSelected ? " selected" : ""
+                        }`}
                         style={{ left: timeToX(kf.time, duration) }}
                         title={`${kf.time.toFixed(2)}s → ${kf.value}`}
                         onClick={(e) => {
@@ -352,8 +727,24 @@ export function TimelinePanel({ scene, previewTime, isPlaying, uiMode, onPlayTog
                 </div>
               ))}
 
-              <div className="timeline-playhead absolute top-0 bottom-0 w-px bg-[#7C6FFF] pointer-events-none z-10" style={{ left: timeToX(Math.min(previewTime, duration), duration) }}>
-                <div className="absolute -top-0.5 -left-1 w-2 h-2 rounded-full bg-[#7C6FFF]" />
+              {/* Playhead */}
+              <div
+                className="timeline-panel absolute top-0 bottom-0 pointer-events-none z-10"
+                style={{
+                  left: timeToX(Math.min(previewTime, duration), duration),
+                  width: 1,
+                  background: "var(--studio-accent)",
+                }}
+              >
+                <div
+                  className="absolute -top-0.5 -translate-x-1/2 rounded-full"
+                  style={{
+                    width: 8,
+                    height: 8,
+                    background: "var(--studio-accent)",
+                    boxShadow: "0 0 8px var(--studio-accent)",
+                  }}
+                />
               </div>
             </div>
           </div>

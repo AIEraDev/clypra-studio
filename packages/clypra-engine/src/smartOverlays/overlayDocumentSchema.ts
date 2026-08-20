@@ -792,6 +792,8 @@ export interface BreakpointSet {
 export interface OverlayDocument {
   id: string;
   version: "2.0";
+  /** Monotonic authoring revision used by Studio save artifacts. */
+  schemaVersion?: number;
   title: string;
   description?: string;
   category: string;
@@ -827,4 +829,3 @@ export interface PublishedOverlayArtifact {
   author?: string;
   document: OverlayDocument;
 }
-

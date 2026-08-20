@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from "react";
 import {
   ChevronDown,
-  ChevronUp,
+  ChevronRight,
   Copy,
   Eye,
   EyeOff,
-  Layers,
   Plus,
   RotateCcw,
+  Save,
   Trash2,
 } from "lucide-react";
 import type { TextEffectConfig } from "@clypra-studio/engine";
@@ -18,7 +18,7 @@ import type {
 } from "@clypra-studio/engine";
 import { newLayerId } from "@clypra-studio/engine";
 import { pruneTracksForLayer } from "@clypra-studio/engine";
-import { COMPOSITION_PRESETS } from "@clypra-studio/engine";
+import { LegacyControlsPanel } from "./LegacyControlsPanel";
 
 type ConfigPatch =
   | Partial<TextEffectConfig>
@@ -37,9 +37,30 @@ interface InspectorPanelProps {
   onStartFromScratch: () => void;
   onFitText: () => void;
   onOpenFontCompare: () => void;
+  activeEffectId: string;
+  collapsedSections: Record<string, boolean>;
+  isGeneratingName: boolean;
+  onToggleSection: (section: string) => void;
+  onGenerateEffectName: () => void;
+  onApplyCompositionPreset: (presetId: string) => void;
 }
 
 const ADDABLE_TYPES: EffectLayerType[] = ["glow", "shadow", "filter", "mask"];
+
+const TYPE_ABBR: Record<string, string> = {
+  glow: "GL",
+  shadow: "SH",
+  filter: "FX",
+  mask: "MK",
+  text: "TX",
+};
+const TYPE_LABEL: Record<string, string> = {
+  glow: "Glow",
+  shadow: "Shadow",
+  filter: "Filter",
+  mask: "Mask",
+  text: "Text",
+};
 
 function defaultParamsForType(type: EffectLayerType): Record<string, unknown> {
   switch (type) {
@@ -70,87 +91,83 @@ function defaultParamsForType(type: EffectLayerType): Record<string, unknown> {
   }
 }
 
+// ── Collapsible Section ──────────────────────────────────────────────────────
 function Section({
   id,
   title,
-  children,
+  accent = false,
   defaultOpen = true,
-  action,
+  headerRight,
+  children,
 }: {
   id: string;
   title: string;
-  children: React.ReactNode;
+  accent?: boolean;
   defaultOpen?: boolean;
-  action?: React.ReactNode;
+  headerRight?: React.ReactNode;
+  children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="studio-inspector-section rounded-md border border-(--studio-border) bg-(--studio-panel)">
+    <div
+      className="inspector-section"
+      style={accent ? { borderLeft: "3px solid var(--studio-accent)" } : {}}
+    >
       <button
         type="button"
         aria-expanded={open}
-        aria-controls={`inspector-${id}`}
-        onClick={() => setOpen((next) => !next)}
-        className="flex w-full items-center justify-between gap-2 border-b border-(--studio-border) px-3 py-2 text-left focus-visible:outline focus-visible:outline-(--studio-focus)"
+        aria-controls={`sec-${id}`}
+        onClick={() => setOpen((v) => !v)}
+        className="inspector-section-header w-full"
       >
-        <span className="text-[12px] font-semibold text-white">{title}</span>
+        <span className="inspector-section-title">{title}</span>
         <span className="flex items-center gap-2">
-          {action}
-          {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {headerRight}
+          {open ? (
+            <ChevronDown size={13} style={{ color: "var(--studio-muted)" }} />
+          ) : (
+            <ChevronRight size={13} style={{ color: "var(--studio-muted)" }} />
+          )}
         </span>
       </button>
       {open && (
-        <div id={`inspector-${id}`} className="space-y-3 p-3">
+        <div id={`sec-${id}`} className="inspector-section-body space-y-3">
           {children}
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
-function Row({
+// ── Field label ───────────────────────────────────────────────────────────────
+function FieldLabel({
   label,
-  children,
+  value,
 }: {
   label: string;
-  children: React.ReactNode;
+  value?: React.ReactNode;
 }) {
   return (
-    <label className="block space-y-1">
-      <span className="block text-[10px] font-semibold uppercase tracking-wide text-(--studio-muted)">
+    <div className="flex items-center justify-between mb-1.5">
+      <span
+        className="text-[9px] font-bold uppercase tracking-widest"
+        style={{ color: "var(--studio-muted)" }}
+      >
         {label}
       </span>
-      {children}
-    </label>
+      {value !== undefined && (
+        <span
+          className="text-[10px] font-mono"
+          style={{ color: "var(--studio-accent)" }}
+        >
+          {value}
+        </span>
+      )}
+    </div>
   );
 }
 
-function NumberField({
-  value,
-  min,
-  max,
-  step = 1,
-  onChange,
-}: {
-  value: number;
-  min?: number;
-  max?: number;
-  step?: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <input
-      type="number"
-      min={min}
-      max={max}
-      step={step}
-      value={value}
-      onChange={(event) => onChange(Number(event.target.value))}
-      className="h-8 w-full rounded border border-(--studio-border) bg-(--studio-control) px-2 text-[12px] text-white focus:border-(--studio-accent) focus:outline-none"
-    />
-  );
-}
-
+// ── Slider ────────────────────────────────────────────────────────────────────
 function SliderField({
   label,
   value,
@@ -166,116 +183,65 @@ function SliderField({
   max: number;
   step?: number;
   unit?: string;
-  onChange: (value: number) => void;
+  onChange: (v: number) => void;
 }) {
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-(--studio-muted)">
-          {label}
-        </span>
-        <span className="text-[10px] font-mono text-(--studio-text)">
-          {value}
-          {unit}
-        </span>
-      </div>
+      <FieldLabel label={label} value={`${value}${unit}`} />
       <input
         type="range"
         min={min}
         max={max}
         step={step}
         value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="w-full accent-(--studio-accent)"
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="studio-slider w-full"
       />
     </div>
   );
 }
 
+// ── Color field ───────────────────────────────────────────────────────────────
 function ColorField({
   value,
   onChange,
 }: {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (v: string) => void;
 }) {
-  const safeValue = value?.startsWith("#") ? value : "#ffffff";
+  const safe = value?.startsWith("#") ? value : "#ffffff";
   return (
-    <div className="flex items-center gap-2">
+    <div className="studio-color-field">
       <input
         type="color"
-        value={safeValue}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-8 w-8 shrink-0 cursor-pointer rounded border border-(--studio-border) bg-transparent p-0"
+        value={safe}
+        onChange={(e) => onChange(e.target.value)}
+        className="studio-color-swatch"
       />
       <input
         type="text"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-8 min-w-0 flex-1 rounded border border-(--studio-border) bg-(--studio-control) px-2 font-mono text-[12px] text-white focus:border-(--studio-accent) focus:outline-none"
+        onChange={(e) => onChange(e.target.value)}
+        className="flex-1 min-w-0 bg-transparent font-mono text-[11px] outline-none"
+        style={{ color: "var(--studio-text)" }}
       />
     </div>
   );
 }
 
-function ToggleRow({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
+// ── Layer type color ──────────────────────────────────────────────────────────
+function LayerTypeDot({ type }: { type: string }) {
   return (
-    <label className="flex items-center justify-between gap-3 rounded border border-(--studio-border) bg-(--studio-control) px-2 py-2">
-      <span className="text-[12px] font-medium text-(--studio-text)">
-        {label}
-      </span>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="accent-(--studio-accent)"
-      />
-    </label>
-  );
-}
-
-function Segmented<T extends string>({
-  value,
-  options,
-  onChange,
-}: {
-  value: T;
-  options: T[];
-  onChange: (value: T) => void;
-}) {
-  return (
-    <div
-      className="grid gap-1 rounded border border-(--studio-border) bg-(--studio-control) p-1"
-      style={{
-        gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
-      }}
+    <span
+      className={`layer-type-badge ${type}`}
+      style={{ fontSize: 8, width: 18, height: 18 }}
     >
-      {options.map((option) => (
-        <button
-          key={option}
-          type="button"
-          onClick={() => onChange(option)}
-          className={`h-7 rounded text-[10px] font-semibold capitalize ${
-            value === option
-              ? "bg-(--studio-active) text-white"
-              : "text-(--studio-muted) hover:bg-(--studio-hover) hover:text-white"
-          }`}
-        >
-          {option}
-        </button>
-      ))}
-    </div>
+      {TYPE_ABBR[type] ?? type.slice(0, 2).toUpperCase()}
+    </span>
   );
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
 export function InspectorPanel({
   config,
   scene,
@@ -287,26 +253,27 @@ export function InspectorPanel({
   onStartFromScratch,
   onFitText,
   onOpenFontCompare,
+  activeEffectId,
+  collapsedSections,
+  isGeneratingName,
+  onToggleSection,
+  onGenerateEffectName,
+  onApplyCompositionPreset,
 }: InspectorPanelProps) {
   const selectedLayer = useMemo(
-    () =>
-      scene.effectLayers.find((layer) => layer.id === selectedLayerId) ?? null,
+    () => scene.effectLayers.find((l) => l.id === selectedLayerId) ?? null,
     [scene.effectLayers, selectedLayerId],
   );
 
-  const updateLayers = (layers: EffectLayer[]) => {
+  const updateLayers = (layers: EffectLayer[]) =>
     onSceneChange({ ...scene, effectLayers: layers });
-  };
 
-  const patchLayer = (layerId: string, patch: Partial<EffectLayer>) => {
+  const patchLayer = (id: string, patch: Partial<EffectLayer>) =>
     updateLayers(
-      scene.effectLayers.map((layer) =>
-        layer.id === layerId ? { ...layer, ...patch } : layer,
-      ),
+      scene.effectLayers.map((l) => (l.id === id ? { ...l, ...patch } : l)),
     );
-  };
 
-  const patchSelectedLayerParams = (patch: Record<string, unknown>) => {
+  const patchSelectedParams = (patch: Record<string, unknown>) => {
     if (!selectedLayer) return;
     patchLayer(selectedLayer.id, {
       params: { ...selectedLayer.params, ...patch },
@@ -317,8 +284,8 @@ export function InspectorPanel({
     const layer: EffectLayer = {
       id: newLayerId(),
       type,
-      name: `${type} ${
-        scene.effectLayers.filter((item) => item.type === type).length + 1
+      name: `${TYPE_LABEL[type] ?? type} ${
+        scene.effectLayers.filter((l) => l.type === type).length + 1
       }`,
       enabled: true,
       opacity: 1,
@@ -330,19 +297,17 @@ export function InspectorPanel({
     onSelectLayer(layer.id);
   };
 
-  const removeLayer = (layerId: string) => {
+  const removeLayer = (id: string) => {
     onSceneChange(
       pruneTracksForLayer(
         {
           ...scene,
-          effectLayers: scene.effectLayers.filter(
-            (layer) => layer.id !== layerId,
-          ),
+          effectLayers: scene.effectLayers.filter((l) => l.id !== id),
         },
-        layerId,
+        id,
       ),
     );
-    if (selectedLayerId === layerId) onSelectLayer(null);
+    if (selectedLayerId === id) onSelectLayer(null);
   };
 
   const duplicateLayer = (layer: EffectLayer) => {
@@ -352,16 +317,16 @@ export function InspectorPanel({
       name: `${layer.name} copy`,
       params: { ...layer.params },
     };
-    const index = scene.effectLayers.findIndex((item) => item.id === layer.id);
+    const idx = scene.effectLayers.findIndex((l) => l.id === layer.id);
     const next = [...scene.effectLayers];
-    next.splice(index + 1, 0, clone);
+    next.splice(idx + 1, 0, clone);
     updateLayers(next);
     onSelectLayer(clone.id);
   };
 
-  const moveLayer = (index: number, direction: -1 | 1) => {
+  const moveLayer = (index: number, dir: -1 | 1) => {
     const next = [...scene.effectLayers];
-    const target = index + direction;
+    const target = index + dir;
     if (target < 0 || target >= next.length) return;
     [next[index], next[target]] = [next[target], next[index]];
     updateLayers(next);
@@ -370,63 +335,113 @@ export function InspectorPanel({
   return (
     <aside
       id="studio-inspector-panel"
-      className="studio-inspector flex w-full flex-col border-l border-(--studio-border) bg-(--studio-shell) md:w-[344px]"
-      aria-label="Contextual inspector"
+      className="flex w-full flex-col border-l"
+      style={{
+        background: "var(--studio-shell)",
+        borderColor: "var(--studio-border)",
+        minWidth: 0,
+      }}
+      aria-label="Inspector"
     >
-      <div className="border-b border-(--studio-border) px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-(--studio-muted)">
-              Inspector
-            </p>
-            <h2 className="truncate text-[13px] font-semibold text-white">
-              {selectedLayer
-                ? selectedLayer.name
-                : config.effectName || "Untitled style"}
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onSavePreset}
-            className="rounded bg-(--studio-active) px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-(--studio-active-trong)]"
+      {/* ── Header ── */}
+      <div
+        className="flex items-center justify-between gap-3 px-4 py-3 border-b shrink-0"
+        style={{
+          borderColor: "var(--studio-border)",
+          background: "var(--studio-panel)",
+        }}
+      >
+        <div className="min-w-0 flex-1">
+          <p
+            className="text-[9px] font-bold uppercase tracking-widest mb-0.5"
+            style={{ color: "var(--studio-muted)" }}
           >
-            Save
-          </button>
+            INSPECTOR
+          </p>
+          <h2 className="truncate text-[13px] font-bold text-white">
+            {selectedLayer
+              ? selectedLayer.name
+              : config.effectName || "Untitled style"}
+          </h2>
         </div>
+        <button
+          type="button"
+          onClick={onSavePreset}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white shrink-0"
+          style={{
+            background: "var(--studio-active)",
+            border: "1px solid var(--studio-active-strong)",
+          }}
+        >
+          <Save size={11} />
+          Save
+        </button>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-3">
-        <Section id="selection" title="Selection">
+      {/* ── Body ── */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {/* Selection toggle */}
+        <Section id="selection" title="Selection" defaultOpen>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => onSelectLayer(null)}
-              className={`rounded border px-2 py-2 text-[11px] font-semibold ${
+              className="rounded-lg py-2 text-[11px] font-bold transition-colors"
+              style={
                 !selectedLayer
-                  ? "border-(--studio-accent) bg-(--studio-active-oft)] text-white"
-                  : "border-(--studio-border) bg-(--studio-control) text-(--studio-muted)"
-              }`}
+                  ? {
+                      background: "var(--studio-active-soft)",
+                      border: "1px solid var(--studio-accent)",
+                      color: "var(--studio-accent)",
+                    }
+                  : {
+                      background: "var(--studio-control)",
+                      border: "1px solid var(--studio-border)",
+                      color: "var(--studio-muted)",
+                    }
+              }
             >
               Text layer
             </button>
             <button
               type="button"
               onClick={onStartFromScratch}
-              className="rounded border border-(--studio-border) bg-(--studio-control) px-2 py-2 text-[11px] font-semibold text-(--studio-text) hover:bg-(--studio-hover)"
+              className="rounded-lg py-2 text-[11px] font-bold transition-colors"
+              style={{
+                background: "var(--studio-control)",
+                border: "1px solid var(--studio-border)",
+                color: "var(--studio-text)",
+              }}
             >
               Blank slate
             </button>
           </div>
+          {!selectedLayer && (
+            <button
+              type="button"
+              onClick={onOpenFontCompare}
+              className="canvas-toolbar-btn w-full justify-center"
+            >
+              Compare fonts
+            </button>
+          )}
+
           {selectedLayer && (
-            <div className="space-y-2 rounded border border-(--studio-border) bg-(--studio-control) p-2">
+            <div
+              className="space-y-2 rounded-lg p-2"
+              style={{
+                background: "var(--studio-control)",
+                border: "1px solid var(--studio-border)",
+              }}
+            >
               <input
                 value={selectedLayer.name}
-                onChange={(event) =>
-                  patchLayer(selectedLayer.id, { name: event.target.value })
+                onChange={(e) =>
+                  patchLayer(selectedLayer.id, { name: e.target.value })
                 }
-                className="h-8 w-full rounded border border-(--studio-border) bg-(--studio-shell) px-2 text-[12px] text-white focus:border-(--studio-accent) focus:outline-none"
+                className="studio-input"
               />
-              <div className="grid grid-cols-3 gap-1">
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   onClick={() =>
@@ -434,22 +449,41 @@ export function InspectorPanel({
                       enabled: !selectedLayer.enabled,
                     })
                   }
-                  className="rounded bg-(--studio-panel) px-2 py-1.5 text-[11px] text-white"
+                  className="flex items-center justify-center gap-1 rounded py-1.5 text-[10px] font-semibold"
+                  style={{
+                    background: "var(--studio-raised)",
+                    color: "var(--studio-text)",
+                  }}
                 >
+                  {selectedLayer.enabled ? (
+                    <EyeOff size={11} />
+                  ) : (
+                    <Eye size={11} />
+                  )}
                   {selectedLayer.enabled ? "Hide" : "Show"}
                 </button>
                 <button
                   type="button"
                   onClick={() => duplicateLayer(selectedLayer)}
-                  className="rounded bg-(--studio-panel) px-2 py-1.5 text-[11px] text-white"
+                  className="flex items-center justify-center gap-1 rounded py-1.5 text-[10px] font-semibold"
+                  style={{
+                    background: "var(--studio-raised)",
+                    color: "var(--studio-text)",
+                  }}
                 >
+                  <Copy size={11} />
                   Copy
                 </button>
                 <button
                   type="button"
                   onClick={() => removeLayer(selectedLayer.id)}
-                  className="rounded bg-red-500/15 px-2 py-1.5 text-[11px] text-red-300"
+                  className="flex items-center justify-center gap-1 rounded py-1.5 text-[10px] font-semibold"
+                  style={{
+                    background: "rgba(248,113,113,0.1)",
+                    color: "var(--gpu-error)",
+                  }}
                 >
+                  <Trash2 size={11} />
                   Delete
                 </button>
               </div>
@@ -457,311 +491,175 @@ export function InspectorPanel({
           )}
         </Section>
 
+        {/* The Inspector is the single text-style authority. The former left
+            Style tab is hosted here so advanced controls stay available
+            without creating a second editing surface. */}
         {!selectedLayer && (
-          <>
-            <Section id="typography" title="Typography">
-              <Row label="Text">
-                <textarea
-                  rows={2}
-                  value={config.text}
-                  onChange={(event) =>
-                    onConfigChange({ text: event.target.value })
-                  }
-                  className="w-full resize-none rounded border border-(--studio-border) bg-(--studio-control) p-2 text-[12px] text-white focus:border-(--studio-accent) focus:outline-none"
-                />
-              </Row>
-              <Row label="Font family">
-                <div className="flex gap-2">
-                  <input
-                    value={config.fontFamily}
-                    onChange={(event) =>
-                      onConfigChange({ fontFamily: event.target.value })
-                    }
-                    className="h-8 min-w-0 flex-1 rounded border border-(--studio-border) bg-(--studio-control) px-2 text-[12px] text-white focus:border-(--studio-accent) focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={onOpenFontCompare}
-                    className="rounded border border-(--studio-border) bg-(--studio-control) px-2 text-[11px] text-white"
-                  >
-                    Compare
-                  </button>
-                </div>
-              </Row>
-              <div className="grid grid-cols-2 gap-2">
-                <Row label="Weight">
-                  <NumberField
-                    value={config.fontWeight}
-                    min={100}
-                    max={1000}
-                    step={100}
-                    onChange={(fontWeight) => onConfigChange({ fontWeight })}
-                  />
-                </Row>
-                <Row label="Size">
-                  <NumberField
-                    value={config.fontSize}
-                    min={8}
-                    max={400}
-                    onChange={(fontSize) => onConfigChange({ fontSize })}
-                  />
-                </Row>
-              </div>
-              <SliderField
-                label="Letter spacing"
-                value={config.letterSpacing}
-                min={-10}
-                max={30}
-                unit="px"
-                onChange={(letterSpacing) => onConfigChange({ letterSpacing })}
-              />
-              <SliderField
-                label="Line height"
-                value={config.lineHeight}
-                min={0.8}
-                max={2.5}
-                step={0.1}
-                unit="x"
-                onChange={(lineHeight) => onConfigChange({ lineHeight })}
-              />
-            </Section>
-
-            <Section id="fill" title="Fill">
-              <Segmented
-                value={config.fillType}
-                options={["solid", "linear", "radial", "pattern", "none"]}
-                onChange={(fillType) =>
-                  onConfigChange({ fillType, customRenderer: undefined })
-                }
-              />
-              {config.fillType !== "none" && (
-                <Row label="Primary color">
-                  <ColorField
-                    value={config.fillColor}
-                    onChange={(fillColor) =>
-                      onConfigChange({ fillColor, customRenderer: undefined })
-                    }
-                  />
-                </Row>
-              )}
-              {(config.fillType === "linear" ||
-                config.fillType === "radial") && (
-                <SliderField
-                  label="Gradient angle"
-                  value={config.fillGradientAngle}
-                  min={0}
-                  max={360}
-                  unit="deg"
-                  onChange={(fillGradientAngle) =>
-                    onConfigChange({ fillGradientAngle })
-                  }
-                />
-              )}
-            </Section>
-
-            <Section id="stroke" title="Stroke">
-              <ToggleRow
-                label="Enable stroke"
-                checked={config.strokeEnabled}
-                onChange={(strokeEnabled) => onConfigChange({ strokeEnabled })}
-              />
-              <Row label="Stroke color">
-                <ColorField
-                  value={config.strokeColor}
-                  onChange={(strokeColor) =>
-                    onConfigChange({ strokeColor, strokeEnabled: true })
-                  }
-                />
-              </Row>
-              <SliderField
-                label="Width"
-                value={config.strokeWidth}
-                min={0}
-                max={30}
-                unit="px"
-                onChange={(strokeWidth) =>
-                  onConfigChange({ strokeWidth, strokeEnabled: true })
-                }
-              />
-              <Segmented
-                value={config.strokePosition}
-                options={["outside", "center", "inside"]}
-                onChange={(strokePosition) =>
-                  onConfigChange({ strokePosition, strokeEnabled: true })
-                }
-              />
-            </Section>
-
-            <Section id="effects" title="Glow And Shadow">
-              <ToggleRow
-                label="Drop shadow"
-                checked={config.shadowEnabled}
-                onChange={(shadowEnabled) => onConfigChange({ shadowEnabled })}
-              />
-              <SliderField
-                label="Shadow blur"
-                value={config.shadowBlur}
-                min={0}
-                max={60}
-                unit="px"
-                onChange={(shadowBlur) =>
-                  onConfigChange({ shadowBlur, shadowEnabled: true })
-                }
-              />
-              <SliderField
-                label="Glow blur"
-                value={config.glowLayers?.[0]?.blur ?? 0}
-                min={0}
-                max={150}
-                unit="px"
-                onChange={(blur) =>
-                  onConfigChange((prev) => ({
-                    ...prev,
-                    glowLayers: prev.glowLayers.map((layer, index) =>
-                      index === 0 ? { ...layer, enabled: true, blur } : layer,
-                    ),
-                  }))
-                }
-              />
-            </Section>
-
-            <Section id="layout" title="Transform And Canvas">
-              <div className="grid grid-cols-2 gap-2">
-                <Row label="Width">
-                  <NumberField
-                    value={config.canvasWidth}
-                    min={200}
-                    max={2400}
-                    onChange={(canvasWidth) => onConfigChange({ canvasWidth })}
-                  />
-                </Row>
-                <Row label="Height">
-                  <NumberField
-                    value={config.canvasHeight}
-                    min={100}
-                    max={1200}
-                    onChange={(canvasHeight) =>
-                      onConfigChange({ canvasHeight })
-                    }
-                  />
-                </Row>
-              </div>
-              <div className="grid grid-cols-3 gap-1">
-                {COMPOSITION_PRESETS.slice(0, 6).map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    title={preset.description}
-                    onClick={() =>
-                      onConfigChange({
-                        canvasWidth: preset.width,
-                        canvasHeight: preset.height,
-                      })
-                    }
-                    className="rounded border border-(--studio-border) bg-(--studio-control) px-1 py-1.5 text-[9px] font-semibold text-(--studio-muted) hover:text-white"
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-              <ToggleRow
-                label="Wrap text"
-                checked={config.wrapText !== false}
-                onChange={(wrapText) => onConfigChange({ wrapText })}
-              />
-              <ToggleRow
-                label="Auto-fit text"
-                checked={!!config.autoFitText}
-                onChange={(autoFitText) => onConfigChange({ autoFitText })}
-              />
-              <button
-                type="button"
-                onClick={onFitText}
-                className="w-full rounded border border-(--studio-accent) bg-(--studio-active-oft)] px-2 py-2 text-[11px] font-semibold text-white"
-              >
-                Fit text to composition
-              </button>
-            </Section>
-          </>
+          <div className="-mx-1">
+            <LegacyControlsPanel
+              visible
+              config={config}
+              activeEffectId={activeEffectId}
+              collapsedSections={collapsedSections}
+              isGeneratingName={isGeneratingName}
+              modifyConfig={onConfigChange}
+              toggleSection={onToggleSection}
+              handleGenerateAiEffectName={onGenerateEffectName}
+              applyCompositionPreset={onApplyCompositionPreset}
+              fitTextToComposition={onFitText}
+            />
+          </div>
         )}
 
-        <Section id="effect-stack" title="Effect Stack" defaultOpen>
-          <div className="mb-2 flex flex-wrap gap-1">
+        {/* Effect stack */}
+        <Section
+          id="effect-stack"
+          title="Effect Stack"
+          defaultOpen
+          headerRight={
+            <span
+              className="text-[9px] font-mono px-1.5 py-0.5 rounded-full"
+              style={{
+                background: "var(--studio-control)",
+                color: "var(--studio-muted)",
+              }}
+            >
+              {scene.effectLayers.length}
+            </span>
+          }
+        >
+          {/* Add layer row */}
+          <div className="flex flex-wrap gap-1 pb-1">
             {ADDABLE_TYPES.map((type) => (
               <button
                 key={type}
                 type="button"
                 onClick={() => addLayer(type)}
-                className="flex items-center gap-1 rounded border border-(--studio-border) bg-(--studio-control) px-2 py-1 text-[10px] font-semibold text-(--studio-text) hover:bg-(--studio-hover)"
+                className="flex items-center gap-1 rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors"
+                style={{
+                  background: "var(--studio-control)",
+                  border: "1px solid var(--studio-border)",
+                  color: "var(--studio-muted)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.color =
+                    "var(--studio-text)";
+                  (e.currentTarget as HTMLElement).style.borderColor =
+                    "var(--studio-accent)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.color =
+                    "var(--studio-muted)";
+                  (e.currentTarget as HTMLElement).style.borderColor =
+                    "var(--studio-border)";
+                }}
               >
-                <Plus size={11} />
-                {type}
+                <Plus size={10} />
+                {TYPE_LABEL[type]}
               </button>
             ))}
           </div>
+
+          {/* Layer rows */}
           <div className="space-y-1">
-            {scene.effectLayers.map((layer, index) => (
-              <div
-                key={layer.id}
-                className={`rounded border px-2 py-2 ${
-                  selectedLayerId === layer.id
-                    ? "border-(--studio-accent) bg-(--studio-active-oft)]"
-                    : "border-(--studio-border) bg-(--studio-control)"
-                }`}
-              >
-                <div className="flex items-center gap-2">
+            {scene.effectLayers.map((layer, index) => {
+              const isSelected = selectedLayerId === layer.id;
+              return (
+                <div
+                  key={layer.id}
+                  className="layer-row"
+                  style={
+                    isSelected
+                      ? {
+                          borderColor: "var(--studio-accent)",
+                          background: "var(--studio-active-soft)",
+                        }
+                      : {}
+                  }
+                  onClick={() => onSelectLayer(layer.id)}
+                >
                   <button
                     type="button"
-                    aria-label={layer.enabled ? "Hide layer" : "Show layer"}
-                    onClick={() =>
-                      patchLayer(layer.id, { enabled: !layer.enabled })
-                    }
-                    className="text-(--studio-muted) hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      patchLayer(layer.id, { enabled: !layer.enabled });
+                    }}
+                    style={{
+                      color: layer.enabled
+                        ? "var(--studio-text)"
+                        : "var(--studio-subtle)",
+                    }}
+                    className="shrink-0"
                   >
                     {layer.enabled ? <Eye size={13} /> : <EyeOff size={13} />}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => onSelectLayer(layer.id)}
-                    className="min-w-0 flex-1 text-left"
-                  >
-                    <span className="block truncate text-[12px] font-semibold text-white">
+
+                  <LayerTypeDot type={layer.type} />
+
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate text-[11px] font-semibold text-white leading-tight">
                       {layer.name}
-                    </span>
-                    <span className="block truncate text-[10px] text-(--studio-muted)">
-                      {layer.type} · {layer.blendMode} ·{" "}
-                      {Math.round(layer.opacity * 100)}%
-                    </span>
+                    </p>
+                    <p
+                      className="text-[9px] font-mono"
+                      style={{ color: "var(--studio-muted)" }}
+                    >
+                      {layer.blendMode} · {Math.round(layer.opacity * 100)}%
+                    </p>
+                  </div>
+
+                  <div className="layer-opacity-bar shrink-0">
+                    <div
+                      className="layer-opacity-bar-fill"
+                      style={{ width: `${Math.round(layer.opacity * 100)}%` }}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveLayer(index, -1);
+                    }}
+                    disabled={index === 0}
+                    style={{ color: "var(--studio-muted)" }}
+                    className="shrink-0 disabled:opacity-20"
+                  >
+                    <ChevronDown
+                      size={12}
+                      style={{ transform: "rotate(180deg)" }}
+                    />
                   </button>
                   <button
                     type="button"
-                    aria-label="Move layer up"
-                    onClick={() => moveLayer(index, -1)}
-                    className="text-(--studio-muted) hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveLayer(index, 1);
+                    }}
+                    disabled={index === scene.effectLayers.length - 1}
+                    style={{ color: "var(--studio-muted)" }}
+                    className="shrink-0 disabled:opacity-20"
                   >
-                    <ChevronUp size={13} />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Move layer down"
-                    onClick={() => moveLayer(index, 1)}
-                    className="text-(--studio-muted) hover:text-white"
-                  >
-                    <ChevronDown size={13} />
+                    <ChevronDown size={12} />
                   </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Section>
 
+        {/* Selected layer params */}
         {selectedLayer && (
           <Section
             id="selected-effect"
-            title={`${selectedLayer.type} Parameters`}
+            title={`${
+              TYPE_LABEL[selectedLayer.type] ?? selectedLayer.type
+            } Parameters`}
+            accent
+            defaultOpen
           >
             <SliderField
-              label="Layer opacity"
+              label="Opacity"
               value={Math.round(selectedLayer.opacity * 100)}
               min={0}
               max={100}
@@ -770,15 +668,17 @@ export function InspectorPanel({
                 patchLayer(selectedLayer.id, { opacity: opacity / 100 })
               }
             />
-            <Row label="Blend mode">
+
+            <label className="block">
+              <FieldLabel label="Blend mode" />
               <select
                 value={selectedLayer.blendMode}
-                onChange={(event) =>
+                onChange={(e) =>
                   patchLayer(selectedLayer.id, {
-                    blendMode: event.target.value as GlobalCompositeOperation,
+                    blendMode: e.target.value as GlobalCompositeOperation,
                   })
                 }
-                className="h-8 w-full rounded border border-(--studio-border) bg-(--studio-control) px-2 text-[12px] text-white focus:border-(--studio-accent) focus:outline-none"
+                className="studio-input"
               >
                 {[
                   "source-over",
@@ -786,20 +686,22 @@ export function InspectorPanel({
                   "multiply",
                   "overlay",
                   "lighter",
-                ].map((modeOption) => (
-                  <option key={modeOption} value={modeOption}>
-                    {modeOption}
+                ].map((m) => (
+                  <option key={m} value={m}>
+                    {m}
                   </option>
                 ))}
               </select>
-            </Row>
+            </label>
+
             {"color" in selectedLayer.params && (
-              <Row label="Effect color">
+              <label className="block">
+                <FieldLabel label="Effect color" />
                 <ColorField
                   value={String(selectedLayer.params.color ?? "#ffffff")}
-                  onChange={(color) => patchSelectedLayerParams({ color })}
+                  onChange={(color) => patchSelectedParams({ color })}
                 />
-              </Row>
+              </label>
             )}
             {"blur" in selectedLayer.params && (
               <SliderField
@@ -808,12 +710,12 @@ export function InspectorPanel({
                 min={0}
                 max={150}
                 unit="px"
-                onChange={(blur) => patchSelectedLayerParams({ blur })}
+                onChange={(blur) => patchSelectedParams({ blur })}
               />
             )}
             {"bloom" in selectedLayer.params && (
               <SliderField
-                label="Bloom Intensity"
+                label="Bloom intensity"
                 value={Math.round(
                   Number(selectedLayer.params.bloom ?? 0) * 100,
                 )}
@@ -821,7 +723,7 @@ export function InspectorPanel({
                 max={100}
                 unit="%"
                 onChange={(bloom) =>
-                  patchSelectedLayerParams({ bloom: bloom / 100 })
+                  patchSelectedParams({ bloom: bloom / 100 })
                 }
               />
             )}
@@ -835,18 +737,22 @@ export function InspectorPanel({
                 max={100}
                 unit="%"
                 onChange={(reveal) =>
-                  patchSelectedLayerParams({ revealProgress: reveal / 100 })
+                  patchSelectedParams({ revealProgress: reveal / 100 })
                 }
               />
             )}
-            <div className="grid grid-cols-3 gap-1">
+
+            <div className="grid grid-cols-3 gap-1.5 pt-1">
               <button
                 type="button"
                 onClick={() => duplicateLayer(selectedLayer)}
-                className="flex items-center justify-center gap-1 rounded bg-(--studio-control) px-2 py-1.5 text-[10px] text-white"
+                className="flex items-center justify-center gap-1 rounded py-1.5 text-[10px] font-semibold"
+                style={{
+                  background: "var(--studio-control)",
+                  color: "var(--studio-text)",
+                }}
               >
-                <Copy size={11} />
-                Copy
+                <Copy size={11} /> Copy
               </button>
               <button
                 type="button"
@@ -855,18 +761,24 @@ export function InspectorPanel({
                     params: defaultParamsForType(selectedLayer.type),
                   })
                 }
-                className="flex items-center justify-center gap-1 rounded bg-(--studio-control) px-2 py-1.5 text-[10px] text-white"
+                className="flex items-center justify-center gap-1 rounded py-1.5 text-[10px] font-semibold"
+                style={{
+                  background: "var(--studio-control)",
+                  color: "var(--studio-text)",
+                }}
               >
-                <RotateCcw size={11} />
-                Reset
+                <RotateCcw size={11} /> Reset
               </button>
               <button
                 type="button"
                 onClick={() => removeLayer(selectedLayer.id)}
-                className="flex items-center justify-center gap-1 rounded bg-red-500/15 px-2 py-1.5 text-[10px] text-red-300"
+                className="flex items-center justify-center gap-1 rounded py-1.5 text-[10px] font-semibold"
+                style={{
+                  background: "rgba(248,113,113,0.1)",
+                  color: "var(--gpu-error)",
+                }}
               >
-                <Trash2 size={11} />
-                Delete
+                <Trash2 size={11} /> Delete
               </button>
             </div>
           </Section>

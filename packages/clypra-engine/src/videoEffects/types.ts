@@ -64,7 +64,7 @@ export type EffectRenderer =
   | "motion_blur"
   | "radial_blur"
   | "zoom_blur"
-  | "motion-blur" // PixiJS variant
+  | "motion-blur"
   | "gaussian-blur"
   | "kawase-blur"
   | "zoom-blur"
@@ -80,9 +80,9 @@ export type EffectRenderer =
   | "scanlines"
   | "crt"
   | "pixelate"
-  | "rgb-split" // PixiJS variant
-  | "film-grain" // PixiJS variant
-  | "glitch-band" // PixiJS variant
+  | "rgb-split"
+  | "film-grain"
+  | "glitch-band"
   | "color-gradient"
   | "color-overlay"
   | "hsl-adjustment"
@@ -106,9 +106,9 @@ export type EffectRenderer =
   | "bulge"
   | "twist"
   | "fisheye"
-  | "shockwave" // PixiJS variant
-  | "bulge-pinch" // PixiJS variant
-  | "reflection" // PixiJS variant
+  | "shockwave"
+  | "bulge-pinch"
+  | "reflection"
 
   // Light effects
   | "flash"
@@ -120,8 +120,8 @@ export type EffectRenderer =
   | "fire"
   | "particles"
   | "dust_particles"
-  | "light-leak" // PixiJS variant
-  | "lens-flare" // PixiJS variant
+  | "light-leak"
+  | "lens-flare"
 
   // Cinematic / other new variants
   | "tilt-shift"
