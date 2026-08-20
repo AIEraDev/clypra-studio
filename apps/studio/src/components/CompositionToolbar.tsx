@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Cpu, Maximize2, ZoomIn, ZoomOut } from "lucide-react";
+import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import type { TextEffectConfig } from "@clypra-studio/engine";
 
 export type CompositionZoomMode = "fit" | "manual";
@@ -43,15 +43,6 @@ export function CompositionToolbar({
       ? "studio-gpu-pill error"
       : "studio-gpu-pill live";
 
-  const gpuLabel =
-    gpuState === "ready"
-      ? "GPU · Ready"
-      : gpuState === "rendering"
-      ? "GPU · Rendering"
-      : gpuState === "error"
-      ? "GPU · Error"
-      : "Native Lab";
-
   return (
     <div className="studio-composition-toolbar">
       <div className="flex shrink-0 items-center gap-2 mr-1">
@@ -73,7 +64,9 @@ export function CompositionToolbar({
                   : "0 0 5px var(--gpu-live)",
             }}
           />
-          <span className="text-[11px] font-semibold text-(--studio-text)">Composition</span>
+          <span className="text-[11px] font-semibold text-(--studio-text)">
+            Composition
+          </span>
         </span>
         <span className="rounded bg-(--studio-control) px-1.5 py-0.5 font-mono text-[10px] text-(--studio-muted)">
           {config.canvasWidth}×{config.canvasHeight}
@@ -99,7 +92,9 @@ export function CompositionToolbar({
         <button
           type="button"
           onClick={() => onZoomModeChange("manual")}
-          className={`canvas-toolbar-btn${zoomMode === "manual" ? " active" : ""}`}
+          className={`canvas-toolbar-btn${
+            zoomMode === "manual" ? " active" : ""
+          }`}
         >
           Manual
         </button>
@@ -139,7 +134,9 @@ export function CompositionToolbar({
         <button
           type="button"
           onClick={() => onBgModeChange("checkerboard")}
-          className={`canvas-toolbar-btn${bgMode === "checkerboard" ? " active" : ""}`}
+          className={`canvas-toolbar-btn${
+            bgMode === "checkerboard" ? " active" : ""
+          }`}
           title="Transparent checkerboard"
         >
           Alpha
@@ -155,20 +152,19 @@ export function CompositionToolbar({
 
       <Divider />
 
-      <span className={gpuPillClass} title={gpuError ?? "Rendering via local Clypra native daemon"}>
-        <span className="studio-gpu-pill-dot" />
-        <Cpu size={9} style={{ flexShrink: 0 }} />
-        {gpuLabel}
-      </span>
-
       {gpuError && (
-        <span className="max-w-[160px] truncate font-mono text-[10px] text-(--gpu-error)" title={gpuError}>
+        <span
+          className="max-w-40 truncate font-mono text-[10px] text-(--gpu-error)"
+          title={gpuError}
+        >
           {gpuError}
         </span>
       )}
 
       <Divider />
-      <div className="ml-auto flex shrink-0 items-center gap-1">{toolbarExtras}</div>
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        {toolbarExtras}
+      </div>
     </div>
   );
 }

@@ -11,11 +11,9 @@ import {
   LayoutGrid,
   MoreHorizontal,
   Download,
-  Copy,
   Undo2,
   Redo2,
   Sparkles,
-  Loader2,
   HelpCircle,
   Video,
   User,
@@ -149,7 +147,6 @@ if (
 }
 
 const CREATOR_SESSION_KEY = "clypra_studio_creator_session";
-
 
 // Admin Settings Tabs Component
 function AdminSettingsTabs() {
@@ -1697,7 +1694,6 @@ export default function App() {
                 nativePreviewError ?? "Clypra native lab daemon · Metal GPU"
               }
             >
-              <span className="studio-gpu-pill-dot" />
               <Cpu size={9} style={{ flexShrink: 0 }} />
               {nativePreviewState === "ready"
                 ? "GPU · Ready"
@@ -1798,16 +1794,25 @@ export default function App() {
               <p className="px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-(--studio-subtle)">
                 Studio navigation
               </p>
-              <a href="/studio" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)">
+              <a
+                href="/studio"
+                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)"
+              >
                 <LayoutGrid size={13} className="text-(--studio-accent)" />
                 All labs
               </a>
-              <a href="/lottie" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)">
+              <a
+                href="/lottie"
+                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)"
+              >
                 <Video size={13} className="text-violet-300" />
                 Text Templates
               </a>
               {isAdmin && (
-                <a href="/studio/admin" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)">
+                <a
+                  href="/studio/admin"
+                  className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)"
+                >
                   <Shield size={13} className="text-blue-300" />
                   Admin Console
                 </a>
@@ -1933,9 +1938,13 @@ export default function App() {
               id="left-controls-panel"
               className={`
               ${isNarrow && mobileActiveTab !== "controls" ? "hidden" : "flex"}
-              ${isMobile ? "w-full" : isTablet ? "w-[300px]" : "w-[360px]"}
+              ${isMobile ? "w-full" : isTablet ? "w-75" : "w-90"}
               flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 select-none
-              ${activeRailItem === "text-effects" ? "overflow-hidden" : "overflow-y-auto"}
+              ${
+                activeRailItem === "text-effects"
+                  ? "overflow-hidden"
+                  : "overflow-y-auto"
+              }
             `}
             >
               {activeRailItem === "text-effects" && (
@@ -2001,27 +2010,26 @@ export default function App() {
               )}
 
               {activeRailItem === "text-effects" && (
-                  <div
-                    className="flex min-h-0 flex-1 flex-col border-b"
-                    style={{ borderColor: "var(--studio-border)" }}
-                  >
-                    <TextEffectCatalogPanel
-                      localPresets={displayPresets}
-                      activePresetId={activePresetId}
-                      selectedCategory={selectedCategory}
-                      sortBy={sortBy}
-                      onSelectedCategoryChange={setSelectedCategory}
-                      onSortByChange={setSortBy}
-                      onApplyPreset={(presetToApply) => {
-                        handleApplyPreset(presetToApply);
-                      }}
-                      onDeletePreset={handleDeletePreset}
-                      onStartFromScratch={handleStartFromScratch}
-                      onSavePreset={() => setShowSavePresetModal(true)}
-                    />
-                  </div>
-                )}
-
+                <div
+                  className="flex min-h-0 flex-1 flex-col border-b"
+                  style={{ borderColor: "var(--studio-border)" }}
+                >
+                  <TextEffectCatalogPanel
+                    localPresets={displayPresets}
+                    activePresetId={activePresetId}
+                    selectedCategory={selectedCategory}
+                    sortBy={sortBy}
+                    onSelectedCategoryChange={setSelectedCategory}
+                    onSortByChange={setSortBy}
+                    onApplyPreset={(presetToApply) => {
+                      handleApplyPreset(presetToApply);
+                    }}
+                    onDeletePreset={handleDeletePreset}
+                    onStartFromScratch={handleStartFromScratch}
+                    onSavePreset={() => setShowSavePresetModal(true)}
+                  />
+                </div>
+              )}
             </aside>
 
             {/* CENTER — CANVAS + TIMELINE
@@ -2075,7 +2083,7 @@ export default function App() {
                   className={`${
                     isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"
                   } ${
-                    isMobile ? "w-full" : "w-[344px]"
+                    isMobile ? "w-full" : "w-86"
                   } shrink-0 border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted) flex-col`}
                 >
                   Loading panel...
@@ -2085,7 +2093,7 @@ export default function App() {
               <div
                 className={`${
                   isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"
-                } ${isMobile ? "w-full" : "w-[344px]"} shrink-0`}
+                } ${isMobile ? "w-full" : "w-86"} shrink-0`}
               >
                 <InspectorPanel
                   config={config}
@@ -2129,14 +2137,14 @@ export default function App() {
 
         {showExportModal && (
           <div
-            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-80 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
             role="dialog"
             aria-modal="true"
             aria-label="Export text effect"
             onMouseDown={() => setShowExportModal(false)}
           >
             <div
-              className="flex max-h-[min(88vh,900px)] w-full max-w-[760px] flex-col overflow-hidden rounded-xl border border-(--studio-border) bg-(--studio-panel) shadow-2xl"
+              className="flex max-h-[min(88vh,900px)] w-full max-w-190 flex-col overflow-hidden rounded-xl border border-(--studio-border) bg-(--studio-panel) shadow-2xl"
               onMouseDown={(event) => event.stopPropagation()}
             >
               <div className="flex shrink-0 items-center justify-between border-b border-(--studio-border) px-4 py-3">

@@ -886,7 +886,7 @@ pre {
   align-items: center;
   gap: 5px;
   padding: 3px 8px 3px 6px;
-  border-radius: 20px;
+  border-radius: 5px;
   font-size: 10px;
   font-weight: 600;
   font-family: "JetBrains Mono", monospace;
@@ -1369,7 +1369,7 @@ pre {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border-radius: 20px;
+  border-radius: 5px;
   padding: 2px 8px;
   font-size: 9px;
   font-weight: 700;
