@@ -24,98 +24,122 @@ type StudioDestination = {
   status?: string;
 };
 
-const destinations: StudioDestination[] = [
+type StudioDestinationGroup = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  destinations: StudioDestination[];
+};
+
+const destinationGroups: StudioDestinationGroup[] = [
   {
-    href: "/studio/text-effects",
-    label: "Text Effects Lab",
-    description:
-      "Design native text styles, animation layers, and editor-ready effects.",
-    icon: Type,
-    accent: "#7c6fff",
-    status: "Native ready",
+    eyebrow: "Core production labs",
+    title: "Build what the editor renders",
+    description: "Author the primary visual systems that power a Clypra project.",
+    destinations: [
+      {
+        href: "/studio/text-effects",
+        label: "Text Effects Lab",
+        description: "Design native text styles, animation layers, and editor-ready effects.",
+        icon: Type,
+        accent: "#7c6fff",
+        status: "Native ready",
+      },
+      {
+        href: "/studio/video-lab",
+        label: "Video Effects Lab",
+        description: "Build and publish single-input video effects on the native runtime.",
+        icon: Video,
+        accent: "#38bdf8",
+      },
+      {
+        href: "/studio/transition-lab",
+        label: "Transition Lab",
+        description: "Author dual-input transitions with native preview and export contracts.",
+        icon: WandSparkles,
+        accent: "#fb7185",
+      },
+    ],
   },
   {
-    href: "/studio/video-lab",
-    label: "Video Effects Lab",
-    description:
-      "Build and publish single-input video effects on the native runtime.",
-    icon: Video,
-    accent: "#38bdf8",
+    eyebrow: "Creative asset workspaces",
+    title: "Shape the supporting library",
+    description: "Create reusable looks, sounds, layers, and visual components for projects.",
+    destinations: [
+      {
+        href: "/studio/filter-lab",
+        label: "Filter Lab",
+        description: "Create reusable looks and color treatments for Clypra projects.",
+        icon: Palette,
+        accent: "#34d399",
+      },
+      {
+        href: "/studio/color-grading",
+        label: "Color Grading Lab",
+        description: "Design native color adjustments and reusable grading looks.",
+        icon: Palette,
+        accent: "#2dd4bf",
+      },
+      {
+        href: "/studio/audio",
+        label: "Audio Library",
+        description: "Manage sounds and publish audio assets used by the editor.",
+        icon: Music2,
+        accent: "#fbbf24",
+      },
+      {
+        href: "/studio/overlays",
+        label: "Overlay Workspace",
+        description: "Compose native overlays, layers, and reusable visual components.",
+        icon: Layers,
+        accent: "#c084fc",
+      },
+      {
+        href: "/studio/stickers",
+        label: "Sticker Lab",
+        description: "Prepare animated sticker assets with native validation and publishing.",
+        icon: Sticker,
+        accent: "#f472b6",
+      },
+      {
+        href: "/studio/body-lab",
+        label: "Body Lab",
+        description: "Author mask-based body effects against the native feature contract.",
+        icon: Activity,
+        accent: "#fb7185",
+      },
+    ],
   },
   {
-    href: "/studio/transition-lab",
-    label: "Transition Lab",
-    description:
-      "Author dual-input transitions with native preview and export contracts.",
-    icon: WandSparkles,
-    accent: "#fb7185",
-  },
-  {
-    href: "/studio/filter-lab",
-    label: "Filter Lab",
-    description:
-      "Create reusable looks and color treatments for Clypra projects.",
-    icon: Palette,
-    accent: "#34d399",
-  },
-  {
-    href: "/studio/audio",
-    label: "Audio Library",
-    description: "Manage sounds and publish audio assets used by the editor.",
-    icon: Music2,
-    accent: "#fbbf24",
-  },
-  {
-    href: "/studio/overlays",
-    label: "Overlay Workspace",
-    description:
-      "Compose native overlays, layers, and reusable visual components.",
-    icon: Layers,
-    accent: "#c084fc",
-  },
-  {
-    href: "/studio/stickers",
-    label: "Sticker Lab",
-    description: "Prepare animated sticker assets with native validation and publishing.",
-    icon: Sticker,
-    accent: "#f472b6",
-  },
-  {
-    href: "/studio/body-lab",
-    label: "Body Lab",
-    description: "Author mask-based body effects against the native feature contract.",
-    icon: Activity,
-    accent: "#fb7185",
-  },
-  {
-    href: "/studio/color-grading",
-    label: "Color Grading Lab",
-    description: "Design native color adjustments and reusable grading looks.",
-    icon: Palette,
-    accent: "#2dd4bf",
-  },
-  {
-    href: "/studio/effects",
-    label: "Effect Graph Sandbox",
-    description: "Inspect and validate effect graph execution on the native runtime.",
-    icon: Beaker,
-    accent: "#a78bfa",
-  },
-  {
-    href: "/lottie",
-    label: "Text Templates",
-    description: "Design reusable animated templates for the editor template library.",
-    icon: FileCode,
-    accent: "#818cf8",
-  },
-  {
-    href: "/studio/admin",
-    label: "Admin Console",
-    description: "Review submissions and manage Studio infrastructure as an administrator.",
-    icon: Shield,
-    accent: "#60a5fa",
+    eyebrow: "Advanced authoring",
+    title: "Validate and package for release",
+    description: "Use specialist tools to inspect runtime behavior and prepare reusable content.",
+    destinations: [
+      {
+        href: "/studio/effects",
+        label: "Effect Graph Sandbox",
+        description: "Inspect and validate effect graph execution on the native runtime.",
+        icon: Beaker,
+        accent: "#a78bfa",
+      },
+      {
+        href: "/lottie",
+        label: "Text Templates",
+        description: "Design reusable animated templates for the editor template library.",
+        icon: FileCode,
+        accent: "#818cf8",
+      },
+    ],
   },
 ];
+
+const adminDestination: StudioDestination = {
+  href: "/studio/admin",
+  label: "Admin Console",
+  description: "Review submissions and manage Studio infrastructure as an administrator.",
+  icon: Shield,
+  accent: "#60a5fa",
+};
 
 function DestinationCard({ destination }: { destination: StudioDestination }) {
   const Icon = destination.icon;
@@ -162,7 +186,7 @@ function DestinationCard({ destination }: { destination: StudioDestination }) {
 export function StudioHub() {
   return (
     <div
-      className="min-h-screen overflow-y-auto"
+      className="h-[100dvh] min-h-screen overflow-y-auto overscroll-contain"
       style={{ background: "var(--studio-bg)", color: "var(--studio-text)" }}
     >
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-10">
@@ -224,14 +248,41 @@ export function StudioHub() {
           </span>
         </div>
 
-        <section
-          className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3"
-          aria-label="Studio destinations"
-        >
-          {destinations.map((destination) => (
-            <DestinationCard key={destination.href} destination={destination} />
+        <div className="mt-8 space-y-12" aria-label="Studio destinations">
+          {destinationGroups.map((group) => (
+            <section key={group.title} aria-labelledby={`${group.title}-heading`}>
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-(--studio-border) pb-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--studio-accent)">
+                    {group.eyebrow}
+                  </p>
+                  <h3 id={`${group.title}-heading`} className="mt-1 text-lg font-semibold tracking-tight text-white">
+                    {group.title}
+                  </h3>
+                </div>
+                <p className="max-w-xl text-xs leading-5 text-(--studio-muted)">{group.description}</p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {group.destinations.map((destination) => (
+                  <DestinationCard key={destination.href} destination={destination} />
+                ))}
+              </div>
+            </section>
           ))}
-        </section>
+
+          <section aria-labelledby="admin-console-heading">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-sky-400/15 pb-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-300/80">Restricted area</p>
+                <h3 id="admin-console-heading" className="mt-1 text-lg font-semibold tracking-tight text-white">Administration</h3>
+              </div>
+              <p className="max-w-xl text-xs leading-5 text-(--studio-muted)">Operational tools are kept separate from everyday creative workspaces.</p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <DestinationCard destination={adminDestination} />
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   );

@@ -508,8 +508,9 @@ export default function App() {
 
         if (session.ui) {
           if (session.ui.uiMode) setUiMode(session.ui.uiMode);
-          if (session.ui.activeRailItem)
-            setActiveRailItem(session.ui.activeRailItem);
+          // The active rail is route-owned. Restoring it from the editor
+          // session would overwrite direct URLs such as /studio/admin with
+          // the last creative workspace, usually /studio/text-effects.
           if (session.ui.textSubTab === "export") setTextSubTab("export");
           else if (session.ui.textSubTab) setTextSubTab("templates");
           if (session.ui.activeTab) setActiveTab(session.ui.activeTab);

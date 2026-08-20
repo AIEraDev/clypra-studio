@@ -1,7 +1,7 @@
 {
   "name": "Clypra Studio",
   "short_name": "Clypra Studio",
-  "description": "AI-assisted creative studio for designing and exporting Clypra-ready Canvas text effects.",
+  "description": "Native creative labs for designing and publishing editor-ready Clypra effects, audio, overlays, and templates.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -25,7 +25,7 @@
     {
       "name": "Open Clypra Studio",
       "short_name": "Studio",
-      "description": "Launch the AI text effects creative editor.",
+      "description": "Open Clypra Studio's native creative labs.",
       "url": "/studio",
       "icons": [
         {

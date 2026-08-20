@@ -29,32 +29,51 @@ export function RouteShell({ children, metadata, lockScroll = true }: { children
   }, [metadata]);
 
   useEffect(() => {
-    if (!lockScroll) return;
-
     window.scrollTo(0, 0);
     const previous = {
       bodyOverflow: document.body.style.overflow,
       bodyOverflowX: document.body.style.overflowX,
       bodyOverflowY: document.body.style.overflowY,
+      bodyOverscrollBehaviorY: document.body.style.overscrollBehaviorY,
       documentOverflow: document.documentElement.style.overflow,
       documentOverflowX: document.documentElement.style.overflowX,
       documentOverflowY: document.documentElement.style.overflowY,
+      documentScrollBehavior: document.documentElement.style.scrollBehavior,
+      documentScrollbarGutter: document.documentElement.style.scrollbarGutter,
     };
 
-    document.body.style.overflow = "hidden";
-    document.body.style.overflowX = "hidden";
-    document.body.style.overflowY = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    document.documentElement.style.overflowX = "hidden";
-    document.documentElement.style.overflowY = "hidden";
+    if (lockScroll) {
+      document.body.style.overflow = "hidden";
+      document.body.style.overflowX = "hidden";
+      document.body.style.overflowY = "hidden";
+      document.body.style.overscrollBehaviorY = "none";
+      document.documentElement.style.overflow = "hidden";
+      document.documentElement.style.overflowX = "hidden";
+      document.documentElement.style.overflowY = "hidden";
+    } else {
+      // Public pages use the document as their scroll container. Explicitly
+      // restore it because the app routes lock html/body for editor labs.
+      document.body.style.overflow = "visible";
+      document.body.style.overflowX = "hidden";
+      document.body.style.overflowY = "visible";
+      document.body.style.overscrollBehaviorY = "auto";
+      document.documentElement.style.overflow = "visible";
+      document.documentElement.style.overflowX = "hidden";
+      document.documentElement.style.overflowY = "visible";
+      document.documentElement.style.scrollBehavior = "smooth";
+      document.documentElement.style.scrollbarGutter = "stable";
+    }
 
     return () => {
       document.body.style.overflow = previous.bodyOverflow;
       document.body.style.overflowX = previous.bodyOverflowX;
       document.body.style.overflowY = previous.bodyOverflowY;
+      document.body.style.overscrollBehaviorY = previous.bodyOverscrollBehaviorY;
       document.documentElement.style.overflow = previous.documentOverflow;
       document.documentElement.style.overflowX = previous.documentOverflowX;
       document.documentElement.style.overflowY = previous.documentOverflowY;
+      document.documentElement.style.scrollBehavior = previous.documentScrollBehavior;
+      document.documentElement.style.scrollbarGutter = previous.documentScrollbarGutter;
     };
   }, [lockScroll]);
 

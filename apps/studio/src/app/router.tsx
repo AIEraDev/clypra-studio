@@ -53,8 +53,8 @@ const METADATA = {
   showcase: {
     canonical: "https://clypra.abdulkabirmusa.com/",
     description:
-      "A modern, high-performance video editor engineered using Tauri, React, and Rust, with a professional NLE timeline, hardware acceleration, visual asset pools, and AI-assisted Clypra Studio text effects.",
-    title: "Clypra - A Premium Video Editor",
+      "Clypra is a native desktop video editor for macOS, Windows, and Linux with fast playback, professional timelines, and editor-ready creative assets.",
+    title: "Clypra — Native Video Editor for Desktop",
   },
   studio: {
     canonical: "https://clypra.abdulkabirmusa.com/studio",

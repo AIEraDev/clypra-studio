@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Download,
   ArrowRight,
@@ -20,6 +21,7 @@ import {
   Mail,
   Loader2,
 } from "lucide-react";
+import { ClypraLogo } from "../ClypraLogo";
 
 // ── GitHub Release types ──────────────────────────────────────────────────────
 interface GithubAsset {
@@ -175,7 +177,7 @@ export const WebShowcase: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#030305] text-[#f4f4f5] flex flex-col font-sans selection:bg-[#6c63ff]/30 selection:text-white overflow-x-hidden relative">
+    <div className="landing-page relative flex min-h-[100dvh] w-full flex-col overflow-x-clip bg-[#030305] font-sans text-[#f4f4f5] selection:bg-[#6c63ff]/30 selection:text-white">
       {/* ── Mind-Blowing Background CSS & Animations ────────────── */}
       <style>{`
         /* Nebula drift animations */
@@ -427,15 +429,14 @@ export const WebShowcase: React.FC = () => {
       </div>
 
       {/* ── Navigation / Header ────────────────────────────────── */}
-      <header className="relative z-10 w-full border-b border-white/3 backdrop-blur-md bg-[#030305]/40 top-0">
+      <header className="sticky top-0 z-30 w-full border-b border-white/3 bg-[#030305]/75 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 group">
             <div className="w-10 h-10 flex items-center justify-center relative">
               <div className="absolute inset-0 bg-[#6c63ff]/20 blur-md rounded-full group-hover:scale-125 transition-transform duration-500 animate-pulse"></div>
-              <img
-                src="/clypra.svg"
-                alt="Clypra Logo"
-                className="w-14 h-14 object-contain relative z-10 group-hover:rotate-6 transition-transform duration-500"
+              <ClypraLogo
+                size={52}
+                className="relative z-10 transition-transform duration-500 group-hover:rotate-6"
               />
             </div>
             <div>
@@ -447,11 +448,23 @@ export const WebShowcase: React.FC = () => {
 
           <div className="flex items-center gap-6">
             <a
-              href="/studio"
+              href="#platform"
+              className="hidden md:inline-flex text-xs text-[#a1a1aa] hover:text-white transition-colors"
+            >
+              Platform
+            </a>
+            <a
+              href="#download"
+              className="hidden md:inline-flex text-xs text-[#a1a1aa] hover:text-white transition-colors"
+            >
+              Downloads
+            </a>
+            <Link
+              to="/studio"
               className="h-9 rounded-full border border-[#6c63ff]/30 bg-[#6c63ff]/15 px-4 text-xs font-semibold text-white flex items-center gap-2 hover:bg-[#6c63ff]/25 transition-all duration-300 shadow-[0_0_18px_rgba(108,99,255,0.16)]"
             >
               Open Studio
-            </a>
+            </Link>
             <a
               href="https://github.com/AIEraDev/clypra"
               target="_blank"
@@ -467,7 +480,7 @@ export const WebShowcase: React.FC = () => {
       </header>
 
       {/* ── Main Content Area ────────────────────────────────────── */}
-      <main className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-6 py-12 md:py-24 flex flex-col gap-28">
+      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col gap-28 px-6 py-12 pb-28 md:py-24 md:pb-36">
         {/* ── Hero Section ────────────────────────────────────────── */}
         <section
           className="text-center max-w-4xl mx-auto flex flex-col gap-8 animate-fade-up"
@@ -485,19 +498,18 @@ export const WebShowcase: React.FC = () => {
 
           {/* Heading */}
           <h2 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.08] font-outfit text-white">
-            A Premium
+            The native
             <br />
             <span className="bg-linear-to-r from-[#6c63ff] via-[#8b84ff] to-[#a9a4ff] bg-clip-text text-transparent shimmer-bg">
-              Video Editor.
+              video editor.
             </span>
           </h2>
 
           {/* Subheading */}
           <p className="text-sm sm:text-base md:text-lg text-[#a1a1aa] leading-relaxed max-w-2xl mx-auto font-sans">
-            Clypra is a modern, high-performance video editor engineered using
-            Tauri, React, and Rust. Experience a professional desktop-class NLE
-            timeline, hardware-accelerated rendering, and visual asset pools
-            directly on your machine—with mobile versions coming soon.
+            Build locally on a professional desktop NLE with a native render
+            pipeline, hardware-accelerated playback, and a Studio that ships
+            editor-compatible effects, sounds, overlays, and templates.
           </p>
 
           {/* Quick Platform Badges */}
@@ -532,13 +544,13 @@ export const WebShowcase: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center gap-3 mt-2 items-center">
-            <a
-              href="/studio"
+            <Link
+              to="/studio"
               className="h-12 rounded-xl bg-[#6c63ff] px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:bg-[#7b73ff] shadow-[0_10px_35px_rgba(108,99,255,0.28)]"
             >
               Launch Clypra Studio
               <ArrowRight className="w-4 h-4" />
-            </a>
+            </Link>
             <div className="flex flex-col gap-1.5 items-center">
               <button
                 onClick={handleDownload}
@@ -605,8 +617,43 @@ export const WebShowcase: React.FC = () => {
           </div>
         </section>
 
+        {/* ── Native-first workflow ──────────────────────────────── */}
+        <section className="grid grid-cols-1 gap-3 md:grid-cols-3" aria-label="Native-first workflow">
+          {[
+            {
+              icon: Monitor,
+              title: "Create on your machine",
+              text: "Your projects, media, and previews stay close to the editor.",
+              tone: "text-[#8b84ff] bg-[#6c63ff]/10 border-[#6c63ff]/20",
+            },
+            {
+              icon: Terminal,
+              title: "Author against native contracts",
+              text: "Design effects in Studio and validate the same capabilities the editor consumes.",
+              tone: "text-cyan-300 bg-cyan-500/10 border-cyan-500/20",
+            },
+            {
+              icon: Shield,
+              title: "Export with confidence",
+              text: "Keep rendering, publishing, and delivery paths explicit and testable.",
+              tone: "text-emerald-300 bg-emerald-500/10 border-emerald-500/20",
+            },
+          ].map(({ icon: Icon, title, text, tone }) => (
+            <div key={title} className="glass-panel flex items-start gap-3 rounded-2xl p-5">
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${tone}`}>
+                <Icon className="h-4 w-4" />
+              </span>
+              <div>
+                <h3 className="text-sm font-semibold text-white">{title}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-[#a1a1aa]">{text}</p>
+              </div>
+            </div>
+          ))}
+        </section>
+
         {/* ── Native Downloads Section ───────────────────────────── */}
         <section
+          id="download"
           className="flex flex-col gap-10 animate-fade-up"
           style={{ animationDelay: "200ms" }}
         >
@@ -1150,6 +1197,7 @@ export const WebShowcase: React.FC = () => {
 
         {/* ── Key Editor Features ────────────────────────────────── */}
         <section
+          id="platform"
           className="flex flex-col gap-12 animate-fade-up"
           style={{ animationDelay: "400ms" }}
         >
@@ -1190,12 +1238,11 @@ export const WebShowcase: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-bold text-white text-base">
-                  High-Performance Frame Renderer
+              Native Frame Pipeline
                 </h4>
                 <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
-                  A canvas-based, real-time render surface that accurately
-                  updates, scales, and renders visual clip layers using custom
-                  DPR scaling configurations.
+                  A native-first render surface that keeps playback, effects,
+                  media layers, and export on an explicit capability contract.
                 </p>
               </div>
             </div>
@@ -1208,12 +1255,11 @@ export const WebShowcase: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-bold text-white text-base">
-                  Preset-Driven FFmpeg Exporters
+              Editor-ready export
                 </h4>
                 <p className="text-xs text-[#a1a1aa] leading-relaxed mt-2">
-                  Redesigned premium video export flow featuring custom aspect
-                  presets (YouTube, TikTok, Instagram, Custom), project
-                  renaming, and animated SVG export progress circles.
+                  Deliver projects through predictable native export paths with
+                  platform-aware presets and clear render diagnostics.
                 </p>
               </div>
             </div>
@@ -1230,9 +1276,8 @@ export const WebShowcase: React.FC = () => {
               Clypra Studio - Effect Development Platform
             </h3>
             <p className="text-xs sm:text-sm text-[#a1a1aa] max-w-2xl mx-auto">
-              Where every visual feature is designed, tested, benchmarked,
-              validated, and published before reaching the editor. Three
-              specialized labs, one unified runtime architecture.
+              Design, test, validate, and publish editor-compatible assets in
+              dedicated labs backed by one shared native runtime architecture.
             </p>
           </div>
 
@@ -1329,13 +1374,13 @@ export const WebShowcase: React.FC = () => {
             </div>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center relative z-10">
-              <a
-                href="/studio"
+              <Link
+                to="/studio"
                 className="h-11 rounded-xl bg-[#6c63ff]/90 hover:bg-[#6c63ff] px-6 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_8px_30px_rgba(108,99,255,0.3)]"
               >
                 <Sparkles className="w-4 h-4" />
                 Launch Studio
-              </a>
+              </Link>
               <a
                 href="https://github.com/AIEraDev/clypra-studio"
                 target="_blank"
