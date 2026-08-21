@@ -224,14 +224,15 @@ export function AuthRoute({
 
     const fallbackUser = getUserFromToken(sessionToken);
     const refreshWindowMs = 60 * 60 * 1000;
+    const MIN_REFRESH_DELAY_MS = 15 * 60 * 1000; // Never refresh more often than every 15 minutes
 
     const scheduleRefresh = (token: string, retryDelayMs?: number) => {
       const expiry = getTokenExpiry(token);
       const delay =
         retryDelayMs ??
         (expiry
-          ? Math.max(30_000, expiry - Date.now() - refreshWindowMs)
-          : 15 * 60 * 1000);
+          ? Math.max(MIN_REFRESH_DELAY_MS, expiry - Date.now() - refreshWindowMs)
+          : MIN_REFRESH_DELAY_MS);
 
       refreshTimer = window.setTimeout(async () => {
         const outcome = await refreshAuthSession();
@@ -254,7 +255,7 @@ export function AuthRoute({
         }
 
         // Preserve the session through temporary API/network failures.
-        scheduleRefresh(currentToken, 5 * 60 * 1000);
+        scheduleRefresh(currentToken, MIN_REFRESH_DELAY_MS);
       }, delay);
     };
 
@@ -267,16 +268,21 @@ export function AuthRoute({
 
     scheduleRefresh(sessionToken);
 
+    let lastResumeRefresh = 0;
     const refreshOnResume = async () => {
       if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastResumeRefresh < MIN_REFRESH_DELAY_MS) return;
+
       const currentToken = getStoredAuthToken();
       const expiry = currentToken ? getTokenExpiry(currentToken) : null;
       if (
         !currentToken ||
-        (expiry !== null && expiry > Date.now() + refreshWindowMs)
+        (expiry !== null && expiry > now + refreshWindowMs)
       )
         return;
 
+      lastResumeRefresh = now;
       const outcome = await refreshAuthSession();
       if (cancelled) return;
       if (outcome.ok) {

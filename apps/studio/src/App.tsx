@@ -102,13 +102,23 @@ if (
 
     const response = await originalFetch(input, modifiedInit);
     const isAuthEndpoint = urlStr.includes("/auth/");
+    const isAlreadyRetried =
+      init?.headers &&
+      new Headers(init.headers).has("X-Clypra-Auth-Retried");
 
-    if (response.status === 401 && isClypraApi && !isAuthEndpoint && token) {
+    if (
+      response.status === 401 &&
+      isClypraApi &&
+      !isAuthEndpoint &&
+      !isAlreadyRetried &&
+      token
+    ) {
       const outcome = await refreshAuthSession(originalFetch, token);
       if (outcome.ok) {
         const retryInit = init ? { ...init } : {};
         const retryHeaders = new Headers(retryInit.headers || {});
         retryHeaders.set("Authorization", `Bearer ${outcome.token}`);
+        retryHeaders.set("X-Clypra-Auth-Retried", "1");
         retryInit.headers = retryHeaders;
         return originalFetch(input, retryInit);
       }

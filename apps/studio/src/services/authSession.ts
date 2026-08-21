@@ -68,16 +68,30 @@ export function getUserFromToken(token: string): SessionUser | null {
   };
 }
 
+let lastRefreshAttempt = 0;
+const MIN_REFRESH_INTERVAL_MS = 15_000; // Throttle to at most once every 15 seconds
+
 /**
  * Refresh the current session once, shared by the proactive timer and the
- * fetch retry path. The in-flight lock prevents concurrent refresh storms.
+ * fetch retry path. The in-flight lock prevents concurrent refresh storms,
+ * and the cooldown throttles rapid repeated calls.
  */
-export function refreshAuthSession(fetchImpl?: typeof fetch, tokenOverride?: string): Promise<RefreshOutcome> {
+export function refreshAuthSession(
+  fetchImpl?: typeof fetch,
+  tokenOverride?: string,
+): Promise<RefreshOutcome> {
   if (refreshInFlight) return refreshInFlight;
 
   const token = tokenOverride || getStoredAuthToken();
   if (!token) return Promise.resolve({ ok: false, definitive: true });
 
+  const now = Date.now();
+  if (now - lastRefreshAttempt < MIN_REFRESH_INTERVAL_MS) {
+    // If a refresh was attempted very recently, return the existing valid token without re-hitting the endpoint
+    return Promise.resolve({ ok: true, token, user: getUserFromToken(token) ?? undefined });
+  }
+
+  lastRefreshAttempt = now;
   const requestFetch = fetchImpl || globalThis.fetch.bind(globalThis);
   refreshInFlight = (async (): Promise<RefreshOutcome> => {
     try {

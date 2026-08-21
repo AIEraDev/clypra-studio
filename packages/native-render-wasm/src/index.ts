@@ -153,7 +153,7 @@ async function getRenderer(): Promise<WasmRenderer> {
   initPromise = (async () => {
     try {
       if (!wasmInitialised) {
-        await init(configuredWasmUrl);
+        await init({ module_or_path: configuredWasmUrl });
         wasmInitialised = true;
       }
       renderer = await create_renderer();
