@@ -42,7 +42,7 @@ import {
   performDeepResearch,
 } from "./services/geminiService";
 import { getStudioApiBaseUrl } from "./services/apiConfig";
-import { getNativeLabClient } from "./services/nativeLabClient";
+import { getNativeRenderClient } from "./services/nativeRenderClient";
 
 import { PublishEffectModal } from "./components/PublishEffectModal";
 import type { EffectApiCategory } from "./components/PublishEffectModal";
@@ -886,7 +886,7 @@ export default function App() {
       if (controller.signal.aborted) return;
 
       const pixels = offCtx.getImageData(0, 0, w, h);
-      const result = await getNativeLabClient().renderFrame(
+      const result = await getNativeRenderClient().renderFrame(
         {
           contractVersion: 1,
           requestId: `studio-text:${generation}`,

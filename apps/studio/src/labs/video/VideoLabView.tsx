@@ -25,13 +25,13 @@ import {
   type EffectMetadata,
 } from "@clypra-studio/engine";
 import type { EffectParameters } from "@clypra-studio/engine";
-import type { NativeLabFrameRequest } from "../../services/nativeLabClient";
+import type { NativeLabFrameRequest } from "../../services/nativeRenderClient";
 import {
   createDefaultProviderManager,
   FeatureMapType,
   type FeatureProviderManager,
 } from "@clypra-studio/feature-providers";
-import { getNativeLabClient } from "../../services/nativeLabClient";
+import { getNativeRenderClient } from "../../services/nativeRenderClient";
 
 // ─── Component Imports ───────────────────────────────────────────────────────
 
@@ -474,7 +474,7 @@ export function VideoLabView() {
   // unsupported effects or when the local native daemon is not running.
   useEffect(() => {
     let cancelled = false;
-    getNativeLabClient()
+    getNativeRenderClient()
       .handshake()
       .then((handshake) => {
         if (cancelled) return;
@@ -1070,7 +1070,7 @@ export function VideoLabView() {
       };
 
       nativeRequestInFlightRef.current = true;
-      const result = await getNativeLabClient().renderFrame(request);
+      const result = await getNativeRenderClient().renderFrame(request);
       if (disposed) return;
       const bitmap = await createImageBitmap(result.image);
       ctx.clearRect(0, 0, canvas.width, canvas.height);

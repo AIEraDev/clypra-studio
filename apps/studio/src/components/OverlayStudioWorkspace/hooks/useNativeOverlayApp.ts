@@ -4,8 +4,8 @@ import {
   type EvaluatedNode,
   type OverlayDocument,
 } from "@clypra-studio/engine";
-import type { NativeLabFrameRequest } from "../../../services/nativeLabClient";
-import { getNativeLabClient } from "../../../services/nativeLabClient";
+import type { NativeLabFrameRequest } from "../../../services/nativeRenderClient";
+import { getNativeRenderClient } from "../../../services/nativeRenderClient";
 
 type NativeOverlayState = "probing" | "native" | "fallback";
 
@@ -224,7 +224,7 @@ export function useNativeOverlayApp(
 
   useEffect(() => {
     let cancelled = false;
-    getNativeLabClient()
+    getNativeRenderClient()
       .handshake()
       .then((handshake) => {
         if (cancelled) return;
@@ -308,7 +308,7 @@ export function useNativeOverlayApp(
             renderGraphVersion: 1,
           };
           inFlightRef.current = true;
-          void getNativeLabClient()
+          void getNativeRenderClient()
             .renderFrame(request)
             .then(async (result) => {
               if (disposed) return;

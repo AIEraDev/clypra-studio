@@ -10,7 +10,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { initializeFontSystem, ALL_TRANSITIONS } from "@clypra-studio/engine";
-import type { NativeLabFrameRequest } from "../../services/nativeLabClient";
+import type { NativeLabFrameRequest } from "../../services/nativeRenderClient";
 
 import { TopNavBar } from "./components/TopNavBar";
 import { SidebarLeft } from "./components/SidebarLeft";
@@ -18,7 +18,7 @@ import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
 import { PublishTransitionModal } from "../../components/PublishTransitionModal";
 
-import { getNativeLabClient } from "../../services/nativeLabClient";
+import { getNativeRenderClient } from "../../services/nativeRenderClient";
 
 const DEFAULT_CLIP_A = "";
 const DEFAULT_CLIP_B = "";
@@ -227,7 +227,7 @@ export function TransitionLabView() {
 
   useEffect(() => {
     let cancelled = false;
-    getNativeLabClient()
+    getNativeRenderClient()
       .handshake()
       .then((handshake) => {
         if (cancelled) return;
@@ -716,7 +716,7 @@ export function TransitionLabView() {
         renderGraphVersion: 1,
       };
       nativeRequestInFlightRef.current = true;
-      const result = await getNativeLabClient().renderFrame(request);
+      const result = await getNativeRenderClient().renderFrame(request);
       if (disposed) return;
       const bitmap = await createImageBitmap(result.image);
       const ctx = canvas.getContext("2d");

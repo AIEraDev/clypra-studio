@@ -5,8 +5,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { NativeLabFrameRequest } from "../../services/nativeLabClient";
-import { getNativeLabClient } from "../../services/nativeLabClient";
+import type { NativeLabFrameRequest } from "../../services/nativeRenderClient";
+import { getNativeRenderClient } from "../../services/nativeRenderClient";
 import { PRESET_FILTERS } from "../../components/effects/filter/FilterPresets";
 
 const WIDTH = 960;
@@ -178,7 +178,7 @@ export function NativeFilterLabView() {
         },
         renderGraphVersion: 1,
       };
-      const result = await getNativeLabClient().renderFrame(request);
+      const result = await getNativeRenderClient().renderFrame(request);
       if (generation !== generationRef.current) return;
       const bitmap = await createImageBitmap(result.image);
       outputContext.clearRect(0, 0, WIDTH, HEIGHT);
