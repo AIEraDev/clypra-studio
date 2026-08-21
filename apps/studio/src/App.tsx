@@ -247,6 +247,38 @@ export default function App() {
     }
   }, [token]);
 
+  // Probe native GPU WebAssembly compositor and log status to console
+  useEffect(() => {
+    let cancelled = false;
+    getNativeRenderClient()
+      .handshake()
+      .then((handshake) => {
+        if (cancelled) return;
+        if (handshake.gpu.available && handshake.gpu.state === "ready") {
+          console.log(
+            `%c[Clypra GPU]%c Text Studio is fully powered by GPU (wgpu WebAssembly core)\n• Adapter: ${
+              handshake.gpu.adapterName || "Default WebGPU Adapter"
+            }\n• Backend: ${handshake.gpu.backend || "wgpu"}\n• Fallback: None (Native GPU only)`,
+            "color: #10b981; font-weight: bold;",
+            "color: #a78bfa; font-weight: 500;",
+          );
+        } else {
+          console.warn(
+            `[Clypra GPU] GPU initialization failed: ${
+              handshake.gpu.failureReason || "unknown reason"
+            }`,
+          );
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("[Clypra GPU] Failed to initialize WebAssembly compositor:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Authenticate the session on mount without logging the user out for a transient
   // API/network failure. Only a confirmed expiry or refresh failure clears it.
   useEffect(() => {
