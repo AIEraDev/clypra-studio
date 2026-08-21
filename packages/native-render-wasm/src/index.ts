@@ -9,12 +9,25 @@
  * probeNativeLab() with the same return shapes as the HTTP client.
  */
 
-// Vite resolves ?url imports as a static URL string for the .wasm asset.
-// The WASM module is loaded once, lazily, and the renderer is cached.
+// In-browser WebAssembly compositor initialized via CDN URL.
 import init, {
   create_renderer,
   type WasmRenderer,
-} from "../wasm-pkg/clypra_render_wasm.js";
+} from "./generated/clypra_render_wasm.js";
+
+export const DEFAULT_CLYPRA_WASM_URL =
+  "https://clypra-worker-api.abdulkabirmusa.com/media/wasm/clypra_render_wasm_bg.wasm";
+
+let configuredWasmUrl = DEFAULT_CLYPRA_WASM_URL;
+
+/**
+ * Optionally configure the remote or local WASM binary URL.
+ */
+export function configureWasmRenderer(options: { wasmUrl?: string }) {
+  if (options.wasmUrl) {
+    configuredWasmUrl = options.wasmUrl;
+  }
+}
 
 // ── Types (mirrored from @clypra-studio/native-lab-client) ─────────────────
 // Re-exported here so callers can stop importing from native-lab-client.
@@ -129,7 +142,7 @@ async function getRenderer(): Promise<WasmRenderer> {
 
   initPromise = (async () => {
     if (!wasmInitialised) {
-      await init();
+      await init(configuredWasmUrl);
       wasmInitialised = true;
     }
     renderer = await create_renderer();
