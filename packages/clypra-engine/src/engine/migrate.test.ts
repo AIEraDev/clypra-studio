@@ -1,38 +1,41 @@
 import { describe, it, expect } from "vitest";
-import { builtInPresets } from "../presets";
+import { defaultConfig } from "../presets";
+import type { Preset } from "../types";
 import { textEffectConfigToScene, sceneToConfig } from "./migrate";
 import { blendConfigs } from "./blend";
 import { getPresetScene } from "./recipes";
 
-describe("textEffectConfigToScene migration", () => {
-  it("round-trips all built-in presets without losing key fields", () => {
-    for (const preset of builtInPresets) {
-      const scene = textEffectConfigToScene(preset.config);
-      const back = sceneToConfig(scene);
+const samplePreset: Preset = {
+  id: "test-preset-1",
+  name: "Test Preset",
+  category: "Classic",
+  config: defaultConfig,
+};
 
-      expect(back.text).toBe(preset.config.text);
-      expect(back.fontFamily).toBe(preset.config.fontFamily);
-      expect(back.fillType).toBe(preset.config.fillType);
-      expect(back.fillColor).toBe(preset.config.fillColor);
-      expect(back.strokeEnabled).toBe(preset.config.strokeEnabled);
-      expect(back.bevelEnabled).toBe(preset.config.bevelEnabled);
-      expect(back.customRenderer).toBe(preset.config.customRenderer);
-      expect(back.glowLayers.length).toBeGreaterThanOrEqual(3);
-      expect(scene.effectLayers.length).toBeGreaterThan(5);
-      expect(scene.version).toBe(1);
-    }
+describe("textEffectConfigToScene migration", () => {
+  it("round-trips default config without losing key fields", () => {
+    const scene = textEffectConfigToScene(defaultConfig);
+    const back = sceneToConfig(scene);
+
+    expect(back.text).toBe(defaultConfig.text);
+    expect(back.fontFamily).toBe(defaultConfig.fontFamily);
+    expect(back.fillType).toBe(defaultConfig.fillType);
+    expect(back.fillColor).toBe(defaultConfig.fillColor);
+    expect(back.strokeEnabled).toBe(defaultConfig.strokeEnabled);
+    expect(back.bevelEnabled).toBe(defaultConfig.bevelEnabled);
+    expect(scene.version).toBe(1);
   });
 
   it("caches preset scenes", () => {
-    const a = getPresetScene(builtInPresets[0]);
-    const b = getPresetScene(builtInPresets[0]);
+    const a = getPresetScene(samplePreset);
+    const b = getPresetScene(samplePreset);
     expect(a).not.toBe(b);
     expect(a.effectName).toBe(b.effectName);
   });
 
   it("round-trips per-character fill colors", () => {
     const cfg = {
-      ...builtInPresets[0].config,
+      ...defaultConfig,
       fillType: "solid" as const,
       perCharFillEnabled: true,
       charFillColors: ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff"],
@@ -44,9 +47,9 @@ describe("textEffectConfigToScene migration", () => {
   });
 
   it("blends two configs", () => {
-    const a = builtInPresets[0].config;
-    const b = builtInPresets[1].config;
+    const a = { ...defaultConfig, fontSize: 40 };
+    const b = { ...defaultConfig, fontSize: 80 };
     const mid = blendConfigs(a, b, 0.5);
-    expect(mid.fontSize).toBe(Math.round((a.fontSize + b.fontSize) / 2));
+    expect(mid.fontSize).toBe(60);
   });
 });

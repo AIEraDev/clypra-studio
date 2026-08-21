@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { builtInPresets } from "../presets";
+import { defaultConfig } from "../presets";
 import { textEffectConfigToScene } from "./migrate";
 import {
   updateSceneText,
@@ -19,8 +19,7 @@ import type { TextEffectDefinition } from "../types";
 describe("Clypra Engine Programmatic API", () => {
   describe("Functional Scene Mutators", () => {
     it("updates scene text and font correctly", () => {
-      const preset = builtInPresets[0];
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
 
       const updated = updateSceneText(scene, {
         content: "NEW TEXT",
@@ -43,8 +42,7 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("updates scene background panel (bounding plate)", () => {
-      const preset = builtInPresets[0];
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
 
       // Disable first if present
       let updated = updateScenePanel(scene, { enabled: false });
@@ -73,8 +71,7 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("creates panel layer if it did not exist", () => {
-      const preset = builtInPresets[0];
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
       // Remove panel layer manually to simulate absence
       scene.effectLayers = scene.effectLayers.filter((l) => l.type !== "panel");
 
@@ -90,8 +87,7 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("updates scene stroke", () => {
-      const preset = builtInPresets[0];
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
 
       const updated = updateSceneStroke(scene, {
         enabled: true,
@@ -110,8 +106,7 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("updates scene shadow", () => {
-      const preset = builtInPresets[0];
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
 
       const updated = updateSceneShadow(scene, {
         enabled: true,
@@ -126,8 +121,7 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("updates scene bevel", () => {
-      const preset = builtInPresets[0];
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
 
       const updated = updateSceneBevel(scene, {
         enabled: true,
@@ -142,8 +136,7 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("updates scene stack", () => {
-      const preset = builtInPresets[0];
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
 
       const updated = updateSceneStack(scene, {
         enabled: true,
@@ -158,8 +151,7 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("updates scene fill", () => {
-      const preset = builtInPresets[0];
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
 
       const stops = [
         { color: "#FF0000", offset: 0 },
@@ -179,8 +171,7 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("updates specific glow layer and appends if out of bounds", () => {
-      const preset = builtInPresets[0];
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
 
       // Mutate existing/new index 0
       let updated = updateSceneGlow(scene, 0, {
@@ -209,8 +200,7 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("updates scene canvas dimensions", () => {
-      const preset = builtInPresets[0];
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
 
       const updated = updateSceneCanvas(scene, {
         width: 1920,
@@ -224,9 +214,8 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("updates scene custom engine parameters", () => {
-      const preset = builtInPresets[0];
       const scene = textEffectConfigToScene({
-        ...preset.config,
+        ...defaultConfig,
         customRenderer: "InkBrushEngine",
       });
 
@@ -275,16 +264,14 @@ describe("Clypra Engine Programmatic API", () => {
     });
 
     it("instantiates correctly from config, scene, and definitions", () => {
-      const preset = builtInPresets[0];
-
       // fromConfig
-      const b1 = TextEffectBuilder.fromConfig(preset.config);
-      expect(b1.buildConfig().text).toBe(preset.config.text);
+      const b1 = TextEffectBuilder.fromConfig(defaultConfig);
+      expect(b1.buildConfig().text).toBe(defaultConfig.text);
 
       // fromScene
-      const scene = textEffectConfigToScene(preset.config);
+      const scene = textEffectConfigToScene(defaultConfig);
       const b2 = TextEffectBuilder.fromScene(scene);
-      expect(b2.buildConfig().text).toBe(preset.config.text);
+      expect(b2.buildConfig().text).toBe(defaultConfig.text);
 
       // fromDefinition
       const mockDefinition: TextEffectDefinition = {

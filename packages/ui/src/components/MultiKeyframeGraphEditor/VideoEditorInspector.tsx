@@ -1,3 +1,5 @@
+/// <reference types="@webgpu/types" />
+
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import type { KeyframePoint } from "@clypra-studio/types";
 import { PlaybackEngine } from "@clypra-studio/runtime";
