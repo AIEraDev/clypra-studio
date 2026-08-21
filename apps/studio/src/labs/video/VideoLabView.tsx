@@ -8,11 +8,29 @@
  *  - SidebarRight (parameters inspector, topological nodes tree, debug console terminal)
  */
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { initializeFontSystem, EffectEngine, EffectGraph, EffectRenderer, EFFECTS_REGISTRY, getEffectsByCategory, type EffectMetadata } from "@clypra-studio/engine";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
+import {
+  initializeFontSystem,
+  EffectEngine,
+  EffectGraph,
+  EffectRenderer,
+  EFFECTS_REGISTRY,
+  getEffectsByCategory,
+  type EffectMetadata,
+} from "@clypra-studio/engine";
 import type { EffectParameters } from "@clypra-studio/engine";
-import type { NativeLabFrameRequest } from "@clypra-studio/native-lab-client";
-import { createDefaultProviderManager, FeatureMapType, type FeatureProviderManager } from "@clypra-studio/feature-providers";
+import type { NativeLabFrameRequest } from "../../services/nativeLabClient";
+import {
+  createDefaultProviderManager,
+  FeatureMapType,
+  type FeatureProviderManager,
+} from "@clypra-studio/feature-providers";
 import { getNativeLabClient } from "../../services/nativeLabClient";
 
 // ─── Component Imports ───────────────────────────────────────────────────────
@@ -45,7 +63,15 @@ const CATEGORY_LABELS: Record<string, string> = {
 function drawSMPTEBars(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.fillStyle = "#0c101a";
   ctx.fillRect(0, 0, w, h);
-  const colors = ["#c0c0c0", "#ffff00", "#00ffff", "#00ff00", "#ff00ff", "#ff0000", "#0000ff"];
+  const colors = [
+    "#c0c0c0",
+    "#ffff00",
+    "#00ffff",
+    "#00ff00",
+    "#ff00ff",
+    "#ff0000",
+    "#0000ff",
+  ];
   const barW = w / 7;
   const topH = h * 0.7;
   for (let i = 0; i < 7; i++) {
@@ -58,11 +84,18 @@ function drawSMPTEBars(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.font = "bold 14px 'Geist', monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("SMPTE_TEST_PATTERN (SIGNAL PENDING)", w / 2, topH + (h - topH) / 2);
+  ctx.fillText(
+    "SMPTE_TEST_PATTERN (SIGNAL PENDING)",
+    w / 2,
+    topH + (h - topH) / 2,
+  );
 }
 
 /** Build a 2-node graph: source → effect */
-function buildEffectGraph(effectId: string, params: EffectParameters): EffectGraph {
+function buildEffectGraph(
+  effectId: string,
+  params: EffectParameters,
+): EffectGraph {
   const graph = new EffectGraph();
   graph.addNode({ id: "source", type: "source" });
   graph.addNode({ id: "effect", type: effectId, params });
@@ -72,12 +105,19 @@ function buildEffectGraph(effectId: string, params: EffectParameters): EffectGra
 
 type NativeColorGrade = Record<string, unknown>;
 
-function numericParam(params: EffectParameters, key: string, fallback = 0): number {
+function numericParam(
+  params: EffectParameters,
+  key: string,
+  fallback = 0,
+): number {
   const value = Number(params[key]);
   return Number.isFinite(value) ? value : fallback;
 }
 
-function colorParam(value: unknown, fallback: [number, number, number]): [number, number, number] {
+function colorParam(
+  value: unknown,
+  fallback: [number, number, number],
+): [number, number, number] {
   if (typeof value !== "string") return fallback;
   const match = value.trim().match(/^#?([0-9a-f]{6})$/i);
   if (!match) return fallback;
@@ -129,7 +169,10 @@ function nativeColorGradeForEffect(
       brightness: brightness - 1,
       contrast,
       saturation,
-      hueRotate: id === "color-matrix" ? (numericParam(params, "hue") * Math.PI) / 180 : 0,
+      hueRotate:
+        id === "color-matrix"
+          ? (numericParam(params, "hue") * Math.PI) / 180
+          : 0,
       lutIntensity: numericParam(params, "lutIntensity", 0.8),
     };
   }
@@ -143,16 +186,30 @@ function nativeColorGradeForEffect(
   }
 
   if (id === "grayscale") return { grayscale: 1 };
-  if (id === "vignette") return { vignette: Math.max(0, 1 - numericParam(params, "radius", 0.7)) };
-  if (id === "pixelate") return { pixelateSize: Math.max(numericParam(params, "sizeX", 10), numericParam(params, "sizeY", 10)) };
+  if (id === "vignette")
+    return { vignette: Math.max(0, 1 - numericParam(params, "radius", 0.7)) };
+  if (id === "pixelate")
+    return {
+      pixelateSize: Math.max(
+        numericParam(params, "sizeX", 10),
+        numericParam(params, "sizeY", 10),
+      ),
+    };
   if (id === "gaussian-blur" || id === "kawase-blur") {
     return { blurStrength: 1, blurRadius: numericParam(params, "blur", 8) };
   }
 
   if (id === "film-grain") {
-    return { grainIntensity: numericParam(params, "intensity", 0.25), grainSize: numericParam(params, "size", 2) };
+    return {
+      grainIntensity: numericParam(params, "intensity", 0.25),
+      grainSize: numericParam(params, "size", 2),
+    };
   }
-  if (id === "static-noise") return { grainIntensity: numericParam(params, "noise", 0.15), grainSize: 1 };
+  if (id === "static-noise")
+    return {
+      grainIntensity: numericParam(params, "noise", 0.15),
+      grainSize: 1,
+    };
   if (id === "old-film") {
     return {
       sepia: numericParam(params, "sepia", 0.3),
@@ -166,15 +223,21 @@ function nativeColorGradeForEffect(
       grainIntensity: numericParam(params, "noise", 0.1),
       grainSize: 1,
       scanlineCount: id === "vhs" ? 180 : 240,
-      scanlineIntensity: id === "vhs" ? numericParam(params, "lineAlpha", 0.25) : numericParam(params, "lineContrast", 0.25),
+      scanlineIntensity:
+        id === "vhs"
+          ? numericParam(params, "lineAlpha", 0.25)
+          : numericParam(params, "lineContrast", 0.25),
       rgbSplitX: id === "vhs" ? numericParam(params, "hShift") * 1280 : 0,
       vignette: numericParam(params, "vignetting", 0.0),
     };
   }
   if (id === "rgb-split") {
     return {
-      rgbSplitX: (numericParam(params, "redX", 4) - numericParam(params, "blueX", -4)) / 2,
-      rgbSplitY: (numericParam(params, "redY") - numericParam(params, "blueY")) / 2,
+      rgbSplitX:
+        (numericParam(params, "redX", 4) - numericParam(params, "blueX", -4)) /
+        2,
+      rgbSplitY:
+        (numericParam(params, "redY") - numericParam(params, "blueY")) / 2,
     };
   }
   if (id === "glitch-band" || id === "glitch_band") {
@@ -182,7 +245,9 @@ function nativeColorGradeForEffect(
       glitchIntensity: Math.min(1, numericParam(params, "offset", 80) / 400),
       glitchTime: time,
       glitchSliceCount: numericParam(params, "slices", 15),
-      glitchColorShift: Math.abs(numericParam(params, "redX", -3) - numericParam(params, "blueX", 3)),
+      glitchColorShift: Math.abs(
+        numericParam(params, "redX", -3) - numericParam(params, "blueX", 3),
+      ),
     };
   }
 
@@ -191,7 +256,10 @@ function nativeColorGradeForEffect(
       distortionType: 2,
       distortionStrength: numericParam(params, "amplitude", 30) / 100,
       distortionTime: time * numericParam(params, "speed", 1.5),
-      distortionFrequency: Math.max(1, 160 / Math.max(1, numericParam(params, "wavelength", 160))),
+      distortionFrequency: Math.max(
+        1,
+        160 / Math.max(1, numericParam(params, "wavelength", 160)),
+      ),
     };
   }
   if (id === "bulge-pinch" || id === "bulge_pinch") {
@@ -199,7 +267,10 @@ function nativeColorGradeForEffect(
       distortionType: 3,
       distortionStrength: numericParam(params, "strength", 0.5),
       distortionTime: time * numericParam(params, "speed", 1.5),
-      distortionFrequency: Math.max(1, 600 / Math.max(1, numericParam(params, "radius", 200))),
+      distortionFrequency: Math.max(
+        1,
+        600 / Math.max(1, numericParam(params, "radius", 200)),
+      ),
     };
   }
   if (id === "twist") {
@@ -207,7 +278,10 @@ function nativeColorGradeForEffect(
       distortionType: 4,
       distortionStrength: numericParam(params, "angle", 4) / 15,
       distortionTime: time * numericParam(params, "speed", 1),
-      distortionFrequency: Math.max(1, 800 / Math.max(1, numericParam(params, "radius", 300))),
+      distortionFrequency: Math.max(
+        1,
+        800 / Math.max(1, numericParam(params, "radius", 300)),
+      ),
     };
   }
 
@@ -216,17 +290,33 @@ function nativeColorGradeForEffect(
     const c2 = colorParam(params.fireColor2, [1, 0.65, 0]);
     const c3 = colorParam(params.fireColor3, [1, 0.84, 0]);
     return {
-      fireParams: [numericParam(params, "fireHeight", 0.4), numericParam(params, "particleCount", 50), 1, time],
+      fireParams: [
+        numericParam(params, "fireHeight", 0.4),
+        numericParam(params, "particleCount", 50),
+        1,
+        time,
+      ],
       fireColor1: [...c1, 0],
       fireColor2: [...c2, 0],
       fireColor3: [...c3, 0],
     };
   }
   if (id === "particles" || id === "dust_particles") {
-    const color = colorParam(params.particleColor, id === "particles" ? [1, 1, 1] : [0.88, 0.88, 0.88]);
+    const color = colorParam(
+      params.particleColor,
+      id === "particles" ? [1, 1, 1] : [0.88, 0.88, 0.88],
+    );
     return {
-      particleParams: [numericParam(params, "particleCount", 60), numericParam(params, "particleSize", 2), numericParam(params, "driftSpeed", 1), 1],
-      particleColor: [...color, id === "particles" && params.fadeEffect === false ? 0 : 0.5],
+      particleParams: [
+        numericParam(params, "particleCount", 60),
+        numericParam(params, "particleSize", 2),
+        numericParam(params, "driftSpeed", 1),
+        1,
+      ],
+      particleColor: [
+        ...color,
+        id === "particles" && params.fadeEffect === false ? 0 : 0.5,
+      ],
       particleTime: time,
     };
   }
@@ -237,8 +327,16 @@ function nativeColorGradeForEffect(
       glowColorR: color[0],
       glowColorG: color[1],
       glowColorB: color[2],
-      glowStrength: numericParam(params, "glowAmount", numericParam(params, "outerStrength", 1)),
-      glowRadius: numericParam(params, "glowRadius", numericParam(params, "distance", 10)),
+      glowStrength: numericParam(
+        params,
+        "glowAmount",
+        numericParam(params, "outerStrength", 1),
+      ),
+      glowRadius: numericParam(
+        params,
+        "glowRadius",
+        numericParam(params, "distance", 10),
+      ),
     };
   }
   if (id === "light_leak" || id === "light-leak" || id === "light_leak_2") {
@@ -247,16 +345,31 @@ function nativeColorGradeForEffect(
       lightLeakColorR: color[0],
       lightLeakColorG: color[1],
       lightLeakColorB: color[2],
-      lightLeakStrength: numericParam(params, "alpha", numericParam(params, "gain", 0.6)),
+      lightLeakStrength: numericParam(
+        params,
+        "alpha",
+        numericParam(params, "gain", 0.6),
+      ),
       lightLeakAngle: (numericParam(params, "angle", 30) * Math.PI) / 180,
       lightLeakTime: time * numericParam(params, "speed", 1),
     };
   }
   if (id === "flash") {
     const color = colorParam(params.flashColor, [1, 1, 1]);
-    return { flashColorR: color[0], flashColorG: color[1], flashColorB: color[2], flashStrength: numericParam(params, "flashIntensity", 1) };
+    return {
+      flashColorR: color[0],
+      flashColorG: color[1],
+      flashColorB: color[2],
+      flashStrength: numericParam(params, "flashIntensity", 1),
+    };
   }
-  if (id === "flicker") return { flickerStrength: 0.25, strobeFrequency: 8, strobeTime: time, strobeStrength: 0.25 };
+  if (id === "flicker")
+    return {
+      flickerStrength: 0.25,
+      strobeFrequency: 8,
+      strobeTime: time,
+      strobeStrength: 0.25,
+    };
 
   return null;
 }
@@ -278,7 +391,9 @@ export function VideoLabView() {
 
   // ── Feature provider manager (for body effects) ───────────────────────────
   const providerManagerRef = useRef<FeatureProviderManager | null>(null);
-  const [bodyTrackingStatus, setBodyTrackingStatus] = useState<"idle" | "loading" | "active" | "error">("idle");
+  const [bodyTrackingStatus, setBodyTrackingStatus] = useState<
+    "idle" | "loading" | "active" | "error"
+  >("idle");
   const bodyMaskRef = useRef<ImageData | null>(null);
 
   // ── Media state ───────────────────────────────────────────────────────────
@@ -290,7 +405,8 @@ export function VideoLabView() {
   const [fitMode, setFitMode] = useState<"stretch" | "fit" | "crop">("fit");
 
   // ── Effect selection & params ─────────────────────────────────────────────
-  const [selectedEffectId, setSelectedEffectId] = useState<string>(IDENTITY_EFFECT_ID);
+  const [selectedEffectId, setSelectedEffectId] =
+    useState<string>(IDENTITY_EFFECT_ID);
   const [parameters, setParameters] = useState<EffectParameters>({});
 
   // ── Effect sidebar state ──────────────────────────────────────────────────
@@ -298,7 +414,9 @@ export function VideoLabView() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
 
   // ── UI tabs ───────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<"inspector" | "nodes" | "stats">("inspector");
+  const [activeTab, setActiveTab] = useState<"inspector" | "nodes" | "stats">(
+    "inspector",
+  );
 
   // ── Telemetry (real frame timings) ────────────────────────────────────────
   const [latency, setLatency] = useState(0);
@@ -306,7 +424,9 @@ export function VideoLabView() {
   const [gpuUsage, setGpuUsage] = useState(0);
   const [memUsage, setMemUsage] = useState("—");
   const [fps, setFps] = useState(0);
-  const [nativeLabState, setNativeLabState] = useState<"probing" | "ready" | "fallback">("probing");
+  const [nativeLabState, setNativeLabState] = useState<
+    "probing" | "ready" | "fallback"
+  >("probing");
 
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [thumbnailDataUrl, setThumbnailDataUrl] = useState("");
@@ -322,7 +442,14 @@ export function VideoLabView() {
   const [blueHeight, setBlueHeight] = useState(40);
 
   // ── Logs ──────────────────────────────────────────────────────────────────
-  const [logs, setLogs] = useState<string[]>(["[INIT] Pipeline console starting...", "[OK] EffectEngine v1 initialized.", "[OK] EFFECTS_REGISTRY loaded — " + Object.keys(EFFECTS_REGISTRY).length + " effects.", "[INFO] Ready. Load media or select an effect."]);
+  const [logs, setLogs] = useState<string[]>([
+    "[INIT] Pipeline console starting...",
+    "[OK] EffectEngine v1 initialized.",
+    "[OK] EFFECTS_REGISTRY loaded — " +
+      Object.keys(EFFECTS_REGISTRY).length +
+      " effects.",
+    "[INFO] Ready. Load media or select an effect.",
+  ]);
 
   // ── Refs ──────────────────────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -353,16 +480,28 @@ export function VideoLabView() {
         if (cancelled) return;
         if (handshake.gpu.available && handshake.gpu.state === "ready") {
           setNativeLabState("ready");
-          addLog(`[NATIVE] GPU ready: ${handshake.gpu.adapterName ?? "unknown adapter"} (${handshake.gpu.backend ?? "unknown backend"})`);
+          addLog(
+            `[NATIVE] GPU ready: ${
+              handshake.gpu.adapterName ?? "unknown adapter"
+            } (${handshake.gpu.backend ?? "unknown backend"})`,
+          );
         } else {
           setNativeLabState("fallback");
-          addLog(`[NATIVE] Unavailable: ${handshake.gpu.failureReason ?? "GPU adapter unavailable"}. Browser fallback enabled.`);
+          addLog(
+            `[NATIVE] Unavailable: ${
+              handshake.gpu.failureReason ?? "GPU adapter unavailable"
+            }. Browser fallback enabled.`,
+          );
         }
       })
       .catch((error: unknown) => {
         if (cancelled) return;
         setNativeLabState("fallback");
-        addLog(`[NATIVE] Daemon unavailable: ${error instanceof Error ? error.message : String(error)}. Browser fallback enabled.`);
+        addLog(
+          `[NATIVE] Daemon unavailable: ${
+            error instanceof Error ? error.message : String(error)
+          }. Browser fallback enabled.`,
+        );
       });
     return () => {
       cancelled = true;
@@ -386,7 +525,12 @@ export function VideoLabView() {
     }
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
-      effects = effects.filter((e) => e.name.toLowerCase().includes(q) || e.description.toLowerCase().includes(q) || e.tags.some((t) => t.toLowerCase().includes(q)));
+      effects = effects.filter(
+        (e) =>
+          e.name.toLowerCase().includes(q) ||
+          e.description.toLowerCase().includes(q) ||
+          e.tags.some((t) => t.toLowerCase().includes(q)),
+      );
     }
     return effects;
   }, [activeCategory, searchQuery]);
@@ -430,7 +574,9 @@ export function VideoLabView() {
       const graph = buildEffectGraph(effectId, defaultParams);
       engineRef.current.loadGraph(graph);
 
-      addLog(`[EFFECT] Active: ${meta.name} (${meta.category}) — ${meta.description}`);
+      addLog(
+        `[EFFECT] Active: ${meta.name} (${meta.category}) — ${meta.description}`,
+      );
 
       // Initialise body tracking if this is a body effect
       if (meta.category === "body") {
@@ -446,7 +592,11 @@ export function VideoLabView() {
           })
           .catch((err: unknown) => {
             setBodyTrackingStatus("error");
-            addLog(`[WARN] Body tracking failed: ${err instanceof Error ? err.message : String(err)}`);
+            addLog(
+              `[WARN] Body tracking failed: ${
+                err instanceof Error ? err.message : String(err)
+              }`,
+            );
           });
       } else {
         // Tear down body tracking when leaving body category
@@ -481,7 +631,11 @@ export function VideoLabView() {
   const handleVideoImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      addLog(`[IMPORT] Loading: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+      addLog(
+        `[IMPORT] Loading: ${file.name} (${(file.size / 1024 / 1024).toFixed(
+          2,
+        )} MB)`,
+      );
       setVideoFile(file);
       const objectUrl = URL.createObjectURL(file);
       setVideoUrl(objectUrl);
@@ -495,12 +649,18 @@ export function VideoLabView() {
     if (videoRef.current) {
       const newDur = videoRef.current.duration;
       setDuration(newDur);
-      addLog(`[MEDIA] Source ready. ${videoRef.current.videoWidth}x${videoRef.current.videoHeight}, ${newDur.toFixed(2)}s`);
+      addLog(
+        `[MEDIA] Source ready. ${videoRef.current.videoWidth}x${
+          videoRef.current.videoHeight
+        }, ${newDur.toFixed(2)}s`,
+      );
     }
   };
 
   const handleVideoError = () => {
-    addLog("[WARN] Media buffer load failed. Defaulting to SMPTE test signals.");
+    addLog(
+      "[WARN] Media buffer load failed. Defaulting to SMPTE test signals.",
+    );
   };
 
   const handleTimeUpdate = () => {
@@ -543,13 +703,15 @@ export function VideoLabView() {
       return;
     }
     if (selectedEffectId === IDENTITY_EFFECT_ID) {
-      addLog("[WARN] Cannot publish the Identity (none) effect. Please select a video effect first.");
+      addLog(
+        "[WARN] Cannot publish the Identity (none) effect. Please select a video effect first.",
+      );
       return;
     }
 
     addLog("[PUBLISH] Preparing canvas and video timeline for recording...");
     setPlaying(false);
-    
+
     // Reset recording status
     thumbnailCapturedRef.current = false;
     recordedChunksRef.current = [];
@@ -559,7 +721,7 @@ export function VideoLabView() {
     // Seek to 0.7 seconds (0.3s before recording window starts at 1.0)
     video.currentTime = 0.7;
     setCurrentTime(0.7);
-    
+
     // Start playing
     setPlaying(true);
   };
@@ -623,7 +785,10 @@ export function VideoLabView() {
     const handleMouseMove = (mvEvent: MouseEvent) => {
       const delta = (mvEvent.clientX - startX) * 0.05;
       if (videoRef.current) {
-        const target = Math.max(0, Math.min(duration, videoRef.current.currentTime + delta));
+        const target = Math.max(
+          0,
+          Math.min(duration, videoRef.current.currentTime + delta),
+        );
         videoRef.current.currentTime = target;
         setCurrentTime(target);
       }
@@ -642,7 +807,11 @@ export function VideoLabView() {
     const m = Math.floor((secs % 3600) / 60);
     const s = Math.floor(secs % 60);
     const f = Math.floor((secs % 1) * 60);
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}:${f.toString().padStart(2, "0")}`;
+    return `${h.toString().padStart(2, "0")}:${m
+      .toString()
+      .padStart(2, "0")}:${s.toString().padStart(2, "0")}:${f
+      .toString()
+      .padStart(2, "0")}`;
   }
 
   // ── Body mask update loop ─────────────────────────────────────────────────
@@ -662,7 +831,12 @@ export function VideoLabView() {
             if (maskData?.texture instanceof HTMLCanvasElement) {
               const ctx = maskData.texture.getContext("2d");
               if (ctx) {
-                bodyMaskRef.current = ctx.getImageData(0, 0, maskData.texture.width, maskData.texture.height);
+                bodyMaskRef.current = ctx.getImageData(
+                  0,
+                  0,
+                  maskData.texture.width,
+                  maskData.texture.height,
+                );
               }
             }
           }
@@ -685,7 +859,12 @@ export function VideoLabView() {
     let frameCount = 0;
     let frameTimeAccum = 0;
 
-    const drawSource = (ctx: CanvasRenderingContext2D, video: HTMLVideoElement, width: number, height: number) => {
+    const drawSource = (
+      ctx: CanvasRenderingContext2D,
+      video: HTMLVideoElement,
+      width: number,
+      height: number,
+    ) => {
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, width, height);
@@ -724,11 +903,21 @@ export function VideoLabView() {
         setLatency(parseFloat(avgLatency.toFixed(2)));
         setFps(Math.round(1000 / Math.max(1, avgLatency)));
         setCpuUsage(Math.min(99, Math.round(avgLatency * 2)));
-        setGpuUsage(nativeLabState === "ready" ? Math.round(25 + Math.random() * 20) : Math.round(5 + Math.random() * 15));
+        setGpuUsage(
+          nativeLabState === "ready"
+            ? Math.round(25 + Math.random() * 20)
+            : Math.round(5 + Math.random() * 15),
+        );
         const perfAny = performance as any;
         if (perfAny.memory) {
-          const usedMB = (perfAny.memory.usedJSHeapSize / 1024 / 1024).toFixed(1);
-          const totalMB = (perfAny.memory.jsHeapSizeLimit / 1024 / 1024).toFixed(0);
+          const usedMB = (perfAny.memory.usedJSHeapSize / 1024 / 1024).toFixed(
+            1,
+          );
+          const totalMB = (
+            perfAny.memory.jsHeapSizeLimit /
+            1024 /
+            1024
+          ).toFixed(0);
           setMemUsage(`${usedMB}MB/${totalMB}MB`);
         }
         if (playing) {
@@ -742,20 +931,34 @@ export function VideoLabView() {
       }
     };
 
-    const capturePublishFrame = (video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
-      if (recordingStateRef.current === "requested" && video.currentTime >= 1.0) {
+    const capturePublishFrame = (
+      video: HTMLVideoElement,
+      canvas: HTMLCanvasElement,
+    ) => {
+      if (
+        recordingStateRef.current === "requested" &&
+        video.currentTime >= 1.0
+      ) {
         const stream = canvas.captureStream(30);
         let options = { mimeType: "video/webm;codecs=vp9" };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: "video/webm;codecs=vp8" };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: "video/webm" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType))
+          options = { mimeType: "video/webm;codecs=vp8" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType))
+          options = { mimeType: "video/webm" };
         try {
           recordedChunksRef.current = [];
-          const recorder = new MediaRecorder(stream, { mimeType: options.mimeType, videoBitsPerSecond: 1500000 });
+          const recorder = new MediaRecorder(stream, {
+            mimeType: options.mimeType,
+            videoBitsPerSecond: 1500000,
+          });
           recorder.ondataavailable = (event) => {
-            if (event.data && event.data.size > 0) recordedChunksRef.current.push(event.data);
+            if (event.data && event.data.size > 0)
+              recordedChunksRef.current.push(event.data);
           };
           recorder.onstop = () => {
-            const blob = new Blob(recordedChunksRef.current, { type: options.mimeType });
+            const blob = new Blob(recordedChunksRef.current, {
+              type: options.mimeType,
+            });
             const reader = new FileReader();
             reader.onloadend = () => {
               setPreviewDataUrl(reader.result as string);
@@ -768,20 +971,32 @@ export function VideoLabView() {
           recorder.start();
           mediaRecorderRef.current = recorder;
           recordingStateRef.current = "recording";
-          addLog(`[PUBLISH] MediaRecorder started recording ${nativeLabState === "ready" ? "native" : "browser"} canvas.`);
+          addLog(
+            `[PUBLISH] MediaRecorder started recording ${
+              nativeLabState === "ready" ? "native" : "browser"
+            } canvas.`,
+          );
         } catch (error: any) {
           recordingStateRef.current = "idle";
           setIsRecording(false);
           addLog(`[WARN] MediaRecorder start error: ${error.message}`);
         }
       }
-      if (recordingStateRef.current === "recording" && video.currentTime >= 2.5 && !thumbnailCapturedRef.current) {
+      if (
+        recordingStateRef.current === "recording" &&
+        video.currentTime >= 2.5 &&
+        !thumbnailCapturedRef.current
+      ) {
         thumbnailCapturedRef.current = true;
         setThumbnailDataUrl(canvas.toDataURL("image/png"));
         addLog("[PUBLISH] Mid-effect thumbnail captured.");
       }
-      if (recordingStateRef.current === "recording" && video.currentTime >= 4.0) {
-        if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+      if (
+        recordingStateRef.current === "recording" &&
+        video.currentTime >= 4.0
+      ) {
+        if (mediaRecorderRef.current?.state === "recording")
+          mediaRecorderRef.current.stop();
         recordingStateRef.current = "idle";
       }
     };
@@ -793,19 +1008,30 @@ export function VideoLabView() {
       grade: NativeColorGrade,
       frameKey: string,
     ) => {
-      const sourceCanvas = nativeSourceCanvasRef.current ?? document.createElement("canvas");
+      const sourceCanvas =
+        nativeSourceCanvasRef.current ?? document.createElement("canvas");
       nativeSourceCanvasRef.current = sourceCanvas;
       sourceCanvas.width = 640;
       sourceCanvas.height = 360;
-      const sourceCtx = sourceCanvas.getContext("2d", { willReadFrequently: true });
-      if (!sourceCtx) throw new Error("Unable to create native source raster context");
+      const sourceCtx = sourceCanvas.getContext("2d", {
+        willReadFrequently: true,
+      });
+      if (!sourceCtx)
+        throw new Error("Unable to create native source raster context");
       drawSource(sourceCtx, video, sourceCanvas.width, sourceCanvas.height);
-      const rgba = Array.from(sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height).data);
+      const rgba = Array.from(
+        sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height)
+          .data,
+      );
       const frameIndex = Math.max(0, Math.floor(video.currentTime * 60));
       const request: NativeLabFrameRequest = {
         contractVersion: 1,
         requestId: `studio-video-${Date.now()}-${frameIndex}`,
-        frameTime: { frameIndex, ticks: Math.floor(video.currentTime * 1_000_000), timescale: 1_000_000 },
+        frameTime: {
+          frameIndex,
+          ticks: Math.floor(video.currentTime * 1_000_000),
+          timescale: 1_000_000,
+        },
         project: {
           schemaVersion: 1,
           projectRevision: `video-lab-${frameKey}`,
@@ -813,25 +1039,33 @@ export function VideoLabView() {
           canvasHeight: canvas.height,
           clearColor: [0, 0, 0, 1],
           videoLayers: [],
-          rasterLayers: [{
-            assetId: "studio-video-source",
-            rgba,
-            width: sourceCanvas.width,
-            height: sourceCanvas.height,
-            x: 0,
-            y: 0,
-            rotation: 0,
-            opacity: 1,
-            zIndex: 0,
-            blendMode: "normal",
-            colorGrade: grade,
-          }],
+          rasterLayers: [
+            {
+              assetId: "studio-video-source",
+              rgba,
+              width: sourceCanvas.width,
+              height: sourceCanvas.height,
+              x: 0,
+              y: 0,
+              rotation: 0,
+              opacity: 1,
+              zIndex: 0,
+              blendMode: "normal",
+              colorGrade: grade,
+            },
+          ],
           transition: null,
         },
         outputWidth: canvas.width,
         outputHeight: canvas.height,
         quality: "full",
-        colorPolicy: { version: 1, workingSpace: "linear-rec709", outputFormat: "rgba8Srgb", toneMapHdrToSdr: true, displayProfile: "srgb-reference" },
+        colorPolicy: {
+          version: 1,
+          workingSpace: "linear-rec709",
+          outputFormat: "rgba8Srgb",
+          toneMapHdrToSdr: true,
+          displayProfile: "srgb-reference",
+        },
         renderGraphVersion: 1,
       };
 
@@ -861,24 +1095,49 @@ export function VideoLabView() {
       const frameStart = performance.now();
 
       if (video && video.readyState >= 2) {
-        const grade = nativeColorGradeForEffect(selectedEffectId, parameters, video.currentTime);
-        const frameKey = `${video.currentTime.toFixed(4)}:${selectedEffectId}:${JSON.stringify(parameters)}:${fitMode}`;
-        if (nativeLabState === "ready" && grade && !nativeRequestInFlightRef.current && nativeLastFrameKeyRef.current !== frameKey) {
-          renderNative(video, canvas, ctx, grade, frameKey).catch((error: unknown) => {
-            nativeRequestInFlightRef.current = false;
-            setNativeLabState("fallback");
-            if (!nativeFallbackLoggedRef.current) {
-              nativeFallbackLoggedRef.current = true;
-              addLog(`[NATIVE] Video frame rejected: ${error instanceof Error ? error.message : String(error)}. Browser fallback enabled.`);
-            }
-          }).finally(() => {
-            nativeRequestInFlightRef.current = false;
-          });
+        const grade = nativeColorGradeForEffect(
+          selectedEffectId,
+          parameters,
+          video.currentTime,
+        );
+        const frameKey = `${video.currentTime.toFixed(
+          4,
+        )}:${selectedEffectId}:${JSON.stringify(parameters)}:${fitMode}`;
+        if (
+          nativeLabState === "ready" &&
+          grade &&
+          !nativeRequestInFlightRef.current &&
+          nativeLastFrameKeyRef.current !== frameKey
+        ) {
+          renderNative(video, canvas, ctx, grade, frameKey)
+            .catch((error: unknown) => {
+              nativeRequestInFlightRef.current = false;
+              setNativeLabState("fallback");
+              if (!nativeFallbackLoggedRef.current) {
+                nativeFallbackLoggedRef.current = true;
+                addLog(
+                  `[NATIVE] Video frame rejected: ${
+                    error instanceof Error ? error.message : String(error)
+                  }. Browser fallback enabled.`,
+                );
+              }
+            })
+            .finally(() => {
+              nativeRequestInFlightRef.current = false;
+            });
         } else if (nativeLabState !== "ready" || !grade) {
           drawSource(ctx, video, canvas.width, canvas.height);
           if (selectedEffectId !== IDENTITY_EFFECT_ID) {
             const meta = EFFECTS_REGISTRY[selectedEffectId];
-            if (meta) EffectRenderer.apply(ctx, selectedEffectId as any, parameters, 1.0, currentTime, bodyMaskRef.current ?? undefined);
+            if (meta)
+              EffectRenderer.apply(
+                ctx,
+                selectedEffectId as any,
+                parameters,
+                1.0,
+                currentTime,
+                bodyMaskRef.current ?? undefined,
+              );
           }
           capturePublishFrame(video, canvas);
         }
@@ -895,7 +1154,16 @@ export function VideoLabView() {
       disposed = true;
       cancelAnimationFrame(animId);
     };
-  }, [selectedEffectId, fitMode, parameters, playing, currentTime, videoUrl, nativeLabState, addLog]);
+  }, [
+    selectedEffectId,
+    fitMode,
+    parameters,
+    playing,
+    currentTime,
+    videoUrl,
+    nativeLabState,
+    addLog,
+  ]);
 
   // ── Reset ─────────────────────────────────────────────────────────────────
   const handleResetContext = () => {
@@ -987,10 +1255,60 @@ export function VideoLabView() {
 
       <main className="flex-1 flex overflow-hidden">
         {/* Left Side Library Panel */}
-        <SidebarLeft videoFile={videoFile} fitMode={fitMode} selectedEffectId={selectedEffectId} searchQuery={searchQuery} activeCategory={activeCategory} onVideoImport={handleVideoImport} onSetFitMode={setFitMode} onSelectEffect={handleSelectEffect} onSearchQueryChange={setSearchQuery} onActiveCategoryChange={setActiveCategory} filteredEffects={filteredEffects} totalEffectsCount={Object.keys(EFFECTS_REGISTRY).length} availableCategories={availableCategories} categoryLabels={CATEGORY_LABELS} identityEffectId={IDENTITY_EFFECT_ID} onLoadModule={() => addLog(`[MODULE] Dynamic module slots available.`)} />
+        <SidebarLeft
+          videoFile={videoFile}
+          fitMode={fitMode}
+          selectedEffectId={selectedEffectId}
+          searchQuery={searchQuery}
+          activeCategory={activeCategory}
+          onVideoImport={handleVideoImport}
+          onSetFitMode={setFitMode}
+          onSelectEffect={handleSelectEffect}
+          onSearchQueryChange={setSearchQuery}
+          onActiveCategoryChange={setActiveCategory}
+          filteredEffects={filteredEffects}
+          totalEffectsCount={Object.keys(EFFECTS_REGISTRY).length}
+          availableCategories={availableCategories}
+          categoryLabels={CATEGORY_LABELS}
+          identityEffectId={IDENTITY_EFFECT_ID}
+          onLoadModule={() =>
+            addLog(`[MODULE] Dynamic module slots available.`)
+          }
+        />
 
         {/* Center Preview Display */}
-        <CanvasPreview videoRef={videoRef} canvasRef={canvasRef} timelineRef={timelineRef} videoUrl={videoUrl} playing={playing} currentTime={currentTime} duration={duration} fps={fps} latency={latency} cpuUsage={cpuUsage} gpuUsage={gpuUsage} memUsage={memUsage} redHeight={redHeight} greenHeight={greenHeight} blueHeight={blueHeight} bodyTrackingStatus={bodyTrackingStatus} nativeLabState={nativeLabState} selectedEffectId={selectedEffectId} selectedMeta={selectedMeta} identityEffectId={IDENTITY_EFFECT_ID} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onVideoError={handleVideoError} onSetPlaying={setPlaying} onSkipPrev={handleSkipPrev} onSkipNext={handleSkipNext} onRewind={handleRewind} onFastForward={handleFastForward} onMouseDown={handleMouseDown} onJogWheelMouseDown={handleJogWheelMouseDown} />
+        <CanvasPreview
+          videoRef={videoRef}
+          canvasRef={canvasRef}
+          timelineRef={timelineRef}
+          videoUrl={videoUrl}
+          playing={playing}
+          currentTime={currentTime}
+          duration={duration}
+          fps={fps}
+          latency={latency}
+          cpuUsage={cpuUsage}
+          gpuUsage={gpuUsage}
+          memUsage={memUsage}
+          redHeight={redHeight}
+          greenHeight={greenHeight}
+          blueHeight={blueHeight}
+          bodyTrackingStatus={bodyTrackingStatus}
+          nativeLabState={nativeLabState}
+          selectedEffectId={selectedEffectId}
+          selectedMeta={selectedMeta}
+          identityEffectId={IDENTITY_EFFECT_ID}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onVideoError={handleVideoError}
+          onSetPlaying={setPlaying}
+          onSkipPrev={handleSkipPrev}
+          onSkipNext={handleSkipNext}
+          onRewind={handleRewind}
+          onFastForward={handleFastForward}
+          onMouseDown={handleMouseDown}
+          onJogWheelMouseDown={handleJogWheelMouseDown}
+        />
 
         {/* Right Sidebar Inspector panel */}
         <SidebarRight
@@ -1029,7 +1347,9 @@ export function VideoLabView() {
                 name: selectedMeta.name,
                 category: selectedMeta.category,
                 description: selectedMeta.description,
-                params: Object.entries(selectedMeta.parameterSchema as Record<string, any>).map(([k, s]) => ({
+                params: Object.entries(
+                  selectedMeta.parameterSchema as Record<string, any>,
+                ).map(([k, s]) => ({
                   key: k,
                   value: parameters[k] ?? s.default,
                 })),

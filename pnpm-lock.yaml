@@ -38,6 +38,9 @@ importers:
       '@clypra-studio/native-lab-client':
         specifier: workspace:*
         version: link:../../packages/native-lab-client
+      '@clypra-studio/native-render-wasm':
+        specifier: workspace:*
+        version: link:../../packages/native-render-wasm
       '@clypra-studio/runtime':
         specifier: ^0.2.2
         version: 0.2.2
@@ -205,6 +208,12 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)(@vitest/ui@4.1.10)(happy-dom@20.10.6)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.0)
+
+  packages/native-render-wasm:
+    devDependencies:
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
 
   packages/runtime:
     dependencies:

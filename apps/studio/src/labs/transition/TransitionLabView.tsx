@@ -10,7 +10,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { initializeFontSystem, ALL_TRANSITIONS } from "@clypra-studio/engine";
-import type { NativeLabFrameRequest } from "@clypra-studio/native-lab-client";
+import type { NativeLabFrameRequest } from "../../services/nativeLabClient";
 
 import { TopNavBar } from "./components/TopNavBar";
 import { SidebarLeft } from "./components/SidebarLeft";
@@ -99,9 +99,12 @@ export function TransitionLabView() {
 
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0.0); // 0.0 = Clip A, 1.0 = Clip B
-  const [selectedTransition, setSelectedTransition] = useState<string>("cross-dissolve");
+  const [selectedTransition, setSelectedTransition] =
+    useState<string>("cross-dissolve");
   const [fitMode, setFitMode] = useState<"stretch" | "fit" | "crop">("fit");
-  const [activeTab, setActiveTab] = useState<"inspector" | "nodes" | "stats">("inspector");
+  const [activeTab, setActiveTab] = useState<"inspector" | "nodes" | "stats">(
+    "inspector",
+  );
 
   // Parameters and duration are initialized empty and updated when the API list loads
   const [parameters, setParameters] = useState<Record<string, any>>({});
@@ -117,7 +120,9 @@ export function TransitionLabView() {
   const [previewDataUrl, setPreviewDataUrl] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [nativeLabState, setNativeLabState] = useState<"probing" | "ready" | "fallback">("probing");
+  const [nativeLabState, setNativeLabState] = useState<
+    "probing" | "ready" | "fallback"
+  >("probing");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -160,7 +165,11 @@ export function TransitionLabView() {
     }
   }, [progress, playing, duration]);
 
-  const [logs, setLogs] = useState<string[]>(["[INIT] Transition console starting...", "[OK] Dual-channel video mixers ready.", "[INFO] Ready. Load outgoing/incoming clips or adjust parameters."]);
+  const [logs, setLogs] = useState<string[]>([
+    "[INIT] Transition console starting...",
+    "[OK] Dual-channel video mixers ready.",
+    "[INFO] Ready. Load outgoing/incoming clips or adjust parameters.",
+  ]);
 
   const [latency, setLatency] = useState(0.02);
   const [cpuUsage, setCpuUsage] = useState(14);
@@ -201,7 +210,10 @@ export function TransitionLabView() {
         console.log("[DIAG] No snapshots yet — start playback first.");
         return;
       }
-      console.group("%c[TRANSITION DIAG] Live snapshot dump (" + snaps.length + " entries)", "color:#4edea3;font-weight:bold");
+      console.group(
+        "%c[TRANSITION DIAG] Live snapshot dump (" + snaps.length + " entries)",
+        "color:#4edea3;font-weight:bold",
+      );
       console.log("All frames (boundary events only):");
       console.table(snaps.filter((s) => s.event != null));
       console.log("Last 10 ambient frames:");
@@ -221,18 +233,32 @@ export function TransitionLabView() {
         if (cancelled) return;
         if (handshake.gpu.available && handshake.gpu.state === "ready") {
           setNativeLabState("ready");
-          addLog(`[NATIVE] GPU ready: ${handshake.gpu.adapterName ?? "unknown adapter"} (${handshake.gpu.backend ?? "unknown backend"})`);
+          addLog(
+            `[NATIVE] GPU ready: ${
+              handshake.gpu.adapterName ?? "unknown adapter"
+            } (${handshake.gpu.backend ?? "unknown backend"})`,
+          );
         } else {
           setNativeLabState("fallback");
-          addLog(`[NATIVE] Unavailable: ${handshake.gpu.failureReason ?? "GPU adapter unavailable"}. Browser fallback enabled.`);
+          addLog(
+            `[NATIVE] Unavailable: ${
+              handshake.gpu.failureReason ?? "GPU adapter unavailable"
+            }. Browser fallback enabled.`,
+          );
         }
       })
       .catch((error: unknown) => {
         if (cancelled) return;
         setNativeLabState("fallback");
-        addLog(`[NATIVE] Daemon unavailable: ${error instanceof Error ? error.message : String(error)}. Browser fallback enabled.`);
+        addLog(
+          `[NATIVE] Daemon unavailable: ${
+            error instanceof Error ? error.message : String(error)
+          }. Browser fallback enabled.`,
+        );
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [addLog]);
 
   const handleClipAImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -261,13 +287,21 @@ export function TransitionLabView() {
 
   const handleClipALoadedMetadata = () => {
     if (videoARef.current) {
-      addLog(`[MEDIA] Outgoing Clip A ready: ${videoARef.current.videoWidth}x${videoARef.current.videoHeight}, ${videoARef.current.duration.toFixed(2)}s`);
+      addLog(
+        `[MEDIA] Outgoing Clip A ready: ${videoARef.current.videoWidth}x${
+          videoARef.current.videoHeight
+        }, ${videoARef.current.duration.toFixed(2)}s`,
+      );
     }
   };
 
   const handleClipBLoadedMetadata = () => {
     if (videoBRef.current) {
-      addLog(`[MEDIA] Incoming Clip B ready: ${videoBRef.current.videoWidth}x${videoBRef.current.videoHeight}, ${videoBRef.current.duration.toFixed(2)}s`);
+      addLog(
+        `[MEDIA] Incoming Clip B ready: ${videoBRef.current.videoWidth}x${
+          videoBRef.current.videoHeight
+        }, ${videoBRef.current.duration.toFixed(2)}s`,
+      );
     }
   };
 
@@ -331,7 +365,11 @@ export function TransitionLabView() {
       setParameters(trans.params ?? {});
       const durationSec = trans.duration?.default ?? 2.0;
       setDuration(durationSec);
-      addLog(`[SYSTEM] Selected transition: ${trans.name} (${Math.round(durationSec * 1000)}ms)`);
+      addLog(
+        `[SYSTEM] Selected transition: ${trans.name} (${Math.round(
+          durationSec * 1000,
+        )}ms)`,
+      );
     }
   };
 
@@ -382,10 +420,23 @@ export function TransitionLabView() {
     return p;
   };
 
-  const drawSMPTEBars = (ctx: CanvasRenderingContext2D, w: number, h: number, label: string) => {
+  const drawSMPTEBars = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    label: string,
+  ) => {
     ctx.fillStyle = "#0c101a";
     ctx.fillRect(0, 0, w, h);
-    const colors = ["#c0c0c0", "#ffff00", "#00ffff", "#00ff00", "#ff00ff", "#ff0000", "#0000ff"];
+    const colors = [
+      "#c0c0c0",
+      "#ffff00",
+      "#00ffff",
+      "#00ff00",
+      "#ff00ff",
+      "#ff0000",
+      "#0000ff",
+    ];
     const barW = w / 7;
     const topH = h * 0.7;
     for (let i = 0; i < 7; i++) {
@@ -432,14 +483,26 @@ export function TransitionLabView() {
     type Source = HTMLVideoElement | HTMLCanvasElement;
     const nativeTransitionType = (id: string): string | null => {
       const normalized = id.toLowerCase();
-      if (normalized.includes("cross") || normalized.includes("dissolve") || normalized.includes("fade")) return "cross-dissolve";
+      if (
+        normalized.includes("cross") ||
+        normalized.includes("dissolve") ||
+        normalized.includes("fade")
+      )
+        return "cross-dissolve";
       if (normalized.includes("wipe")) return "directional-wipe";
       if (normalized.includes("zoom")) return "zoom-blur";
       return null;
     };
-    const drawSource = (ctx: CanvasRenderingContext2D, source: Source, width: number, height: number) => {
-      const sourceWidth = source instanceof HTMLVideoElement ? source.videoWidth : source.width;
-      const sourceHeight = source instanceof HTMLVideoElement ? source.videoHeight : source.height;
+    const drawSource = (
+      ctx: CanvasRenderingContext2D,
+      source: Source,
+      width: number,
+      height: number,
+    ) => {
+      const sourceWidth =
+        source instanceof HTMLVideoElement ? source.videoWidth : source.width;
+      const sourceHeight =
+        source instanceof HTMLVideoElement ? source.videoHeight : source.height;
       if (!sourceWidth || !sourceHeight) return;
       const sourceRatio = sourceWidth / sourceHeight;
       const targetRatio = width / height;
@@ -448,15 +511,33 @@ export function TransitionLabView() {
       let drawX = 0;
       let drawY = 0;
       if (fitMode === "crop") {
-        if (sourceRatio > targetRatio) { drawW = height * sourceRatio; drawX = (width - drawW) / 2; }
-        else { drawH = width / sourceRatio; drawY = (height - drawH) / 2; }
+        if (sourceRatio > targetRatio) {
+          drawW = height * sourceRatio;
+          drawX = (width - drawW) / 2;
+        } else {
+          drawH = width / sourceRatio;
+          drawY = (height - drawH) / 2;
+        }
       } else if (fitMode === "fit") {
-        if (sourceRatio > targetRatio) { drawH = width / sourceRatio; drawY = (height - drawH) / 2; }
-        else { drawW = height * sourceRatio; drawX = (width - drawW) / 2; }
+        if (sourceRatio > targetRatio) {
+          drawH = width / sourceRatio;
+          drawY = (height - drawH) / 2;
+        } else {
+          drawW = height * sourceRatio;
+          drawX = (width - drawW) / 2;
+        }
       }
       ctx.drawImage(source, drawX, drawY, drawW, drawH);
     };
-    const drawFallback = (ctx: CanvasRenderingContext2D, sourceA: Source, sourceB: Source, phase: "pre" | "transition" | "post", p: number, width: number, height: number) => {
+    const drawFallback = (
+      ctx: CanvasRenderingContext2D,
+      sourceA: Source,
+      sourceB: Source,
+      phase: "pre" | "transition" | "post",
+      p: number,
+      width: number,
+      height: number,
+    ) => {
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, width, height);
@@ -471,50 +552,97 @@ export function TransitionLabView() {
         drawSource(ctx, phase === "pre" ? sourceA : sourceB, width, height);
       }
     };
-    const capturePublishFrame = (canvas: HTMLCanvasElement, currentSec: number, mixProgress: number, recordStartTime: number, recordEndTime: number) => {
-      if (recordingStateRef.current === "requested" && currentSec >= recordStartTime) {
+    const capturePublishFrame = (
+      canvas: HTMLCanvasElement,
+      currentSec: number,
+      mixProgress: number,
+      recordStartTime: number,
+      recordEndTime: number,
+    ) => {
+      if (
+        recordingStateRef.current === "requested" &&
+        currentSec >= recordStartTime
+      ) {
         const stream = canvas.captureStream(30);
         let options = { mimeType: "video/webm;codecs=vp9" };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: "video/webm;codecs=vp8" };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: "video/webm" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType))
+          options = { mimeType: "video/webm;codecs=vp8" };
+        if (!MediaRecorder.isTypeSupported(options.mimeType))
+          options = { mimeType: "video/webm" };
         try {
           recordedChunksRef.current = [];
-          const recorder = new MediaRecorder(stream, { mimeType: options.mimeType, videoBitsPerSecond: 1500000 });
-          recorder.ondataavailable = (event) => { if (event.data?.size) recordedChunksRef.current.push(event.data); };
+          const recorder = new MediaRecorder(stream, {
+            mimeType: options.mimeType,
+            videoBitsPerSecond: 1500000,
+          });
+          recorder.ondataavailable = (event) => {
+            if (event.data?.size) recordedChunksRef.current.push(event.data);
+          };
           recorder.onstop = () => {
             const reader = new FileReader();
-            reader.onloadend = () => { setPreviewDataUrl(reader.result as string); setShowPublishModal(true); setIsRecording(false); addLog("[PUBLISH] Video recording completed! Form is ready."); };
-            reader.readAsDataURL(new Blob(recordedChunksRef.current, { type: options.mimeType }));
+            reader.onloadend = () => {
+              setPreviewDataUrl(reader.result as string);
+              setShowPublishModal(true);
+              setIsRecording(false);
+              addLog("[PUBLISH] Video recording completed! Form is ready.");
+            };
+            reader.readAsDataURL(
+              new Blob(recordedChunksRef.current, { type: options.mimeType }),
+            );
           };
           recorder.start();
           mediaRecorderRef.current = recorder;
           recordingStateRef.current = "recording";
-          addLog(`[PUBLISH] MediaRecorder started recording ${nativeLabState === "ready" ? "native" : "browser"} transition canvas.`);
+          addLog(
+            `[PUBLISH] MediaRecorder started recording ${
+              nativeLabState === "ready" ? "native" : "browser"
+            } transition canvas.`,
+          );
         } catch (error: any) {
           recordingStateRef.current = "idle";
           setIsRecording(false);
           addLog(`[WARN] MediaRecorder start error: ${error.message}`);
         }
       }
-      if (recordingStateRef.current === "recording" && mixProgress >= 0.5 && !thumbnailCapturedRef.current) {
+      if (
+        recordingStateRef.current === "recording" &&
+        mixProgress >= 0.5 &&
+        !thumbnailCapturedRef.current
+      ) {
         thumbnailCapturedRef.current = true;
         setThumbnailDataUrl(canvas.toDataURL("image/png"));
         addLog("[PUBLISH] Mid-transition thumbnail captured.");
       }
-      if (recordingStateRef.current === "recording" && currentSec >= recordEndTime) {
-        if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+      if (
+        recordingStateRef.current === "recording" &&
+        currentSec >= recordEndTime
+      ) {
+        if (mediaRecorderRef.current?.state === "recording")
+          mediaRecorderRef.current.stop();
         recordingStateRef.current = "idle";
       }
     };
 
-    const renderNative = async (canvas: HTMLCanvasElement, sourceA: Source, sourceB: Source, phase: "pre" | "transition" | "post", mixProgress: number, easedP: number, frameKey: string, recordStartTime: number, recordEndTime: number, currentSec: number) => {
+    const renderNative = async (
+      canvas: HTMLCanvasElement,
+      sourceA: Source,
+      sourceB: Source,
+      phase: "pre" | "transition" | "post",
+      mixProgress: number,
+      easedP: number,
+      frameKey: string,
+      recordStartTime: number,
+      recordEndTime: number,
+      currentSec: number,
+    ) => {
       const rasterA = document.createElement("canvas");
       const rasterB = document.createElement("canvas");
       rasterA.width = rasterB.width = 640;
       rasterA.height = rasterB.height = 360;
       const ctxA = rasterA.getContext("2d", { willReadFrequently: true });
       const ctxB = rasterB.getContext("2d", { willReadFrequently: true });
-      if (!ctxA || !ctxB) throw new Error("Unable to create native transition raster contexts");
+      if (!ctxA || !ctxB)
+        throw new Error("Unable to create native transition raster contexts");
       ctxA.fillStyle = ctxB.fillStyle = "#000";
       ctxA.fillRect(0, 0, 640, 360);
       ctxB.fillRect(0, 0, 640, 360);
@@ -524,7 +652,11 @@ export function TransitionLabView() {
       const request: NativeLabFrameRequest = {
         contractVersion: 1,
         requestId: `studio-transition-${Date.now()}-${diagFrameRef.current}`,
-        frameTime: { frameIndex: Math.floor(currentSec * 60), ticks: Math.floor(currentSec * 1_000_000), timescale: 1_000_000 },
+        frameTime: {
+          frameIndex: Math.floor(currentSec * 60),
+          ticks: Math.floor(currentSec * 1_000_000),
+          timescale: 1_000_000,
+        },
         project: {
           schemaVersion: 1,
           projectRevision: `transition-lab-${frameKey}`,
@@ -533,15 +665,54 @@ export function TransitionLabView() {
           clearColor: [0, 0, 0, 1],
           videoLayers: [],
           rasterLayers: [
-            { assetId: "clip-a", rgba: Array.from(ctxA.getImageData(0, 0, 640, 360).data), width: 640, height: 360, x: 0, y: 0, rotation: 0, opacity: 1, zIndex: 0, blendMode: "normal" },
-            { assetId: "clip-b", rgba: Array.from(ctxB.getImageData(0, 0, 640, 360).data), width: 640, height: 360, x: 0, y: 0, rotation: 0, opacity: 1, zIndex: 1, blendMode: "normal" },
+            {
+              assetId: "clip-a",
+              rgba: Array.from(ctxA.getImageData(0, 0, 640, 360).data),
+              width: 640,
+              height: 360,
+              x: 0,
+              y: 0,
+              rotation: 0,
+              opacity: 1,
+              zIndex: 0,
+              blendMode: "normal",
+            },
+            {
+              assetId: "clip-b",
+              rgba: Array.from(ctxB.getImageData(0, 0, 640, 360).data),
+              width: 640,
+              height: 360,
+              x: 0,
+              y: 0,
+              rotation: 0,
+              opacity: 1,
+              zIndex: 1,
+              blendMode: "normal",
+            },
           ],
-          transition: phase === "transition" && transitionType ? { outgoingLayer: "clip-a", incomingLayer: "clip-b", transitionType, progress: easedP, feather: Number(parameters.feather ?? 0.1), intensity: Number(parameters.intensity ?? 1), fadeColor: [0, 0, 0, 1] } : null,
+          transition:
+            phase === "transition" && transitionType
+              ? {
+                  outgoingLayer: "clip-a",
+                  incomingLayer: "clip-b",
+                  transitionType,
+                  progress: easedP,
+                  feather: Number(parameters.feather ?? 0.1),
+                  intensity: Number(parameters.intensity ?? 1),
+                  fadeColor: [0, 0, 0, 1],
+                }
+              : null,
         },
         outputWidth: canvas.width,
         outputHeight: canvas.height,
         quality: "full",
-        colorPolicy: { version: 1, workingSpace: "linear-rec709", outputFormat: "rgba8Srgb", toneMapHdrToSdr: true, displayProfile: "srgb-reference" },
+        colorPolicy: {
+          version: 1,
+          workingSpace: "linear-rec709",
+          outputFormat: "rgba8Srgb",
+          toneMapHdrToSdr: true,
+          displayProfile: "srgb-reference",
+        },
         renderGraphVersion: 1,
       };
       nativeRequestInFlightRef.current = true;
@@ -549,21 +720,34 @@ export function TransitionLabView() {
       if (disposed) return;
       const bitmap = await createImageBitmap(result.image);
       const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Transition preview canvas context unavailable");
+      if (!ctx)
+        throw new Error("Transition preview canvas context unavailable");
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       bitmap.close();
       nativeLastFrameKeyRef.current = frameKey;
-      capturePublishFrame(canvas, currentSec, mixProgress, recordStartTime, recordEndTime);
+      capturePublishFrame(
+        canvas,
+        currentSec,
+        mixProgress,
+        recordStartTime,
+        recordEndTime,
+      );
     };
 
     const render = (time: number) => {
       const videoA = videoARef.current;
       const videoB = videoBRef.current;
       const canvas = canvasRef.current;
-      if (!canvas) { animId = requestAnimationFrame(render); return; }
+      if (!canvas) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
       const ctx = canvas.getContext("2d");
-      if (!ctx) { animId = requestAnimationFrame(render); return; }
+      if (!ctx) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
       const start = performance.now();
       const delta = (time - lastTime) / 1000;
       lastTime = time;
@@ -572,59 +756,183 @@ export function TransitionLabView() {
       const totalDuration = transitionEnd + 5.0;
       let currentSec = sequenceTimeRef.current;
       if (playingRef.current && !isScrubbing) {
-        if (currentSec < transitionEnd && videoA?.readyState && videoA.readyState >= 1) currentSec = Math.abs(videoA.currentTime - currentSec) > 0.3 ? currentSec + delta : videoA.currentTime;
-        else if (currentSec >= transitionEnd && videoB?.readyState && videoB.readyState >= 1) currentSec = Math.max(transitionEnd, 5.0 + videoB.currentTime);
+        if (
+          currentSec < transitionEnd &&
+          videoA?.readyState &&
+          videoA.readyState >= 1
+        )
+          currentSec =
+            Math.abs(videoA.currentTime - currentSec) > 0.3
+              ? currentSec + delta
+              : videoA.currentTime;
+        else if (
+          currentSec >= transitionEnd &&
+          videoB?.readyState &&
+          videoB.readyState >= 1
+        )
+          currentSec = Math.max(transitionEnd, 5.0 + videoB.currentTime);
         else currentSec += delta;
-        if (currentSec >= totalDuration) { currentSec = totalDuration; setPlaying(false); }
+        if (currentSec >= totalDuration) {
+          currentSec = totalDuration;
+          setPlaying(false);
+        }
         sequenceTimeRef.current = currentSec;
         setProgress(currentSec / totalDuration);
       } else {
         currentSec = sequenceTimeRef.current;
         sequenceTimeRef.current = currentSec;
       }
-      const mixProgress = currentSec >= transitionEnd ? 1 : currentSec >= transitionStart ? Math.max(0, Math.min(1, (currentSec - transitionStart) / duration)) : 0;
+      const mixProgress =
+        currentSec >= transitionEnd
+          ? 1
+          : currentSec >= transitionStart
+          ? Math.max(0, Math.min(1, (currentSec - transitionStart) / duration))
+          : 0;
       const easedP = getProgressVal(mixProgress);
-      const phase: "pre" | "transition" | "post" = currentSec < transitionStart ? "pre" : currentSec < transitionEnd ? "transition" : "post";
-      const syncVideo = (video: HTMLVideoElement | null, target: number, shouldPlay: boolean) => {
+      const phase: "pre" | "transition" | "post" =
+        currentSec < transitionStart
+          ? "pre"
+          : currentSec < transitionEnd
+          ? "transition"
+          : "post";
+      const syncVideo = (
+        video: HTMLVideoElement | null,
+        target: number,
+        shouldPlay: boolean,
+      ) => {
         if (!video || video.readyState < 1) return;
-        if (shouldPlay && playingRef.current && video.paused) video.play().catch(() => {});
+        if (shouldPlay && playingRef.current && video.paused)
+          video.play().catch(() => {});
         if (!shouldPlay && !video.paused) video.pause();
-        if (Math.abs(video.currentTime - target) > 0.15) video.currentTime = Math.max(0, target);
+        if (Math.abs(video.currentTime - target) > 0.15)
+          video.currentTime = Math.max(0, target);
       };
       syncVideo(videoA, Math.min(currentSec, transitionEnd), phase !== "post");
-      syncVideo(videoB, Math.max(0, currentSec - transitionStart), phase !== "pre");
+      syncVideo(
+        videoB,
+        Math.max(0, currentSec - transitionStart),
+        phase !== "pre",
+      );
       const hasVideoA = !!(videoA && videoA.readyState >= 2);
       const hasVideoB = !!(videoB && videoB.readyState >= 2);
-      const sourceA = (hasVideoA ? videoA : placeholderARef.current) as Source | null;
-      const sourceB = (hasVideoB ? videoB : placeholderBRef.current) as Source | null;
+      const sourceA = (
+        hasVideoA ? videoA : placeholderARef.current
+      ) as Source | null;
+      const sourceB = (
+        hasVideoB ? videoB : placeholderBRef.current
+      ) as Source | null;
       if (sourceA && sourceB) {
         const transitionType = nativeTransitionType(selectedTransition);
-        const frameKey = `${phase}:${currentSec.toFixed(4)}:${selectedTransition}:${JSON.stringify(parameters)}:${fitMode}`;
-        if (nativeLabState === "ready" && !nativeRequestInFlightRef.current && nativeLastFrameKeyRef.current !== frameKey) {
-          renderNative(canvas, sourceA, sourceB, phase, mixProgress, easedP, frameKey, 5.0 - (Math.max(3, duration + 1) - duration) / 2, 5.0 + duration + (Math.max(3, duration + 1) - duration) / 2, currentSec).catch((error: unknown) => {
-            nativeRequestInFlightRef.current = false;
-            setNativeLabState("fallback");
-            if (!nativeFallbackLoggedRef.current) { nativeFallbackLoggedRef.current = true; addLog(`[NATIVE] Transition frame rejected: ${error instanceof Error ? error.message : String(error)}. Browser fallback enabled.`); }
-          }).finally(() => { nativeRequestInFlightRef.current = false; });
-        } else if (nativeLabState !== "ready" || !transitionType || phase !== "transition") {
-          if (nativeLabState === "ready" && phase === "transition" && !transitionType && !nativeFallbackLoggedRef.current) { nativeFallbackLoggedRef.current = true; addLog(`[NATIVE] Transition '${selectedTransition}' is not implemented in the native contract yet. Using explicit Canvas2D fallback.`); }
-          drawFallback(ctx, sourceA, sourceB, phase, easedP, canvas.width, canvas.height);
-          capturePublishFrame(canvas, currentSec, mixProgress, 5.0 - (Math.max(3, duration + 1) - duration) / 2, 5.0 + duration + (Math.max(3, duration + 1) - duration) / 2);
+        const frameKey = `${phase}:${currentSec.toFixed(
+          4,
+        )}:${selectedTransition}:${JSON.stringify(parameters)}:${fitMode}`;
+        if (
+          nativeLabState === "ready" &&
+          !nativeRequestInFlightRef.current &&
+          nativeLastFrameKeyRef.current !== frameKey
+        ) {
+          renderNative(
+            canvas,
+            sourceA,
+            sourceB,
+            phase,
+            mixProgress,
+            easedP,
+            frameKey,
+            5.0 - (Math.max(3, duration + 1) - duration) / 2,
+            5.0 + duration + (Math.max(3, duration + 1) - duration) / 2,
+            currentSec,
+          )
+            .catch((error: unknown) => {
+              nativeRequestInFlightRef.current = false;
+              setNativeLabState("fallback");
+              if (!nativeFallbackLoggedRef.current) {
+                nativeFallbackLoggedRef.current = true;
+                addLog(
+                  `[NATIVE] Transition frame rejected: ${
+                    error instanceof Error ? error.message : String(error)
+                  }. Browser fallback enabled.`,
+                );
+              }
+            })
+            .finally(() => {
+              nativeRequestInFlightRef.current = false;
+            });
+        } else if (
+          nativeLabState !== "ready" ||
+          !transitionType ||
+          phase !== "transition"
+        ) {
+          if (
+            nativeLabState === "ready" &&
+            phase === "transition" &&
+            !transitionType &&
+            !nativeFallbackLoggedRef.current
+          ) {
+            nativeFallbackLoggedRef.current = true;
+            addLog(
+              `[NATIVE] Transition '${selectedTransition}' is not implemented in the native contract yet. Using explicit Canvas2D fallback.`,
+            );
+          }
+          drawFallback(
+            ctx,
+            sourceA,
+            sourceB,
+            phase,
+            easedP,
+            canvas.width,
+            canvas.height,
+          );
+          capturePublishFrame(
+            canvas,
+            currentSec,
+            mixProgress,
+            5.0 - (Math.max(3, duration + 1) - duration) / 2,
+            5.0 + duration + (Math.max(3, duration + 1) - duration) / 2,
+          );
         }
-      } else drawSMPTEBars(ctx, canvas.width, canvas.height, "CLIPS A/B (SIGNAL PENDING)");
+      } else
+        drawSMPTEBars(
+          ctx,
+          canvas.width,
+          canvas.height,
+          "CLIPS A/B (SIGNAL PENDING)",
+        );
       const now = performance.now();
       if (now - statsTimer >= 500) {
         setLatency(parseFloat((now - start).toFixed(2)));
         setCpuUsage(Math.round(9 + Math.random() * 8));
-        setGpuUsage(nativeLabState === "ready" ? Math.round(25 + Math.random() * 15) : Math.round(8 + Math.random() * 10));
-        if (playingRef.current) { setRedHeight(Math.round(20 + Math.random() * 70)); setGreenHeight(Math.round(30 + Math.random() * 60)); setBlueHeight(Math.round(40 + Math.random() * 50)); }
+        setGpuUsage(
+          nativeLabState === "ready"
+            ? Math.round(25 + Math.random() * 15)
+            : Math.round(8 + Math.random() * 10),
+        );
+        if (playingRef.current) {
+          setRedHeight(Math.round(20 + Math.random() * 70));
+          setGreenHeight(Math.round(30 + Math.random() * 60));
+          setBlueHeight(Math.round(40 + Math.random() * 50));
+        }
         statsTimer = now;
       }
       animId = requestAnimationFrame(render);
     };
     animId = requestAnimationFrame(render);
-    return () => { disposed = true; cancelAnimationFrame(animId); videoARef.current?.pause(); videoBRef.current?.pause(); renderPhaseRef.current = "pre"; };
-  }, [selectedTransition, duration, parameters, isScrubbing, fitMode, nativeLabState, addLog]);
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(animId);
+      videoARef.current?.pause();
+      videoBRef.current?.pause();
+      renderPhaseRef.current = "pre";
+    };
+  }, [
+    selectedTransition,
+    duration,
+    parameters,
+    isScrubbing,
+    fitMode,
+    nativeLabState,
+    addLog,
+  ]);
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
@@ -743,7 +1051,17 @@ export function TransitionLabView() {
 
       {/* Main Layout mixer workspace */}
       <main className="flex-1 flex overflow-hidden">
-        <SidebarLeft clipAFile={clipAFile} clipBFile={clipBFile} selectedTransition={selectedTransition} fitMode={fitMode} onClipAImport={handleClipAImport} onClipBImport={handleClipBImport} onSelectTransition={handleSelectTransition} onSetFitMode={setFitMode} transitions={apiTransitions} />
+        <SidebarLeft
+          clipAFile={clipAFile}
+          clipBFile={clipBFile}
+          selectedTransition={selectedTransition}
+          fitMode={fitMode}
+          onClipAImport={handleClipAImport}
+          onClipBImport={handleClipBImport}
+          onSelectTransition={handleSelectTransition}
+          onSetFitMode={setFitMode}
+          transitions={apiTransitions}
+        />
 
         <CanvasPreview
           videoARef={videoARef}
@@ -775,17 +1093,46 @@ export function TransitionLabView() {
           onRewind={handleRewind}
           onFastForward={handleFastForward}
           onMouseDown={handleMouseDown}
-          onProgressSliderChange={(e) => setProgress(parseFloat(e.target.value))}
+          onProgressSliderChange={(e) =>
+            setProgress(parseFloat(e.target.value))
+          }
           onLoadedMetadataA={handleClipALoadedMetadata}
           onLoadedMetadataB={handleClipBLoadedMetadata}
           onClipAError={handleClipAError}
           onClipBError={handleClipBError}
         />
 
-        <SidebarRight activeTab={activeTab} selectedTransition={selectedTransition} parameters={parameters} latency={latency} cpuUsage={cpuUsage} gpuUsage={gpuUsage} memUsage={memUsage} duration={duration} progress={progress} logs={logs} terminalEndRef={terminalEndRef} onSetActiveTab={setActiveTab} onParamChange={handleParamChange} onDumpLog={handleDumpLog} onResetContext={handleResetContext} onPublish={handleStartPublish} isRecording={isRecording} isAdmin={isAdmin} />
+        <SidebarRight
+          activeTab={activeTab}
+          selectedTransition={selectedTransition}
+          parameters={parameters}
+          latency={latency}
+          cpuUsage={cpuUsage}
+          gpuUsage={gpuUsage}
+          memUsage={memUsage}
+          duration={duration}
+          progress={progress}
+          logs={logs}
+          terminalEndRef={terminalEndRef}
+          onSetActiveTab={setActiveTab}
+          onParamChange={handleParamChange}
+          onDumpLog={handleDumpLog}
+          onResetContext={handleResetContext}
+          onPublish={handleStartPublish}
+          isRecording={isRecording}
+          isAdmin={isAdmin}
+        />
       </main>
 
-      <PublishTransitionModal open={showPublishModal} onClose={() => setShowPublishModal(false)} transitionDef={apiTransitions.find((t) => t.id === selectedTransition) || null} thumbnailDataUrl={thumbnailDataUrl} previewDataUrl={previewDataUrl} />
+      <PublishTransitionModal
+        open={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        transitionDef={
+          apiTransitions.find((t) => t.id === selectedTransition) || null
+        }
+        thumbnailDataUrl={thumbnailDataUrl}
+        previewDataUrl={previewDataUrl}
+      />
     </div>
   );
 }
