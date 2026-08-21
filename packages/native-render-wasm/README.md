@@ -108,6 +108,10 @@ configureWasmRenderer({
 - `isRendererReady(): boolean`: Synchronously checks if the WASM singleton is initialized.
 - `configureWasmRenderer(options: { wasmUrl?: string }): void`: Configures the remote or local WASM binary URL.
 
+### Classes & Errors
+
+- `ClypraWasmError`: Extends standard `Error` with cause tracking (`error.cause`), thrown on network download failures, WebAssembly initialization issues, or shader render failures.
+
 ### Constants
 
 - `DEFAULT_CLYPRA_WASM_URL`: The default Cloudflare R2 CDN URL for the compiled `.wasm` binary.

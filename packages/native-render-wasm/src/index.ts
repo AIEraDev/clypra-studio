@@ -129,6 +129,16 @@ export interface NativeLabHandshake {
   };
 }
 
+/**
+ * Custom error class for Clypra WebAssembly runtime and initialization errors.
+ */
+export class ClypraWasmError extends Error {
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = "ClypraWasmError";
+  }
+}
+
 // ── Renderer singleton ───────────────────────────────────────────────────────
 
 let wasmInitialised = false;
@@ -141,12 +151,24 @@ async function getRenderer(): Promise<WasmRenderer> {
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
-    if (!wasmInitialised) {
-      await init(configuredWasmUrl);
-      wasmInitialised = true;
+    try {
+      if (!wasmInitialised) {
+        await init(configuredWasmUrl);
+        wasmInitialised = true;
+      }
+      renderer = await create_renderer();
+      return renderer;
+    } catch (err) {
+      // Reset state on failure so subsequent calls can retry
+      wasmInitialised = false;
+      renderer = null;
+      throw new ClypraWasmError(
+        `Failed to initialize Clypra WASM renderer from '${configuredWasmUrl}': ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+        err,
+      );
     }
-    renderer = await create_renderer();
-    return renderer;
   })();
 
   try {
@@ -162,28 +184,49 @@ async function getRenderer(): Promise<WasmRenderer> {
  * Probe the WASM renderer and return a handshake-shaped object.
  * Drop-in replacement for `probeNativeLab()` in nativeLabClient.ts.
  */
-export async function probeNativeRenderer(signal?: AbortSignal): Promise<NativeLabHandshake> {
+export async function probeNativeRenderer(
+  signal?: AbortSignal,
+): Promise<NativeLabHandshake> {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-  const r = await getRenderer();
-  const info = JSON.parse(r.adapter_info()) as {
-    name?: string;
-    backend?: string;
-    deviceType?: string;
-  };
-  return {
-    protocolVersion: 1,
-    contractVersion: 1,
-    coreVersion: "wasm-0.1.0",
-    renderGraphVersion: 1,
-    colorPolicyVersion: 1,
-    gpu: {
-      state: "ready",
-      available: true,
-      adapterName: info.name ?? null,
-      backend: info.backend ?? null,
-      failureReason: null,
-    },
-  };
+  try {
+    const r = await getRenderer();
+    const info = JSON.parse(r.adapter_info()) as {
+      name?: string;
+      backend?: string;
+      deviceType?: string;
+    };
+    return {
+      protocolVersion: 1,
+      contractVersion: 1,
+      coreVersion: "wasm-0.1.0",
+      renderGraphVersion: 1,
+      colorPolicyVersion: 1,
+      gpu: {
+        state: "ready",
+        available: true,
+        adapterName: info.name ?? null,
+        backend: info.backend ?? null,
+        failureReason: null,
+      },
+    };
+  } catch (err) {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    return {
+      protocolVersion: 1,
+      contractVersion: 1,
+      coreVersion: "wasm-0.1.0",
+      renderGraphVersion: 1,
+      colorPolicyVersion: 1,
+      gpu: {
+        state: "failed",
+        available: false,
+        adapterName: null,
+        backend: null,
+        failureReason:
+          err instanceof Error ? err.message : `WASM initialization failed: ${String(err)}`,
+      },
+    };
+  }
 }
 
 /**
@@ -196,20 +239,29 @@ export async function renderFrame(
 ): Promise<NativeLabFrameResult> {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   const r = await getRenderer();
-  const pngBytes = await r.render_frame(JSON.stringify(request));
-  return {
-    image: new Blob([pngBytes], { type: "image/png" }),
-    contentType: "image/png",
-    requestId: request.requestId,
-    frameIndex: request.frameTime.frameIndex,
-    metrics: {
-      decodeTimeUs: null,
-      composeTimeUs: null,
-      readbackTimeUs: null,
-      totalTimeUs: null,
-      cacheHit: null,
-    },
-  };
+  try {
+    const pngBytes = await r.render_frame(JSON.stringify(request));
+    return {
+      image: new Blob([pngBytes], { type: "image/png" }),
+      contentType: "image/png",
+      requestId: request.requestId,
+      frameIndex: request.frameTime.frameIndex,
+      metrics: {
+        decodeTimeUs: null,
+        composeTimeUs: null,
+        readbackTimeUs: null,
+        totalTimeUs: null,
+        cacheHit: null,
+      },
+    };
+  } catch (err) {
+    throw new ClypraWasmError(
+      `Failed to render frame '${request.requestId}' at index ${request.frameTime.frameIndex}: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+      err,
+    );
+  }
 }
 
 /**
