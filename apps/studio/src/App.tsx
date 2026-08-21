@@ -6,25 +6,8 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import {
-  ChevronDown,
-  LayoutGrid,
-  MoreHorizontal,
-  Download,
-  Undo2,
-  Redo2,
-  Sparkles,
-  HelpCircle,
-  Video,
-  User,
-  Shield,
-  Cpu,
-  X,
-} from "lucide-react";
-
 import { TextEffectConfig, Preset } from "@clypra-studio/engine";
 import { defaultConfig, builtInPresets } from "@clypra-studio/engine";
-import { nativeAuroraPreset } from "./samples/nativeAurora";
 import {
   generateEngineClass,
   generateEffectDefinition,
@@ -35,11 +18,6 @@ import {
   getEnrichedEffectName,
 } from "./codeGenerator";
 import { GOOGLE_FONTS, GOOGLE_FONTS_LINK } from "./constants";
-import { TimelinePanel } from "./components/TimelinePanel";
-import { PreviewCanvas } from "./components/PreviewCanvas";
-import { AdminPurgeSettings } from "./components/settings/AdminPurgeSettings";
-import { AdminTransitionsSettings } from "./components/settings/AdminTransitionsSettings";
-import { LabsPanel } from "./components/LabsPanel";
 import {
   textEffectConfigToScene,
   sceneToConfig,
@@ -65,25 +43,9 @@ import {
 } from "./services/geminiService";
 import { getStudioApiBaseUrl } from "./services/apiConfig";
 import { getNativeLabClient } from "./services/nativeLabClient";
-import { TextEffectCatalogPanel } from "./components/TextEffectCatalogPanel";
-import { CompositionToolbar } from "./components/CompositionToolbar";
 
-const FontCompare = lazy(() =>
-  import("./components/FontCompare").then((module) => ({
-    default: module.FontCompare,
-  })),
-);
-const InspectorPanel = lazy(() =>
-  import("./components/InspectorPanel").then((module) => ({
-    default: module.InspectorPanel,
-  })),
-);
-const ExportLabPanel = lazy(() =>
-  import("./components/ExportLabPanel").then((module) => ({
-    default: module.ExportLabPanel,
-  })),
-);
-import type { EffectApiCategory } from "./components/ExportLabPanel";
+import { PublishEffectModal } from "./components/PublishEffectModal";
+import type { EffectApiCategory } from "./components/PublishEffectModal";
 const SavePresetModal = lazy(() =>
   import("./components/StudioModals").then((module) => ({
     default: module.SavePresetModal,
@@ -95,8 +57,17 @@ const TutorialModal = lazy(() =>
   })),
 );
 import { LoginModal } from "./components/LoginModal";
+import { TextEffectsHeader } from "./components/text-effects/TextEffectsHeader";
+import { TextEffectsWorkspace } from "./components/text-effects/TextEffectsWorkspace";
+import {
+  AUTH_TOKEN_KEY,
+  getStoredAuthToken,
+  getUserFromToken,
+  isTokenExpired,
+  refreshAuthSession,
+} from "./services/authSession";
 
-// Global Fetch Interceptor to automatically inject Authorization header and handle 401s
+// Inject auth headers and renew an expired access token once before surfacing a logout.
 if (
   typeof window !== "undefined" &&
   !(window as any).__clypra_fetch_intercepted__
@@ -104,15 +75,15 @@ if (
   (window as any).__clypra_fetch_intercepted__ = true;
   const originalFetch = window.fetch.bind(window);
   window.fetch = async function (input, init) {
-    const token = localStorage.getItem("clypra_auth_token");
+    const token = getStoredAuthToken();
     let modifiedInit = init;
 
     const urlStr =
       typeof input === "string"
         ? input
         : input instanceof URL
-        ? input.href
-        : (input as Request).url || "";
+          ? input.href
+          : (input as Request).url || "";
 
     const isClypraApi =
       urlStr.includes("clypra-worker-api.abdulkabirmusa.com") ||
@@ -129,17 +100,28 @@ if (
       modifiedInit.headers = headers;
     }
 
-    const response = await originalFetch.call(this, input, modifiedInit);
+    const response = await originalFetch(input, modifiedInit);
+    const isAuthEndpoint = urlStr.includes("/auth/");
 
-    // If unauthorized (401), clear local session and dispatch event (except on login/register endpoints)
-    if (
-      response.status === 401 &&
-      isClypraApi &&
-      !urlStr.includes("/auth/login") &&
-      !urlStr.includes("/auth/register")
-    ) {
-      localStorage.removeItem("clypra_auth_token");
-      window.dispatchEvent(new CustomEvent("clypra-unauthorized"));
+    if (response.status === 401 && isClypraApi && !isAuthEndpoint && token) {
+      const outcome = await refreshAuthSession(originalFetch, token);
+      if (outcome.ok) {
+        const retryInit = init ? { ...init } : {};
+        const retryHeaders = new Headers(retryInit.headers || {});
+        retryHeaders.set("Authorization", `Bearer ${outcome.token}`);
+        retryInit.headers = retryHeaders;
+        return originalFetch(input, retryInit);
+      }
+
+      const currentToken = getStoredAuthToken();
+      if (
+        ("definitive" in outcome && outcome.definitive) ||
+        !currentToken ||
+        isTokenExpired(currentToken)
+      ) {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        window.dispatchEvent(new CustomEvent("clypra-unauthorized"));
+      }
     }
 
     return response;
@@ -147,56 +129,6 @@ if (
 }
 
 const CREATOR_SESSION_KEY = "clypra_studio_creator_session";
-
-// Admin Settings Tabs Component
-function AdminSettingsTabs() {
-  const [activeTab, setActiveTab] = useState<"cache" | "transitions">("cache");
-
-  return (
-    <div className="h-full flex flex-col">
-      {/* Tabs Header */}
-      <div className="border-b border-(--studio-border) bg-(--studio-panel) px-6">
-        <div className="flex gap-6">
-          <button
-            onClick={() => setActiveTab("cache")}
-            className={`relative px-1 py-4 text-sm font-medium transition-colors ${
-              activeTab === "cache"
-                ? "text-white"
-                : "text-(--studio-muted) hover:text-white"
-            }`}
-          >
-            Cache Control
-            {activeTab === "cache" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--studio-accent)" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("transitions")}
-            className={`relative px-1 py-4 text-sm font-medium transition-colors ${
-              activeTab === "transitions"
-                ? "text-white"
-                : "text-(--studio-muted) hover:text-white"
-            }`}
-          >
-            Transitions
-            {activeTab === "transitions" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--studio-accent)" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto">
-        {activeTab === "cache" ? (
-          <AdminPurgeSettings />
-        ) : (
-          <AdminTransitionsSettings />
-        )}
-      </div>
-    </div>
-  );
-}
 
 export default function App() {
   // Primary state configuration
@@ -284,6 +216,7 @@ export default function App() {
     username: string;
     email: string;
     createdAt: string;
+    isAdmin?: boolean;
   } | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -304,32 +237,51 @@ export default function App() {
     }
   }, [token]);
 
-  // Authenticate user on mount if token exists
+  // Authenticate the session on mount without logging the user out for a transient
+  // API/network failure. Only a confirmed expiry or refresh failure clears it.
   useEffect(() => {
-    const storedToken = localStorage.getItem("clypra_auth_token");
-    if (storedToken) {
-      setToken(storedToken);
-      const API_BASE_URL = getStudioApiBaseUrl();
-      fetch(`${API_BASE_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${storedToken}`,
-        },
+    const storedToken = getStoredAuthToken();
+    if (!storedToken) return;
+
+    setToken(storedToken);
+    const API_BASE_URL = getStudioApiBaseUrl();
+
+    fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${storedToken}` },
+    })
+      .then(async (res) => {
+        if (res.ok) return res.json();
+        const error = new Error(`Auth check failed with status ${res.status}`) as Error & {
+          authCode?: string;
+        };
+        error.authCode = res.status === 401 ? "AUTH_EXPIRED" : "AUTH_TRANSIENT";
+        throw error;
       })
-        .then((res) => {
-          if (res.ok) {
-            return res.json();
-          }
-          throw new Error("Token expired");
-        })
-        .then((data) => {
-          setUser(data.user);
-        })
-        .catch((err) => {
-          console.warn("Auth check failed:", err);
-          localStorage.removeItem("clypra_auth_token");
+      .then((data) => setUser(data.user))
+      .catch((err: Error & { authCode?: string }) => {
+        console.warn("Auth check failed:", err);
+        if (err.authCode === "AUTH_EXPIRED" || isTokenExpired(storedToken)) {
+          localStorage.removeItem(AUTH_TOKEN_KEY);
           setToken(null);
-        });
-    }
+          setUser(null);
+        } else {
+          const fallbackUser = getUserFromToken(storedToken);
+          if (fallbackUser) setUser(fallbackUser);
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    const handleAuthRefreshed = (event: Event) => {
+      const nextToken = (event as CustomEvent<{ token: string }>).detail?.token;
+      if (!nextToken) return;
+      setToken(nextToken);
+      const fallbackUser = getUserFromToken(nextToken);
+      if (fallbackUser) setUser(fallbackUser);
+    };
+    window.addEventListener("clypra-auth-refreshed", handleAuthRefreshed);
+    return () =>
+      window.removeEventListener("clypra-auth-refreshed", handleAuthRefreshed);
   }, []);
 
   // Listen for unauthorized events to trigger login modal
@@ -361,13 +313,13 @@ export default function App() {
   }, [showUserDropdown]);
 
   const handleLoginSuccess = (newToken: string, newUser: any) => {
-    localStorage.setItem("clypra_auth_token", newToken);
+    localStorage.setItem(AUTH_TOKEN_KEY, newToken);
     setToken(newToken);
     setUser(newUser);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("clypra_auth_token");
+    localStorage.removeItem(AUTH_TOKEN_KEY);
     setToken(null);
     setUser(null);
     setShowUserDropdown(false);
@@ -386,7 +338,8 @@ export default function App() {
   const [showSavePresetModal, setShowSavePresetModal] =
     useState<boolean>(false);
   const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
-  const [showExportModal, setShowExportModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishThumbnail, setPublishThumbnail] = useState<string | null>(null);
   const [tutorialActiveTab, setTutorialActiveTab] =
     useState<string>("typography");
   const [isGeneratingName, setIsGeneratingName] = useState<boolean>(false);
@@ -625,7 +578,7 @@ export default function App() {
         }
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
           e.preventDefault();
-          setShowExportModal(true);
+          handleOpenPublishModal();
         }
         if (e.key.toLowerCase() === "t") {
           setActiveRailItem("text-effects");
@@ -637,7 +590,7 @@ export default function App() {
           setActiveRailItem("video-effects");
         }
         if (e.key.toLowerCase() === "a") {
-          setShowExportModal(true);
+          handleOpenPublishModal();
         }
       }
 
@@ -1529,6 +1482,17 @@ export default function App() {
     }
   };
 
+  const handleOpenPublishModal = async () => {
+    try {
+      const thumbnail = await getPreviewPngDataUrl();
+      setPublishThumbnail(thumbnail);
+    } catch (error) {
+      console.warn("Could not capture publish thumbnail:", error);
+      setPublishThumbnail(null);
+    }
+    setShowPublishModal(true);
+  };
+
   const downloadPng = () => {
     const url = getPreviewPngDataUrl();
     if (!url) return;
@@ -1607,517 +1571,81 @@ export default function App() {
   return (
     <div
       id="studio-workspace-wrapper"
-      className="flex flex-col h-screen"
-      style={{
-        background: "var(--studio-bg)",
-        fontFamily: "Inter, sans-serif",
-      }}
+      className="flex h-screen flex-col"
+      style={{ background: "var(--studio-bg)", fontFamily: "Inter, sans-serif" }}
     >
-      {/* ── TOP HEADER ──────────────────────────────────────────────────────── */}
-      <header id="studio-header" className="studio-header">
-        {/* Left: brand */}
-        <div className="flex min-w-0 items-center">
-          <a
-            href="/studio"
-            aria-label="Back to Clypra Studio hub"
-            className="group flex shrink-0 items-center gap-2"
-          >
-            <img
-              src="/clypra.svg"
-              alt="Clypra"
-              className="h-7 w-7 select-none transition-transform group-hover:scale-105"
-            />
-            <span className="hidden text-[13px] font-bold tracking-tight text-white sm:block">
-              Clypra{" "}
-              <span style={{ color: "var(--studio-accent)" }}>Studio</span>
-            </span>
-          </a>
-        </div>
+      <TextEffectsHeader
+        activeRailItem={activeRailItem}
+        creatorSaveStatus={creatorSaveStatus}
+        nativePreviewState={nativePreviewState}
+        nativePreviewError={nativePreviewError}
+        user={user}
+        isAdmin={isAdmin}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        showUserDropdown={showUserDropdown}
+        dropdownRef={dropdownRef}
+        onUndo={triggerUndo}
+        onRedo={triggerRedo}
+        onOpenTutorial={() => setShowTutorialModal(true)}
+        onToggleUserDropdown={() => setShowUserDropdown((open) => !open)}
+        onLogout={handleLogout}
+        onOpenLogin={() => setShowLoginModal(true)}
+      />
 
-        {/* Centre: undo/redo */}
-        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-0.5 sm:flex">
-          <button
-            id="global-undo-btn"
-            aria-label="Undo"
-            title="Undo (Ctrl+Z)"
-            onClick={triggerUndo}
-            disabled={!canUndo}
-            className="studio-header-btn"
-          >
-            <Undo2 size={14} />
-          </button>
-          <button
-            id="global-redo-btn"
-            aria-label="Redo"
-            title="Redo (Ctrl+Y)"
-            onClick={triggerRedo}
-            disabled={!canRedo}
-            className="studio-header-btn"
-          >
-            <Redo2 size={14} />
-          </button>
-        </div>
-
-        {/* Right: status, utilities, and account actions */}
-        <div className="ml-auto flex items-center gap-1.5">
-          <span
-            className={`autosave-pill hidden sm:inline-flex${
-              creatorSaveStatus === "saving" ? " saving" : ""
-            }`}
-          >
-            <span
-              className="h-1.5 w-1.5 shrink-0 rounded-full"
-              style={{
-                background:
-                  creatorSaveStatus === "saving"
-                    ? "#fbbf24"
-                    : "var(--gpu-ready)",
-                boxShadow:
-                  creatorSaveStatus === "saving"
-                    ? "none"
-                    : "0 0 5px var(--gpu-ready)",
-              }}
-            />
-            {creatorSaveStatus === "saving" ? "Saving…" : "Autosaved"}
-          </span>
-
-          {activeRailItem === "text-effects" && (
-            <span
-              className={`studio-gpu-pill hidden md:inline-flex ${
-                nativePreviewState === "ready"
-                  ? "ready"
-                  : nativePreviewState === "error"
-                  ? "error"
-                  : "live"
-              }`}
-              title={
-                nativePreviewError ?? "Clypra native lab daemon · Metal GPU"
-              }
-            >
-              <Cpu size={9} style={{ flexShrink: 0 }} />
-              {nativePreviewState === "ready"
-                ? "GPU · Ready"
-                : nativePreviewState === "error"
-                ? "GPU · Error"
-                : "GPU · Live"}
-            </span>
-          )}
-
-          <div
-            className="mx-1 hidden h-4 w-px shrink-0 sm:block"
-            style={{ background: "var(--studio-border)" }}
-          />
-          <button
-            id="open-tutorial-btn"
-            onClick={() => setShowTutorialModal(true)}
-            className="studio-header-btn"
-            title="Help & Shortcuts"
-          >
-            <HelpCircle size={14} />
-          </button>
-
-          <div
-            className="mx-1 h-4 w-px shrink-0"
-            style={{ background: "var(--studio-border)" }}
-          />
-
-          {/* User auth */}
-          {user ? (
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center gap-2 rounded-lg px-2.5 h-8 text-[11px] font-semibold text-white cursor-pointer transition-colors"
-                style={{
-                  background: "var(--studio-raised)",
-                  border: "1px solid var(--studio-border)",
-                }}
-                title={`Logged in as ${user.username}`}
-              >
-                <span
-                  className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white uppercase shrink-0"
-                  style={{ background: "var(--studio-accent)" }}
-                >
-                  {user.username.charAt(0)}
-                </span>
-                <span className="hidden sm:inline">{user.username}</span>
-              </button>
-              {showUserDropdown && (
-                <div
-                  className="absolute right-0 mt-1.5 w-40 rounded-lg p-1.5 shadow-xl z-50"
-                  style={{
-                    background: "var(--studio-raised)",
-                    border: "1px solid var(--studio-border)",
-                  }}
-                >
-                  <div
-                    className="px-2 py-1.5 text-[9px] border-b mb-1 truncate"
-                    style={{
-                      color: "var(--studio-muted)",
-                      borderColor: "var(--studio-border)",
-                    }}
-                  >
-                    {user.email}
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left rounded px-2 py-1.5 text-xs cursor-pointer transition-colors"
-                    style={{ color: "var(--gpu-error)" }}
-                  >
-                    Log Out
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 h-8 text-[11px] font-semibold cursor-pointer transition-colors"
-              style={{
-                background: "var(--studio-active-soft)",
-                border: "1px solid rgba(124,111,255,0.25)",
-                color: "var(--studio-accent)",
-              }}
-              title="Sign In / Register"
-            >
-              <User size={13} />
-              Sign In
-            </button>
-          )}
-
-          <details className="relative">
-            <summary className="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg border border-(--studio-border) bg-(--studio-control) px-2.5 text-[11px] font-semibold text-(--studio-muted) transition-colors hover:border-(--studio-accent) hover:text-white [&::-webkit-details-marker]:hidden">
-              <MoreHorizontal size={15} />
-              <span className="hidden md:inline">Navigate</span>
-              <ChevronDown size={12} />
-            </summary>
-            <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-52 rounded-xl border border-(--studio-border) bg-(--studio-raised) p-1.5 shadow-2xl">
-              <p className="px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-(--studio-subtle)">
-                Studio navigation
-              </p>
-              <a
-                href="/studio"
-                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)"
-              >
-                <LayoutGrid size={13} className="text-(--studio-accent)" />
-                All labs
-              </a>
-              <a
-                href="/lottie"
-                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)"
-              >
-                <Video size={13} className="text-violet-300" />
-                Text Templates
-              </a>
-              {isAdmin && (
-                <a
-                  href="/studio/admin"
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)"
-                >
-                  <Shield size={13} className="text-blue-300" />
-                  Admin Console
-                </a>
-              )}
-            </div>
-          </details>
-        </div>
-      </header>
-
-      {activeRailItem === "text-effects" && (
-        <CompositionToolbar
-          config={config}
-          effectiveZoom={effectiveZoom}
-          zoomMode={zoomMode}
-          bgMode={bgMode}
-          gpuState={nativePreviewState}
-          gpuError={nativePreviewError}
-          onZoomChange={setZoom}
-          onZoomModeChange={setZoomMode}
-          onBgModeChange={setBgMode}
-          toolbarExtras={
-            <button
-              id="open-export-modal-btn"
-              type="button"
-              onClick={() => setShowExportModal(true)}
-              className="canvas-toolbar-btn primary px-3"
-            >
-              <Download size={11} className="mr-1" /> Export
-            </button>
-          }
-        />
-      )}
-
-      {/* Mobile tab bar */}
-      {isNarrow && (
-        <div
-          id="mobile-views-tabbar"
-          className="flex shrink-0 select-none border-b"
-          style={{
-            background: "var(--studio-panel)",
-            borderColor: "var(--studio-border)",
-          }}
-        >
-          {(["controls", "preview", "code"] as const).map((tab, i) => {
-            const labels = ["Controls", "Preview", "Inspector"];
-            const active = mobileActiveTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setMobileActiveTab(tab)}
-                className="flex-1 py-2.5 text-center text-[11px] font-bold transition-all relative"
-                style={{
-                  color: active
-                    ? "var(--studio-accent)"
-                    : "var(--studio-muted)",
-                }}
-              >
-                {labels[i]}
-                {active && (
-                  <span
-                    className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full"
-                    style={{ background: "var(--studio-accent)" }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ────────────────────────────────────────────────────────────────── WORK WORKSPACE CANVAS ────────────────────────────────────────────────────────────────── */}
-      <main
-        id="primary-workspace-layout"
-        className="flex flex-1 overflow-hidden"
-      >
-        {activeRailItem === "admin" ? (
-          <div className="min-w-0 flex-1 overflow-y-auto bg-[#0B0B10]">
-            {isAdmin ? (
-              <AdminSettingsTabs />
-            ) : (
-              <div className="flex h-full items-center justify-center text-center p-6 text-(--studio-muted)">
-                <div className="max-w-md space-y-3">
-                  <Shield size={48} className="mx-auto text-red-500/50" />
-                  <h3 className="text-sm font-semibold text-white">
-                    Unauthorized Access
-                  </h3>
-                  <p className="text-xs text-(--studio-muted)">
-                    Only logged-in administrators are allowed to access the
-                    admin panel.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : activeRailItem === "labs" ? (
-          <div className="min-w-0 flex-1 flex flex-col overflow-hidden bg-[#0B0B10]">
-            {isAdmin ? (
-              <LabsPanel />
-            ) : (
-              <div className="flex h-full items-center justify-center text-center p-6 text-(--studio-muted)">
-                <div className="max-w-md space-y-3">
-                  <Shield size={48} className="mx-auto text-red-500/50" />
-                  <h3 className="text-sm font-semibold text-white">
-                    Unauthorized Access
-                  </h3>
-                  <p className="text-xs text-(--studio-muted)">
-                    Only logged-in administrators are allowed to access the
-                    Labs.
-                  </p>
-                  <a
-                    href="/studio/text-effects"
-                    className="mt-4 inline-block no-underline px-4 py-2 bg-[#7C6FFF] hover:bg-[#6B5EEE] text-white rounded text-sm font-semibold transition-colors"
-                  >
-                    Go to Text Effects
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <aside
-              id="left-controls-panel"
-              className={`
-              ${isNarrow && mobileActiveTab !== "controls" ? "hidden" : "flex"}
-              ${isMobile ? "w-full" : isTablet ? "w-75" : "w-90"}
-              flex-col border-r border-(--studio-border) bg-(--studio-shell) shrink-0 select-none
-              ${
-                activeRailItem === "text-effects"
-                  ? "overflow-hidden"
-                  : "overflow-y-auto"
-              }
-            `}
-            >
-              {activeRailItem === "text-effects" && (
-                <>
-                  {/* ── Compact GPU pipeline strip ── */}
-                  <div
-                    className="flex items-center justify-between gap-2 px-3 py-2 border-b shrink-0"
-                    style={{
-                      borderColor: "var(--studio-border)",
-                      background: "var(--studio-panel)",
-                    }}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="flex items-center justify-center rounded shrink-0"
-                        style={{
-                          width: 22,
-                          height: 22,
-                          background: "var(--studio-control)",
-                          border: "1px solid var(--studio-border)",
-                          color: "var(--studio-accent)",
-                        }}
-                      >
-                        <Cpu size={12} />
-                      </span>
-                      <span className="text-[11px] font-semibold text-white truncate">
-                        Native authoring pipeline
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span
-                        className={`studio-gpu-pill ${
-                          nativePreviewState === "ready"
-                            ? "ready"
-                            : nativePreviewState === "error"
-                            ? "error"
-                            : "live"
-                        }`}
-                      >
-                        <span className="studio-gpu-pill-dot" />
-                        {nativePreviewState === "ready"
-                          ? "Ready"
-                          : nativePreviewState === "error"
-                          ? "Error"
-                          : "Live"}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleApplyPreset(nativeAuroraPreset)}
-                        className="canvas-toolbar-btn"
-                        title="Load Native Aurora sample"
-                      >
-                        <Sparkles size={10} className="mr-1" />
-                        Aurora
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="border-b border-(--studio-border) px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-(--studio-muted)">
-                    Native effect library
-                  </div>
-                </>
-              )}
-
-              {activeRailItem === "text-effects" && (
-                <div
-                  className="flex min-h-0 flex-1 flex-col border-b"
-                  style={{ borderColor: "var(--studio-border)" }}
-                >
-                  <TextEffectCatalogPanel
-                    localPresets={displayPresets}
-                    activePresetId={activePresetId}
-                    selectedCategory={selectedCategory}
-                    sortBy={sortBy}
-                    onSelectedCategoryChange={setSelectedCategory}
-                    onSortByChange={setSortBy}
-                    onApplyPreset={(presetToApply) => {
-                      handleApplyPreset(presetToApply);
-                    }}
-                    onDeletePreset={handleDeletePreset}
-                    onStartFromScratch={handleStartFromScratch}
-                    onSavePreset={() => setShowSavePresetModal(true)}
-                  />
-                </div>
-              )}
-            </aside>
-
-            {/* CENTER — CANVAS + TIMELINE
-              Mobile/Tablet: shown only when mobileActiveTab === "preview"
-              Desktop: always visible, fills remaining space */}
-            <div
-              className={`${
-                isNarrow && mobileActiveTab !== "preview" ? "hidden" : "flex"
-              } flex-1 flex-col min-w-0`}
-            >
-              <PreviewCanvas
-                canvasRef={canvasRef}
-                config={config}
-                bgMode={bgMode}
-                zoom={zoom}
-                zoomMode={zoomMode}
-                onZoomChange={setZoom}
-                onZoomModeChange={setZoomMode}
-                onBgModeChange={setBgMode}
-                onEffectiveZoomChange={setEffectiveZoom}
-              />
-
-              {showFontCompare && (
-                <Suspense fallback={null}>
-                  <FontCompare
-                    config={config}
-                    onSelectFont={(font) => modifyConfig({ fontFamily: font })}
-                    onClose={() => setShowFontCompare(false)}
-                  />
-                </Suspense>
-              )}
-
-              <TimelinePanel
-                scene={scene}
-                previewTime={previewTime}
-                isPlaying={isPlaying}
-                uiMode={timelinePanelMode}
-                onPlayToggle={() => setIsPlaying((p) => !p)}
-                onReset={() => setPreviewTime(0)}
-                onTimeChange={setPreviewTime}
-                onSceneChange={modifyScene}
-              />
-            </div>
-
-            {/* RIGHT PANEL — INSPECTOR
-              Mobile/Tablet: shown only when mobileActiveTab === "code", full-width on mobile
-              Desktop: always visible, fixed 344px */}
-            <Suspense
-              fallback={
-                <aside
-                  className={`${
-                    isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"
-                  } ${
-                    isMobile ? "w-full" : "w-86"
-                  } shrink-0 border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted) flex-col`}
-                >
-                  Loading panel...
-                </aside>
-              }
-            >
-              <div
-                className={`${
-                  isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"
-                } ${isMobile ? "w-full" : "w-86"} shrink-0`}
-              >
-                <InspectorPanel
-                  config={config}
-                  scene={scene}
-                  selectedLayerId={selectedLayerId}
-                  onSelectLayer={setSelectedLayerId}
-                  onConfigChange={modifyConfig}
-                  onSceneChange={modifyScene}
-                  onSavePreset={() => setShowSavePresetModal(true)}
-                  onStartFromScratch={handleStartFromScratch}
-                  onFitText={fitTextToComposition}
-                  onOpenFontCompare={() => setShowFontCompare(true)}
-                  activeEffectId={activeEffectId}
-                  collapsedSections={collapsedSections}
-                  isGeneratingName={isGeneratingName}
-                  onToggleSection={toggleSection}
-                  onGenerateEffectName={handleGenerateAiEffectName}
-                  onApplyCompositionPreset={applyCompositionPreset}
-                />
-              </div>
-            </Suspense>
-          </>
-        )}
-      </main>
+      <TextEffectsWorkspace
+        activeRailItem={activeRailItem}
+        isAdmin={isAdmin}
+        isNarrow={isNarrow}
+        isMobile={isMobile}
+        isTablet={isTablet}
+        mobileActiveTab={mobileActiveTab}
+        config={config}
+        scene={scene}
+        canvasRef={canvasRef}
+        effectiveZoom={effectiveZoom}
+        zoom={zoom}
+        zoomMode={zoomMode}
+        bgMode={bgMode}
+        nativePreviewState={nativePreviewState}
+        nativePreviewError={nativePreviewError}
+        displayPresets={displayPresets}
+        activePresetId={activePresetId}
+        selectedCategory={selectedCategory}
+        sortBy={sortBy}
+        selectedLayerId={selectedLayerId}
+        uiMode={timelinePanelMode}
+        showFontCompare={showFontCompare}
+        collapsedSections={collapsedSections}
+        isGeneratingName={isGeneratingName}
+        activeEffectId={activeEffectId}
+        onMobileTabChange={setMobileActiveTab}
+        onZoomChange={setZoom}
+        onZoomModeChange={setZoomMode}
+        onBgModeChange={setBgMode}
+        onEffectiveZoomChange={setEffectiveZoom}
+        onExport={handleOpenPublishModal}
+        onApplyPreset={handleApplyPreset}
+        onDeletePreset={handleDeletePreset}
+        onStartFromScratch={handleStartFromScratch}
+        onSavePreset={() => setShowSavePresetModal(true)}
+        onSelectedCategoryChange={setSelectedCategory}
+        onSortByChange={setSortBy}
+        onConfigChange={modifyConfig}
+        onSceneChange={modifyScene}
+        onSelectLayer={setSelectedLayerId}
+        onPlayToggle={() => setIsPlaying((playing) => !playing)}
+        onResetTimeline={() => setPreviewTime(0)}
+        onTimeChange={setPreviewTime}
+        previewTime={previewTime}
+        isPlaying={isPlaying}
+        onOpenFontCompare={() => setShowFontCompare(true)}
+        onCloseFontCompare={() => setShowFontCompare(false)}
+        onFitText={fitTextToComposition}
+        onToggleSection={toggleSection}
+        onGenerateEffectName={handleGenerateAiEffectName}
+        onApplyCompositionPreset={applyCompositionPreset}
+      />
 
       <Suspense fallback={null}>
         <SavePresetModal
@@ -2135,78 +1663,17 @@ export default function App() {
           onSave={handleSaveCustomPreset}
         />
 
-        {showExportModal && (
-          <div
-            className="fixed inset-0 z-80 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Export text effect"
-            onMouseDown={() => setShowExportModal(false)}
-          >
-            <div
-              className="flex max-h-[min(88vh,900px)] w-full max-w-190 flex-col overflow-hidden rounded-xl border border-(--studio-border) bg-(--studio-panel) shadow-2xl"
-              onMouseDown={(event) => event.stopPropagation()}
-            >
-              <div className="flex shrink-0 items-center justify-between border-b border-(--studio-border) px-4 py-3">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-(--studio-subtle)">
-                    Export
-                  </p>
-                  <h2 className="mt-0.5 text-sm font-semibold text-white">
-                    Editor-ready effect package
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowExportModal(false)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-(--studio-border) text-(--studio-muted) transition-colors hover:bg-(--studio-hover) hover:text-white"
-                  aria-label="Close export dialog"
-                >
-                  <X size={15} />
-                </button>
-              </div>
-              <div className="min-h-0 flex-1 overflow-hidden">
-                <ExportLabPanel
-                  isMobile={false}
-                  mobileActiveTab="code"
-                  activeTab={activeTab}
-                  onActiveTabChange={setActiveTab}
-                  engineFormat={engineFormat}
-                  onEngineFormatChange={setEngineFormat}
-                  definitionFormat={definitionFormat}
-                  onDefinitionFormatChange={setDefinitionFormat}
-                  activeEffectId={activeEffectId}
-                  config={config}
-                  scene={scene}
-                  highlightedCode={highlightedCode}
-                  currentCodeText={getCurrentCodeText()}
-                  copiedCodeFeedback={copiedCodeFeedback}
-                  onCopyCode={copyCodeToClipboard}
-                  onDownloadCode={downloadCodeAsFile}
-                  researchTopic={researchTopic}
-                  onResearchTopicChange={setResearchTopic}
-                  researchStatus={researchStatus}
-                  researchError={researchError}
-                  researchLogs={researchLogs}
-                  researchResult={researchResult}
-                  onExecuteResearch={handleExecuteDeepResearch}
-                  onApplyResearchResult={handleApplyResearchResult}
-                  blendAId={blendAId}
-                  blendBId={blendBId}
-                  blendRatio={blendRatio}
-                  onBlendAIdChange={setBlendAId}
-                  onBlendBIdChange={setBlendBId}
-                  onBlendRatioChange={setBlendRatio}
-                  onPerformBlend={handlePerformBlend}
-                  presets={[...customPresets, ...builtInPresets]}
-                  onCaptureEffectThumbnail={getPreviewPngDataUrl}
-                  effectApiCategory={effectApiCategory}
-                  onEffectApiCategoryChange={setEffectApiCategory}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        <PublishEffectModal
+          open={showPublishModal}
+          onClose={() => {
+            setShowPublishModal(false);
+            setPublishThumbnail(null);
+          }}
+          config={config}
+          thumbnailDataUrl={publishThumbnail ?? undefined}
+          category={effectApiCategory}
+          onCategoryChange={setEffectApiCategory}
+        />
 
         <TutorialModal
           open={showTutorialModal}

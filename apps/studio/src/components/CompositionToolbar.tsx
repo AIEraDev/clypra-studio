@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
-import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
+import { useEffect } from "react";
+import { Download, Maximize2, ZoomIn, ZoomOut } from "lucide-react";
+import { toast } from "sonner";
 import type { TextEffectConfig } from "@clypra-studio/engine";
 
 export type CompositionZoomMode = "fit" | "manual";
@@ -15,7 +16,7 @@ interface CompositionToolbarProps {
   onZoomChange: (zoom: number) => void;
   onZoomModeChange: (mode: CompositionZoomMode) => void;
   onBgModeChange: (mode: "checkerboard" | "black") => void;
-  toolbarExtras?: ReactNode;
+  onExport: () => void;
 }
 
 function Divider() {
@@ -32,16 +33,16 @@ export function CompositionToolbar({
   onZoomChange,
   onZoomModeChange,
   onBgModeChange,
-  toolbarExtras,
+  onExport,
 }: CompositionToolbarProps) {
-  const gpuPillClass =
-    gpuState === "ready"
-      ? "studio-gpu-pill ready"
-      : gpuState === "rendering"
-      ? "studio-gpu-pill live"
-      : gpuState === "error"
-      ? "studio-gpu-pill error"
-      : "studio-gpu-pill live";
+  useEffect(() => {
+    if (!gpuError) return;
+    toast.error("GPU error", {
+      description: gpuError,
+      id: "gpu-error",
+      duration: 6000,
+    });
+  }, [gpuError]);
 
   return (
     <div className="studio-composition-toolbar">
@@ -76,94 +77,93 @@ export function CompositionToolbar({
         </span>
       </div>
 
-      <Divider />
-
-      <div className="flex shrink-0 items-center rounded border border-(--studio-border) bg-(--studio-control) p-0.5">
-        <button
-          type="button"
-          onClick={() => onZoomModeChange("fit")}
-          className={`canvas-toolbar-btn${zoomMode === "fit" ? " active" : ""}`}
-          style={{ gap: 4 }}
-          title="Fit to viewport"
-        >
-          <Maximize2 size={10} />
-          Fit
-        </button>
-        <button
-          type="button"
-          onClick={() => onZoomModeChange("manual")}
-          className={`canvas-toolbar-btn${
-            zoomMode === "manual" ? " active" : ""
-          }`}
-        >
-          Manual
-        </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => {
-          onZoomModeChange("manual");
-          onZoomChange(Math.max(25, effectiveZoom - 25));
-        }}
-        className="canvas-toolbar-btn"
-        style={{ width: 26, padding: 0 }}
-        title="Zoom out"
-      >
-        <ZoomOut size={12} />
-      </button>
-      <span className="w-8 shrink-0 text-center font-mono text-[10px] text-(--studio-muted)">
-        {effectiveZoom}%
-      </span>
-      <button
-        type="button"
-        onClick={() => {
-          onZoomModeChange("manual");
-          onZoomChange(Math.min(400, effectiveZoom + 25));
-        }}
-        className="canvas-toolbar-btn"
-        style={{ width: 26, padding: 0 }}
-        title="Zoom in"
-      >
-        <ZoomIn size={12} />
-      </button>
-
-      <Divider />
-
-      <div className="flex shrink-0 items-center rounded border border-(--studio-border) bg-(--studio-control) p-0.5">
-        <button
-          type="button"
-          onClick={() => onBgModeChange("checkerboard")}
-          className={`canvas-toolbar-btn${
-            bgMode === "checkerboard" ? " active" : ""
-          }`}
-          title="Transparent checkerboard"
-        >
-          Alpha
-        </button>
-        <button
-          type="button"
-          onClick={() => onBgModeChange("black")}
-          className={`canvas-toolbar-btn${bgMode === "black" ? " active" : ""}`}
-        >
-          Black
-        </button>
-      </div>
-
-      <Divider />
-
-      {gpuError && (
-        <span
-          className="max-w-40 truncate font-mono text-[10px] text-(--gpu-error)"
-          title={gpuError}
-        >
-          {gpuError}
-        </span>
-      )}
-
-      <Divider />
       <div className="ml-auto flex shrink-0 items-center gap-1">
-        {toolbarExtras}
+        <div className="flex shrink-0 items-center rounded border border-(--studio-border) bg-(--studio-control) p-0.5">
+          <button
+            type="button"
+            onClick={() => onZoomModeChange("fit")}
+            className={`canvas-toolbar-btn${
+              zoomMode === "fit" ? " active" : ""
+            }`}
+            style={{ gap: 4 }}
+            title="Fit to viewport"
+          >
+            <Maximize2 size={10} />
+            Fit
+          </button>
+          <button
+            type="button"
+            onClick={() => onZoomModeChange("manual")}
+            className={`canvas-toolbar-btn${
+              zoomMode === "manual" ? " active" : ""
+            }`}
+          >
+            Manual
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            onZoomModeChange("manual");
+            onZoomChange(Math.max(25, effectiveZoom - 25));
+          }}
+          className="canvas-toolbar-btn"
+          style={{ width: 26, padding: 0 }}
+          title="Zoom out"
+        >
+          <ZoomOut size={12} />
+        </button>
+        <span className="w-8 shrink-0 text-center font-mono text-[10px] text-(--studio-muted)">
+          {effectiveZoom}%
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            onZoomModeChange("manual");
+            onZoomChange(Math.min(400, effectiveZoom + 25));
+          }}
+          className="canvas-toolbar-btn"
+          style={{ width: 26, padding: 0 }}
+          title="Zoom in"
+        >
+          <ZoomIn size={12} />
+        </button>
+
+        <Divider />
+
+        <div className="flex shrink-0 items-center rounded border border-(--studio-border) bg-(--studio-control) p-0.5">
+          <button
+            type="button"
+            onClick={() => onBgModeChange("checkerboard")}
+            className={`canvas-toolbar-btn${
+              bgMode === "checkerboard" ? " active" : ""
+            }`}
+            title="Transparent checkerboard"
+          >
+            Alpha
+          </button>
+          <button
+            type="button"
+            onClick={() => onBgModeChange("black")}
+            className={`canvas-toolbar-btn${
+              bgMode === "black" ? " active" : ""
+            }`}
+          >
+            Black
+          </button>
+        </div>
+
+        <Divider />
+
+        <button
+          id="open-export-modal-btn"
+          type="button"
+          onClick={onExport}
+          className="canvas-toolbar-btn primary px-3"
+        >
+          <Download size={11} className="mr-1" /> Export
+        </button>
       </div>
     </div>
   );

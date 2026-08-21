@@ -3,7 +3,7 @@
  * Configures global test environment and mocks
  */
 
-import { vi, beforeEach } from "vitest";
+import { vi, afterEach, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
 
 // Mock HTMLCanvasElement methods that aren't available in happy-dom
@@ -79,6 +79,14 @@ if (typeof HTMLCanvasElement !== "undefined") {
     return null;
   }) as any;
 }
+
+const rafTimers = new Map<number, ReturnType<typeof setTimeout>>();
+let nextFrameId = 0;
+
+afterEach(() => {
+  for (const timer of rafTimers.values()) clearTimeout(timer);
+  rafTimers.clear();
+});
 
 beforeEach(() => { // Type assertion to bypass strict type checking
 
@@ -160,10 +168,20 @@ beforeEach(() => { // Type assertion to bypass strict type checking
   });
 
   // Mock requestAnimationFrame / cancelAnimationFrame
-  let frameId = 0;
   global.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
-    setTimeout(() => callback(Date.now()), 16);
-    return ++frameId;
+    const frameId = ++nextFrameId;
+    const timer = setTimeout(() => {
+      rafTimers.delete(frameId);
+      callback(Date.now());
+    }, 16);
+    rafTimers.set(frameId, timer);
+    return frameId;
   });
-  global.cancelAnimationFrame = vi.fn();
+  global.cancelAnimationFrame = vi.fn((frameId: number) => {
+    const timer = rafTimers.get(frameId);
+    if (timer) {
+      clearTimeout(timer);
+      rafTimers.delete(frameId);
+    }
+  });
 });

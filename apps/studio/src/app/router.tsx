@@ -17,7 +17,9 @@ import {
 } from "./routeShell";
 import { STUDIO_LAB_ROUTES, STUDIO_RAIL_ROUTES } from "./studioRoutes";
 
-const StudioApp = lazy(() => import("../App"));
+const TextEffectsLabPage = lazy(() =>
+  import("../features/text-effects/TextEffectsLabPage"),
+);
 const TemplateWorkspace = lazy(() =>
   import("../components/TemplateWorkspace").then((module) => ({
     default: module.TemplateWorkspace,
@@ -195,7 +197,7 @@ const routes: RouteObject[] = [
     path: `${STUDIO_RAIL_ROUTES["text-effects"]}/*`,
     element: (
       <DocumentRoute metadata={METADATA.textEffectsLab}>
-        <AuthRoute label="the Text Effects Lab">{withSuspense(<StudioApp />)}</AuthRoute>
+        <AuthRoute label="the Text Effects Lab">{withSuspense(<TextEffectsLabPage />)}</AuthRoute>
       </DocumentRoute>
     ),
   },
@@ -304,7 +306,7 @@ const routes: RouteObject[] = [
     path: `${STUDIO_RAIL_ROUTES.admin}/*`,
     element: (
       <DocumentRoute metadata={METADATA.studio}>
-        <AdminRoute label="Studio administration">{withSuspense(<StudioApp />)}</AdminRoute>
+        <AdminRoute label="Studio administration">{withSuspense(<TextEffectsLabPage />)}</AdminRoute>
       </DocumentRoute>
     ),
   },
@@ -312,7 +314,7 @@ const routes: RouteObject[] = [
     path: `${STUDIO_RAIL_ROUTES.labs}/*`,
     element: (
       <DocumentRoute metadata={METADATA.studio}>
-        <AdminRoute label="Studio labs">{withSuspense(<StudioApp />)}</AdminRoute>
+        <AdminRoute label="Studio labs">{withSuspense(<TextEffectsLabPage />)}</AdminRoute>
       </DocumentRoute>
     ),
   },
@@ -328,7 +330,7 @@ const routes: RouteObject[] = [
     path: "/studio/*",
     element: (
       <DocumentRoute metadata={METADATA.studio}>
-        <AuthRoute label="Clypra Studio">{withSuspense(<StudioApp />)}</AuthRoute>
+        <AuthRoute label="Clypra Studio">{withSuspense(<TextEffectsLabPage />)}</AuthRoute>
       </DocumentRoute>
     ),
   },

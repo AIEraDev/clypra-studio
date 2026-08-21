@@ -1,7 +1,55 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Download, Copy, Plus, Play, Pause, Loader2, FolderPlus, ArrowLeft, Sparkles, FileJson, UploadCloud, X, RefreshCw, AlertTriangle, CheckCircle, Info, Layers, Lock, Unlock, Eye, EyeOff, Trash2, ChevronUp, ChevronDown, Settings, Image as ImageIcon, Sparkle, Clock } from "lucide-react";
+import {
+  Download,
+  Copy,
+  Plus,
+  Play,
+  Pause,
+  Loader2,
+  FolderPlus,
+  ArrowLeft,
+  Sparkles,
+  FileJson,
+  UploadCloud,
+  X,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  Layers,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Settings,
+  Image as ImageIcon,
+  Sparkle,
+  Clock,
+} from "lucide-react";
+import { toast } from "sonner";
 
-import { TemplateRenderer, BUILTIN_CANVAS_TEMPLATES, TemplateCategory, TextTemplate, TemplateLayer, TemplateTextLayer, TemplateShapeLayer, TemplateImageLayer, LayerAnimation, AnimationPreset, AnimatableValue, TemplateKeyframe, TemplateEasingFunction, addKeyframe, removeTemplateKeyframe, isKeyframed, getSupportedWebMMimeType } from "@clypra-studio/engine";
+import {
+  TemplateRenderer,
+  BUILTIN_CANVAS_TEMPLATES,
+  TemplateCategory,
+  TextTemplate,
+  TemplateLayer,
+  TemplateTextLayer,
+  TemplateShapeLayer,
+  TemplateImageLayer,
+  LayerAnimation,
+  AnimationPreset,
+  AnimatableValue,
+  TemplateKeyframe,
+  TemplateEasingFunction,
+  addKeyframe,
+  removeTemplateKeyframe,
+  isKeyframed,
+  getSupportedWebMMimeType,
+} from "@clypra-studio/engine";
 import { PublishTemplateModal } from "./PublishTemplateModal";
 import { getStudioApiBaseUrl } from "../services/apiConfig";
 import { ClypraLogo } from "./ClypraLogo";
@@ -11,7 +59,14 @@ export interface TemplateWorkspaceProps {
   onBackToDesign: () => void;
 }
 
-const CATEGORIES: TemplateCategory[] = ["lower-third", "title-card", "caption", "callout", "social", "countdown"];
+const CATEGORIES: TemplateCategory[] = [
+  "lower-third",
+  "title-card",
+  "caption",
+  "callout",
+  "social",
+  "countdown",
+];
 const PLACEMENTS = ["lower-third", "center", "top", "full-frame"] as const;
 
 function toKebabCase(str: string): string {
@@ -23,7 +78,6 @@ function toKebabCase(str: string): string {
 }
 
 export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
-
   // Template State
   const [template, setTemplate] = useState<TextTemplate | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
@@ -46,7 +100,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       if (layer.kind === "text" && layer.role && layer.role !== "none") {
         const roleKey = layer.role as "primary" | "secondary" | "accent";
         // Only update if the current value is still the default placeholder
-        if (newCustomTexts[roleKey] === `${roleKey.charAt(0).toUpperCase() + roleKey.slice(1)} Text`) {
+        if (
+          newCustomTexts[roleKey] ===
+          `${roleKey.charAt(0).toUpperCase() + roleKey.slice(1)} Text`
+        ) {
           newCustomTexts[roleKey] = layer.content;
           hasChanges = true;
         }
@@ -57,7 +114,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       setCustomTexts(newCustomTexts);
     }
   }, [template?.id, template?.layers]); // Only re-run when template changes
-  const [colorOverrides, setColorOverrides] = useState<Map<string, string>>(new Map());
+  const [colorOverrides, setColorOverrides] = useState<Map<string, string>>(
+    new Map(),
+  );
 
   // Playback / Timeline clock
   const [isPlaying, setIsPlaying] = useState(false);
@@ -68,7 +127,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   // New template configurations
   const [newTemplateId, setNewTemplateId] = useState("my-custom-template");
   const [newLabel, setNewLabel] = useState("My Custom Template");
-  const [newCategory, setNewCategory] = useState<TemplateCategory>("lower-third");
+  const [newCategory, setNewCategory] =
+    useState<TemplateCategory>("lower-third");
   const [newW, setNewW] = useState(1920);
   const [newH, setNewH] = useState(1080);
   const [newDuration, setNewDuration] = useState(3.0);
@@ -87,27 +147,45 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   // Publishing States
   const [showPublishModal, setShowPublishModal] = useState(false);
-  const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "published" | "failed">("idle");
+  const [publishStatus, setPublishStatus] = useState<
+    "idle" | "publishing" | "published" | "failed"
+  >("idle");
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const [publishPrUrl, setPublishPrUrl] = useState<string | null>(null);
   const [thumbnailDataUrl, setThumbnailDataUrl] = useState<string | null>(null);
-  const [publishVideoDataUrl, setPublishVideoDataUrl] = useState<string | null>(null);
-  const [isGeneratingPublishVideo, setIsGeneratingPublishVideo] = useState(false);
+  const [publishVideoDataUrl, setPublishVideoDataUrl] = useState<string | null>(
+    null,
+  );
+  const [isGeneratingPublishVideo, setIsGeneratingPublishVideo] =
+    useState(false);
   const [publishDescription, setPublishDescription] = useState("");
   const [publishTagsInput, setPublishTagsInput] = useState("");
-  const [publishPlacement, setPublishPlacement] = useState<(typeof PLACEMENTS)[number]>("center");
+  const [publishPlacement, setPublishPlacement] =
+    useState<(typeof PLACEMENTS)[number]>("center");
   const [publishCreatorName, setPublishCreatorName] = useState("");
   const [publishCreatorLink, setPublishCreatorLink] = useState("");
 
   // Auto-save notification
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+    "idle",
+  );
+
+  // Fire a subtle toast when the workspace auto-saves so the header
+  // doesn't need to hold a persistent "Auto-saved" indicator.
+  useEffect(() => {
+    if (saveStatus === "saved") {
+      toast.success("Auto-saved", { id: "template-autosave", duration: 1500 });
+    }
+  }, [saveStatus]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const requestRef = useRef<number | null>(null);
   const previousTimeRef = useRef<number | null>(null);
 
   // Saved templates management
-  const [savedTemplates, setSavedTemplates] = useState<Array<{ id: string; name: string; savedAt: number }>>([]);
+  const [savedTemplates, setSavedTemplates] = useState<
+    Array<{ id: string; name: string; savedAt: number }>
+  >([]);
   const [showSavedTemplates, setShowSavedTemplates] = useState(false);
 
   // Admin API template loading states
@@ -116,7 +194,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [apiTemplatesLoading, setApiTemplatesLoading] = useState(false);
   const [loadTab, setLoadTab] = useState<"local" | "api">("local");
   const [isLoadingApiTemplate, setIsLoadingApiTemplate] = useState(false);
-  const [publishingApiTemplateId, setPublishingApiTemplateId] = useState<string | null>(null);
+  const [publishingApiTemplateId, setPublishingApiTemplateId] = useState<
+    string | null
+  >(null);
   const [publishApproved, setPublishApproved] = useState(true); // admin publish checkbox
 
   // Parse JWT token to check if user is admin
@@ -155,18 +235,30 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     }
   };
 
-  const handlePublishApiTemplateDirectly = async (category: string, id: string) => {
-    if (!confirm("Are you sure you want to approve and publish this template immediately?")) {
+  const handlePublishApiTemplateDirectly = async (
+    category: string,
+    id: string,
+  ) => {
+    if (
+      !confirm(
+        "Are you sure you want to approve and publish this template immediately?",
+      )
+    ) {
       return;
     }
     setPublishingApiTemplateId(id);
     try {
-      const response = await fetch(`${getStudioApiBaseUrl()}/text-templates/${category}/${id}/publish`, {
-        method: "POST",
-      });
+      const response = await fetch(
+        `${getStudioApiBaseUrl()}/text-templates/${category}/${id}/publish`,
+        {
+          method: "POST",
+        },
+      );
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.message || err.error || "Failed to publish template");
+        throw new Error(
+          err.message || err.error || "Failed to publish template",
+        );
       }
       await fetchApiTemplates();
       alert("Template published successfully!");
@@ -181,20 +273,30 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const handleLoadApiTemplate = async (category: string, id: string) => {
     setIsLoadingApiTemplate(true);
     try {
-      const response = await fetch(`${getStudioApiBaseUrl()}/text-templates/${category}/${id}`);
+      const response = await fetch(
+        `${getStudioApiBaseUrl()}/text-templates/${category}/${id}`,
+      );
       if (!response.ok) throw new Error("Failed to fetch template from API");
       const lottieData = await response.json();
-      
+
       setTemplate(lottieData);
       setSelectedLayerId(lottieData.layers?.[0]?.id || null);
-      
+
       // Extract custom texts from layers
-      const textLayers = (lottieData.layers || []).filter((l: any) => l.kind === "text");
-      const primary = textLayers.find((tl: any) => tl.role === "primary")?.content || "Primary Text";
-      const secondary = textLayers.find((tl: any) => tl.role === "secondary")?.content || "Secondary Text";
-      const accent = textLayers.find((tl: any) => tl.role === "accent")?.content || "Accent Text";
+      const textLayers = (lottieData.layers || []).filter(
+        (l: any) => l.kind === "text",
+      );
+      const primary =
+        textLayers.find((tl: any) => tl.role === "primary")?.content ||
+        "Primary Text";
+      const secondary =
+        textLayers.find((tl: any) => tl.role === "secondary")?.content ||
+        "Secondary Text";
+      const accent =
+        textLayers.find((tl: any) => tl.role === "accent")?.content ||
+        "Accent Text";
       setCustomTexts({ primary, secondary, accent });
-      
+
       setColorOverrides(new Map());
       setThumbnailFrame(0);
       setCurrentTime(0);
@@ -218,7 +320,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         if (parsed) {
           setTemplate(parsed.template);
           setSelectedLayerId(parsed.selectedLayerId);
-          setCustomTexts(parsed.customTexts || { primary: "Primary Text", secondary: "Secondary Text", accent: "Accent Text" });
+          setCustomTexts(
+            parsed.customTexts || {
+              primary: "Primary Text",
+              secondary: "Secondary Text",
+              accent: "Accent Text",
+            },
+          );
           if (parsed.colorOverrides) {
             setColorOverrides(new Map(Object.entries(parsed.colorOverrides)));
           }
@@ -297,7 +405,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           colorOverrides: Object.fromEntries(colorOverrides),
           thumbnailFrame,
         };
-        localStorage.setItem("clypra_canvas_studio_session", JSON.stringify(data));
+        localStorage.setItem(
+          "clypra_canvas_studio_session",
+          JSON.stringify(data),
+        );
         setSaveStatus("saved");
       } catch (err) {
         console.error("Failed to save session", err);
@@ -322,7 +433,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
     // Draw selection bounding outline on active layer
     if (selectedLayerId) {
-      const activeLayer = template.layers.find((l) => l.id === selectedLayerId) as any;
+      const activeLayer = template.layers.find(
+        (l) => l.id === selectedLayerId,
+      ) as any;
       if (activeLayer) {
         ctx.save();
         ctx.strokeStyle = "#3b82f6";
@@ -331,14 +444,23 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         const layout = renderer.getLayerLayout(activeLayer.id) || {
           x: activeLayer.x,
           y: activeLayer.y,
-          width: typeof activeLayer.width === "number" ? activeLayer.width : 100,
-          height: typeof activeLayer.height === "number" ? activeLayer.height : 50,
+          width:
+            typeof activeLayer.width === "number" ? activeLayer.width : 100,
+          height:
+            typeof activeLayer.height === "number" ? activeLayer.height : 50,
         };
         ctx.strokeRect(layout.x, layout.y, layout.width, layout.height);
         ctx.restore();
       }
     }
-  }, [template, currentTime, customTexts, colorOverrides, selectedLayerId, hiddenLayers]);
+  }, [
+    template,
+    currentTime,
+    customTexts,
+    colorOverrides,
+    selectedLayerId,
+    hiddenLayers,
+  ]);
 
   // RequestAnimationFrame tick for playing previews
   const tick = (timestamp: number) => {
@@ -373,7 +495,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const handleSaveTemplate = () => {
     if (!template) return;
 
-    const name = prompt("Enter a name for this template:", template.label || template.id);
+    const name = prompt(
+      "Enter a name for this template:",
+      template.label || template.id,
+    );
     if (!name) return;
 
     const savedId = `saved_${Date.now()}`;
@@ -386,7 +511,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     };
 
     // Save template data
-    localStorage.setItem(`clypra_saved_template_${savedId}`, JSON.stringify(savedTemplate));
+    localStorage.setItem(
+      `clypra_saved_template_${savedId}`,
+      JSON.stringify(savedTemplate),
+    );
 
     // Update saved templates list
     const newList = [
@@ -398,7 +526,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       },
     ];
     setSavedTemplates(newList);
-    localStorage.setItem("clypra_saved_templates_list", JSON.stringify(newList));
+    localStorage.setItem(
+      "clypra_saved_templates_list",
+      JSON.stringify(newList),
+    );
 
     alert(`Template "${name}" saved successfully!`);
   };
@@ -415,7 +546,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       const parsed = JSON.parse(saved);
       setTemplate(parsed.template);
       setSelectedLayerId(parsed.selectedLayerId);
-      setCustomTexts(parsed.customTexts || { primary: "Primary Text", secondary: "Secondary Text", accent: "Accent Text" });
+      setCustomTexts(
+        parsed.customTexts || {
+          primary: "Primary Text",
+          secondary: "Secondary Text",
+          accent: "Accent Text",
+        },
+      );
       if (parsed.colorOverrides) {
         setColorOverrides(new Map(Object.entries(parsed.colorOverrides)));
       }
@@ -432,23 +569,36 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   // Delete a saved template
   const handleDeleteSavedTemplate = (savedId: string) => {
-    if (!confirm("Are you sure you want to delete this saved template?")) return;
+    if (!confirm("Are you sure you want to delete this saved template?"))
+      return;
 
     localStorage.removeItem(`clypra_saved_template_${savedId}`);
     const newList = savedTemplates.filter((t) => t.id !== savedId);
     setSavedTemplates(newList);
-    localStorage.setItem("clypra_saved_templates_list", JSON.stringify(newList));
+    localStorage.setItem(
+      "clypra_saved_templates_list",
+      JSON.stringify(newList),
+    );
   };
 
   // Start a new template (saves current to session)
   const handleNewTemplate = () => {
-    if (template && !confirm("Start a new template? Your current work is auto-saved and can be resumed later.")) {
+    if (
+      template &&
+      !confirm(
+        "Start a new template? Your current work is auto-saved and can be resumed later.",
+      )
+    ) {
       return;
     }
 
     setTemplate(null);
     setSelectedLayerId(null);
-    setCustomTexts({ primary: "Primary Text", secondary: "Secondary Text", accent: "Accent Text" });
+    setCustomTexts({
+      primary: "Primary Text",
+      secondary: "Secondary Text",
+      accent: "Accent Text",
+    });
     setColorOverrides(new Map());
     setIsPlaying(false);
     setCurrentTime(0);
@@ -457,13 +607,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   // Reset/Clear workspace sandbox
   const handleResetSession = () => {
-    if (!confirm("Are you sure you want to clear your current progress and reset the sandbox? All unsaved modifications will be permanently lost.")) {
+    if (
+      !confirm(
+        "Are you sure you want to clear your current progress and reset the sandbox? All unsaved modifications will be permanently lost.",
+      )
+    ) {
       return;
     }
     localStorage.removeItem("clypra_canvas_studio_session");
     setTemplate(null);
     setSelectedLayerId(null);
-    setCustomTexts({ primary: "Primary Text", secondary: "Secondary Text", accent: "Accent Text" });
+    setCustomTexts({
+      primary: "Primary Text",
+      secondary: "Secondary Text",
+      accent: "Accent Text",
+    });
     setColorOverrides(new Map());
     setIsPlaying(false);
     setCurrentTime(0);
@@ -642,7 +800,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   // Apply multiple flat property updates in a single setTemplate call to avoid
   // stale-closure overwrites when setting several fields at once (e.g. padding sides).
-  const handleUpdateMultipleLayerProperties = (updates: Record<string, any>) => {
+  const handleUpdateMultipleLayerProperties = (
+    updates: Record<string, any>,
+  ) => {
     if (!selectedLayerId) return;
     setTemplate((prev) => {
       if (!prev) return prev;
@@ -656,9 +816,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     });
   };
 
-
   // Get keyframes for a property
-  const getPropertyKeyframes = (property: string): TemplateKeyframe<any>[] | null => {
+  const getPropertyKeyframes = (
+    property: string,
+  ): TemplateKeyframe<any>[] | null => {
     if (!selectedLayer) return null;
     const value = (selectedLayer as any)[property];
     if (isKeyframed(value)) {
@@ -668,11 +829,19 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   };
 
   // Add keyframe at current time
-  const handleAddKeyframe = (property: string, easing: TemplateEasingFunction = "ease-in-out") => {
+  const handleAddKeyframe = (
+    property: string,
+    easing: TemplateEasingFunction = "ease-in-out",
+  ) => {
     if (!template || !selectedLayerId || !selectedLayer) return;
 
     const currentValue = (selectedLayer as any)[property];
-    const newKeyframedValue = addKeyframe(currentValue, currentTime, currentValue, easing);
+    const newKeyframedValue = addKeyframe(
+      currentValue,
+      currentTime,
+      currentValue,
+      easing,
+    );
 
     handleUpdateLayerProperty(property, newKeyframedValue);
   };
@@ -693,18 +862,25 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   };
 
   // Update keyframe value
-  const handleUpdateKeyframe = (property: string, time: number, newValue: any, easing?: TemplateEasingFunction) => {
+  const handleUpdateKeyframe = (
+    property: string,
+    time: number,
+    newValue: any,
+    easing?: TemplateEasingFunction,
+  ) => {
     if (!template || !selectedLayerId || !selectedLayer) return;
 
     const currentValue = (selectedLayer as any)[property];
     if (!isKeyframed(currentValue)) return;
 
-    const keyframes = currentValue.keyframes.map((kf: TemplateKeyframe<any>) => {
-      if (Math.abs(kf.time - time) < 0.01) {
-        return { ...kf, value: newValue, easing: easing ?? kf.easing };
-      }
-      return kf;
-    });
+    const keyframes = currentValue.keyframes.map(
+      (kf: TemplateKeyframe<any>) => {
+        if (Math.abs(kf.time - time) < 0.01) {
+          return { ...kf, value: newValue, easing: easing ?? kf.easing };
+        }
+        return kf;
+      },
+    );
 
     handleUpdateLayerProperty(property, { keyframes });
   };
@@ -718,7 +894,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     height: number;
   }
 
-  const getCanvasCropRect = (canvas: HTMLCanvasElement, padding = 15): CropRect | null => {
+  const getCanvasCropRect = (
+    canvas: HTMLCanvasElement,
+    padding = 15,
+  ): CropRect | null => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
 
@@ -806,7 +985,17 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         croppedCanvas.height = rect.height;
         const croppedCtx = croppedCanvas.getContext("2d");
         if (croppedCtx) {
-          croppedCtx.drawImage(offscreen, rect.minX, rect.minY, rect.width, rect.height, 0, 0, rect.width, rect.height);
+          croppedCtx.drawImage(
+            offscreen,
+            rect.minX,
+            rect.minY,
+            rect.width,
+            rect.height,
+            0,
+            0,
+            rect.width,
+            rect.height,
+          );
           return croppedCanvas.toDataURL("image/png");
         }
       }
@@ -845,7 +1034,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     // Check requestFrame support
     const tempStream = canvas.captureStream(0);
     const tempTrack = tempStream.getVideoTracks()[0] as any;
-    const hasRequestFrame = tempTrack && typeof tempTrack.requestFrame === "function";
+    const hasRequestFrame =
+      tempTrack && typeof tempTrack.requestFrame === "function";
     tempStream.getTracks().forEach((t) => t.stop());
 
     // Create MediaRecorder stream
@@ -892,9 +1082,14 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         if (now >= expectedTime) {
           // Use precise timing based on frame number to avoid drift
           const time = currentFrame / fps;
-          
+
           // Render full size
-          renderCtx.clearRect(0, 0, template.canvasWidth, template.canvasHeight);
+          renderCtx.clearRect(
+            0,
+            0,
+            template.canvasWidth,
+            template.canvasHeight,
+          );
           renderer.drawFrame(renderCtx, time);
 
           // Copy cropped region to recording canvas
@@ -909,13 +1104,16 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               0,
               0,
               cropRect.width,
-              cropRect.height
+              cropRect.height,
             );
           } else {
             ctx.drawImage(renderCanvas, 0, 0);
           }
 
-          if (hasRequestFrame && typeof videoTrack.requestFrame === "function") {
+          if (
+            hasRequestFrame &&
+            typeof videoTrack.requestFrame === "function"
+          ) {
             videoTrack.requestFrame();
           }
 
@@ -937,13 +1135,15 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const handleOpenPublish = async () => {
     if (!template) return;
     try {
-      setPublishDescription(template.description || `Canvas-based template: ${template.label}`);
+      setPublishDescription(
+        template.description || `Canvas-based template: ${template.label}`,
+      );
       setPublishTagsInput(template.tags?.join(", ") || template.category || "");
       setPublishPlacement("center");
       setPublishVideoDataUrl(null);
       setPublishCreatorName(template.creatorName || "");
       setPublishCreatorLink(template.creatorLink || "");
-      
+
       const url = await captureThumbnail();
       setThumbnailDataUrl(url);
       setShowPublishModal(true);
@@ -967,11 +1167,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   // Automatically regenerate thumbnail preview when thumbnailFrame changes while modal is open
   useEffect(() => {
     if (showPublishModal && template) {
-      captureThumbnail().then((url) => {
-        setThumbnailDataUrl(url);
-      }).catch((err) => {
-        console.error("Failed to auto-update thumbnail preview", err);
-      });
+      captureThumbnail()
+        .then((url) => {
+          setThumbnailDataUrl(url);
+        })
+        .catch((err) => {
+          console.error("Failed to auto-update thumbnail preview", err);
+        });
     }
   }, [thumbnailFrame, showPublishModal]);
 
@@ -1009,7 +1211,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
     try {
       // Use cached thumbnail or generate
-      const thumbnailUrl = thumbnailDataUrl || await captureThumbnail();
+      const thumbnailUrl = thumbnailDataUrl || (await captureThumbnail());
 
       // Use pre-recorded video or record now
       let videoUrl = publishVideoDataUrl;
@@ -1020,28 +1222,38 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
       setPublishMessage("Uploading files to clypra-api…");
 
-      const response = await fetch(`${getStudioApiBaseUrl()}/text-templates/upload`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          template: {
-            ...template,
-            description: publishDescription,
-            tags: publishTagsInput.split(",").map((t) => t.trim()).filter(Boolean),
-            published: isAdmin ? publishApproved : false,
-            creatorName: publishCreatorName,
-            creatorLink: publishCreatorLink,
+      const response = await fetch(
+        `${getStudioApiBaseUrl()}/text-templates/upload`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-          thumbnailDataUrl: thumbnailUrl,
-          previewDataUrl: videoUrl,
-        }),
-      });
+          body: JSON.stringify({
+            template: {
+              ...template,
+              description: publishDescription,
+              tags: publishTagsInput
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean),
+              published: isAdmin ? publishApproved : false,
+              creatorName: publishCreatorName,
+              creatorLink: publishCreatorLink,
+            },
+            thumbnailDataUrl: thumbnailUrl,
+            previewDataUrl: videoUrl,
+          }),
+        },
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || errorData.error || `Upload failed: ${response.statusText}`);
+        throw new Error(
+          errorData.message ||
+            errorData.error ||
+            `Upload failed: ${response.statusText}`,
+        );
       }
 
       const result = await response.json();
@@ -1050,12 +1262,18 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       if (result.template) {
         setTemplate(result.template);
       }
-      const lottieUrl = `${getStudioApiBaseUrl()}/media/text-templates/${template.category}/${template.id}.json`;
+      const lottieUrl = `${getStudioApiBaseUrl()}/media/text-templates/${
+        template.category
+      }/${template.id}.json`;
       setPublishPrUrl(lottieUrl);
-      setPublishMessage(`${result.message || "Template published successfully"}`);
+      setPublishMessage(
+        `${result.message || "Template published successfully"}`,
+      );
     } catch (error) {
       setPublishStatus("failed");
-      setPublishMessage(error instanceof Error ? error.message : "Publishing failed");
+      setPublishMessage(
+        error instanceof Error ? error.message : "Publishing failed",
+      );
     }
   };
 
@@ -1075,52 +1293,80 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   };
 
   // Active layer properties
-  const selectedLayer = template?.layers.find((l) => l.id === selectedLayerId) as any;
+  const selectedLayer = template?.layers.find(
+    (l) => l.id === selectedLayerId,
+  ) as any;
 
   return (
     <div className="flex h-screen w-screen flex-col bg-[#09090D] text-white overflow-hidden font-sans">
       {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-[#2A2A38] bg-[#121219] px-6 shrink-0 z-40">
         <div className="flex items-center gap-3">
-          <button onClick={onBackToDesign} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2A2A38] hover:bg-[#2A2A38] transition-colors">
+          <button
+            onClick={onBackToDesign}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2A2A38] hover:bg-[#2A2A38] transition-colors"
+          >
             <ArrowLeft size={16} />
           </button>
-          <Link to="/studio" aria-label="Back to Clypra Studio" className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2A2A38] hover:bg-[#2A2A38] transition-colors">
+          <Link
+            to="/studio"
+            aria-label="Back to Clypra Studio"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2A2A38] hover:bg-[#2A2A38] transition-colors"
+          >
             <ClypraLogo size={23} />
           </Link>
           <div className="flex items-center gap-2">
             <ClypraLogo size={20} />
-            <h1 className="text-sm font-bold text-white tracking-tight">Clypra Canvas Template Studio</h1>
+            <h1 className="text-sm font-bold text-white tracking-tight">
+              Clypra Canvas Template Studio
+            </h1>
           </div>
-          {template && <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border border-[#2A2A38] bg-[#1A1A26] text-teal-300">{template.category}</span>}
+          {template && (
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border border-[#2A2A38] bg-[#1A1A26] text-teal-300">
+              {template.category}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
           {saveStatus === "saving" && (
             <span className="text-[11px] text-[#888899] flex items-center gap-1.5 font-medium">
-              <Loader2 size={12} className="animate-spin text-teal-400" /> Auto-saving...
-            </span>
-          )}
-          {saveStatus === "saved" && (
-            <span className="text-[11px] text-teal-400 flex items-center gap-1.5 font-medium">
-              <CheckCircle size={12} /> Auto-saved
+              <Loader2 size={12} className="animate-spin text-teal-400" />{" "}
+              Auto-saving...
             </span>
           )}
           {template && (
             <>
-              <button onClick={handleSaveTemplate} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5">
+              <button
+                onClick={handleSaveTemplate}
+                className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5"
+              >
                 <Copy size={13} /> Save Template
               </button>
-              <button onClick={handleDownloadThumbnail} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5" title="Download cropped template thumbnail as PNG">
+              <button
+                onClick={handleDownloadThumbnail}
+                className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5"
+                title="Download cropped template thumbnail as PNG"
+              >
                 <Download size={13} /> Download PNG
               </button>
-              <button onClick={() => setShowSavedTemplates(true)} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5">
+              <button
+                onClick={() => setShowSavedTemplates(true)}
+                className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5"
+              >
                 <FolderPlus size={13} /> Load ({savedTemplates.length})
               </button>
-              <button onClick={handleNewTemplate} className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5">
+              <button
+                onClick={handleNewTemplate}
+                className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5"
+              >
                 <Plus size={13} /> New
               </button>
-              <button onClick={handleGeneratePreview} disabled={isGeneratingPreview} className="rounded-lg border border-purple-500 hover:bg-purple-500/10 px-4 py-1.5 text-xs font-bold text-purple-400 flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <button
+                onClick={handleGeneratePreview}
+                disabled={isGeneratingPreview}
+                className="rounded-lg border border-purple-500 hover:bg-purple-500/10 px-4 py-1.5 text-xs font-bold text-purple-400 flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {isGeneratingPreview ? (
                   <>
                     <Loader2 size={14} className="animate-spin" /> Generating...
@@ -1131,7 +1377,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   </>
                 )}
               </button>
-              <button onClick={handleOpenPublish} className="rounded-lg bg-teal-500 hover:bg-teal-400 px-4 py-1.5 text-xs font-bold text-black shadow-lg shadow-teal-500/10 flex items-center gap-1.5 transition-colors">
+              <button
+                onClick={handleOpenPublish}
+                className="rounded-lg bg-teal-500 hover:bg-teal-400 px-4 py-1.5 text-xs font-bold text-black shadow-lg shadow-teal-500/10 flex items-center gap-1.5 transition-colors"
+              >
                 <UploadCloud size={14} /> Publish Template
               </button>
             </>
@@ -1146,9 +1395,14 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <FolderPlus size={16} className="text-teal-400" />
-                {isAdmin ? "Manage & Load Templates" : `Saved Templates (${savedTemplates.length})`}
+                {isAdmin
+                  ? "Manage & Load Templates"
+                  : `Saved Templates (${savedTemplates.length})`}
               </h3>
-              <button onClick={() => setShowSavedTemplates(false)} className="rounded-lg p-1.5 hover:bg-[#2A2A38] transition-colors">
+              <button
+                onClick={() => setShowSavedTemplates(false)}
+                className="rounded-lg p-1.5 hover:bg-[#2A2A38] transition-colors"
+              >
                 <X size={16} />
               </button>
             </div>
@@ -1158,7 +1412,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 <button
                   onClick={() => setLoadTab("local")}
                   className={`flex-1 py-2.5 text-center text-xs font-semibold transition-colors ${
-                    loadTab === "local" ? "text-teal-300 bg-[#0E0E14] border-b-2 border-teal-500" : "text-[#888899] hover:text-white"
+                    loadTab === "local"
+                      ? "text-teal-300 bg-[#0E0E14] border-b-2 border-teal-500"
+                      : "text-[#888899] hover:text-white"
                   }`}
                 >
                   Local Saved ({savedTemplates.length})
@@ -1166,7 +1422,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 <button
                   onClick={() => setLoadTab("api")}
                   className={`flex-1 py-2.5 text-center text-xs font-semibold transition-colors ${
-                    loadTab === "api" ? "text-teal-300 bg-[#0E0E14] border-b-2 border-teal-500" : "text-[#888899] hover:text-white"
+                    loadTab === "api"
+                      ? "text-teal-300 bg-[#0E0E14] border-b-2 border-teal-500"
+                      : "text-[#888899] hover:text-white"
                   }`}
                 >
                   API Templates ({apiTemplates.length})
@@ -1177,21 +1435,37 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             {loadTab === "local" ? (
               savedTemplates.length === 0 ? (
                 <div className="py-12 text-center">
-                  <p className="text-xs text-[#888899]">No saved templates yet. Save your current work to access it later.</p>
+                  <p className="text-xs text-[#888899]">
+                    No saved templates yet. Save your current work to access it
+                    later.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {savedTemplates.map((saved) => (
-                    <div key={saved.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2A2A38] bg-[#09090D] hover:border-teal-500/30 transition-all">
+                    <div
+                      key={saved.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-[#2A2A38] bg-[#09090D] hover:border-teal-500/30 transition-all"
+                    >
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">{saved.name}</p>
-                        <p className="text-[10px] text-[#888899] mt-0.5">Saved {new Date(saved.savedAt).toLocaleString()}</p>
+                        <p className="text-xs font-semibold text-white truncate">
+                          {saved.name}
+                        </p>
+                        <p className="text-[10px] text-[#888899] mt-0.5">
+                          Saved {new Date(saved.savedAt).toLocaleString()}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        <button onClick={() => handleLoadTemplate(saved.id)} className="rounded-lg border border-teal-500 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-400 transition-colors">
+                        <button
+                          onClick={() => handleLoadTemplate(saved.id)}
+                          className="rounded-lg border border-teal-500 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-400 transition-colors"
+                        >
                           Load
                         </button>
-                        <button onClick={() => handleDeleteSavedTemplate(saved.id)} className="rounded-lg p-1.5 hover:bg-red-500/10 text-red-400 transition-colors">
+                        <button
+                          onClick={() => handleDeleteSavedTemplate(saved.id)}
+                          className="rounded-lg p-1.5 hover:bg-red-500/10 text-red-400 transition-colors"
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -1202,37 +1476,62 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             ) : apiTemplatesLoading ? (
               <div className="py-12 text-center flex flex-col items-center justify-center gap-2">
                 <Loader2 className="animate-spin text-teal-400" size={20} />
-                <p className="text-xs text-[#888899]">Loading templates from API...</p>
+                <p className="text-xs text-[#888899]">
+                  Loading templates from API...
+                </p>
               </div>
             ) : apiTemplates.length === 0 ? (
               <div className="py-12 text-center">
-                <p className="text-xs text-[#888899]">No templates found on API.</p>
+                <p className="text-xs text-[#888899]">
+                  No templates found on API.
+                </p>
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {apiTemplates.map((saved) => (
-                  <div key={saved.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2A2A38] bg-[#09090D] hover:border-teal-500/30 transition-all">
+                  <div
+                    key={saved.id}
+                    className="flex items-center justify-between p-3 rounded-lg border border-[#2A2A38] bg-[#09090D] hover:border-teal-500/30 transition-all"
+                  >
                     <div className="flex-1 min-w-0 flex items-center gap-3">
                       {saved.thumbnail && (
-                        <img src={saved.thumbnail} className="w-12 aspect-video rounded border border-[#2A2A38] bg-black object-contain" alt="" />
+                        <img
+                          src={saved.thumbnail}
+                          className="w-12 aspect-video rounded border border-[#2A2A38] bg-black object-contain"
+                          alt=""
+                        />
                       )}
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-xs font-semibold text-white truncate">{saved.label || saved.name}</p>
+                          <p className="text-xs font-semibold text-white truncate">
+                            {saved.label || saved.name}
+                          </p>
                           {saved.published === false && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold uppercase tracking-wider">Unpublished</span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold uppercase tracking-wider">
+                              Unpublished
+                            </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-[#888899] mt-0.5 font-mono">{saved.id} · {saved.category}</p>
+                        <p className="text-[10px] text-[#888899] mt-0.5 font-mono">
+                          {saved.id} · {saved.category}
+                        </p>
                         {saved.creatorName && (
                           <p className="text-[9px] text-teal-400/80 mt-0.5">
                             by{" "}
                             {saved.creatorLink ? (
-                              <a href={saved.creatorLink} target="_blank" rel="noreferrer" className="hover:underline text-teal-300 font-semibold" onClick={(e) => e.stopPropagation()}>
+                              <a
+                                href={saved.creatorLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="hover:underline text-teal-300 font-semibold"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 {saved.creatorName}
                               </a>
                             ) : (
-                              <span className="font-semibold">{saved.creatorName}</span>
+                              <span className="font-semibold">
+                                {saved.creatorName}
+                              </span>
                             )}
                           </p>
                         )}
@@ -1241,15 +1540,24 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     <div className="flex items-center gap-2 ml-4">
                       {saved.published === false && (
                         <button
-                          onClick={() => handlePublishApiTemplateDirectly(saved.category, saved.id)}
+                          onClick={() =>
+                            handlePublishApiTemplateDirectly(
+                              saved.category,
+                              saved.id,
+                            )
+                          }
                           disabled={publishingApiTemplateId === saved.id}
                           className="rounded-lg bg-teal-500 hover:bg-teal-400 disabled:opacity-50 px-3 py-1.5 text-xs font-bold text-black shadow-lg shadow-teal-500/10 transition-colors"
                         >
-                          {publishingApiTemplateId === saved.id ? "Publishing..." : "Publish"}
+                          {publishingApiTemplateId === saved.id
+                            ? "Publishing..."
+                            : "Publish"}
                         </button>
                       )}
                       <button
-                        onClick={() => handleLoadApiTemplate(saved.category, saved.id)}
+                        onClick={() =>
+                          handleLoadApiTemplate(saved.category, saved.id)
+                        }
                         disabled={isLoadingApiTemplate}
                         className="rounded-lg border border-teal-500 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-400 transition-colors disabled:opacity-50"
                       >
@@ -1272,15 +1580,28 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <div className="rounded-2xl border border-[#2A2A38] bg-[#121219] p-6 space-y-4">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="text-teal-400" size={18} />
-                <h2 className="text-sm font-bold text-white">Start with a Builtin Preset</h2>
+                <h2 className="text-sm font-bold text-white">
+                  Start with a Builtin Preset
+                </h2>
               </div>
-              <p className="text-xs text-[#9A9AAA] leading-relaxed">Choose from pre-configured canvas animation templates covering all standard launch categories.</p>
+              <p className="text-xs text-[#9A9AAA] leading-relaxed">
+                Choose from pre-configured canvas animation templates covering
+                all standard launch categories.
+              </p>
 
               <div className="grid grid-cols-2 gap-3 mt-4">
                 {BUILTIN_CANVAS_TEMPLATES.map((preset) => (
-                  <button key={preset.id} onClick={() => handleSelectPreset(preset)} className="flex flex-col items-start p-4 rounded-xl border border-[#2A2A38] bg-[#171722] hover:border-teal-500/50 hover:bg-[#1C1C2A] text-left transition-all">
-                    <span className="text-xs font-bold text-white">{preset.label}</span>
-                    <span className="text-[10px] text-teal-400 font-semibold mt-1 uppercase tracking-wider">{preset.category}</span>
+                  <button
+                    key={preset.id}
+                    onClick={() => handleSelectPreset(preset)}
+                    className="flex flex-col items-start p-4 rounded-xl border border-[#2A2A38] bg-[#171722] hover:border-teal-500/50 hover:bg-[#1C1C2A] text-left transition-all"
+                  >
+                    <span className="text-xs font-bold text-white">
+                      {preset.label}
+                    </span>
+                    <span className="text-[10px] text-teal-400 font-semibold mt-1 uppercase tracking-wider">
+                      {preset.category}
+                    </span>
                     <span className="text-[10px] text-[#888899] mt-2 font-mono">
                       {preset.duration}s · {preset.layers.length} layers
                     </span>
@@ -1293,27 +1614,51 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <div className="rounded-2xl border border-[#2A2A38] bg-[#121219] p-6 space-y-4">
               <div className="flex items-center gap-2 mb-2">
                 <FolderPlus className="text-purple-400" size={18} />
-                <h2 className="text-sm font-bold text-white">Create Template from Scratch</h2>
+                <h2 className="text-sm font-bold text-white">
+                  Create Template from Scratch
+                </h2>
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Template ID</label>
-                  <input type="text" value={newTemplateId} onChange={(e) => setNewTemplateId(e.target.value)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs font-mono text-white outline-none focus:border-teal-500" />
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                    Template ID
+                  </label>
+                  <input
+                    type="text"
+                    value={newTemplateId}
+                    onChange={(e) => setNewTemplateId(e.target.value)}
+                    className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs font-mono text-white outline-none focus:border-teal-500"
+                  />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Label Name</label>
-                  <input type="text" value={newLabel} onChange={(e) => {
-                    const label = e.target.value;
-                    setNewLabel(label);
-                    setNewTemplateId(toKebabCase(label));
-                  }} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500" />
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                    Label Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newLabel}
+                    onChange={(e) => {
+                      const label = e.target.value;
+                      setNewLabel(label);
+                      setNewTemplateId(toKebabCase(label));
+                    }}
+                    className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Category</label>
-                    <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as TemplateCategory)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                      Category
+                    </label>
+                    <select
+                      value={newCategory}
+                      onChange={(e) =>
+                        setNewCategory(e.target.value as TemplateCategory)
+                      }
+                      className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500"
+                    >
                       {CATEGORIES.map((c) => (
                         <option key={c} value={c}>
                           {c}
@@ -1322,24 +1667,55 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Duration (seconds)</label>
-                    <input type="number" step={0.1} value={newDuration} onChange={(e) => setNewDuration(parseFloat(e.target.value) || 3.0)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500" />
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                      Duration (seconds)
+                    </label>
+                    <input
+                      type="number"
+                      step={0.1}
+                      value={newDuration}
+                      onChange={(e) =>
+                        setNewDuration(parseFloat(e.target.value) || 3.0)
+                      }
+                      className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500"
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Canvas Width</label>
-                    <input type="number" value={newW} onChange={(e) => setNewW(parseInt(e.target.value) || 1920)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500" />
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                      Canvas Width
+                    </label>
+                    <input
+                      type="number"
+                      value={newW}
+                      onChange={(e) =>
+                        setNewW(parseInt(e.target.value) || 1920)
+                      }
+                      className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500"
+                    />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Canvas Height</label>
-                    <input type="number" value={newH} onChange={(e) => setNewH(parseInt(e.target.value) || 1080)} className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500" />
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                      Canvas Height
+                    </label>
+                    <input
+                      type="number"
+                      value={newH}
+                      onChange={(e) =>
+                        setNewH(parseInt(e.target.value) || 1080)
+                      }
+                      className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500"
+                    />
                   </div>
                 </div>
               </div>
 
-              <button onClick={handleCreateBlank} className="w-full rounded-xl bg-purple-500 hover:bg-purple-400 py-3 text-xs font-bold text-white shadow-lg shadow-purple-500/10 transition-colors mt-2">
+              <button
+                onClick={handleCreateBlank}
+                className="w-full rounded-xl bg-purple-500 hover:bg-purple-400 py-3 text-xs font-bold text-white shadow-lg shadow-purple-500/10 transition-colors mt-2"
+              >
                 Create Blank Template
               </button>
             </div>
@@ -1354,10 +1730,16 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 <Layers size={13} className="text-teal-400" /> Layers
               </span>
               <div className="flex items-center gap-1.5">
-                <button onClick={() => handleAddLayer("text")} className="rounded border border-[#2A2A38] px-2 py-1 text-[10px] font-semibold hover:bg-[#2A2A38] text-white flex items-center gap-1">
+                <button
+                  onClick={() => handleAddLayer("text")}
+                  className="rounded border border-[#2A2A38] px-2 py-1 text-[10px] font-semibold hover:bg-[#2A2A38] text-white flex items-center gap-1"
+                >
                   <Plus size={10} /> Text
                 </button>
-                <button onClick={() => handleAddLayer("shape")} className="rounded border border-[#2A2A38] px-2 py-1 text-[10px] font-semibold hover:bg-[#2A2A38] text-white flex items-center gap-1">
+                <button
+                  onClick={() => handleAddLayer("shape")}
+                  className="rounded border border-[#2A2A38] px-2 py-1 text-[10px] font-semibold hover:bg-[#2A2A38] text-white flex items-center gap-1"
+                >
                   <Plus size={10} /> Shape
                 </button>
               </div>
@@ -1366,7 +1748,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {template.layers.length === 0 ? (
                 <div className="h-40 flex items-center justify-center border border-dashed border-[#2A2A38] rounded-xl text-center p-4">
-                  <p className="text-[11px] text-[#888899]">No layers added yet. Click Add Text or Add Shape to begin building.</p>
+                  <p className="text-[11px] text-[#888899]">
+                    No layers added yet. Click Add Text or Add Shape to begin
+                    building.
+                  </p>
                 </div>
               ) : (
                 [...template.layers].reverse().map((layer, reverseIdx) => {
@@ -1376,12 +1761,30 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   const isHidden = hiddenLayers.has(layer.id);
 
                   return (
-                    <div key={layer.id} onClick={() => setSelectedLayerId(layer.id)} className={`group flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? "bg-teal-500/10 border-teal-500/50" : "bg-[#181822] border-[#2A2A38] hover:border-[#3E3E52]"}`}>
+                    <div
+                      key={layer.id}
+                      onClick={() => setSelectedLayerId(layer.id)}
+                      className={`group flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
+                        isSelected
+                          ? "bg-teal-500/10 border-teal-500/50"
+                          : "bg-[#181822] border-[#2A2A38] hover:border-[#3E3E52]"
+                      }`}
+                    >
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[10px] font-mono text-[#555566] shrink-0">#{idx + 1}</span>
+                        <span className="text-[10px] font-mono text-[#555566] shrink-0">
+                          #{idx + 1}
+                        </span>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate">{layer.kind === "text" ? layer.content : `${layer.kind} (${(layer as any).shape || "layer"})`}</p>
-                          <p className="text-[9px] text-teal-400 font-semibold tracking-wider uppercase mt-0.5">{layer.kind}</p>
+                          <p className="text-xs font-bold text-white truncate">
+                            {layer.kind === "text"
+                              ? layer.content
+                              : `${layer.kind} (${
+                                  (layer as any).shape || "layer"
+                                })`}
+                          </p>
+                          <p className="text-[9px] text-teal-400 font-semibold tracking-wider uppercase mt-0.5">
+                            {layer.kind}
+                          </p>
                         </div>
                       </div>
 
@@ -1392,7 +1795,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                             e.stopPropagation();
                             toggleVisibility(layer.id);
                           }}
-                          className={`p-1 rounded hover:bg-[#2A2A38] ${isHidden ? "text-red-400" : "text-[#888899]"}`}
+                          className={`p-1 rounded hover:bg-[#2A2A38] ${
+                            isHidden ? "text-red-400" : "text-[#888899]"
+                          }`}
                         >
                           {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
                         </button>
@@ -1402,7 +1807,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                             e.stopPropagation();
                             toggleLock(layer.id);
                           }}
-                          className={`p-1 rounded hover:bg-[#2A2A38] ${isLocked ? "text-amber-400" : "text-[#888899]"}`}
+                          className={`p-1 rounded hover:bg-[#2A2A38] ${
+                            isLocked ? "text-amber-400" : "text-[#888899]"
+                          }`}
                         >
                           {isLocked ? <Lock size={11} /> : <Unlock size={11} />}
                         </button>
@@ -1469,16 +1876,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <div className="rounded-2xl border border-[#2A2A38] bg-[#121219] p-4 shrink-0 flex flex-col gap-4">
               {/* Scrub timeline */}
               <div className="flex items-center gap-4">
-                <button onClick={() => setIsPlaying(!isPlaying)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500 text-black hover:bg-teal-400 transition-colors">
+                <button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500 text-black hover:bg-teal-400 transition-colors"
+                >
                   {isPlaying ? <Pause size={18} /> : <Play size={18} />}
                 </button>
                 <div className="flex-1 flex flex-col gap-1">
                   <div className="flex items-center justify-between text-[10px] font-mono text-[#888899]">
                     <span>
-                      Frame {Math.round(currentTime * 30)} / {Math.round(template.duration * 30)}
+                      Frame {Math.round(currentTime * 30)} /{" "}
+                      {Math.round(template.duration * 30)}
                     </span>
                     <span>
-                      {currentTime.toFixed(2)}s / {template.duration.toFixed(1)}s
+                      {currentTime.toFixed(2)}s / {template.duration.toFixed(1)}
+                      s
                     </span>
                   </div>
                   <input
@@ -1495,8 +1907,16 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   />
                 </div>
                 <div className="flex items-center gap-1.5 bg-[#171722] border border-[#2A2A38] rounded-lg px-2 py-1.5 shrink-0">
-                  <span className="text-[10px] text-[#888899] font-mono">Speed:</span>
-                  <select value={playbackSpeed} onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))} className="bg-transparent text-xs text-white border-none outline-none font-mono font-bold cursor-pointer">
+                  <span className="text-[10px] text-[#888899] font-mono">
+                    Speed:
+                  </span>
+                  <select
+                    value={playbackSpeed}
+                    onChange={(e) =>
+                      setPlaybackSpeed(parseFloat(e.target.value))
+                    }
+                    className="bg-transparent text-xs text-white border-none outline-none font-mono font-bold cursor-pointer"
+                  >
                     <option value={0.5}>0.5x</option>
                     <option value={1.0}>1.0x</option>
                     <option value={1.5}>1.5x</option>
@@ -1504,7 +1924,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   </select>
                 </div>
                 <div className="flex items-center gap-1.5 bg-[#171722] border border-[#2A2A38] rounded-lg px-2 py-1.5 shrink-0">
-                  <span className="text-[10px] text-[#888899] font-mono">Duration:</span>
+                  <span className="text-[10px] text-[#888899] font-mono">
+                    Duration:
+                  </span>
                   <input
                     type="number"
                     step={0.1}
@@ -1520,7 +1942,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     }}
                     className="bg-transparent text-xs text-white border-none outline-none font-mono font-bold w-12 text-right cursor-pointer"
                   />
-                  <span className="text-[10px] text-[#666677] font-mono">s</span>
+                  <span className="text-[10px] text-[#666677] font-mono">
+                    s
+                  </span>
                 </div>
               </div>
 
@@ -1528,20 +1952,58 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               <div className="border-t border-[#2A2A38]/50 pt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles size={13} className="text-teal-400" />
-                  <span className="text-[10px] font-bold text-[#888899] uppercase tracking-wider">Test Customizations</span>
+                  <span className="text-[10px] font-bold text-[#888899] uppercase tracking-wider">
+                    Test Customizations
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#888899] mb-1">Primary Text</label>
-                    <input type="text" value={customTexts.primary} onChange={(e) => setCustomTexts({ ...customTexts, primary: e.target.value })} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                      Primary Text
+                    </label>
+                    <input
+                      type="text"
+                      value={customTexts.primary}
+                      onChange={(e) =>
+                        setCustomTexts({
+                          ...customTexts,
+                          primary: e.target.value,
+                        })
+                      }
+                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                    />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#888899] mb-1">Secondary Text</label>
-                    <input type="text" value={customTexts.secondary} onChange={(e) => setCustomTexts({ ...customTexts, secondary: e.target.value })} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                      Secondary Text
+                    </label>
+                    <input
+                      type="text"
+                      value={customTexts.secondary}
+                      onChange={(e) =>
+                        setCustomTexts({
+                          ...customTexts,
+                          secondary: e.target.value,
+                        })
+                      }
+                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                    />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#888899] mb-1">Accent Text</label>
-                    <input type="text" value={customTexts.accent} onChange={(e) => setCustomTexts({ ...customTexts, accent: e.target.value })} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                      Accent Text
+                    </label>
+                    <input
+                      type="text"
+                      value={customTexts.accent}
+                      onChange={(e) =>
+                        setCustomTexts({
+                          ...customTexts,
+                          accent: e.target.value,
+                        })
+                      }
+                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                    />
                   </div>
                 </div>
               </div>
@@ -1553,7 +2015,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             {/* Section Header */}
             <div className="p-4 border-b border-[#2A2A38] bg-[#151520] shrink-0">
               <span className="text-[10px] uppercase font-bold tracking-wider text-[#888899] flex items-center gap-1.5">
-                <Settings size={13} className="text-teal-400" /> {selectedLayer ? "Layer Inspector" : "Template Settings"}
+                <Settings size={13} className="text-teal-400" />{" "}
+                {selectedLayer ? "Layer Inspector" : "Template Settings"}
               </span>
             </div>
 
@@ -1563,21 +2026,50 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 {/* Basic Layer details */}
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Layer ID</label>
-                    <input type="text" value={selectedLayer.id} onChange={(e) => handleUpdateLayerProperty("id", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                      Layer ID
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedLayer.id}
+                      onChange={(e) =>
+                        handleUpdateLayerProperty("id", e.target.value)
+                      }
+                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono"
+                    />
                   </div>
 
                   {selectedLayer.kind === "text" && (
                     <>
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Static Text Content</label>
-                        <input type="text" value={selectedLayer.content} onChange={(e) => handleUpdateLayerProperty("content", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                          Static Text Content
+                        </label>
+                        <input
+                          type="text"
+                          value={selectedLayer.content}
+                          onChange={(e) =>
+                            handleUpdateLayerProperty("content", e.target.value)
+                          }
+                          className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                        />
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Font Family</label>
-                          <select value={selectedLayer.fontFamily} onChange={(e) => handleUpdateLayerProperty("fontFamily", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                            Font Family
+                          </label>
+                          <select
+                            value={selectedLayer.fontFamily}
+                            onChange={(e) =>
+                              handleUpdateLayerProperty(
+                                "fontFamily",
+                                e.target.value,
+                              )
+                            }
+                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                          >
                             <option value="Poppins">Poppins</option>
                             <option value="Inter">Inter</option>
                             <option value="Arial">Arial</option>
@@ -1586,37 +2078,105 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Font Size (px)</label>
-                          <input type="number" value={selectedLayer.fontSize} onChange={(e) => handleUpdateLayerProperty("fontSize", parseInt(e.target.value) || 24)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                            Font Size (px)
+                          </label>
+                          <input
+                            type="number"
+                            value={selectedLayer.fontSize}
+                            onChange={(e) =>
+                              handleUpdateLayerProperty(
+                                "fontSize",
+                                parseInt(e.target.value) || 24,
+                              )
+                            }
+                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                          />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Text Color</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                            Text Color
+                          </label>
                           <div className="flex gap-1">
-                            <input type="color" value={selectedLayer.color} onChange={(e) => handleUpdateLayerProperty("color", e.target.value)} className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer" />
-                            <input type="text" value={selectedLayer.color} onChange={(e) => handleUpdateLayerProperty("color", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500" />
+                            <input
+                              type="color"
+                              value={selectedLayer.color}
+                              onChange={(e) =>
+                                handleUpdateLayerProperty(
+                                  "color",
+                                  e.target.value,
+                                )
+                              }
+                              className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={selectedLayer.color}
+                              onChange={(e) =>
+                                handleUpdateLayerProperty(
+                                  "color",
+                                  e.target.value,
+                                )
+                              }
+                              className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500"
+                            />
                           </div>
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Font Weight</label>
-                          <input type="number" min={100} max={900} step={100} value={selectedLayer.fontWeight} onChange={(e) => handleUpdateLayerProperty("fontWeight", parseInt(e.target.value) || 400)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                            Font Weight
+                          </label>
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
+                            step={100}
+                            value={selectedLayer.fontWeight}
+                            onChange={(e) =>
+                              handleUpdateLayerProperty(
+                                "fontWeight",
+                                parseInt(e.target.value) || 400,
+                              )
+                            }
+                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                          />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Horizontal Align</label>
-                          <select value={selectedLayer.align} onChange={(e) => handleUpdateLayerProperty("align", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                            Horizontal Align
+                          </label>
+                          <select
+                            value={selectedLayer.align}
+                            onChange={(e) =>
+                              handleUpdateLayerProperty("align", e.target.value)
+                            }
+                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                          >
                             <option value="left">Left</option>
                             <option value="center">Center</option>
                             <option value="right">Right</option>
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Vertical Align</label>
-                          <select value={selectedLayer.verticalAlign || "middle"} onChange={(e) => handleUpdateLayerProperty("verticalAlign", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                            Vertical Align
+                          </label>
+                          <select
+                            value={selectedLayer.verticalAlign || "middle"}
+                            onChange={(e) =>
+                              handleUpdateLayerProperty(
+                                "verticalAlign",
+                                e.target.value,
+                              )
+                            }
+                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                          >
                             <option value="top">Top</option>
                             <option value="middle">Middle</option>
                             <option value="bottom">Bottom</option>
@@ -1625,117 +2185,288 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Role / Placement Mapping</label>
-                        <select value={selectedLayer.role || "none"} onChange={(e) => handleUpdateLayerProperty("role", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
-                          <option value="none">none (Use Static Content)</option>
-                          <option value="primary">primary (Primary Text)</option>
-                          <option value="secondary">secondary (Secondary Subtext)</option>
-                          <option value="accent">accent (Attribution / Highlight)</option>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                          Role / Placement Mapping
+                        </label>
+                        <select
+                          value={selectedLayer.role || "none"}
+                          onChange={(e) =>
+                            handleUpdateLayerProperty("role", e.target.value)
+                          }
+                          className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                        >
+                          <option value="none">
+                            none (Use Static Content)
+                          </option>
+                          <option value="primary">
+                            primary (Primary Text)
+                          </option>
+                          <option value="secondary">
+                            secondary (Secondary Subtext)
+                          </option>
+                          <option value="accent">
+                            accent (Attribution / Highlight)
+                          </option>
                         </select>
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Overflow Strategy</label>
-                        <select value={selectedLayer.overflow || "clip"} onChange={(e) => handleUpdateLayerProperty("overflow", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
-                          <option value="clip">clip (Safety Net Clipping)</option>
-                          <option value="wrap">wrap (Approach 5: Multi-line Word Wrap)</option>
-                          <option value="shrink">shrink (Approach 1: Auto-Fit/Shrink Font Size)</option>
-                          <option value="expand-panel">expand-panel (Approach 2: Dynamic Panel Expansion)</option>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                          Overflow Strategy
+                        </label>
+                        <select
+                          value={selectedLayer.overflow || "clip"}
+                          onChange={(e) =>
+                            handleUpdateLayerProperty(
+                              "overflow",
+                              e.target.value,
+                            )
+                          }
+                          className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                        >
+                          <option value="clip">
+                            clip (Safety Net Clipping)
+                          </option>
+                          <option value="wrap">
+                            wrap (Approach 5: Multi-line Word Wrap)
+                          </option>
+                          <option value="shrink">
+                            shrink (Approach 1: Auto-Fit/Shrink Font Size)
+                          </option>
+                          <option value="expand-panel">
+                            expand-panel (Approach 2: Dynamic Panel Expansion)
+                          </option>
                         </select>
                       </div>
 
                       {/* Background Panel Properties */}
                       <div className="border-t border-[#2A2A38]/50 pt-3 mt-2 space-y-3">
-                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Background Panel (Optional)</h4>
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                          Background Panel (Optional)
+                        </h4>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-[9px] text-[#888899] mb-0.5">Background Color</label>
+                            <label className="block text-[9px] text-[#888899] mb-0.5">
+                              Background Color
+                            </label>
                             <div className="flex gap-1">
-                              <input type="color" value={selectedLayer.backgroundColor || "#000000"} onChange={(e) => handleUpdateLayerProperty("backgroundColor", e.target.value)} className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer" />
-                              <input type="text" value={selectedLayer.backgroundColor || ""} onChange={(e) => handleUpdateLayerProperty("backgroundColor", e.target.value)} placeholder="none" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500" />
+                              <input
+                                type="color"
+                                value={
+                                  selectedLayer.backgroundColor || "#000000"
+                                }
+                                onChange={(e) =>
+                                  handleUpdateLayerProperty(
+                                    "backgroundColor",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer"
+                              />
+                              <input
+                                type="text"
+                                value={selectedLayer.backgroundColor || ""}
+                                onChange={(e) =>
+                                  handleUpdateLayerProperty(
+                                    "backgroundColor",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="none"
+                                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500"
+                              />
                             </div>
-                            <p className="text-[9px] text-[#666677] mt-0.5">Leave empty to disable</p>
+                            <p className="text-[9px] text-[#666677] mt-0.5">
+                              Leave empty to disable
+                            </p>
                           </div>
                           <div>
-                            <label className="block text-[9px] text-[#888899] mb-0.5">Opacity (0-1)</label>
-                            <input type="number" min={0} max={1} step={0.1} value={selectedLayer.backgroundOpacity ?? 1} onChange={(e) => handleUpdateLayerProperty("backgroundOpacity", parseFloat(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                            <label className="block text-[9px] text-[#888899] mb-0.5">
+                              Opacity (0-1)
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={1}
+                              step={0.1}
+                              value={selectedLayer.backgroundOpacity ?? 1}
+                              onChange={(e) =>
+                                handleUpdateLayerProperty(
+                                  "backgroundOpacity",
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                              className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                            />
                           </div>
                         </div>
 
                         <div className="border-t border-[#2A2A38]/50 pt-2 mt-1">
                           <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-[#888899]">Padding (px)</label>
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-[#888899]">
+                              Padding (px)
+                            </label>
                             <button
                               type="button"
-                              title={selectedLayer._paddingLinked ? "Unlink sides" : "Link all sides"}
-                              onClick={() => handleUpdateLayerProperty("_paddingLinked", !(selectedLayer as any)._paddingLinked)}
-                              className={`rounded p-0.5 text-[10px] transition-colors ${(selectedLayer as any)._paddingLinked !== false ? "text-teal-400 bg-teal-500/10 border border-teal-500/30" : "text-[#666677] border border-[#2A2A38]"}`}
+                              title={
+                                selectedLayer._paddingLinked
+                                  ? "Unlink sides"
+                                  : "Link all sides"
+                              }
+                              onClick={() =>
+                                handleUpdateLayerProperty(
+                                  "_paddingLinked",
+                                  !(selectedLayer as any)._paddingLinked,
+                                )
+                              }
+                              className={`rounded p-0.5 text-[10px] transition-colors ${
+                                (selectedLayer as any)._paddingLinked !== false
+                                  ? "text-teal-400 bg-teal-500/10 border border-teal-500/30"
+                                  : "text-[#666677] border border-[#2A2A38]"
+                              }`}
                             >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                               </svg>
                             </button>
                           </div>
                           <div className="grid grid-cols-2 gap-1.5">
-                            {(["Top", "Right", "Bottom", "Left"] as const).map((side) => {
-                              const key = `padding${side}` as "paddingTop" | "paddingRight" | "paddingBottom" | "paddingLeft";
-                              const legacyVal = (selectedLayer as any).padding ?? 0;
-                              const val = (selectedLayer as any)[key] !== undefined ? (selectedLayer as any)[key] : legacyVal;
-                              const linked = (selectedLayer as any)._paddingLinked !== false;
-                              return (
-                                <div key={side}>
-                                  <label className="block text-[9px] text-[#666677] mb-0.5">{side}</label>
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    value={val}
-                                     onChange={(e) => {
-                                      const v = parseInt(e.target.value) || 0;
-                                      if (linked) {
-                                        // All 4 sides + clear legacy field in one atomic update
-                                        handleUpdateMultipleLayerProperties({
-                                          paddingTop: v,
-                                          paddingRight: v,
-                                          paddingBottom: v,
-                                          paddingLeft: v,
-                                          padding: undefined,
-                                        });
-                                      } else {
-                                        // Single side + clear legacy field in one atomic update
-                                        handleUpdateMultipleLayerProperties({
-                                          [key]: v,
-                                          padding: undefined,
-                                        });
-                                      }
-                                    }}
-                                    className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
-                                  />
-                                </div>
-                              );
-                            })}
+                            {(["Top", "Right", "Bottom", "Left"] as const).map(
+                              (side) => {
+                                const key = `padding${side}` as
+                                  | "paddingTop"
+                                  | "paddingRight"
+                                  | "paddingBottom"
+                                  | "paddingLeft";
+                                const legacyVal =
+                                  (selectedLayer as any).padding ?? 0;
+                                const val =
+                                  (selectedLayer as any)[key] !== undefined
+                                    ? (selectedLayer as any)[key]
+                                    : legacyVal;
+                                const linked =
+                                  (selectedLayer as any)._paddingLinked !==
+                                  false;
+                                return (
+                                  <div key={side}>
+                                    <label className="block text-[9px] text-[#666677] mb-0.5">
+                                      {side}
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={val}
+                                      onChange={(e) => {
+                                        const v = parseInt(e.target.value) || 0;
+                                        if (linked) {
+                                          // All 4 sides + clear legacy field in one atomic update
+                                          handleUpdateMultipleLayerProperties({
+                                            paddingTop: v,
+                                            paddingRight: v,
+                                            paddingBottom: v,
+                                            paddingLeft: v,
+                                            padding: undefined,
+                                          });
+                                        } else {
+                                          // Single side + clear legacy field in one atomic update
+                                          handleUpdateMultipleLayerProperties({
+                                            [key]: v,
+                                            padding: undefined,
+                                          });
+                                        }
+                                      }}
+                                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                                    />
+                                  </div>
+                                );
+                              },
+                            )}
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 mt-2">
                           <div>
-                            <label className="block text-[9px] text-[#888899] mb-0.5">Border Radius (px)</label>
-                            <input type="number" min={0} value={selectedLayer.backgroundRadius ?? 0} onChange={(e) => handleUpdateLayerProperty("backgroundRadius", parseInt(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                            <label className="block text-[9px] text-[#888899] mb-0.5">
+                              Border Radius (px)
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={selectedLayer.backgroundRadius ?? 0}
+                              onChange={(e) =>
+                                handleUpdateLayerProperty(
+                                  "backgroundRadius",
+                                  parseInt(e.target.value) || 0,
+                                )
+                              }
+                              className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                            />
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-[9px] text-[#888899] mb-0.5">Border Color</label>
+                            <label className="block text-[9px] text-[#888899] mb-0.5">
+                              Border Color
+                            </label>
                             <div className="flex gap-1">
-                              <input type="color" value={selectedLayer.backgroundBorderColor || "#ffffff"} onChange={(e) => handleUpdateLayerProperty("backgroundBorderColor", e.target.value)} className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer" />
-                              <input type="text" value={selectedLayer.backgroundBorderColor || ""} onChange={(e) => handleUpdateLayerProperty("backgroundBorderColor", e.target.value)} placeholder="none" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500" />
+                              <input
+                                type="color"
+                                value={
+                                  selectedLayer.backgroundBorderColor ||
+                                  "#ffffff"
+                                }
+                                onChange={(e) =>
+                                  handleUpdateLayerProperty(
+                                    "backgroundBorderColor",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer"
+                              />
+                              <input
+                                type="text"
+                                value={
+                                  selectedLayer.backgroundBorderColor || ""
+                                }
+                                onChange={(e) =>
+                                  handleUpdateLayerProperty(
+                                    "backgroundBorderColor",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="none"
+                                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500"
+                              />
                             </div>
                           </div>
                           <div>
-                            <label className="block text-[9px] text-[#888899] mb-0.5">Border Width (px)</label>
-                            <input type="number" min={0} value={selectedLayer.backgroundBorderWidth ?? 0} onChange={(e) => handleUpdateLayerProperty("backgroundBorderWidth", parseInt(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                            <label className="block text-[9px] text-[#888899] mb-0.5">
+                              Border Width (px)
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={selectedLayer.backgroundBorderWidth ?? 0}
+                              onChange={(e) =>
+                                handleUpdateLayerProperty(
+                                  "backgroundBorderWidth",
+                                  parseInt(e.target.value) || 0,
+                                )
+                              }
+                              className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                            />
                           </div>
                         </div>
                       </div>
@@ -1746,18 +2477,48 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     <>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Shape Style</label>
-                          <select value={selectedLayer.shape} onChange={(e) => handleUpdateLayerProperty("shape", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                            Shape Style
+                          </label>
+                          <select
+                            value={selectedLayer.shape}
+                            onChange={(e) =>
+                              handleUpdateLayerProperty("shape", e.target.value)
+                            }
+                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                          >
                             <option value="rect">Rectangle</option>
                             <option value="circle">Circle / Ellipse</option>
                             <option value="line">Line</option>
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Fill Color</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                            Fill Color
+                          </label>
                           <div className="flex gap-1">
-                            <input type="color" value={selectedLayer.fill} onChange={(e) => handleUpdateLayerProperty("fill", e.target.value)} className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer" />
-                            <input type="text" value={selectedLayer.fill} onChange={(e) => handleUpdateLayerProperty("fill", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500" />
+                            <input
+                              type="color"
+                              value={selectedLayer.fill}
+                              onChange={(e) =>
+                                handleUpdateLayerProperty(
+                                  "fill",
+                                  e.target.value,
+                                )
+                              }
+                              className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={selectedLayer.fill}
+                              onChange={(e) =>
+                                handleUpdateLayerProperty(
+                                  "fill",
+                                  e.target.value,
+                                )
+                              }
+                              className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500"
+                            />
                           </div>
                         </div>
                       </div>
@@ -1766,68 +2527,155 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
                   {selectedLayer.kind === "image" && (
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Image URL</label>
-                      <input type="text" value={selectedLayer.url} onChange={(e) => handleUpdateLayerProperty("url", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                        Image URL
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedLayer.url}
+                        onChange={(e) =>
+                          handleUpdateLayerProperty("url", e.target.value)
+                        }
+                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                      />
                     </div>
                   )}
                 </div>
 
                 {/* Layer Layout Coordinates */}
                 <div className="border-t border-[#2A2A38]/50 pt-4 space-y-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Layout Bounds (px)</h4>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                    Layout Bounds (px)
+                  </h4>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">X Coordinate</label>
-                      <input type="number" value={selectedLayer.x} onChange={(e) => handleUpdateLayerProperty("x", parseInt(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                      <label className="block text-[9px] text-[#888899] mb-0.5">
+                        X Coordinate
+                      </label>
+                      <input
+                        type="number"
+                        value={selectedLayer.x}
+                        onChange={(e) =>
+                          handleUpdateLayerProperty(
+                            "x",
+                            parseInt(e.target.value) || 0,
+                          )
+                        }
+                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                      />
                     </div>
                     <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">Y Coordinate</label>
-                      <input type="number" value={selectedLayer.y} onChange={(e) => handleUpdateLayerProperty("y", parseInt(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                      <label className="block text-[9px] text-[#888899] mb-0.5">
+                        Y Coordinate
+                      </label>
+                      <input
+                        type="number"
+                        value={selectedLayer.y}
+                        onChange={(e) =>
+                          handleUpdateLayerProperty(
+                            "y",
+                            parseInt(e.target.value) || 0,
+                          )
+                        }
+                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                      />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <div className="flex items-center justify-between mb-0.5">
-                        <label className="block text-[9px] text-[#888899]">Width</label>
+                        <label className="block text-[9px] text-[#888899]">
+                          Width
+                        </label>
                         {selectedLayer.kind === "text" && (
                           <button
                             type="button"
-                            onClick={() => handleUpdateLayerProperty("width", selectedLayer.width === "auto" ? 400 : "auto")}
-                            className={`text-[9px] px-1 rounded transition-colors ${selectedLayer.width === "auto" ? "text-teal-400 bg-teal-500/10 border border-teal-500/30" : "text-[#666677] hover:text-white"}`}
+                            onClick={() =>
+                              handleUpdateLayerProperty(
+                                "width",
+                                selectedLayer.width === "auto" ? 400 : "auto",
+                              )
+                            }
+                            className={`text-[9px] px-1 rounded transition-colors ${
+                              selectedLayer.width === "auto"
+                                ? "text-teal-400 bg-teal-500/10 border border-teal-500/30"
+                                : "text-[#666677] hover:text-white"
+                            }`}
                           >
                             Auto
                           </button>
                         )}
                       </div>
                       <input
-                        type={selectedLayer.width === "auto" ? "text" : "number"}
-                        value={selectedLayer.width === "auto" ? "auto" : (selectedLayer.width ?? "")}
+                        type={
+                          selectedLayer.width === "auto" ? "text" : "number"
+                        }
+                        value={
+                          selectedLayer.width === "auto"
+                            ? "auto"
+                            : selectedLayer.width ?? ""
+                        }
                         disabled={selectedLayer.width === "auto"}
-                        onChange={(e) => handleUpdateLayerProperty("width", parseInt(e.target.value) || 50)}
-                        className={`w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500 ${selectedLayer.width === "auto" ? "opacity-50 cursor-not-allowed text-center font-semibold" : ""}`}
+                        onChange={(e) =>
+                          handleUpdateLayerProperty(
+                            "width",
+                            parseInt(e.target.value) || 50,
+                          )
+                        }
+                        className={`w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500 ${
+                          selectedLayer.width === "auto"
+                            ? "opacity-50 cursor-not-allowed text-center font-semibold"
+                            : ""
+                        }`}
                       />
                     </div>
                     <div>
                       <div className="flex items-center justify-between mb-0.5">
-                        <label className="block text-[9px] text-[#888899]">Height</label>
+                        <label className="block text-[9px] text-[#888899]">
+                          Height
+                        </label>
                         {selectedLayer.kind === "text" && (
                           <button
                             type="button"
-                            onClick={() => handleUpdateLayerProperty("height", selectedLayer.height === "auto" ? 100 : "auto")}
-                            className={`text-[9px] px-1 rounded transition-colors ${selectedLayer.height === "auto" ? "text-teal-400 bg-teal-500/10 border border-teal-500/30" : "text-[#666677] hover:text-white"}`}
+                            onClick={() =>
+                              handleUpdateLayerProperty(
+                                "height",
+                                selectedLayer.height === "auto" ? 100 : "auto",
+                              )
+                            }
+                            className={`text-[9px] px-1 rounded transition-colors ${
+                              selectedLayer.height === "auto"
+                                ? "text-teal-400 bg-teal-500/10 border border-teal-500/30"
+                                : "text-[#666677] hover:text-white"
+                            }`}
                           >
                             Auto
                           </button>
                         )}
                       </div>
                       <input
-                        type={selectedLayer.height === "auto" ? "text" : "number"}
-                        value={selectedLayer.height === "auto" ? "auto" : (selectedLayer.height ?? "")}
+                        type={
+                          selectedLayer.height === "auto" ? "text" : "number"
+                        }
+                        value={
+                          selectedLayer.height === "auto"
+                            ? "auto"
+                            : selectedLayer.height ?? ""
+                        }
                         disabled={selectedLayer.height === "auto"}
-                        onChange={(e) => handleUpdateLayerProperty("height", parseInt(e.target.value) || 50)}
-                        className={`w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500 ${selectedLayer.height === "auto" ? "opacity-50 cursor-not-allowed text-center font-semibold" : ""}`}
+                        onChange={(e) =>
+                          handleUpdateLayerProperty(
+                            "height",
+                            parseInt(e.target.value) || 50,
+                          )
+                        }
+                        className={`w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500 ${
+                          selectedLayer.height === "auto"
+                            ? "opacity-50 cursor-not-allowed text-center font-semibold"
+                            : ""
+                        }`}
                       />
                     </div>
                   </div>
@@ -1835,12 +2683,25 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
                 {/* Layer Transitions & Animations */}
                 <div className="border-t border-[#2A2A38]/50 pt-4 space-y-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Transitions & Animations</h4>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                    Transitions & Animations
+                  </h4>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">Entrance Preset</label>
-                      <select value={selectedLayer.animation.in} onChange={(e) => handleUpdateLayerProperty("animation.in", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500">
+                      <label className="block text-[9px] text-[#888899] mb-0.5">
+                        Entrance Preset
+                      </label>
+                      <select
+                        value={selectedLayer.animation.in}
+                        onChange={(e) =>
+                          handleUpdateLayerProperty(
+                            "animation.in",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                      >
                         <option value="fade">fade</option>
                         <option value="slide-up">slide-up</option>
                         <option value="slide-down">slide-down</option>
@@ -1853,15 +2714,39 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">Duration (in)</label>
-                      <input type="number" step={0.1} value={selectedLayer.animation.inDuration} onChange={(e) => handleUpdateLayerProperty("animation.inDuration", parseFloat(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                      <label className="block text-[9px] text-[#888899] mb-0.5">
+                        Duration (in)
+                      </label>
+                      <input
+                        type="number"
+                        step={0.1}
+                        value={selectedLayer.animation.inDuration}
+                        onChange={(e) =>
+                          handleUpdateLayerProperty(
+                            "animation.inDuration",
+                            parseFloat(e.target.value) || 0,
+                          )
+                        }
+                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                      />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">Exit Preset</label>
-                      <select value={selectedLayer.animation.out} onChange={(e) => handleUpdateLayerProperty("animation.out", e.target.value)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500">
+                      <label className="block text-[9px] text-[#888899] mb-0.5">
+                        Exit Preset
+                      </label>
+                      <select
+                        value={selectedLayer.animation.out}
+                        onChange={(e) =>
+                          handleUpdateLayerProperty(
+                            "animation.out",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                      >
                         <option value="fade">fade</option>
                         <option value="slide-down">slide-down</option>
                         <option value="slide-up">slide-up</option>
@@ -1871,15 +2756,43 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">Duration (out)</label>
-                      <input type="number" step={0.1} value={selectedLayer.animation.outDuration} onChange={(e) => handleUpdateLayerProperty("animation.outDuration", parseFloat(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500" />
+                      <label className="block text-[9px] text-[#888899] mb-0.5">
+                        Duration (out)
+                      </label>
+                      <input
+                        type="number"
+                        step={0.1}
+                        value={selectedLayer.animation.outDuration}
+                        onChange={(e) =>
+                          handleUpdateLayerProperty(
+                            "animation.outDuration",
+                            parseFloat(e.target.value) || 0,
+                          )
+                        }
+                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                      />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[9px] text-[#888899] mb-0.5">Hold Timing</label>
-                    <select value={selectedLayer.animation.hold} onChange={(e) => handleUpdateLayerProperty("animation.hold", e.target.value === "full" ? "full" : parseFloat(e.target.value) || 0)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500">
-                      <option value="full">hold full timeline between transition</option>
+                    <label className="block text-[9px] text-[#888899] mb-0.5">
+                      Hold Timing
+                    </label>
+                    <select
+                      value={selectedLayer.animation.hold}
+                      onChange={(e) =>
+                        handleUpdateLayerProperty(
+                          "animation.hold",
+                          e.target.value === "full"
+                            ? "full"
+                            : parseFloat(e.target.value) || 0,
+                        )
+                      }
+                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                    >
+                      <option value="full">
+                        hold full timeline between transition
+                      </option>
                       <option value={1}>1.0 second</option>
                       <option value={2}>2.0 seconds</option>
                     </select>
@@ -1890,9 +2803,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 <div className="border-t border-[#2A2A38]/50 pt-4 space-y-3">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] flex items-center gap-1.5">
-                      <Clock size={13} className="text-purple-400" /> Keyframe Animation
+                      <Clock size={13} className="text-purple-400" /> Keyframe
+                      Animation
                     </h4>
-                    <button onClick={() => setShowKeyframeEditor(!showKeyframeEditor)} className="text-[9px] text-purple-400 hover:text-purple-300 font-semibold">
+                    <button
+                      onClick={() => setShowKeyframeEditor(!showKeyframeEditor)}
+                      className="text-[9px] text-purple-400 hover:text-purple-300 font-semibold"
+                    >
                       {showKeyframeEditor ? "Hide" : "Show"}
                     </button>
                   </div>
@@ -1900,20 +2817,38 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   {showKeyframeEditor && (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-[9px] text-[#888899] mb-1">Animate Property</label>
-                        <select value={selectedProperty || ""} onChange={(e) => setSelectedProperty(e.target.value || null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500">
+                        <label className="block text-[9px] text-[#888899] mb-1">
+                          Animate Property
+                        </label>
+                        <select
+                          value={selectedProperty || ""}
+                          onChange={(e) =>
+                            setSelectedProperty(e.target.value || null)
+                          }
+                          className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                        >
                           <option value="">Select property...</option>
                           {selectedLayer.kind === "text" && (
                             <>
                               <option value="fontSize">Font Size</option>
                               <option value="fontWeight">Font Weight</option>
                               <option value="color">Text Color</option>
-                              <option value="backgroundColor">Background Color</option>
-                              <option value="backgroundOpacity">Background Opacity</option>
-                              <option value="backgroundRadius">Background Radius</option>
+                              <option value="backgroundColor">
+                                Background Color
+                              </option>
+                              <option value="backgroundOpacity">
+                                Background Opacity
+                              </option>
+                              <option value="backgroundRadius">
+                                Background Radius
+                              </option>
                               <option value="padding">Padding</option>
-                              <option value="backgroundBorderColor">Border Color</option>
-                              <option value="backgroundBorderWidth">Border Width</option>
+                              <option value="backgroundBorderColor">
+                                Border Color
+                              </option>
+                              <option value="backgroundBorderWidth">
+                                Border Width
+                              </option>
                             </>
                           )}
                           {selectedLayer.kind === "shape" && (
@@ -1921,8 +2856,12 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                               <option value="fill">Fill Color</option>
                               {selectedLayer.stroke && (
                                 <>
-                                  <option value="stroke.color">Stroke Color</option>
-                                  <option value="stroke.width">Stroke Width</option>
+                                  <option value="stroke.color">
+                                    Stroke Color
+                                  </option>
+                                  <option value="stroke.width">
+                                    Stroke Width
+                                  </option>
                                 </>
                               )}
                             </>
@@ -1938,54 +2877,116 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       {selectedProperty && (
                         <>
                           <div className="flex items-center gap-2">
-                            <button onClick={() => handleAddKeyframe(selectedProperty)} className="flex-1 rounded bg-purple-500 hover:bg-purple-400 px-3 py-2 text-[10px] font-bold text-white transition-colors flex items-center justify-center gap-1.5">
-                              <Plus size={12} /> Add Keyframe at {currentTime.toFixed(2)}s
+                            <button
+                              onClick={() =>
+                                handleAddKeyframe(selectedProperty)
+                              }
+                              className="flex-1 rounded bg-purple-500 hover:bg-purple-400 px-3 py-2 text-[10px] font-bold text-white transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              <Plus size={12} /> Add Keyframe at{" "}
+                              {currentTime.toFixed(2)}s
                             </button>
                           </div>
 
                           {(() => {
-                            const keyframes = getPropertyKeyframes(selectedProperty);
+                            const keyframes =
+                              getPropertyKeyframes(selectedProperty);
                             if (!keyframes || keyframes.length === 0) {
                               return (
                                 <div className="rounded border border-dashed border-[#2A2A38] p-3 text-center">
-                                  <p className="text-[10px] text-[#666677]">No keyframes yet. Click "Add Keyframe" to animate this property over time.</p>
+                                  <p className="text-[10px] text-[#666677]">
+                                    No keyframes yet. Click "Add Keyframe" to
+                                    animate this property over time.
+                                  </p>
                                 </div>
                               );
                             }
 
                             return (
                               <div className="space-y-2">
-                                <p className="text-[9px] text-[#888899] uppercase font-bold tracking-wider">Keyframes ({keyframes.length})</p>
+                                <p className="text-[9px] text-[#888899] uppercase font-bold tracking-wider">
+                                  Keyframes ({keyframes.length})
+                                </p>
                                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                                   {keyframes.map((kf, idx) => (
-                                    <div key={idx} className="rounded border border-[#2A2A38] bg-[#0E0E14] p-2.5 space-y-2">
+                                    <div
+                                      key={idx}
+                                      className="rounded border border-[#2A2A38] bg-[#0E0E14] p-2.5 space-y-2"
+                                    >
                                       <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-mono text-purple-400 font-bold">{kf.time.toFixed(2)}s</span>
-                                        <button onClick={() => handleRemoveKeyframe(selectedProperty, kf.time)} className="text-[#666677] hover:text-red-400 transition-colors">
+                                        <span className="text-[10px] font-mono text-purple-400 font-bold">
+                                          {kf.time.toFixed(2)}s
+                                        </span>
+                                        <button
+                                          onClick={() =>
+                                            handleRemoveKeyframe(
+                                              selectedProperty,
+                                              kf.time,
+                                            )
+                                          }
+                                          className="text-[#666677] hover:text-red-400 transition-colors"
+                                        >
                                           <Trash2 size={11} />
                                         </button>
                                       </div>
                                       <div className="grid grid-cols-2 gap-2">
                                         <div>
-                                          <label className="block text-[8px] text-[#666677] mb-0.5">Value</label>
+                                          <label className="block text-[8px] text-[#666677] mb-0.5">
+                                            Value
+                                          </label>
                                           <input
-                                            type={typeof kf.value === "number" ? "number" : "text"}
+                                            type={
+                                              typeof kf.value === "number"
+                                                ? "number"
+                                                : "text"
+                                            }
                                             value={kf.value}
                                             onChange={(e) => {
-                                              const newValue = typeof kf.value === "number" ? parseFloat(e.target.value) || 0 : e.target.value;
-                                              handleUpdateKeyframe(selectedProperty, kf.time, newValue);
+                                              const newValue =
+                                                typeof kf.value === "number"
+                                                  ? parseFloat(
+                                                      e.target.value,
+                                                    ) || 0
+                                                  : e.target.value;
+                                              handleUpdateKeyframe(
+                                                selectedProperty,
+                                                kf.time,
+                                                newValue,
+                                              );
                                             }}
                                             className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1.5 py-1 text-[10px] text-white outline-none focus:border-purple-500"
                                           />
                                         </div>
                                         <div>
-                                          <label className="block text-[8px] text-[#666677] mb-0.5">Easing</label>
-                                          <select value={kf.easing || "linear"} onChange={(e) => handleUpdateKeyframe(selectedProperty, kf.time, kf.value, e.target.value as TemplateEasingFunction)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1.5 py-1 text-[10px] text-white outline-none focus:border-purple-500">
-                                            <option value="linear">Linear</option>
+                                          <label className="block text-[8px] text-[#666677] mb-0.5">
+                                            Easing
+                                          </label>
+                                          <select
+                                            value={kf.easing || "linear"}
+                                            onChange={(e) =>
+                                              handleUpdateKeyframe(
+                                                selectedProperty,
+                                                kf.time,
+                                                kf.value,
+                                                e.target
+                                                  .value as TemplateEasingFunction,
+                                              )
+                                            }
+                                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1.5 py-1 text-[10px] text-white outline-none focus:border-purple-500"
+                                          >
+                                            <option value="linear">
+                                              Linear
+                                            </option>
                                             <option value="ease">Ease</option>
-                                            <option value="ease-in">Ease In</option>
-                                            <option value="ease-out">Ease Out</option>
-                                            <option value="ease-in-out">Ease In-Out</option>
+                                            <option value="ease-in">
+                                              Ease In
+                                            </option>
+                                            <option value="ease-out">
+                                              Ease Out
+                                            </option>
+                                            <option value="ease-in-out">
+                                              Ease In-Out
+                                            </option>
                                           </select>
                                         </div>
                                       </div>
@@ -2005,22 +3006,52 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               // Template Metadata Inspector
               <div className="p-4 space-y-4">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Template ID</label>
-                  <input type="text" value={template.id} onChange={(e) => setTemplate(prev => prev ? { ...prev, id: e.target.value } : null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                    Template ID
+                  </label>
+                  <input
+                    type="text"
+                    value={template.id}
+                    onChange={(e) =>
+                      setTemplate((prev) =>
+                        prev ? { ...prev, id: e.target.value } : null,
+                      )
+                    }
+                    className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono"
+                  />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Title Name</label>
-                  <input type="text" value={template.label} onChange={(e) => {
-                    const val = e.target.value;
-                    setTemplate(prev => prev ? { ...prev, label: val, id: toKebabCase(val) } : null);
-                  }} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                    Title Name
+                  </label>
+                  <input
+                    type="text"
+                    value={template.label}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTemplate((prev) =>
+                        prev
+                          ? { ...prev, label: val, id: toKebabCase(val) }
+                          : null,
+                      );
+                    }}
+                    className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                  />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Category</label>
-                  <select value={template.category} onChange={(e) => {
-                    const val = e.target.value as TemplateCategory;
-                    setTemplate(prev => prev ? { ...prev, category: val } : null);
-                  }} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={template.category}
+                    onChange={(e) => {
+                      const val = e.target.value as TemplateCategory;
+                      setTemplate((prev) =>
+                        prev ? { ...prev, category: val } : null,
+                      );
+                    }}
+                    className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                  >
                     {CATEGORIES.map((c) => (
                       <option key={c} value={c}>
                         {c}
@@ -2029,22 +3060,74 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Timeline Duration (seconds)</label>
-                  <input type="number" step={0.1} value={template.duration} onChange={(e) => setTemplate(prev => prev ? { ...prev, duration: parseFloat(e.target.value) || 3.0 } : null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500" />
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                    Timeline Duration (seconds)
+                  </label>
+                  <input
+                    type="number"
+                    step={0.1}
+                    value={template.duration}
+                    onChange={(e) =>
+                      setTemplate((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              duration: parseFloat(e.target.value) || 3.0,
+                            }
+                          : null,
+                      )
+                    }
+                    className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Width (px)</label>
-                    <input type="number" value={template.canvasWidth} onChange={(e) => setTemplate(prev => prev ? { ...prev, canvasWidth: parseInt(e.target.value) || 1920 } : null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                      Width (px)
+                    </label>
+                    <input
+                      type="number"
+                      value={template.canvasWidth}
+                      onChange={(e) =>
+                        setTemplate((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                canvasWidth: parseInt(e.target.value) || 1920,
+                              }
+                            : null,
+                        )
+                      }
+                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono"
+                    />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">Height (px)</label>
-                    <input type="number" value={template.canvasHeight} onChange={(e) => setTemplate(prev => prev ? { ...prev, canvasHeight: parseInt(e.target.value) || 1080 } : null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono" />
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                      Height (px)
+                    </label>
+                    <input
+                      type="number"
+                      value={template.canvasHeight}
+                      onChange={(e) =>
+                        setTemplate((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                canvasHeight: parseInt(e.target.value) || 1080,
+                              }
+                            : null,
+                        )
+                      }
+                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-mono"
+                    />
                   </div>
                 </div>
 
                 <div className="border-t border-[#2A2A38]/50 pt-4 flex flex-col gap-2">
-                  <p className="text-[10px] text-[#888899] leading-relaxed">Adjusting template dimensions affects coordinates mapping. Canvas templates default to 1920x1080 resolution.</p>
+                  <p className="text-[10px] text-[#888899] leading-relaxed">
+                    Adjusting template dimensions affects coordinates mapping.
+                    Canvas templates default to 1920x1080 resolution.
+                  </p>
                 </div>
               </div>
             )}
@@ -2074,16 +3157,26 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           isGeneratingVideo={isGeneratingPublishVideo}
           width={template.canvasWidth}
           height={template.canvasHeight}
-          onTemplateIdChange={(v) => setTemplate(prev => prev ? { ...prev, id: v } : null)}
-          onTemplateNameChange={(v) => setTemplate(prev => prev ? { ...prev, label: v, id: toKebabCase(v) } : null)}
-          onCategoryChange={(v) => setTemplate(prev => prev ? { ...prev, category: v } : null)}
+          onTemplateIdChange={(v) =>
+            setTemplate((prev) => (prev ? { ...prev, id: v } : null))
+          }
+          onTemplateNameChange={(v) =>
+            setTemplate((prev) =>
+              prev ? { ...prev, label: v, id: toKebabCase(v) } : null,
+            )
+          }
+          onCategoryChange={(v) =>
+            setTemplate((prev) => (prev ? { ...prev, category: v } : null))
+          }
           onDescriptionChange={setPublishDescription}
           onTagsInputChange={setPublishTagsInput}
           onCreatorNameChange={setPublishCreatorName}
           onCreatorLinkChange={setPublishCreatorLink}
           onPlacementChange={setPublishPlacement}
           onThumbnailFrameChange={setThumbnailFrame}
-          onUseCurrentFrame={() => setThumbnailFrame(Math.round(currentTime * 30))}
+          onUseCurrentFrame={() =>
+            setThumbnailFrame(Math.round(currentTime * 30))
+          }
           onPreviewThumbnail={async () => {
             const url = await captureThumbnail();
             setThumbnailDataUrl(url);
@@ -2100,28 +3193,49 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
       {/* Preview Video Modal */}
       {previewVideoUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setPreviewVideoUrl(null)}>
-          <div className="relative w-full max-w-4xl mx-4" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setPreviewVideoUrl(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="rounded-2xl border border-[#2A2A38] bg-[#121219] overflow-hidden shadow-2xl">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-[#2A2A38]">
                 <div className="flex items-center gap-2">
                   <Play size={18} className="text-purple-400" />
-                  <h3 className="text-sm font-bold text-white">Preview Video</h3>
+                  <h3 className="text-sm font-bold text-white">
+                    Preview Video
+                  </h3>
                 </div>
-                <button onClick={() => setPreviewVideoUrl(null)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-[#2A2A38] transition-colors">
+                <button
+                  onClick={() => setPreviewVideoUrl(null)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-[#2A2A38] transition-colors"
+                >
                   <X size={16} className="text-white" />
                 </button>
               </div>
 
               {/* Video Player */}
               <div className="p-6 checkerboard">
-                <video src={previewVideoUrl} controls autoPlay loop className="w-full rounded-lg border border-[#2A2A38]" style={{ maxHeight: "70vh" }} />
+                <video
+                  src={previewVideoUrl}
+                  controls
+                  autoPlay
+                  loop
+                  className="w-full rounded-lg border border-[#2A2A38]"
+                  style={{ maxHeight: "70vh" }}
+                />
               </div>
 
               {/* Footer */}
               <div className="p-4 border-t border-[#2A2A38] flex items-center justify-between">
-                <p className="text-[10px] text-[#888899]">Preview of exported .webm video • {template?.duration.toFixed(1)}s @ 30fps</p>
+                <p className="text-[10px] text-[#888899]">
+                  Preview of exported .webm video •{" "}
+                  {template?.duration.toFixed(1)}s @ 30fps
+                </p>
                 <button
                   onClick={() => {
                     const a = document.createElement("a");

@@ -2,8 +2,9 @@
  * Hook for uploading text effects directly to R2 via clypra-api
  */
 
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getStudioApiBaseUrl } from "../services/apiConfig";
+import { studioQueryKeys } from "../services/studioQueryKeys";
 
 const API_BASE_URL = getStudioApiBaseUrl();
 
@@ -33,16 +34,9 @@ export interface TextEffectUploadResult {
 }
 
 export function useTextEffectR2Upload() {
-  const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
-  const [message, setMessage] = useState<string | null>(null);
-  const [uploadedEffect, setUploadedEffect] = useState<TextEffectUploadResult["effect"] | null>(null);
-
-  const uploadTextEffect = async (payload: TextEffectUploadPayload): Promise<TextEffectUploadResult> => {
-    setStatus("uploading");
-    setMessage("Uploading text effect to R2...");
-    setUploadedEffect(null);
-
-    try {
+  const queryClient = useQueryClient();
+  const mutation = useMutation<TextEffectUploadResult, Error, TextEffectUploadPayload>({
+    mutationFn: async (payload) => {
       const response = await fetch(`${API_BASE_URL}/text-effects/upload`, {
         method: "POST",
         headers: {
@@ -56,32 +50,33 @@ export function useTextEffectR2Upload() {
         throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
       }
 
-      const result: TextEffectUploadResult = await response.json();
+      return (await response.json()) as TextEffectUploadResult;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: studioQueryKeys.textEffectsCatalog,
+      });
+    },
+  });
 
-      setStatus("success");
-      setMessage(result.message);
-      setUploadedEffect(result.effect);
-
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to upload text effect";
-      setStatus("error");
-      setMessage(errorMessage);
-      throw error;
-    }
-  };
-
-  const reset = () => {
-    setStatus("idle");
-    setMessage(null);
-    setUploadedEffect(null);
-  };
+  const status = mutation.isPending
+    ? "uploading"
+    : mutation.isSuccess
+      ? "success"
+      : mutation.isError
+        ? "error"
+        : "idle";
+  const message = mutation.isPending
+    ? "Uploading text effect to R2..."
+    : mutation.isError
+      ? mutation.error.message
+      : mutation.data?.message ?? null;
 
   return {
-    uploadTextEffect,
+    uploadTextEffect: mutation.mutateAsync,
     status,
     message,
-    uploadedEffect,
-    reset,
+    uploadedEffect: mutation.data?.effect ?? null,
+    reset: mutation.reset,
   };
 }

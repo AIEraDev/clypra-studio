@@ -1,10 +1,36 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle, Loader2, Video, Sparkles, UploadCloud } from "lucide-react";
+import {
+  AlertTriangle,
+  Loader2,
+  Video,
+  Sparkles,
+  UploadCloud,
+} from "lucide-react";
+import { toast } from "sonner";
 import type { OverlayPublishPayload } from "../types/publish";
 import { getStudioApiBaseUrl } from "../services/apiConfig";
 
-const OVERLAY_CATEGORIES: OverlayPublishPayload["category"][] = ["fire", "light-leak", "particle", "weather", "glitch", "texture"];
-const BLEND_MODES: OverlayPublishPayload["metadata"]["blendMode"][] = ["normal", "screen", "multiply", "overlay", "soft-light", "hard-light", "color-dodge", "color-burn", "lighten", "darken", "difference"];
+const OVERLAY_CATEGORIES: OverlayPublishPayload["category"][] = [
+  "fire",
+  "light-leak",
+  "particle",
+  "weather",
+  "glitch",
+  "texture",
+];
+const BLEND_MODES: OverlayPublishPayload["metadata"]["blendMode"][] = [
+  "normal",
+  "screen",
+  "multiply",
+  "overlay",
+  "soft-light",
+  "hard-light",
+  "color-dodge",
+  "color-burn",
+  "lighten",
+  "darken",
+  "difference",
+];
 
 function toKebabId(value: string): string {
   return value
@@ -19,7 +45,8 @@ function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
+    reader.onerror = () =>
+      reject(reader.error || new Error("Failed to read file"));
     reader.readAsDataURL(file);
   });
 }
@@ -74,7 +101,8 @@ async function extractThumbnailFromVideo(file: File): Promise<string> {
 
           const reader = new FileReader();
           reader.onload = () => resolve(String(reader.result || ""));
-          reader.onerror = () => reject(new Error("Failed to read thumbnail blob"));
+          reader.onerror = () =>
+            reject(new Error("Failed to read thumbnail blob"));
           reader.readAsDataURL(blob);
         },
         "image/jpeg",
@@ -91,27 +119,34 @@ async function extractThumbnailFromVideo(file: File): Promise<string> {
   });
 }
 
-export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer" | "workspace" }) {
+export function OverlayPublishPanel({
+  variant = "drawer",
+}: {
+  variant?: "drawer" | "workspace";
+}) {
   const isWorkspace = variant === "workspace";
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [autoThumbnail, setAutoThumbnail] = useState<string | null>(null);
   const [id, setId] = useState("");
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<OverlayPublishPayload["category"]>("fire");
+  const [category, setCategory] =
+    useState<OverlayPublishPayload["category"]>("fire");
   const [description, setDescription] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [duration, setDuration] = useState("");
   const [width, setWidth] = useState("");
   const [height, setHeight] = useState("");
-  const [blendMode, setBlendMode] = useState<OverlayPublishPayload["metadata"]["blendMode"]>("screen");
+  const [blendMode, setBlendMode] =
+    useState<OverlayPublishPayload["metadata"]["blendMode"]>("screen");
   const [opacity, setOpacity] = useState("1.0");
   const [loopable, setLoopable] = useState(true);
   const [sourceProvider, setSourceProvider] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [safetyNotes, setSafetyNotes] = useState("");
-  const [status, setStatus] = useState<"idle" | "publishing" | "published" | "failed">("idle");
-  const [message, setMessage] = useState<string | null>(null);
+  const [status, setStatus] = useState<
+    "idle" | "publishing" | "published" | "failed"
+  >("idle");
   const [prUrl, setPrUrl] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [publishApproved, setPublishApproved] = useState(true);
@@ -143,21 +178,43 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
     if (!videoFile) return "Choose a video file.";
     if (!id.trim()) return "Asset ID is required.";
     if (!name.trim()) return "Display name is required.";
-    if (!Number.isFinite(Number(duration)) || Number(duration) <= 0) return "Duration must be greater than zero.";
-    if (!Number.isFinite(Number(width)) || Number(width) <= 0) return "Width must be greater than zero.";
-    if (!Number.isFinite(Number(height)) || Number(height) <= 0) return "Height must be greater than zero.";
-    if (!Number.isFinite(Number(opacity)) || Number(opacity) < 0 || Number(opacity) > 1) return "Opacity must be between 0 and 1.";
-    if (!sourceProvider.trim() || !sourceUrl.trim()) return "Source provider and source URL are required.";
-    if (!/^https:\/\//i.test(sourceUrl.trim())) return "Source URL must use HTTPS.";
+    if (!Number.isFinite(Number(duration)) || Number(duration) <= 0)
+      return "Duration must be greater than zero.";
+    if (!Number.isFinite(Number(width)) || Number(width) <= 0)
+      return "Width must be greater than zero.";
+    if (!Number.isFinite(Number(height)) || Number(height) <= 0)
+      return "Height must be greater than zero.";
+    if (
+      !Number.isFinite(Number(opacity)) ||
+      Number(opacity) < 0 ||
+      Number(opacity) > 1
+    )
+      return "Opacity must be between 0 and 1.";
+    if (!sourceProvider.trim() || !sourceUrl.trim())
+      return "Source provider and source URL are required.";
+    if (!/^https:\/\//i.test(sourceUrl.trim()))
+      return "Source URL must use HTTPS.";
 
     // Check file size (max 100MB)
     const maxSize = 100 * 1024 * 1024;
     if (videoFile.size > maxSize) {
-      return `Video file is too large (${(videoFile.size / 1024 / 1024).toFixed(2)}MB). Maximum is 100MB.`;
+      return `Video file is too large (${(videoFile.size / 1024 / 1024).toFixed(
+        2,
+      )}MB). Maximum is 100MB.`;
     }
 
     return null;
-  }, [videoFile, id, name, duration, width, height, opacity, sourceProvider, sourceUrl]);
+  }, [
+    videoFile,
+    id,
+    name,
+    duration,
+    width,
+    height,
+    opacity,
+    sourceProvider,
+    sourceUrl,
+  ]);
 
   const handleNameChange = (value: string) => {
     setName(value);
@@ -207,12 +264,13 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
   const handlePublish = async () => {
     if (validationMessage || !videoFile) return;
     setStatus("publishing");
-    setMessage(null);
     setPrUrl(null);
 
     try {
       const videoDataUrl = await fileToDataUrl(videoFile);
-      const thumbnailDataUrl = thumbnailFile ? await fileToDataUrl(thumbnailFile) : autoThumbnail || undefined;
+      const thumbnailDataUrl = thumbnailFile
+        ? await fileToDataUrl(thumbnailFile)
+        : autoThumbnail || undefined;
 
       const API_BASE_URL = getStudioApiBaseUrl();
 
@@ -260,37 +318,73 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
+        throw new Error(
+          errorData.message || `Upload failed: ${response.statusText}`,
+        );
       }
 
       const result = await response.json();
 
       setStatus("published");
-      setMessage(result.message || "Overlay uploaded to R2 successfully!");
+      toast.success(result.message || "Overlay uploaded to R2 successfully!");
       setPrUrl(null);
     } catch (error) {
       setStatus("failed");
-      setMessage(error instanceof Error ? error.message : "Failed to publish overlay");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to publish overlay",
+      );
     }
   };
 
   return (
-    <div className={`h-full overflow-y-auto text-sm text-white ${isWorkspace ? "p-6" : "p-3"}`}>
+    <div
+      className={`h-full overflow-y-auto text-sm text-white ${
+        isWorkspace ? "p-6" : "p-3"
+      }`}
+    >
       {/* Header */}
-      <div className={`${isWorkspace ? "mb-5 border-b border-[#20202A] pb-5" : "mb-4 rounded-xl border border-[#2A2A38] bg-[#15151C] p-4"}`}>
+      <div
+        className={`${
+          isWorkspace
+            ? "mb-5 border-b border-[#20202A] pb-5"
+            : "mb-4 rounded-xl border border-[#2A2A38] bg-[#15151C] p-4"
+        }`}
+      >
         <div className="flex items-start gap-3">
-          <span className={`${isWorkspace ? "h-11 w-11" : "h-9 w-9"} flex shrink-0 items-center justify-center rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-300`}>
+          <span
+            className={`${
+              isWorkspace ? "h-11 w-11" : "h-9 w-9"
+            } flex shrink-0 items-center justify-center rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-300`}
+          >
             <Video size={isWorkspace ? 20 : 16} />
           </span>
           <div className="flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300">Animated Overlay Library</p>
-            <h3 className={`${isWorkspace ? "text-xl" : "text-sm"} font-bold`}>Publish Overlay to API</h3>
-            <p className={`${isWorkspace ? "max-w-3xl text-sm" : "text-xs"} mt-1 leading-relaxed text-[#9A9AAA]`}>Publish video overlays you own or have a license to distribute. Approved files become available in Clypra for timeline compositing.</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300">
+              Animated Overlay Library
+            </p>
+            <h3 className={`${isWorkspace ? "text-xl" : "text-sm"} font-bold`}>
+              Publish Overlay to API
+            </h3>
+            <p
+              className={`${
+                isWorkspace ? "max-w-3xl text-sm" : "text-xs"
+              } mt-1 leading-relaxed text-[#9A9AAA]`}
+            >
+              Publish video overlays you own or have a license to distribute.
+              Approved files become available in Clypra for timeline
+              compositing.
+            </p>
           </div>
         </div>
       </div>
 
-      <div className={isWorkspace ? "grid grid-cols-[360px_minmax(0,1fr)_390px] items-start gap-5 max-[1260px]:grid-cols-[340px_minmax(0,1fr)] max-[920px]:grid-cols-1" : "space-y-3"}>
+      <div
+        className={
+          isWorkspace
+            ? "grid grid-cols-[360px_minmax(0,1fr)_390px] items-start gap-5 max-[1260px]:grid-cols-[340px_minmax(0,1fr)] max-[920px]:grid-cols-1"
+            : "space-y-3"
+        }
+      >
         {/* Column 1: Metadata Fields */}
         <section className="rounded-xl border border-[#2A2A38] bg-[#101018] p-4 space-y-3">
           <div className="flex items-center gap-1.5 border-b border-[#2A2A38] pb-2 font-mono text-[10px] font-bold uppercase tracking-wider text-violet-300">
@@ -299,19 +393,43 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Name</label>
-              <input value={name} onChange={(event) => handleNameChange(event.target.value)} placeholder="Name" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                Name
+              </label>
+              <input
+                value={name}
+                onChange={(event) => handleNameChange(event.target.value)}
+                placeholder="Name"
+                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+              />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Asset ID</label>
-              <input value={id} onChange={(event) => setId(toKebabId(event.target.value))} placeholder="asset-id" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-violet-500" />
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                Asset ID
+              </label>
+              <input
+                value={id}
+                onChange={(event) => setId(toKebabId(event.target.value))}
+                placeholder="asset-id"
+                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-violet-500"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Category</label>
-              <select value={category} onChange={(event) => setCategory(event.target.value as OverlayPublishPayload["category"])} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500">
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                Category
+              </label>
+              <select
+                value={category}
+                onChange={(event) =>
+                  setCategory(
+                    event.target.value as OverlayPublishPayload["category"],
+                  )
+                }
+                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+              >
                 {OVERLAY_CATEGORIES.map((item) => (
                   <option key={item} value={item}>
                     {item}
@@ -320,36 +438,86 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Duration seconds</label>
-              <input value={duration} onChange={(event) => setDuration(event.target.value)} placeholder="Duration" inputMode="decimal" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                Duration seconds
+              </label>
+              <input
+                value={duration}
+                onChange={(event) => setDuration(event.target.value)}
+                placeholder="Duration"
+                inputMode="decimal"
+                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Width px</label>
-              <input value={width} onChange={(event) => setWidth(event.target.value)} placeholder="Width px" inputMode="numeric" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                Width px
+              </label>
+              <input
+                value={width}
+                onChange={(event) => setWidth(event.target.value)}
+                placeholder="Width px"
+                inputMode="numeric"
+                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+              />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Height px</label>
-              <input value={height} onChange={(event) => setHeight(event.target.value)} placeholder="Height px" inputMode="numeric" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                Height px
+              </label>
+              <input
+                value={height}
+                onChange={(event) => setHeight(event.target.value)}
+                placeholder="Height px"
+                inputMode="numeric"
+                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+              />
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-semibold text-gray-300 mb-1">Description</label>
-            <textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Description" rows={2} className="w-full resize-none rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+            <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Description"
+              rows={2}
+              className="w-full resize-none rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+            />
           </div>
 
           <div>
-            <label className="block text-[10px] font-semibold text-gray-300 mb-1">Tags (comma-separated)</label>
-            <input value={tagsInput} onChange={(event) => setTagsInput(event.target.value)} placeholder="tags, comma, separated" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+            <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+              Tags (comma-separated)
+            </label>
+            <input
+              value={tagsInput}
+              onChange={(event) => setTagsInput(event.target.value)}
+              placeholder="tags, comma, separated"
+              className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Blend Mode</label>
-              <select value={blendMode} onChange={(event) => setBlendMode(event.target.value as OverlayPublishPayload["metadata"]["blendMode"])} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500">
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                Blend Mode
+              </label>
+              <select
+                value={blendMode}
+                onChange={(event) =>
+                  setBlendMode(
+                    event.target
+                      .value as OverlayPublishPayload["metadata"]["blendMode"],
+                  )
+                }
+                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+              >
                 {BLEND_MODES.map((mode) => (
                   <option key={mode} value={mode}>
                     {mode}
@@ -358,24 +526,57 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Opacity 0.0-1.0</label>
-              <input value={opacity} onChange={(event) => setOpacity(event.target.value)} placeholder="Opacity" inputMode="decimal" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                Opacity 0.0-1.0
+              </label>
+              <input
+                value={opacity}
+                onChange={(event) => setOpacity(event.target.value)}
+                placeholder="Opacity"
+                inputMode="decimal"
+                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+              />
             </div>
           </div>
 
           <div className="flex items-center gap-2 rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5">
-            <input type="checkbox" checked={loopable} id="loopable" onChange={(event) => setLoopable(event.target.checked)} className="w-4 h-4 rounded border-[#2A2A38] bg-[#09090D] text-violet-500 focus:ring-1 focus:ring-violet-500" />
-            <label htmlFor="loopable" className="text-xs text-gray-300 cursor-pointer select-none">Loopable</label>
+            <input
+              type="checkbox"
+              checked={loopable}
+              id="loopable"
+              onChange={(event) => setLoopable(event.target.checked)}
+              className="w-4 h-4 rounded border-[#2A2A38] bg-[#09090D] text-violet-500 focus:ring-1 focus:ring-violet-500"
+            />
+            <label
+              htmlFor="loopable"
+              className="text-xs text-gray-300 cursor-pointer select-none"
+            >
+              Loopable
+            </label>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Source Provider</label>
-              <input value={sourceProvider} onChange={(event) => setSourceProvider(event.target.value)} placeholder="Source provider" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                Source Provider
+              </label>
+              <input
+                value={sourceProvider}
+                onChange={(event) => setSourceProvider(event.target.value)}
+                placeholder="Source provider"
+                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+              />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-gray-300 mb-1">Source URL</label>
-              <input value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="https://source.example/item" className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+              <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                Source URL
+              </label>
+              <input
+                value={sourceUrl}
+                onChange={(event) => setSourceUrl(event.target.value)}
+                placeholder="https://source.example/item"
+                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+              />
             </div>
           </div>
         </section>
@@ -387,19 +588,46 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1.5">Video File (WebM, MP4, MOV)</label>
-            <input type="file" accept="video/webm,video/mp4,video/quicktime,.webm,.mp4,.mov" onChange={(event) => void handleVideoFileChange(event.target.files?.[0] || null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-2 text-xs text-white file:mr-3 file:rounded file:border-0 file:bg-violet-500/20 file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-violet-100" />
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+              Video File (WebM, MP4, MOV)
+            </label>
+            <input
+              type="file"
+              accept="video/webm,video/mp4,video/quicktime,.webm,.mp4,.mov"
+              onChange={(event) =>
+                void handleVideoFileChange(event.target.files?.[0] || null)
+              }
+              className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-2 text-xs text-white file:mr-3 file:rounded file:border-0 file:bg-violet-500/20 file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-violet-100"
+            />
             {videoFile && (
               <p className="mt-1.5 text-[10px] text-gray-400">
-                File size: {(videoFile.size / 1024 / 1024).toFixed(2)} MB {videoFile.size > 100 * 1024 * 1024 && <span className="text-red-400 font-bold ml-1.5">⚠️ Exceeds 100MB limit</span>}
+                File size: {(videoFile.size / 1024 / 1024).toFixed(2)} MB{" "}
+                {videoFile.size > 100 * 1024 * 1024 && (
+                  <span className="text-red-400 font-bold ml-1.5">
+                    ⚠️ Exceeds 100MB limit
+                  </span>
+                )}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1.5">Thumbnail (Optional)</label>
-            {autoThumbnail && !thumbnailFile && <div className="text-[10px] text-green-400 mb-1">✓ Thumbnail auto-extracted from video</div>}
-            <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={(event) => setThumbnailFile(event.target.files?.[0] || null)} className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-2 text-xs text-white file:mr-3 file:rounded file:border-0 file:bg-violet-500/20 file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-violet-100" />
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+              Thumbnail (Optional)
+            </label>
+            {autoThumbnail && !thumbnailFile && (
+              <div className="text-[10px] text-green-400 mb-1">
+                ✓ Thumbnail auto-extracted from video
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+              onChange={(event) =>
+                setThumbnailFile(event.target.files?.[0] || null)
+              }
+              className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-2 text-xs text-white file:mr-3 file:rounded file:border-0 file:bg-violet-500/20 file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-violet-100"
+            />
           </div>
         </section>
 
@@ -410,8 +638,16 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1.5">Review Notes / Copyright Confirmation</label>
-            <textarea value={safetyNotes} onChange={(event) => setSafetyNotes(event.target.value)} placeholder="Review notes, copyright confirmation, source notes" rows={3} className="w-full resize-none rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500" />
+            <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+              Review Notes / Copyright Confirmation
+            </label>
+            <textarea
+              value={safetyNotes}
+              onChange={(event) => setSafetyNotes(event.target.value)}
+              placeholder="Review notes, copyright confirmation, source notes"
+              rows={3}
+              className="w-full resize-none rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-violet-500"
+            />
           </div>
 
           {/* Admin Moderation - Published toggle */}
@@ -424,7 +660,10 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
                 onChange={(e) => setPublishApproved(e.target.checked)}
                 className="h-4 w-4 rounded border-[#2A2A38] bg-[#09090D] text-violet-500 focus:ring-violet-500 cursor-pointer"
               />
-              <label htmlFor="overlay-publish-checkbox" className="text-xs font-semibold text-white cursor-pointer">
+              <label
+                htmlFor="overlay-publish-checkbox"
+                className="text-xs font-semibold text-white cursor-pointer"
+              >
                 Approve & Publish immediately
               </label>
             </div>
@@ -437,21 +676,28 @@ export function OverlayPublishPanel({ variant = "drawer" }: { variant?: "drawer"
             </div>
           )}
 
-          {message && (
-            <div className={`flex items-start gap-2 rounded border p-2.5 text-[10px] ${status === "failed" ? "border-red-500/20 bg-red-500/10 text-red-200" : "border-violet-500/20 bg-violet-500/10 text-violet-200"}`}>
-              {status === "failed" ? <AlertTriangle size={12} className="mt-0.5 shrink-0" /> : <CheckCircle size={12} className="mt-0.5 shrink-0" />}
-              <span>{message}</span>
-            </div>
-          )}
-
           {prUrl && (
-            <a href={prUrl} target="_blank" rel="noreferrer" className="block rounded border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-center text-xs font-semibold text-white hover:bg-zinc-800 transition-colors">
+            <a
+              href={prUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="block rounded border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-center text-xs font-semibold text-white hover:bg-zinc-800 transition-colors"
+            >
               Open Pull Request
             </a>
           )}
 
-          <button type="button" onClick={handlePublish} disabled={!!validationMessage || status === "publishing"} className="flex w-full items-center justify-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/15 px-3 py-2.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/25 disabled:cursor-not-allowed disabled:opacity-50">
-            {status === "publishing" ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+          <button
+            type="button"
+            onClick={handlePublish}
+            disabled={!!validationMessage || status === "publishing"}
+            className="flex w-full items-center justify-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/15 px-3 py-2.5 text-xs font-semibold text-violet-200 hover:bg-violet-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {status === "publishing" ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <UploadCloud size={14} />
+            )}
             Publish Overlay to R2
           </button>
         </section>

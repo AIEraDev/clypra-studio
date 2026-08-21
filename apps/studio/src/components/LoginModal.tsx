@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Lock, Mail, X, Loader2, Sparkles, UserRound } from "lucide-react";
+import { toast } from "sonner";
 import { getStudioApiBaseUrl } from "../services/apiConfig";
 
 const API_BASE_URL = getStudioApiBaseUrl();
@@ -29,10 +30,8 @@ export function LoginModal({
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
-  
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -43,8 +42,6 @@ export function LoginModal({
       setPassword("");
       setUsername("");
       setMode("login");
-      setError(null);
-      setSuccessMsg(null);
       setLoading(false);
     }
   }, [open]);
@@ -71,61 +68,62 @@ export function LoginModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccessMsg(null);
     setLoading(true);
 
     try {
       const endpoint = `${API_BASE_URL}/auth/${mode}`;
-      const payload = mode === "register"
-        ? { username, email, password }
-        : { email, password };
+      const payload =
+        mode === "register"
+          ? { username, email, password }
+          : { email, password };
 
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Authentication failed. Please check your credentials.");
+        throw new Error(
+          data.error || "Authentication failed. Please check your credentials.",
+        );
       }
 
-      setSuccessMsg(mode === "register" ? "Account created successfully!" : "Signed in successfully!");
-      
-      // Delay success action slightly to allow user to see success state
+      toast.success(
+        mode === "register"
+          ? "Account created successfully!"
+          : "Signed in successfully!",
+      );
+
       setTimeout(() => {
         onSuccess(data.token, data.user);
         onClose();
       }, 800);
-
     } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      toast.error(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div 
-      id="login-modal-overlay" 
+    <div
+      id="login-modal-overlay"
       onClick={handleBackdropClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md transition-opacity duration-300"
     >
-      <div 
+      <div
         ref={modalRef}
         className="relative w-full max-w-[400px] overflow-hidden rounded-2xl border border-[#2A2A38] bg-[#1E1E26] p-6 shadow-2xl transition-all duration-300 transform scale-100 select-none"
       >
         {/* Glow effect header decorator */}
         <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-[#7C6FFF] to-indigo-500" />
-        
+
         {/* Close Button */}
-        <button 
-          onClick={onClose} 
+        <button
+          onClick={onClose}
           className="absolute right-4 top-4 rounded-lg p-1.5 text-gray-400 hover:bg-[#2A2A38] hover:text-white transition-all cursor-pointer"
           aria-label="Close modal"
         >
@@ -138,7 +136,9 @@ export function LoginModal({
             <Sparkles size={20} className="animate-pulse" />
           </div>
           <h3 className="font-sans text-lg font-bold tracking-tight text-white">
-            {mode === "register" ? "Create your Clypra account" : "Access Clypra Studio"}
+            {mode === "register"
+              ? "Create your Clypra account"
+              : "Access Clypra Studio"}
           </h3>
           <p className="mt-1 font-sans text-xs text-gray-400">
             {mode === "register"
@@ -146,20 +146,6 @@ export function LoginModal({
               : "Sign in to sync your presets and templates"}
           </p>
         </div>
-
-        {/* Error Box */}
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-900 bg-red-950/45 p-3 text-xs leading-normal text-red-400 font-sans">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-
-        {/* Success Box */}
-        {successMsg && (
-          <div className="mb-4 rounded-lg border border-emerald-900 bg-emerald-950/45 p-3 text-xs leading-normal text-emerald-400 font-sans">
-            <strong>Success:</strong> {successMsg}
-          </div>
-        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 font-sans">
@@ -185,7 +171,7 @@ export function LoginModal({
               </div>
             </div>
           )}
-          
+
           {/* Email Input */}
           <div className="flex flex-col gap-1.5">
             <label className="font-mono text-[9px] uppercase tracking-wider text-gray-400 font-semibold">
@@ -195,13 +181,13 @@ export function LoginModal({
               <span className="absolute inset-y-0 left-3 flex items-center text-gray-500">
                 <Mail size={14} />
               </span>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 required
                 disabled={loading}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. design@clypra.com" 
+                placeholder="e.g. design@clypra.com"
                 className="w-full rounded-lg border border-[#2A2A38] bg-[#0E0E12] py-2 pl-9 pr-3 text-xs text-white placeholder-gray-600 focus:border-[#7C6FFF] focus:outline-none focus:ring-1 focus:ring-[#7C6FFF] transition-all"
               />
             </div>
@@ -216,21 +202,21 @@ export function LoginModal({
               <span className="absolute inset-y-0 left-3 flex items-center text-gray-500">
                 <Lock size={14} />
               </span>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 required
                 disabled={loading}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••" 
+                placeholder="••••••••"
                 className="w-full rounded-lg border border-[#2A2A38] bg-[#0E0E12] py-2 pl-9 pr-3 text-xs text-white placeholder-gray-600 focus:border-[#7C6FFF] focus:outline-none focus:ring-1 focus:ring-[#7C6FFF] transition-all"
               />
             </div>
           </div>
 
           {/* Submit Button */}
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="mt-2 flex h-9 items-center justify-center gap-2 rounded-lg bg-[#7C6FFF] text-xs font-semibold text-white transition-all hover:bg-[#6859FF] hover:shadow-[0_0_15px_rgba(124,111,255,0.3)] disabled:cursor-not-allowed disabled:bg-gray-800 disabled:text-gray-600 cursor-pointer"
           >
@@ -246,9 +232,9 @@ export function LoginModal({
               type="button"
               disabled={loading}
               onClick={() => {
-                setMode((current) => current === "login" ? "register" : "login");
-                setError(null);
-                setSuccessMsg(null);
+                setMode((current) =>
+                  current === "login" ? "register" : "login",
+                );
               }}
               className="text-[11px] font-semibold text-[#B9B2FF] transition-colors hover:text-white disabled:opacity-50"
             >
