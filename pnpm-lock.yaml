@@ -36,8 +36,8 @@ importers:
         specifier: ^0.1.1
         version: 0.1.1
       '@clypra-studio/native-render-wasm':
-        specifier: workspace:*
-        version: link:../../packages/native-render-wasm
+        specifier: ^0.1.0
+        version: 0.1.0
       '@clypra-studio/runtime':
         specifier: ^0.2.2
         version: 0.2.2
@@ -502,6 +502,9 @@ packages:
 
   '@clypra-studio/feature-providers@0.1.1':
     resolution: {integrity: sha512-YE6yIUPoB9ByaNSr9p9RcUvmhbl270w3OgciFV3j7ou81mo3kCv8uhr1mWzTfU90p+38N9bcnCx/zHErwog9ow==}
+
+  '@clypra-studio/native-render-wasm@0.1.0':
+    resolution: {integrity: sha512-VuHBDZJdbY2TJQ0YLivOiLmHopOEygCJmbutAHVzynuMUrzVT7hQiRLIh56c3wk0dGUg02+FZhZwyd76Hu5GGg==}
 
   '@clypra-studio/runtime@0.2.2':
     resolution: {integrity: sha512-YeCG3rg/kdFTeu0zyxvZ5AlQr8kkvIpd2UOMxOveFQKQJYBkH4jByV1wnrZow0kbT1UzfjTTCGmdppoqRIVIBw==}
@@ -4379,6 +4382,8 @@ snapshots:
       zod: 4.4.3
 
   '@clypra-studio/feature-providers@0.1.1': {}
+
+  '@clypra-studio/native-render-wasm@0.1.0': {}
 
   '@clypra-studio/runtime@0.2.2':
     dependencies:
