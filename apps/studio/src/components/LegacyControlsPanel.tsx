@@ -4,7 +4,32 @@ import type { TextEffectConfig } from "@clypra-studio/engine";
 import { SYSTEM_FONTS, GOOGLE_FONTS } from "../constants";
 import { COMPOSITION_PRESETS } from "@clypra-studio/engine";
 import { resizeCharFillColors } from "@clypra-studio/engine";
+import { ClypraColorPicker } from "@clypra/ui-color-picker";
 import { PerCharColorEditor } from "./PerCharColorEditor";
+
+function LegacyColorPicker({
+  value,
+  onChange,
+  size = "sm",
+  className = "w-7 h-7",
+}: {
+  value: string;
+  onChange: (color: string) => void;
+  size?: "sm" | "md";
+  className?: string;
+}) {
+  const safe = value?.startsWith("#") ? value : "#ffffff";
+  return (
+    <ClypraColorPicker
+      value={safe}
+      onChange={onChange}
+      onChangeComplete={onChange}
+      size={size}
+      placement="left-start"
+      triggerClassName={`rounded border border-white/10 shrink-0 ${className}`}
+    />
+  );
+}
 
 type ConfigUpdater = Partial<TextEffectConfig> | ((config: TextEffectConfig) => TextEffectConfig);
 
@@ -212,7 +237,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
             <div className="p-2.5 rounded-lg bg-[#0E0E12] border border-[#2A2A38]">
               <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Ink Color</label>
               <div className="flex items-center gap-3">
-                <input type="color" value={config.inkColor || "#FFFFFF"} onChange={(e) => modifyConfig({ inkColor: e.target.value, fillColor: e.target.value, customRenderer: "InkBrushEngine" })} className="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                <LegacyColorPicker
+                  value={config.inkColor || "#FFFFFF"}
+                  onChange={(val) => modifyConfig({ inkColor: val, fillColor: val, customRenderer: "InkBrushEngine" })}
+                  className="w-8 h-8"
+                />
                 <input type="text" value={config.inkColor || "#FFFFFF"} onChange={(e) => modifyConfig({ inkColor: e.target.value, fillColor: e.target.value, customRenderer: "InkBrushEngine" })} className="flex-1 bg-[#15151C] border border-[#2A2A38] focus:border-[#7C6FFF] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none" />
               </div>
             </div>
@@ -307,18 +336,16 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                 <div className="p-2.5 rounded-lg bg-[#0E0E12] border border-[#2A2A38]">
                   <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Color Palette</label>
                   <div className="flex items-center gap-3">
-                    <input
-                      type="color"
+                    <LegacyColorPicker
                       value={config.fillColor.startsWith("#") ? config.fillColor : "#ffffff"}
-                      onChange={(e) => {
-                        const fillColor = e.target.value;
+                      onChange={(fillColor) => {
                         modifyConfig({
                           fillColor,
                           customRenderer: undefined,
                           charFillColors: config.perCharFillEnabled ? resizeCharFillColors(config.text || "", config.charFillColors, fillColor) : config.charFillColors,
                         });
                       }}
-                      className="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer p-0 shrink-0"
+                      className="w-8 h-8"
                     />
                     <input
                       type="text"
@@ -379,17 +406,16 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
 
                   {config.fillGradientStops.map((stop, sidx) => (
                     <div key={sidx} className="flex items-center gap-2 bg-[#15151C] p-2 rounded-md border border-[#2A2A38]/50">
-                      <input
-                        type="color"
+                      <LegacyColorPicker
                         value={stop.color}
-                        onChange={(e) => {
+                        onChange={(val) => {
                           modifyConfig((prev) => {
                             const stops = [...prev.fillGradientStops];
-                            stops[sidx] = { ...stops[sidx], color: e.target.value };
+                            stops[sidx] = { ...stops[sidx], color: val };
                             return { ...prev, fillGradientStops: stops };
                           });
                         }}
-                        className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0"
+                        className="w-5 h-5"
                       />
 
                       <input
@@ -435,7 +461,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                 <div>
                   <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">Pattern Color Accent</label>
                   <div className="flex items-center gap-3">
-                    <input type="color" value={config.fillColor.startsWith("#") ? config.fillColor : "#ffffff"} onChange={(e) => modifyConfig({ fillColor: e.target.value, customRenderer: undefined })} className="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                    <LegacyColorPicker
+                      value={config.fillColor.startsWith("#") ? config.fillColor : "#ffffff"}
+                      onChange={(val) => modifyConfig({ fillColor: val, customRenderer: undefined })}
+                      className="w-8 h-8"
+                    />
                     <input type="text" value={config.fillColor} onChange={(e) => modifyConfig({ fillColor: e.target.value, customRenderer: undefined })} className="flex-1 bg-[#15151C] border border-[#2A2A38] focus:border-[#7C6FFF] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none" />
                   </div>
                 </div>
@@ -497,7 +527,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
             <div className="flex flex-col gap-3 border-t border-[#2A2A38]/60 pt-3 select-none">
               {/* Color */}
               <div className="flex items-center gap-3 bg-[#0E0E12] border border-[#2A2A38] rounded-lg p-2">
-                <input type="color" value={config.strokeColor.startsWith("#") ? config.strokeColor : "#7c6fff"} onChange={(e) => modifyConfig({ strokeColor: e.target.value, strokeEnabled: true })} className="w-7 h-7 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                <LegacyColorPicker
+                  value={config.strokeColor.startsWith("#") ? config.strokeColor : "#7c6fff"}
+                  onChange={(val) => modifyConfig({ strokeColor: val, strokeEnabled: true })}
+                  className="w-7 h-7"
+                />
                 <input type="text" value={config.strokeColor} onChange={(e) => modifyConfig({ strokeColor: e.target.value, strokeEnabled: true })} className="flex-1 bg-transparent text-xs text-white font-mono focus:outline-none" />
               </div>
 
@@ -585,7 +619,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                   <div>
                     <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-1">Outer Secondary Color</label>
                     <div className="flex items-center gap-2 bg-[#0E0E12] border border-[#2A2A38] rounded-lg p-1.5">
-                      <input type="color" value={(config.strokeColorSecondary || "#FFFFFF").startsWith("#") ? config.strokeColorSecondary : "#ffffff"} onChange={(e) => modifyConfig({ strokeColorSecondary: e.target.value, strokeEnabled: true })} className="w-6 h-6 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                      <LegacyColorPicker
+                        value={(config.strokeColorSecondary || "#FFFFFF").startsWith("#") ? config.strokeColorSecondary : "#ffffff"}
+                        onChange={(val) => modifyConfig({ strokeColorSecondary: val, strokeEnabled: true })}
+                        className="w-6 h-6"
+                      />
                       <input type="text" value={config.strokeColorSecondary || "#FFFFFF"} onChange={(e) => modifyConfig({ strokeColorSecondary: e.target.value, strokeEnabled: true })} className="flex-1 bg-transparent text-xs text-white font-mono focus:outline-none" />
                     </div>
                   </div>
@@ -677,17 +715,16 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     <div className="flex flex-col gap-2.5">
                       {/* Color */}
                       <div className="flex items-center gap-2">
-                        <input
-                          type="color"
+                        <LegacyColorPicker
                           value={layer.color.startsWith("#") ? layer.color : "#7c6fff"}
-                          onChange={(e) => {
+                          onChange={(val) => {
                             modifyConfig((p) => {
                               const layers = [...p.glowLayers];
-                              layers[lidx] = { ...layers[lidx], color: e.target.value };
+                              layers[lidx] = { ...layers[lidx], color: val };
                               return { ...p, glowLayers: layers };
                             });
                           }}
-                          className="w-6 h-6 bg-transparent border-none cursor-pointer p-0 shrink-0"
+                          className="w-6 h-6"
                         />
                         <input
                           type="text"
@@ -845,7 +882,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
             <div className="flex flex-col gap-3 border-t border-[#2A2A38]/50 pt-3 select-none">
               {/* Color */}
               <div className="flex items-center gap-3 bg-[#0E0E12] border border-[#2A2A38] rounded-lg p-2">
-                <input type="color" value={config.shadowColor.startsWith("#") ? config.shadowColor : "#000000"} onChange={(e) => modifyConfig({ shadowColor: e.target.value, shadowEnabled: true })} className="w-7 h-7 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                <LegacyColorPicker
+                  value={config.shadowColor.startsWith("#") ? config.shadowColor : "#000000"}
+                  onChange={(val) => modifyConfig({ shadowColor: val, shadowEnabled: true })}
+                  className="w-7 h-7"
+                />
                 <input type="text" value={config.shadowColor} onChange={(e) => modifyConfig({ shadowColor: e.target.value, shadowEnabled: true })} className="flex-1 bg-transparent text-xs text-white font-mono focus:outline-none" />
               </div>
 
@@ -1002,7 +1043,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     Front Face Highlight
                   </label>
                   <div className="flex items-center gap-2">
-                    <input type="color" value={config.bevelHighlight.startsWith("#") ? config.bevelHighlight : "#ffffff"} onChange={(e) => modifyConfig({ bevelHighlight: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                    <LegacyColorPicker
+                      value={config.bevelHighlight.startsWith("#") ? config.bevelHighlight : "#ffffff"}
+                      onChange={(val) => modifyConfig({ bevelHighlight: val })}
+                      className="w-5 h-5"
+                    />
                     <input type="text" value={config.bevelHighlight} onChange={(e) => modifyConfig({ bevelHighlight: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[10px] text-white font-mono" />
                   </div>
                 </div>
@@ -1013,7 +1058,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     Core Extrusion Color
                   </label>
                   <div className="flex items-center gap-2">
-                    <input type="color" value={(config.bevelCoreColor || "#000000").startsWith("#") ? config.bevelCoreColor || "#000000" : "#000000"} onChange={(e) => modifyConfig({ bevelCoreColor: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                    <LegacyColorPicker
+                      value={(config.bevelCoreColor || "#000000").startsWith("#") ? config.bevelCoreColor || "#000000" : "#000000"}
+                      onChange={(val) => modifyConfig({ bevelCoreColor: val })}
+                      className="w-5 h-5"
+                    />
                     <input type="text" value={config.bevelCoreColor || ""} placeholder="e.g. #FF5500" onChange={(e) => modifyConfig({ bevelCoreColor: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[10px] text-white font-mono placeholder-gray-700" />
                   </div>
                 </div>
@@ -1024,7 +1073,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     Deep Anchor Shadow (Base)
                   </label>
                   <div className="flex items-center gap-2">
-                    <input type="color" value={config.bevelShadow.startsWith("#") ? config.bevelShadow : "#000000"} onChange={(e) => modifyConfig({ bevelShadow: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                    <LegacyColorPicker
+                      value={config.bevelShadow.startsWith("#") ? config.bevelShadow : "#000000"}
+                      onChange={(val) => modifyConfig({ bevelShadow: val })}
+                      className="w-5 h-5"
+                    />
                     <input type="text" value={config.bevelShadow} onChange={(e) => modifyConfig({ bevelShadow: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[10px] text-white font-mono" />
                   </div>
                 </div>
@@ -1045,7 +1098,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     <div>
                       <label className="text-[8px] uppercase font-mono text-clypra-muted block mb-0.5">Edge Color</label>
                       <div className="flex items-center gap-2">
-                        <input type="color" value={(config.bevelEdgeColor || "#1e1e26").startsWith("#") ? config.bevelEdgeColor || "#1e1e26" : "#000000"} onChange={(e) => modifyConfig({ bevelEdgeColor: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                        <LegacyColorPicker
+                          value={(config.bevelEdgeColor || "#1e1e26").startsWith("#") ? config.bevelEdgeColor || "#1e1e26" : "#000000"}
+                          onChange={(val) => modifyConfig({ bevelEdgeColor: val })}
+                          className="w-5 h-5"
+                        />
                         <input type="text" value={config.bevelEdgeColor || ""} placeholder="#2A2A38" onChange={(e) => modifyConfig({ bevelEdgeColor: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[10px] text-white font-mono placeholder-gray-700 w-full" />
                       </div>
                     </div>
@@ -1068,7 +1125,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     <div>
                       <label className="text-[8px] uppercase font-mono text-clypra-muted block mb-0.5">Glow Color</label>
                       <div className="flex items-center gap-2">
-                        <input type="color" value={(config.bevelBlurColor || "#000000").startsWith("#") ? config.bevelBlurColor || "#000000" : "#000000"} onChange={(e) => modifyConfig({ bevelBlurColor: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                        <LegacyColorPicker
+                          value={(config.bevelBlurColor || "#000000").startsWith("#") ? config.bevelBlurColor || "#000000" : "#000000"}
+                          onChange={(val) => modifyConfig({ bevelBlurColor: val })}
+                          className="w-5 h-5"
+                        />
                         <input type="text" value={config.bevelBlurColor || ""} placeholder="#000000" onChange={(e) => modifyConfig({ bevelBlurColor: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[10px] text-white font-mono placeholder-gray-700 w-full" />
                       </div>
                     </div>
@@ -1146,7 +1207,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     <div>
                       <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">Layer Color 1</label>
                       <div className="flex items-center gap-1.5">
-                        <input type="color" value={(config.stackColor1 || "#FF7C00").startsWith("#") ? config.stackColor1 || "#FF7C00" : "#000000"} onChange={(e) => modifyConfig({ stackColor1: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                        <LegacyColorPicker
+                          value={(config.stackColor1 || "#FF7C00").startsWith("#") ? config.stackColor1 || "#FF7C00" : "#000000"}
+                          onChange={(val) => modifyConfig({ stackColor1: val })}
+                          className="w-5 h-5"
+                        />
                         <input type="text" value={config.stackColor1 || ""} placeholder="#FF7C00" onChange={(e) => modifyConfig({ stackColor1: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full" />
                       </div>
                     </div>
@@ -1154,7 +1219,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     <div>
                       <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">Layer Color 2</label>
                       <div className="flex items-center gap-1.5">
-                        <input type="color" value={(config.stackColor2 || "#00FFDD").startsWith("#") ? config.stackColor2 || "#00FFDD" : "#000000"} onChange={(e) => modifyConfig({ stackColor2: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                        <LegacyColorPicker
+                          value={(config.stackColor2 || "#00FFDD").startsWith("#") ? config.stackColor2 || "#00FFDD" : "#000000"}
+                          onChange={(val) => modifyConfig({ stackColor2: val })}
+                          className="w-5 h-5"
+                        />
                         <input type="text" value={config.stackColor2 || ""} placeholder="#00FFDD" onChange={(e) => modifyConfig({ stackColor2: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full" />
                       </div>
                     </div>
@@ -1162,7 +1231,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     <div>
                       <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">Layer Color 3</label>
                       <div className="flex items-center gap-1.5">
-                        <input type="color" value={(config.stackColor3 || "#FF00AA").startsWith("#") ? config.stackColor3 || "#FF00AA" : "#000000"} onChange={(e) => modifyConfig({ stackColor3: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                        <LegacyColorPicker
+                          value={(config.stackColor3 || "#FF00AA").startsWith("#") ? config.stackColor3 || "#FF00AA" : "#000000"}
+                          onChange={(val) => modifyConfig({ stackColor3: val })}
+                          className="w-5 h-5"
+                        />
                         <input type="text" value={config.stackColor3 || ""} placeholder="#FF00AA" onChange={(e) => modifyConfig({ stackColor3: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full" />
                       </div>
                     </div>
@@ -1170,7 +1243,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     <div>
                       <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">Layer Color 4</label>
                       <div className="flex items-center gap-1.5">
-                        <input type="color" value={(config.stackColor4 || "#AA00FF").startsWith("#") ? config.stackColor4 || "#AA00FF" : "#000000"} onChange={(e) => modifyConfig({ stackColor4: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                        <LegacyColorPicker
+                          value={(config.stackColor4 || "#AA00FF").startsWith("#") ? config.stackColor4 || "#AA00FF" : "#000000"}
+                          onChange={(val) => modifyConfig({ stackColor4: val })}
+                          className="w-5 h-5"
+                        />
                         <input type="text" value={config.stackColor4 || ""} placeholder="#AA00FF" onChange={(e) => modifyConfig({ stackColor4: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full" />
                       </div>
                     </div>
@@ -1205,7 +1282,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
               <div className="flex flex-col gap-3.5 border-t border-[#2A2A38]/50 pt-3 select-none">
                 {/* Color */}
                 <div className="flex items-center gap-3 bg-[#0E0E12] border border-[#2A2A38] rounded-lg p-2">
-                  <input type="color" value={config.panelColor.startsWith("#") ? config.panelColor : "#1e1e26"} onChange={(e) => modifyConfig({ panelColor: e.target.value })} className="w-7 h-7 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                  <LegacyColorPicker
+                    value={config.panelColor.startsWith("#") ? config.panelColor : "#1e1e26"}
+                    onChange={(val) => modifyConfig({ panelColor: val })}
+                    className="w-7 h-7"
+                  />
                   <input type="text" value={config.panelColor} onChange={(e) => modifyConfig({ panelColor: e.target.value })} className="flex-1 bg-transparent text-xs text-white font-mono focus:outline-none" />
                 </div>
 
@@ -1257,7 +1338,11 @@ export function LegacyControlsPanel({ visible, config, activeEffectId, collapsed
                     <div className="flex flex-col gap-3 bg-[#0E0E12] border border-[#2A2A38]/80 rounded p-2.5">
                       {/* color */}
                       <div className="flex items-center gap-2">
-                        <input type="color" value={config.panelStrokeColor.startsWith("#") ? config.panelStrokeColor : "#2a2a38"} onChange={(e) => modifyConfig({ panelStrokeColor: e.target.value })} className="w-5 h-5 bg-transparent border-none cursor-pointer p-0 shrink-0" />
+                        <LegacyColorPicker
+                          value={config.panelStrokeColor.startsWith("#") ? config.panelStrokeColor : "#2a2a38"}
+                          onChange={(val) => modifyConfig({ panelStrokeColor: val })}
+                          className="w-5 h-5"
+                        />
                         <input type="text" value={config.panelStrokeColor} onChange={(e) => modifyConfig({ panelStrokeColor: e.target.value })} className="flex-1 bg-[#15151C] border border-[#2A2A38]/50 p-1 text-[10px] text-white font-mono rounded" />
                       </div>
 
