@@ -20,6 +20,7 @@
     "@clypra-studio/types": "^0.5.0",
     "@clypra-studio/ui": "^0.3.0",
     "@clypra/ui-color-picker": "^0.2.0",
+    "@floating-ui/react": "^0.27.20",
     "@google/genai": "^2.4.0",
     "@lottiefiles/react-lottie-player": "^3.6.0",
     "@tailwindcss/vite": "^4.1.14",

@@ -39,12 +39,19 @@ export default defineConfig(() => {
     base: "./",
     plugins: [react(), tailwindcss()],
     resolve: {
+      dedupe: ["react", "react-dom", "react/jsx-runtime", "@floating-ui/react"],
       alias: [
+        { find: /^react$/, replacement: path.resolve(__dirname, "node_modules/react") },
+        { find: /^react-dom$/, replacement: path.resolve(__dirname, "node_modules/react-dom") },
+        { find: /^react\/(.*)$/, replacement: path.resolve(__dirname, "node_modules/react/$1") },
+        { find: /^react-dom\/(.*)$/, replacement: path.resolve(__dirname, "node_modules/react-dom/$1") },
+        { find: /^@floating-ui\/react$/, replacement: path.resolve(__dirname, "node_modules/@floating-ui/react") },
         ...workspaceAliases,
         { find: "@", replacement: path.resolve(__dirname, "src") },
       ],
     },
     optimizeDeps: {
+      include: ["react", "react-dom", "@floating-ui/react"],
       entries: [
         // Studio app entry (always included by default, listed explicitly)
         "src/main.tsx",
@@ -56,6 +63,12 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== "true",
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === "true" ? null : {},
+      fs: {
+        allow: [
+          path.resolve(__dirname, "."),
+          path.resolve(__dirname, "../clypra-packages"),
+        ],
+      },
     },
   };
 });
