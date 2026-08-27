@@ -2,7 +2,7 @@
   "version": 2,
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
-  "installCommand": "pnpm install --frozen-lockfile",
+  "installCommand": "pnpm install",
   "framework": null,
   "devCommand": "pnpm run dev",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],

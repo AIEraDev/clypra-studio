@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./apps/studio/public/clypra.svg" alt="Clypra Logo" width="100" height="100" />
+<img src="./public/clypra.svg" alt="Clypra Logo" width="100" height="100" />
 
 # Clypra Studio
 
@@ -8,7 +8,7 @@
 
 Where visual effects, transitions, shader filters, and **production performance telemetry** are authored, benchmarked, and diagnosed before and after reaching the editor runtime.
 
-[![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev) [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org) [![Native Rendering](https://img.shields.io/badge/Rendering-Native%20Pipeline-7C6FFF)](https://github.com/AIEraDev/clypra) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev) [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org) [![Native Rendering](https://img.shields.io/badge/Rendering-Native%20Pipeline-7C6FFF)](https://github.com/AIEraDev/clypra) [![Packages Monorepo](https://img.shields.io/badge/Packages-clypra--packages-FF5722)](https://github.com/AIEraDev/clypra-packages) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 [Architecture](#vision--architecture) • [Creative Labs](#the-creative-labs) • [⚡ Performance Intelligence](#-performance-intelligence--admin-console) • [Getting Started](#getting-started) • [Contributing](CONTRIBUTING.md)
 
@@ -59,20 +59,17 @@ Located at **`/studio/admin`** (or `/studio/admin/performance`), the Performance
 
 ---
 
-## Key Packages
+## Ecosystem Architecture
+
+Shared engines, runtime graphs, and UI primitives are maintained in the dedicated [`clypra-packages`](https://github.com/AIEraDev/clypra-packages) monorepo.
 
 ```
-clypra-studio/
-├── packages/
-│   ├── clypra-engine/       # @clypra/engine - Effect registry & definitions
-│   ├── runtime/             # Shared graph compilation & native execution
-│   ├── shaders/             # Reusable GLSL shader library
-│   ├── feature-providers/   # Segmentation & keying providers
-│   └── ui/                  # Shared studio UI components
-└── apps/
-    └── studio/              # Studio web application, creative labs & admin console
+clypra-family/
+├── clypra/             # Native desktop/mobile video editor (Tauri + React)
+├── clypra-api/         # Central backend API
+├── clypra-packages/    # Shared engine, runtime, shader, and UI packages monorepo
+└── clypra-studio/      # Dedicated web studio UI, creative labs & admin console
 ```
-
 ---
 
 ## Getting Started
