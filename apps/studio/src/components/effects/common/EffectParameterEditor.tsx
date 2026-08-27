@@ -7,6 +7,7 @@
 
 import React from "react";
 import type { EffectRendererType, EffectParameters } from "@clypra-studio/engine";
+import { ClypraColorPicker } from "@clypra/ui-color-picker";
 
 interface EffectParameterEditorProps {
   effectType: EffectRendererType | "custom";
@@ -203,13 +204,16 @@ function ColorPicker({ label, value, onChange }: ColorPickerProps) {
   return (
     <div className="param-row">
       <div className="param-label">{label}</div>
-      <div className="color-row">
-        <input 
-          type="color" 
-          value={value} 
-          onChange={(e) => onChange(e.target.value)} 
+      <div className="color-row flex items-center gap-2">
+        <ClypraColorPicker
+          value={value}
+          onChange={onChange}
+          onChangeComplete={onChange}
+          size="sm"
+          placement="left-start"
+          triggerClassName="w-7 h-7 rounded border border-white/10"
         />
-        <span className="color-hex">{value}</span>
+        <span className="color-hex font-mono text-[11px]">{value}</span>
       </div>
     </div>
   );
