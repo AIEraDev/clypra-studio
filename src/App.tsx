@@ -189,6 +189,12 @@ export default function App() {
 
   const nativePreviewGeneration = useRef(0);
   const nativePreviewAbort = useRef<AbortController | null>(null);
+  // Fix 5: Reuse a single OffscreenCanvas instead of allocating a new one every frame.
+  const offscreenRef = useRef<HTMLCanvasElement | OffscreenCanvas | null>(null);
+  const offscreenSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
+  // Fix 8: Track which "weight-family" font pairs have already finished loading
+  //        so we skip redundant document.fonts.load() calls on every config change.
+  const loadedFontsRef = useRef<Set<string>>(new Set());
   const [showFontCompare, setShowFontCompare] = useState<boolean>(false);
 
   // Deep Design Research & Blending Lab states
@@ -741,12 +747,16 @@ export default function App() {
     });
   };
 
+  // Fix 9: Debounce the config → scene conversion so rapid changes (typing,
+  // slider drags) don't run the potentially expensive textEffectConfigToScene()
+  // call on every individual state update.
   useEffect(() => {
     if (skipConfigToScene.current) {
       skipConfigToScene.current = false;
       return;
     }
-    setScene(textEffectConfigToScene(config));
+    const id = setTimeout(() => setScene(textEffectConfigToScene(config)), 50);
+    return () => clearTimeout(id);
   }, [config]);
 
   // Keep the full creator workspace matching across refresh reloads
@@ -857,6 +867,13 @@ export default function App() {
   }, [isPlaying, scene.timeline.duration, scene.timeline.loop]);
 
   // Render every text-design frame through the local native lab daemon.
+  // Perf fixes applied here:
+  //   Fix 2 — rAF gate: collapses multiple rapid state changes to one render/frame.
+  //   Fix 3 — Skip WASM when zoomed in (renderScale > 1): the result was never displayed.
+  //   Fix 4 — Single evaluateScene: zoomed-in path draws once directly; WASM path draws once offscreen.
+  //   Fix 5 — Reuse OffscreenCanvas: reallocated only when canvas dimensions change.
+  //   Fix 6 — Object.defineProperty once: applied at OffscreenCanvas creation, not per render.
+  //   Fix 8 — Font cache: skips document.fonts.load() once a font+weight has been confirmed ready.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -880,127 +897,36 @@ export default function App() {
     canvas.width = renderW;
     canvas.height = renderH;
 
-    const draw = async () => {
-      if (controller.signal.aborted) return;
-      const w = config.canvasWidth || 800;
-      const h = config.canvasHeight || 200;
+    const w = config.canvasWidth || 800;
+    const h = config.canvasHeight || 200;
 
-      // When zoomed in, immediately render high-resolution vector text directly to canvas
-      if (renderScale > 1) {
-        ctx.clearRect(0, 0, renderW, renderH);
-        ctx.save();
-        ctx.scale(renderScale, renderScale);
-        evaluateScene(
-          scene,
-          previewTime,
-          ctx,
-        );
-        ctx.restore();
+    // Fix 5+6: Reuse a single OffscreenCanvas; reallocate and patch filter only
+    // when the target dimensions change (not on every single render).
+    if (
+      !offscreenRef.current ||
+      offscreenSizeRef.current.w !== w ||
+      offscreenSizeRef.current.h !== h
+    ) {
+      const newOff =
+        typeof OffscreenCanvas !== "undefined"
+          ? new OffscreenCanvas(w, h)
+          : Object.assign(document.createElement("canvas"), {
+              width: w,
+              height: h,
+            });
+      // Fix 6: Patch the filter property once so the authoring raster exposes
+      // unsupported browser filter paths instead of masking a native capability gap.
+      const newOffCtx = newOff.getContext("2d");
+      if (newOffCtx) {
+        Object.defineProperty(newOffCtx, "filter", {
+          get: () => "none",
+          set: () => {},
+          configurable: true,
+        });
       }
-
-      // The browser engine remains the authoring/input boundary. The native
-      // daemon owns the final composition and readback, exactly like the
-      // editor's native frame service.
-      let off: HTMLCanvasElement | OffscreenCanvas;
-      if (typeof OffscreenCanvas !== "undefined") {
-        off = new OffscreenCanvas(w, h);
-      } else {
-        off = document.createElement("canvas");
-        off.width = w;
-        off.height = h;
-      }
-
-      const offCtx = off.getContext("2d");
-      if (!offCtx)
-        throw new Error("Unable to create the text authoring raster context");
-
-      // Force the authoring raster to expose unsupported browser filter paths
-      // instead of masking a native capability gap.
-      Object.defineProperty(offCtx, "filter", {
-        get: () => "none",
-        set: () => {},
-        configurable: true,
-      });
-
-      offCtx.clearRect(0, 0, w, h);
-      evaluateScene(
-        scene,
-        previewTime,
-        offCtx as unknown as CanvasRenderingContext2D,
-      );
-      if (controller.signal.aborted) return;
-
-      const pixels = offCtx.getImageData(0, 0, w, h);
-      const result = await getNativeRenderClient().renderFrame(
-        {
-          contractVersion: 1,
-          requestId: `studio-text:${generation}`,
-          frameTime: {
-            frameIndex: Math.max(0, Math.round(previewTime * 60)),
-            ticks: Math.max(0, Math.round(previewTime * 1_000_000)),
-            timescale: 1_000_000,
-          },
-          project: {
-            schemaVersion: 1,
-            projectRevision: `studio-text:${generation}`,
-            canvasWidth: w,
-            canvasHeight: h,
-            clearColor: [0, 0, 0, 0],
-            videoLayers: [],
-            rasterLayers: [
-              {
-                assetId: `studio-text:${generation}`,
-                rgba: Array.from(pixels.data),
-                width: w,
-                height: h,
-                x: 0,
-                y: 0,
-                rotation: 0,
-                opacity: 1,
-                zIndex: 0,
-                blendMode: "normal",
-                isText: true,
-              },
-            ],
-            transition: null,
-          },
-          outputWidth: w,
-          outputHeight: h,
-          quality: "full",
-          colorPolicy: {
-            version: 1,
-            workingSpace: "linear-rec709",
-            outputFormat: "rgba8Srgb",
-            toneMapHdrToSdr: true,
-            displayProfile: "srgb-reference",
-          },
-          renderGraphVersion: 1,
-        },
-        controller.signal,
-      );
-
-      if (
-        controller.signal.aborted ||
-        generation !== nativePreviewGeneration.current
-      )
-        return;
-      if (typeof createImageBitmap !== "function")
-        throw new Error("createImageBitmap is unavailable");
-      const bitmap = await createImageBitmap(result.image);
-      if (
-        controller.signal.aborted ||
-        generation !== nativePreviewGeneration.current
-      ) {
-        bitmap.close();
-        return;
-      }
-      if (renderScale <= 1) {
-        ctx.clearRect(0, 0, renderW, renderH);
-        ctx.drawImage(bitmap, 0, 0, renderW, renderH);
-      }
-      bitmap.close();
-      setNativePreviewState("ready");
-    };
+      offscreenRef.current = newOff;
+      offscreenSizeRef.current = { w, h };
+    }
 
     const reportError = (error: unknown) => {
       if (
@@ -1011,45 +937,168 @@ export default function App() {
       const message = error instanceof Error ? error.message : String(error);
       setNativePreviewState("error");
       setNativePreviewError(message);
-      ctx.clearRect(
-        0,
-        0,
-        renderW,
-        renderH,
-      );
+      ctx.clearRect(0, 0, renderW, renderH);
       console.error("Native Studio text preview failed:", error);
     };
 
-    if (GOOGLE_FONTS.includes(config.fontFamily)) {
-      const family = config.fontFamily;
-      const fontId = `gfont-${family.replace(/\s+/g, "-").toLowerCase()}`;
+    // Fix 2: Gate with requestAnimationFrame so that multiple rapid state
+    // changes (slider drag, typing burst) collapse to a single render per frame.
+    const raf = requestAnimationFrame(() => {
+      if (controller.signal.aborted) return;
 
-      // Inject the stylesheet if not already present
-      if (!document.getElementById(fontId)) {
-        const link = document.createElement("link");
-        link.id = fontId;
-        link.rel = "stylesheet";
-        link.href = `https://fonts.googleapis.com/css2?family=${family.replace(
-          /\s+/g,
-          "+",
-        )}:wght@400;500;600;700;800;900&display=swap`;
-        document.head.appendChild(link);
+      // Fix 3+4: When zoomed in (renderScale > 1) the WASM compositor result is
+      // never drawn to the visible canvas (the old code only did so at renderScale <= 1).
+      // Skip the entire WASM round-trip — no getImageData, no Array.from(pixels.data),
+      // no WASM call. Render the scene directly at the correct scale instead.
+      if (renderScale > 1) {
+        ctx.clearRect(0, 0, renderW, renderH);
+        ctx.save();
+        ctx.scale(renderScale, renderScale);
+        evaluateScene(scene, previewTime, ctx);
+        ctx.restore();
+        setNativePreviewState("ready");
+        return;
       }
 
-      // Wait for THIS specific font + weight to be ready, then draw.
-      // document.fonts.load() polls the font until it's truly available,
-      // fixing the race condition where fonts.ready resolved before the
-      // newly injected stylesheet was parsed and the face downloaded.
-      const fontSpec = `${config.fontWeight} ${config.fontSize}px "${family}"`;
-      document.fonts
-        .load(fontSpec)
-        .then(() => draw().catch(reportError))
-        .catch(reportError);
-    } else {
-      // System font — draw immediately, no loading needed
-      void draw().catch(reportError);
-    }
-    return () => controller.abort();
+      // Normal path (renderScale <= 1): render to the persistent OffscreenCanvas
+      // then send pixels through the WASM compositor for GPU post-processing.
+      const off = offscreenRef.current!;
+      const offCtx = off.getContext(
+        "2d",
+      ) as CanvasRenderingContext2D | null;
+      if (!offCtx) {
+        reportError(
+          new Error("Unable to create the text authoring raster context"),
+        );
+        return;
+      }
+
+      const draw = async () => {
+        if (controller.signal.aborted) return;
+
+        offCtx.clearRect(0, 0, w, h);
+        // Fix 4: Single evaluateScene call — no longer called twice.
+        evaluateScene(
+          scene,
+          previewTime,
+          offCtx as unknown as CanvasRenderingContext2D,
+        );
+        if (controller.signal.aborted) return;
+
+        const pixels = offCtx.getImageData(0, 0, w, h);
+        const result = await getNativeRenderClient().renderFrame(
+          {
+            contractVersion: 1,
+            requestId: `studio-text:${generation}`,
+            frameTime: {
+              frameIndex: Math.max(0, Math.round(previewTime * 60)),
+              ticks: Math.max(0, Math.round(previewTime * 1_000_000)),
+              timescale: 1_000_000,
+            },
+            project: {
+              schemaVersion: 1,
+              projectRevision: `studio-text:${generation}`,
+              canvasWidth: w,
+              canvasHeight: h,
+              clearColor: [0, 0, 0, 0],
+              videoLayers: [],
+              rasterLayers: [
+                {
+                  assetId: `studio-text:${generation}`,
+                  rgba: Array.from(pixels.data),
+                  width: w,
+                  height: h,
+                  x: 0,
+                  y: 0,
+                  rotation: 0,
+                  opacity: 1,
+                  zIndex: 0,
+                  blendMode: "normal",
+                  isText: true,
+                },
+              ],
+              transition: null,
+            },
+            outputWidth: w,
+            outputHeight: h,
+            quality: "full",
+            colorPolicy: {
+              version: 1,
+              workingSpace: "linear-rec709",
+              outputFormat: "rgba8Srgb",
+              toneMapHdrToSdr: true,
+              displayProfile: "srgb-reference",
+            },
+            renderGraphVersion: 1,
+          },
+          controller.signal,
+        );
+
+        if (
+          controller.signal.aborted ||
+          generation !== nativePreviewGeneration.current
+        )
+          return;
+        if (typeof createImageBitmap !== "function")
+          throw new Error("createImageBitmap is unavailable");
+        const bitmap = await createImageBitmap(result.image);
+        if (
+          controller.signal.aborted ||
+          generation !== nativePreviewGeneration.current
+        ) {
+          bitmap.close();
+          return;
+        }
+        ctx.clearRect(0, 0, renderW, renderH);
+        ctx.drawImage(bitmap, 0, 0, renderW, renderH);
+        bitmap.close();
+        setNativePreviewState("ready");
+      };
+
+      // Fix 8: Skip document.fonts.load() when this font+weight combination is
+      // already confirmed loaded — avoids an async microtask-level stall on every
+      // config change (e.g. slider drag, text edit).
+      if (GOOGLE_FONTS.includes(config.fontFamily)) {
+        const family = config.fontFamily;
+        const fontId = `gfont-${family.replace(/\s+/g, "-").toLowerCase()}`;
+
+        // Inject the stylesheet if not already present
+        if (!document.getElementById(fontId)) {
+          const link = document.createElement("link");
+          link.id = fontId;
+          link.rel = "stylesheet";
+          link.href = `https://fonts.googleapis.com/css2?family=${family.replace(
+            /\s+/g,
+            "+",
+          )}:wght@400;500;600;700;800;900&display=swap`;
+          document.head.appendChild(link);
+        }
+
+        const cacheKey = `${config.fontWeight}-${family}`;
+        if (loadedFontsRef.current.has(cacheKey)) {
+          // Font already loaded — draw immediately, no async wait.
+          void draw().catch(reportError);
+        } else {
+          // Wait for this specific font + weight to be ready, then cache the result.
+          const fontSpec = `${config.fontWeight} ${config.fontSize}px "${family}"`;
+          document.fonts
+            .load(fontSpec)
+            .then(() => {
+              loadedFontsRef.current.add(cacheKey);
+              return draw();
+            })
+            .catch(reportError);
+        }
+      } else {
+        // System font — draw immediately, no loading needed.
+        void draw().catch(reportError);
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      controller.abort();
+    };
   }, [config, scene, previewTime, effectiveZoom]);
 
   // Preset Applicator

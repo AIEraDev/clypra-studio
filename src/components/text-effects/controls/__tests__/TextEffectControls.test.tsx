@@ -43,7 +43,8 @@ describe("TextEffectControls Modular Architecture", () => {
     expect(screen.getByText("9. Studio Canvas Layout")).toBeInTheDocument();
   });
 
-  it("TextConfigSection dispatches text updates when typing", () => {
+  it("TextConfigSection dispatches text updates when typing (debounced)", async () => {
+    vi.useFakeTimers();
     const handleModify = vi.fn();
     render(
       <TextConfigSection
@@ -60,10 +61,17 @@ describe("TextEffectControls Modular Architecture", () => {
     const textarea = screen.getByDisplayValue("CLYPRA STUDIO");
     fireEvent.change(textarea, { target: { value: "NEW TEXT" } });
 
+    // modifyConfig is debounced — should NOT fire synchronously
+    expect(handleModify).toHaveBeenCalledTimes(0);
+
+    // Advance past the 50ms debounce
+    await vi.runAllTimersAsync();
+
     expect(handleModify).toHaveBeenCalledTimes(1);
     expect(handleModify).toHaveBeenCalledWith(
       expect.objectContaining({ text: "NEW TEXT" }),
     );
+    vi.useRealTimers();
   });
 
   it("FontSpecimenSection changes font family dropdown", () => {
