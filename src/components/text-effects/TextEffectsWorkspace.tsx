@@ -155,7 +155,7 @@ export function TextEffectsWorkspace({
         />
       )}
 
-      {isNarrow && (
+      {isMobile && (
         <div
           id="mobile-views-tabbar"
           className="flex shrink-0 select-none border-b"
@@ -219,7 +219,7 @@ export function TextEffectsWorkspace({
             <aside
               id="left-controls-panel"
               className={`${
-                isNarrow && mobileActiveTab !== "controls" ? "hidden" : "flex"
+                isMobile && mobileActiveTab !== "controls" ? "hidden" : "flex"
               } ${
                 isMobile ? "w-full" : isTablet ? "w-75" : "w-90"
               } shrink-0 select-none flex-col border-r border-(--studio-border) bg-(--studio-shell) ${
@@ -251,7 +251,7 @@ export function TextEffectsWorkspace({
 
             <div
               className={`${
-                isNarrow && mobileActiveTab !== "preview" ? "hidden" : "flex"
+                isMobile && mobileActiveTab !== "preview" ? "hidden" : "flex"
               } min-w-0 flex-1 flex-col`}
             >
               <PreviewCanvas
@@ -282,7 +282,7 @@ export function TextEffectsWorkspace({
               fallback={
                 <aside
                   className={`${
-                    isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"
+                    isMobile && mobileActiveTab !== "code" ? "hidden" : "flex"
                   } ${
                     isMobile ? "w-full" : "w-86"
                   } shrink-0 flex-col border-l border-(--studio-border) bg-(--studio-panel) p-4 text-xs text-(--studio-muted)`}
@@ -293,7 +293,7 @@ export function TextEffectsWorkspace({
             >
               <div
                 className={`${
-                  isNarrow && mobileActiveTab !== "code" ? "hidden" : "flex"
+                  isMobile && mobileActiveTab !== "code" ? "hidden" : "flex"
                 } ${isMobile ? "w-full" : "w-86"} shrink-0`}
               >
                 <InspectorPanel

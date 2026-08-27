@@ -286,7 +286,7 @@ export function AssetLibraryPanel({
       </div>
 
       {/* ── ASSET LIST / GRID ─────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {filteredAssets.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center p-4">
             <Image size={28} className="text-gray-600 mb-2 opacity-50" />
@@ -334,8 +334,8 @@ export function AssetLibraryPanel({
                       state === "ready"
                         ? "bg-emerald-400"
                         : state === "loading"
-                        ? "bg-amber-400 animate-pulse"
-                        : "bg-red-400"
+                          ? "bg-amber-400 animate-pulse"
+                          : "bg-red-400"
                     }`}
                   />
                 </div>

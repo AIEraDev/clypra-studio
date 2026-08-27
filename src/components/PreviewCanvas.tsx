@@ -16,6 +16,26 @@ interface PreviewCanvasProps {
   onEffectiveZoomChange?: (zoom: number) => void;
 }
 
+export function getPreviewRenderDimensions(
+  canvasWidth: number = 800,
+  canvasHeight: number = 200,
+  effectiveZoom: number = 100,
+): { renderW: number; renderH: number; renderScale: number } {
+  const baseW = canvasWidth || 800;
+  const baseH = canvasHeight || 200;
+  const dpr =
+    typeof window !== "undefined"
+      ? Math.min(window.devicePixelRatio || 1, 2)
+      : 1;
+  const zoomScale = Math.max(1, (effectiveZoom || 100) / 100);
+  const maxDim = 5120;
+  const maxScale = Math.max(1, maxDim / Math.max(baseW, baseH));
+  const renderScale = Math.min(Math.max(zoomScale, dpr), maxScale);
+  const renderW = Math.round(baseW * renderScale);
+  const renderH = Math.round(baseH * renderScale);
+  return { renderW, renderH, renderScale };
+}
+
 export function PreviewCanvas({
   canvasRef,
   config,
@@ -57,6 +77,12 @@ export function PreviewCanvas({
   useEffect(() => {
     onEffectiveZoomChange?.(effectiveZoom);
   }, [effectiveZoom, onEffectiveZoomChange]);
+
+  const { renderW, renderH } = getPreviewRenderDimensions(
+    config.canvasWidth,
+    config.canvasHeight,
+    effectiveZoom,
+  );
 
   return (
     <section
@@ -103,9 +129,12 @@ export function PreviewCanvas({
             <canvas
               ref={canvasRef}
               id="clypra-preview-canvas"
-              width={config.canvasWidth}
-              height={config.canvasHeight}
+              width={renderW}
+              height={renderH}
               className="block w-full h-full select-none"
+              style={{
+                imageRendering: effectiveZoom > 100 ? "crisp-edges" : undefined,
+              }}
             />
           </div>
         </div>

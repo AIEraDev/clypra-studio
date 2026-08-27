@@ -2,13 +2,11 @@ import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { useQuery, type QueryFunctionContext } from "@tanstack/react-query";
 import {
   Check,
-  ChevronDown,
   CloudDownload,
   Database,
   Loader2,
   RefreshCw,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -103,7 +101,7 @@ function normalizeSummaryPayload(
           typeof candidate.category === "string" &&
           candidate.category.length > 0
             ? candidate.category
-            : fallbackCategory ?? "uncategorized",
+            : (fallbackCategory ?? "uncategorized"),
       } as RemoteEffectSummary,
     ];
   });
@@ -168,8 +166,8 @@ function normalizeConfig(
   const nested = isRecord(root.config)
     ? root.config
     : isRecord(root.definition)
-    ? root.definition
-    : root;
+      ? root.definition
+      : root;
 
   // API-published definitions use the canonical { font, fills, strokes,
   // glows, ... } contract. Convert that contract through the same native
@@ -324,7 +322,7 @@ function CatalogCard({
           onLoad();
         }}
         disabled={loading}
-        className="mt-2 cursor-pointer flex w-full items-center justify-center gap-1.5 rounded-lg border border-(--studio-border) bg-(--studio-control) py-1.5 text-[10px] font-bold text-white transition-colors hover:border-(--studio-accent) hover:text-(--studio-accent) disabled:cursor-wait disabled:opacity-60"
+        className="mt-2 flex w-full cursor-pointer! items-center justify-center gap-1.5 rounded-lg border border-(--studio-border) bg-(--studio-control) py-1.5 text-[10px] font-bold text-white transition-colors hover:border-(--studio-accent) hover:text-(--studio-accent) disabled:opacity-60"
       >
         {loading ? (
           <Loader2 size={11} className="animate-spin" />
@@ -334,8 +332,8 @@ function CatalogCard({
         {loading
           ? "Loading..."
           : active
-          ? "Loaded in canvas"
-          : "Load into canvas"}
+            ? "Loaded in canvas"
+            : "Load into canvas"}
       </button>
     </article>
   );
@@ -580,23 +578,6 @@ export function TextEffectCatalogPanel({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={onStartFromScratch}
-            className="flex items-center gap-1.5 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-[10px] font-bold text-emerald-300 hover:bg-emerald-400/15"
-          >
-            <Sparkles size={11} /> Blank native scene
-          </button>
-          <button
-            type="button"
-            onClick={onSavePreset}
-            className="rounded-lg border border-(--studio-border) px-2.5 py-1.5 text-[10px] font-bold text-(--studio-muted) hover:border-(--studio-accent) hover:text-white"
-          >
-            Save current
-          </button>
-        </div>
-
         <div className="mb-2 flex items-center justify-between">
           <h4 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-(--studio-muted)">
             <Database size={11} /> Published catalog

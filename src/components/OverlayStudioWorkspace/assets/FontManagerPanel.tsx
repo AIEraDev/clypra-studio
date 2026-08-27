@@ -195,7 +195,7 @@ export function FontManagerPanel({
       </div>
 
       {/* ── FONT CATALOG LIST ─────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {filteredFonts.map((f) => {
           const state = fontRegistry.getState(f.family, f.weight, f.style);
 
@@ -220,8 +220,8 @@ export function FontManagerPanel({
                       state === "ready" || f.source === "system"
                         ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                         : state === "loading"
-                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                        : "bg-red-500/10 text-red-400 border border-red-500/20"
+                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          : "bg-red-500/10 text-red-400 border border-red-500/20"
                     }`}
                   >
                     {f.source === "system" ? (

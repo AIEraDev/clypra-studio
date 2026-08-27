@@ -59,6 +59,7 @@ const TutorialModal = lazy(() =>
 import { LoginModal } from "./components/LoginModal";
 import { TextEffectsHeader } from "./components/text-effects/TextEffectsHeader";
 import { TextEffectsWorkspace } from "./components/text-effects/TextEffectsWorkspace";
+import { getPreviewRenderDimensions } from "./components/PreviewCanvas";
 import {
   AUTH_TOKEN_KEY,
   getStoredAuthToken,
@@ -886,14 +887,33 @@ export default function App() {
     setNativePreviewState("rendering");
     setNativePreviewError(null);
 
-    // Set canvas dimensions first
-    canvas.width = config.canvasWidth || 800;
-    canvas.height = config.canvasHeight || 200;
+    const { renderW, renderH, renderScale } = getPreviewRenderDimensions(
+      config.canvasWidth,
+      config.canvasHeight,
+      effectiveZoom,
+    );
+
+    // Set canvas dimensions to match the high-resolution render target
+    canvas.width = renderW;
+    canvas.height = renderH;
 
     const draw = async () => {
       if (controller.signal.aborted) return;
       const w = config.canvasWidth || 800;
       const h = config.canvasHeight || 200;
+
+      // When zoomed in, immediately render high-resolution vector text directly to canvas
+      if (renderScale > 1) {
+        ctx.clearRect(0, 0, renderW, renderH);
+        ctx.save();
+        ctx.scale(renderScale, renderScale);
+        evaluateScene(
+          scene,
+          previewTime,
+          ctx,
+        );
+        ctx.restore();
+      }
 
       // The browser engine remains the authoring/input boundary. The native
       // daemon owns the final composition and readback, exactly like the
@@ -991,8 +1011,10 @@ export default function App() {
         bitmap.close();
         return;
       }
-      ctx.clearRect(0, 0, w, h);
-      ctx.drawImage(bitmap, 0, 0, w, h);
+      if (renderScale <= 1) {
+        ctx.clearRect(0, 0, renderW, renderH);
+        ctx.drawImage(bitmap, 0, 0, renderW, renderH);
+      }
       bitmap.close();
       setNativePreviewState("ready");
     };
@@ -1009,8 +1031,8 @@ export default function App() {
       ctx.clearRect(
         0,
         0,
-        config.canvasWidth || 800,
-        config.canvasHeight || 200,
+        renderW,
+        renderH,
       );
       console.error("Native Studio text preview failed:", error);
     };
@@ -1045,7 +1067,7 @@ export default function App() {
       void draw().catch(reportError);
     }
     return () => controller.abort();
-  }, [config, scene, previewTime]);
+  }, [config, scene, previewTime, effectiveZoom]);
 
   // Format code strings
   const engineCode = generateEngineClass(config);
@@ -1462,8 +1484,9 @@ export default function App() {
       return canvas;
     }
 
-    // Add padding of 15px around the text effect
-    const padding = 15;
+    // Add padding around the text effect proportional to canvas resolution
+    const scaleRatio = w / (config.canvasWidth || 800);
+    const padding = Math.round(15 * Math.max(1, scaleRatio));
     minX = Math.max(0, minX - padding);
     minY = Math.max(0, minY - padding);
     maxX = Math.min(w, maxX + padding);
