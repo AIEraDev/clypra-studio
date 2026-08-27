@@ -16,18 +16,12 @@ import { _buildConfig, defaultConfig } from "@clypra-studio/engine";
 import { getStudioApiBaseUrl } from "../../services/apiConfig";
 import { getStoredAuthToken } from "../../services/authSession";
 import { studioQueryKeys } from "../../services/studioQueryKeys";
+import {
+  TEXT_EFFECT_CATEGORIES,
+  TEXT_EFFECT_CATEGORY_OPTIONS,
+} from "../../constants/textEffectCategories";
 
 type CatalogSort = "recency" | "name" | "category";
-
-const TEXT_EFFECT_CATEGORIES = [
-  "essentials",
-  "neon",
-  "3d",
-  "glitch",
-  "gradient",
-  "outline",
-  "clean",
-] as const;
 
 interface RemoteEffectSummary {
   id: string;
@@ -555,7 +549,8 @@ export function TextEffectCatalogPanel({
             >
               {categories.map((category) => (
                 <option key={category} value={category}>
-                  {category}
+                  {TEXT_EFFECT_CATEGORY_OPTIONS.find((o) => o.id === category)
+                    ?.name ?? category}
                 </option>
               ))}
             </select>

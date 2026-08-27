@@ -37,6 +37,7 @@ import { getNativeRenderClient } from "./services/nativeRenderClient";
 
 import { PublishEffectModal } from "./components/PublishEffectModal";
 import type { EffectApiCategory } from "./components/PublishEffectModal";
+import { TEXT_EFFECT_CATEGORIES } from "./constants/textEffectCategories";
 const SavePresetModal = lazy(() =>
   import("./components/StudioModals").then((module) => ({
     default: module.SavePresetModal,
@@ -95,8 +96,7 @@ if (
     const response = await originalFetch(input, modifiedInit);
     const isAuthEndpoint = urlStr.includes("/auth/");
     const isAlreadyRetried =
-      init?.headers &&
-      new Headers(init.headers).has("X-Clypra-Auth-Retried");
+      init?.headers && new Headers(init.headers).has("X-Clypra-Auth-Retried");
 
     if (
       response.status === 401 &&
@@ -162,8 +162,9 @@ export default function App() {
   const [sortBy, setSortBy] = useState<"recency" | "name" | "category">(
     "recency",
   );
-  const [effectApiCategory, setEffectApiCategory] =
-    useState<EffectApiCategory>("3d");
+  const [effectApiCategory, setEffectApiCategory] = useState<EffectApiCategory>(
+    TEXT_EFFECT_CATEGORIES[0],
+  );
 
   // Interaction workspace states
   const [engineFormat, setEngineFormat] = useState<
@@ -270,7 +271,10 @@ export default function App() {
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error("[Clypra GPU] Failed to initialize WebAssembly compositor:", err);
+        console.error(
+          "[Clypra GPU] Failed to initialize WebAssembly compositor:",
+          err,
+        );
       });
     return () => {
       cancelled = true;
@@ -291,7 +295,9 @@ export default function App() {
     })
       .then(async (res) => {
         if (res.ok) return res.json();
-        const error = new Error(`Auth check failed with status ${res.status}`) as Error & {
+        const error = new Error(
+          `Auth check failed with status ${res.status}`,
+        ) as Error & {
           authCode?: string;
         };
         error.authCode = res.status === 401 ? "AUTH_EXPIRED" : "AUTH_TRANSIENT";
@@ -963,9 +969,7 @@ export default function App() {
       // Normal path (renderScale <= 1): render to the persistent OffscreenCanvas
       // then send pixels through the WASM compositor for GPU post-processing.
       const off = offscreenRef.current!;
-      const offCtx = off.getContext(
-        "2d",
-      ) as CanvasRenderingContext2D | null;
+      const offCtx = off.getContext("2d") as CanvasRenderingContext2D | null;
       if (!offCtx) {
         reportError(
           new Error("Unable to create the text authoring raster context"),
@@ -1553,7 +1557,10 @@ export default function App() {
     <div
       id="studio-workspace-wrapper"
       className="flex h-screen flex-col"
-      style={{ background: "var(--studio-bg)", fontFamily: "Inter, sans-serif" }}
+      style={{
+        background: "var(--studio-bg)",
+        fontFamily: "Inter, sans-serif",
+      }}
     >
       <TextEffectsHeader
         activeRailItem={activeRailItem}
