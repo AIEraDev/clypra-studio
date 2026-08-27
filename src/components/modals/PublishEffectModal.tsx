@@ -15,23 +15,16 @@ import { useTextEffectR2Upload } from "../../hooks/useTextEffectR2Upload";
 import { toast } from "sonner";
 import type { TextEffectConfig } from "@clypra-studio/engine";
 import { getStudioApiBaseUrl } from "../../services/apiConfig";
+import {
+  TEXT_EFFECT_CATEGORIES,
+  TEXT_EFFECT_CATEGORY_OPTIONS,
+  type TextEffectCategoryId,
+} from "../../constants/textEffectCategories";
 
-export type EffectApiCategory =
-  | "essentials"
-  | "neon"
-  | "3d"
-  | "glitch"
-  | "gradient"
-  | "outline";
+/** @deprecated Use TextEffectCategoryId from constants/textEffectCategories instead */
+export type EffectApiCategory = TextEffectCategoryId;
 
-const EFFECT_CATEGORIES: EffectApiCategory[] = [
-  "essentials", // plain bold/clean text — every editor's starting point
-  "neon", // highest demand on CapCut, defines "creator aesthetic"
-  "3d", // second most requested, used in thumbnails + titles
-  "glitch", // VHS/retro digital — consistent top performer
-  "gradient", // versatile, works across all content types
-  "outline", // clean, readable, popular for captions + lower thirds
-];
+const EFFECT_CATEGORIES = TEXT_EFFECT_CATEGORIES;
 
 interface ValidationErrors {
   id?: string;
@@ -139,13 +132,34 @@ export function PublishEffectModal({
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to generate name");
+        let errorMessage = "Failed to generate name";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (_) {
+          errorMessage = `Request failed with status ${response.status}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const { name: generatedName, category: generatedCategory } =
-        await response.json();
+      const {
+        name: generatedName,
+        category: generatedCategory,
+        description: generatedDescription,
+        tags: generatedTags,
+      } = await response.json();
+
       setEffectName(generatedName);
+
+      // Auto-fill description if the AI returned one
+      if (generatedDescription) {
+        setDescription(generatedDescription);
+      }
+
+      // Auto-fill tags as a comma-separated string
+      if (Array.isArray(generatedTags) && generatedTags.length > 0) {
+        setTagsInput(generatedTags.join(", "));
+      }
 
       // Auto-apply suggested category
       if (EFFECT_CATEGORIES.includes(generatedCategory as EffectApiCategory)) {
@@ -448,9 +462,9 @@ export function PublishEffectModal({
                   }
                   className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500"
                 >
-                  {EFFECT_CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
+                  {TEXT_EFFECT_CATEGORY_OPTIONS.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>
