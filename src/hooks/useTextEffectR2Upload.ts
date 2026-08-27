@@ -30,6 +30,10 @@ export interface TextEffectUploadResult {
     description: string;
     tags: string[];
     thumbnail: string;
+    schemaVersion?: number;
+    revisionId?: string;
+    contentHash?: string;
+    rendererVersion?: string;
   };
 }
 

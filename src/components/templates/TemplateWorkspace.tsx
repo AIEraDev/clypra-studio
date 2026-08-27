@@ -79,6 +79,24 @@ function toKebabCase(str: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+function buildCanonicalTemplatePayload(template: TextTemplate): TextTemplate {
+  const layers = (template.layers || []).map((layer, index) => ({
+    ...layer,
+    id: layer.id || `${layer.kind}-${index + 1}`,
+  }));
+  const dependencies = layers
+    .filter((layer: any) => layer.kind === "text" && layer.styleRef)
+    .map((layer: any) => layer.styleRef)
+    .filter((ref: any, index: number, all: any[]) => all.findIndex((item) => item.effectId === ref.effectId && item.revisionId === ref.revisionId) === index);
+  return {
+    ...template,
+    schemaVersion: 2,
+    fps: Number((template as any).fps ?? 30),
+    dependencies,
+    layers,
+  } as TextTemplate;
+}
+
 export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   // Template State
   const [template, setTemplate] = useState<TextTemplate | null>(null);
@@ -1233,7 +1251,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           },
           body: JSON.stringify({
             template: {
-              ...template,
+              ...buildCanonicalTemplatePayload(template),
               description: publishDescription,
               tags: publishTagsInput
                 .split(",")

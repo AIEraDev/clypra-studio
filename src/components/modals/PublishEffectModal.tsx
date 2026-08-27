@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useTextEffectR2Upload } from "../../hooks/useTextEffectR2Upload";
 import { toast } from "sonner";
-import type { TextEffectConfig } from "@clypra-studio/engine";
+import { textEffectConfigToScene, type TextEffectConfig } from "@clypra-studio/engine";
 import { getStudioApiBaseUrl } from "../../services/apiConfig";
 import {
   TEXT_EFFECT_CATEGORIES,
@@ -212,6 +212,31 @@ export function PublishEffectModal({
       // Ensure glow layers include strength and spread properties
       const enhancedConfig = {
         ...config,
+        schemaVersion: 2,
+        scene: (() => {
+          const rawScene = textEffectConfigToScene(config) as any;
+          const counts = new Map<string, number>();
+          const idMap = new Map<string, string>();
+          const effectLayers = rawScene.effectLayers.map((layer: any) => {
+            const count = (counts.get(layer.type) || 0) + 1;
+            counts.set(layer.type, count);
+            const id = count === 1 ? layer.type : `${layer.type}-${count}`;
+            idMap.set(layer.id, id);
+            return { ...layer, id, enabled: layer.enabled !== false };
+          });
+          return {
+            ...rawScene,
+            schemaVersion: 2,
+            effectLayers,
+            timeline: {
+              ...rawScene.timeline,
+              tracks: (rawScene.timeline?.tracks || []).map((track: any) => ({
+                ...track,
+                layerId: idMap.get(track.layerId) || track.layerId,
+              })),
+            },
+          };
+        })(),
         glowLayers: config.glowLayers.map((layer) => ({
           ...layer,
           strength: layer.strength ?? 1, // Default to 1 if not set
