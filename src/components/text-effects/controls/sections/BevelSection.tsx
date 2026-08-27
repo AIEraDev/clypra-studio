@@ -228,84 +228,39 @@ export function BevelSection({
             >
               Front Face Highlight
             </label>
-            <div className="flex items-center gap-2">
-              <ControlColorPicker
-                value={
-                  config.bevelHighlight.startsWith("#")
-                    ? config.bevelHighlight
-                    : "#ffffff"
-                }
-                onChange={(val) => modifyConfig({ bevelHighlight: val })}
-                className="w-5 h-5"
-              />
-              <input
-                type="text"
-                value={config.bevelHighlight}
-                onChange={(e) =>
-                  modifyConfig({ bevelHighlight: e.target.value })
-                }
-                className="flex-1 bg-[#15151C] border border-clypra-border/80 rounded p-1 text-[10px] text-white font-mono"
-              />
-            </div>
+            <ControlColorPicker
+              value={config.bevelHighlight}
+              onChange={(val) => modifyConfig({ bevelHighlight: val })}
+            />
           </div>
 
           {/* 2. Core Body Color */}
           <div>
             <label
-              className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5"
+              className="text-[9px] uppercase font-mono text-clypra-muted block mb-1"
               title="Main body filler color between front and back"
             >
               Core Extrusion Color
             </label>
-            <div className="flex items-center gap-2">
-              <ControlColorPicker
-                value={
-                  (config.bevelCoreColor || "#000000").startsWith("#")
-                    ? config.bevelCoreColor || "#000000"
-                    : "#000000"
-                }
-                onChange={(val) => modifyConfig({ bevelCoreColor: val })}
-                className="w-5 h-5"
-              />
-              <input
-                type="text"
-                value={config.bevelCoreColor || ""}
-                placeholder="e.g. #FF5500"
-                onChange={(e) =>
-                  modifyConfig({ bevelCoreColor: e.target.value })
-                }
-                className="flex-1 bg-[#15151C] border border-clypra-border/80 rounded p-1 text-[10px] text-white font-mono placeholder-gray-700"
-              />
-            </div>
+            <ControlColorPicker
+              value={config.bevelCoreColor || "#000000"}
+              placeholder="#FF5500"
+              onChange={(val) => modifyConfig({ bevelCoreColor: val })}
+            />
           </div>
 
           {/* 3. Deep Extrusion Anchor Shadow */}
           <div>
             <label
-              className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5"
+              className="text-[9px] uppercase font-mono text-clypra-muted block mb-1"
               title="The deepest back shadow of the 3D block"
             >
               Deep Anchor Shadow (Base)
             </label>
-            <div className="flex items-center gap-2">
-              <ControlColorPicker
-                value={
-                  config.bevelShadow.startsWith("#")
-                    ? config.bevelShadow
-                    : "#000000"
-                }
-                onChange={(val) => modifyConfig({ bevelShadow: val })}
-                className="w-5 h-5"
-              />
-              <input
-                type="text"
-                value={config.bevelShadow}
-                onChange={(e) =>
-                  modifyConfig({ bevelShadow: e.target.value })
-                }
-                className="flex-1 bg-[#15151C] border border-clypra-border/80 rounded p-1 text-[10px] text-white font-mono"
-              />
-            </div>
+            <ControlColorPicker
+              value={config.bevelShadow}
+              onChange={(val) => modifyConfig({ bevelShadow: val })}
+            />
           </div>
 
           {/* 4. Slice Edge Outline Stroke */}
@@ -340,31 +295,16 @@ export function BevelSection({
               </div>
 
               <div>
-                <label className="text-[8px] uppercase font-mono text-clypra-muted block mb-0.5">
+                <label className="text-[8px] uppercase font-mono text-clypra-muted block mb-1">
                   Edge Color
                 </label>
-                <div className="flex items-center gap-2">
-                  <ControlColorPicker
-                    value={
-                      (config.bevelEdgeColor || "#1e1e26").startsWith("#")
-                        ? config.bevelEdgeColor || "#1e1e26"
-                        : "#000000"
-                    }
-                    onChange={(val) =>
-                      modifyConfig({ bevelEdgeColor: val })
-                    }
-                    className="w-5 h-5"
-                  />
-                  <input
-                    type="text"
-                    value={config.bevelEdgeColor || ""}
-                    placeholder="#2A2A38"
-                    onChange={(e) =>
-                      modifyConfig({ bevelEdgeColor: e.target.value })
-                    }
-                    className="flex-1 bg-[#15151C] border border-clypra-border/80 rounded p-1 text-[10px] text-white font-mono placeholder-gray-700 w-full"
-                  />
-                </div>
+                <ControlColorPicker
+                  value={config.bevelEdgeColor || "#1e1e26"}
+                  placeholder="#2A2A38"
+                  onChange={(val) =>
+                    modifyConfig({ bevelEdgeColor: val })
+                  }
+                />
               </div>
             </div>
           </div>
@@ -398,31 +338,16 @@ export function BevelSection({
               </div>
 
               <div>
-                <label className="text-[8px] uppercase font-mono text-clypra-muted block mb-0.5">
+                <label className="text-[8px] uppercase font-mono text-clypra-muted block mb-1">
                   Glow Color
                 </label>
-                <div className="flex items-center gap-2">
-                  <ControlColorPicker
-                    value={
-                      (config.bevelBlurColor || "#000000").startsWith("#")
-                        ? config.bevelBlurColor || "#000000"
-                        : "#000000"
-                    }
-                    onChange={(val) =>
-                      modifyConfig({ bevelBlurColor: val })
-                    }
-                    className="w-5 h-5"
-                  />
-                  <input
-                    type="text"
-                    value={config.bevelBlurColor || ""}
-                    placeholder="#000000"
-                    onChange={(e) =>
-                      modifyConfig({ bevelBlurColor: e.target.value })
-                    }
-                    className="flex-1 bg-[#15151C] border border-clypra-border/80 rounded p-1 text-[10px] text-white font-mono placeholder-gray-700 w-full"
-                  />
-                </div>
+                <ControlColorPicker
+                  value={config.bevelBlurColor || "#000000"}
+                  placeholder="#000000"
+                  onChange={(val) =>
+                    modifyConfig({ bevelBlurColor: val })
+                  }
+                />
               </div>
             </div>
           </div>

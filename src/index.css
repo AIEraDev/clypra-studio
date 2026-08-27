@@ -1386,3 +1386,51 @@ pre {
   background: rgba(251, 191, 36, 0.06);
   color: #fbbf24;
 }
+
+/* ── Studio Color Picker Trigger Alignments & Safeguards ── */
+/* Prevents text labels/chevrons from spilling outside compact swatch buttons */
+.clypra-swatch-trigger,
+button[class*="w-"][class*="h-"]:has(.clypra-checkerboard-sm) {
+  overflow: hidden !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+}
+
+.clypra-swatch-trigger > div,
+button[class*="w-"][class*="h-"]:has(.clypra-checkerboard-sm) > div {
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+}
+
+.clypra-swatch-trigger > div > .clypra-checkerboard-sm,
+button[class*="w-"][class*="h-"]:has(.clypra-checkerboard-sm) > div > .clypra-checkerboard-sm {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+  border: none !important;
+}
+
+/* Strictly hide text value and chevron icon in compact swatch mode */
+.clypra-swatch-trigger > div > span,
+.clypra-swatch-trigger > svg,
+button[class*="w-"][class*="h-"]:has(.clypra-checkerboard-sm) > div > span,
+button[class*="w-"][class*="h-"]:has(.clypra-checkerboard-sm) > svg {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+}
+

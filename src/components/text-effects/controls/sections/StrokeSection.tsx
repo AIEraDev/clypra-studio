@@ -33,7 +33,10 @@ export function StrokeSection({
 
       <div className="flex flex-col gap-3 border-t border-clypra-border/60 pt-3 select-none">
         {/* Color */}
-        <div className="flex items-center gap-3 bg-[#0E0E12] border border-clypra-border rounded-lg p-2">
+        <div>
+          <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">
+            Stroke Color
+          </label>
           <ControlColorPicker
             value={
               config.strokeColor.startsWith("#")
@@ -43,20 +46,9 @@ export function StrokeSection({
             onChange={(val) =>
               modifyConfig({ strokeColor: val, strokeEnabled: true })
             }
-            className="w-7 h-7"
-          />
-          <input
-            type="text"
-            value={config.strokeColor}
-            onChange={(e) =>
-              modifyConfig({
-                strokeColor: e.target.value,
-                strokeEnabled: true,
-              })
-            }
-            className="flex-1 bg-transparent text-xs text-white font-mono focus:outline-none"
           />
         </div>
+
 
         {/* Width */}
         <div>
@@ -257,34 +249,21 @@ export function StrokeSection({
               <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-1">
                 Outer Secondary Color
               </label>
-              <div className="flex items-center gap-2 bg-[#0E0E12] border border-clypra-border rounded-lg p-1.5">
-                <ControlColorPicker
-                  value={
-                    (config.strokeColorSecondary || "#FFFFFF").startsWith("#")
-                      ? config.strokeColorSecondary
-                      : "#ffffff"
-                  }
-                  onChange={(val) =>
-                    modifyConfig({
-                      strokeColorSecondary: val,
-                      strokeEnabled: true,
-                    })
-                  }
-                  className="w-6 h-6"
-                />
-                <input
-                  type="text"
-                  value={config.strokeColorSecondary || "#FFFFFF"}
-                  onChange={(e) =>
-                    modifyConfig({
-                      strokeColorSecondary: e.target.value,
-                      strokeEnabled: true,
-                    })
-                  }
-                  className="flex-1 bg-transparent text-xs text-white font-mono focus:outline-none"
-                />
-              </div>
+              <ControlColorPicker
+                value={
+                  (config.strokeColorSecondary || "#FFFFFF").startsWith("#")
+                    ? config.strokeColorSecondary
+                    : "#ffffff"
+                }
+                onChange={(val) =>
+                  modifyConfig({
+                    strokeColorSecondary: val,
+                    strokeEnabled: true,
+                  })
+                }
+              />
             </div>
+
 
             {/* Secondary Width Slider */}
             <div>

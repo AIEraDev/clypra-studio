@@ -1373,7 +1373,7 @@ export default function App() {
   };
 
   const getCroppedCanvas = (canvas: HTMLCanvasElement): HTMLCanvasElement => {
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return canvas;
 
     const w = canvas.width;

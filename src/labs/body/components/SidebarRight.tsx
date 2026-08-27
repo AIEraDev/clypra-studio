@@ -71,7 +71,7 @@ export function SidebarRight({
                         onChangeComplete={(newColor) => onParamChange("color", newColor)}
                         size="sm"
                         placement="left-start"
-                        triggerClassName="w-6 h-4 rounded border border-outline-variant/50 cursor-pointer"
+                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
                       />
                       <span className="font-mono-data text-[9px] uppercase">
                         {parameters.color ?? "#00FFFF"}
@@ -190,7 +190,7 @@ export function SidebarRight({
                         onChangeComplete={(newColor) => onParamChange("tint", newColor)}
                         size="sm"
                         placement="left-start"
-                        triggerClassName="w-6 h-4 rounded border border-outline-variant/50 cursor-pointer"
+                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
                       />
                       <span className="font-mono-data text-[9px] uppercase">
                         {parameters.tint ?? "#000000"}
@@ -225,7 +225,7 @@ export function SidebarRight({
                         onChangeComplete={(newColor) => onParamChange("particleColor", newColor)}
                         size="sm"
                         placement="left-start"
-                        triggerClassName="w-6 h-4 rounded border border-outline-variant/50 cursor-pointer"
+                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
                       />
                       <span className="font-mono-data text-[9px] uppercase">
                         {parameters.particleColor ?? "#FFFFFF"}

@@ -107,8 +107,13 @@ async function fetchRemoteEffectCatalog({
   const token = getStoredAuthToken();
   const apiBase = getStudioApiBaseUrl();
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+
   const request = async (url: string) => {
     const response = await fetch(url, { signal, headers });
+    // If an endpoint or category doesn't exist yet on remote or has no data, handle gracefully
+    if (response.status === 400 || response.status === 404 || response.status === 204) {
+      return [];
+    }
     if (!response.ok) {
       throw new Error(`Catalog request failed (${response.status})`);
     }
@@ -120,31 +125,49 @@ async function fetchRemoteEffectCatalog({
   try {
     payload = await request(`${apiBase}/text-effects`);
   } catch (cause) {
+    if (cause instanceof DOMException && cause.name === "AbortError") {
+      throw cause;
+    }
     rootError = cause;
   }
 
   const summaries = normalizeSummaryPayload(payload);
-  const categoryPayloads = await Promise.all(
-    TEXT_EFFECT_CATEGORIES.map(async (category) => {
-      try {
-        const categoryPayload = await request(
-          `${apiBase}/text-effects/${category}`,
-        );
-        return normalizeSummaryPayload(categoryPayload, category);
-      } catch (cause) {
-        if (cause instanceof DOMException && cause.name === "AbortError") {
-          throw cause;
-        }
-        return [];
-      }
-    }),
-  );
 
-  const byKey = new Map<string, RemoteEffectSummary>();
-  [...summaries, ...categoryPayloads.flat()].forEach((effect) => {
-    byKey.set(`${effect.category}:${effect.id}`, effect);
+  // If the root catalog already returned existing remote effects, we have the full catalog.
+  // Otherwise, fallback to querying the supported categories from textEffectCategories.
+  let categorySummaries: RemoteEffectSummary[] = [];
+  if (summaries.length === 0) {
+    const categoryPayloads = await Promise.all(
+      TEXT_EFFECT_CATEGORIES.map(async (category) => {
+        try {
+          const categoryPayload = await request(
+            `${apiBase}/text-effects/${category}`,
+          );
+          return normalizeSummaryPayload(categoryPayload, category);
+        } catch (cause) {
+          if (cause instanceof DOMException && cause.name === "AbortError") {
+            throw cause;
+          }
+          // Some categories may not have data yet; return empty array gracefully
+          return [];
+        }
+      }),
+    );
+    categorySummaries = categoryPayloads.flat();
+  }
+
+  // Deduplicate by effect ID, favoring any item with an assigned category over 'uncategorized'
+  const byId = new Map<string, RemoteEffectSummary>();
+  [...summaries, ...categorySummaries].forEach((effect) => {
+    const existing = byId.get(effect.id);
+    if (
+      !existing ||
+      (existing.category === "uncategorized" && effect.category !== "uncategorized")
+    ) {
+      byId.set(effect.id, effect);
+    }
   });
-  const mergedSummaries = Array.from(byKey.values());
+  const mergedSummaries = Array.from(byId.values());
 
   if (mergedSummaries.length === 0 && rootError) {
     throw rootError;
@@ -585,7 +608,7 @@ export function TextEffectCatalogPanel({
           <div className="grid grid-cols-2 gap-2">
             {filteredRemote.map((summary) => (
               <CatalogCard
-                key={summary.id}
+                key={`${summary.category}:${summary.id}`}
                 summary={summary}
                 active={activePresetId === summary.id}
                 loading={loadingId === summary.id}

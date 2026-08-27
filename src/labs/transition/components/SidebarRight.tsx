@@ -73,7 +73,7 @@ export function SidebarRight({ activeTab, selectedTransition, parameters, latenc
                               onChangeComplete={(newColor) => onParamChange(param.key, newColor)}
                               size="sm"
                               placement="left-start"
-                              triggerClassName="w-6 h-4 rounded border border-outline-variant/50 cursor-pointer"
+                              triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
                             />
                             <span className="font-mono-data text-[9px] uppercase">{val}</span>
                           </div>

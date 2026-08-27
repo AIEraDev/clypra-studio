@@ -100,11 +100,12 @@ export function GlowSection({
             {layer.enabled && (
               <div className="flex flex-col gap-2.5">
                 {/* Color */}
-                <div className="flex items-center gap-2">
+                <div>
+                  <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-1">
+                    Layer Color
+                  </label>
                   <ControlColorPicker
-                    value={
-                      layer.color.startsWith("#") ? layer.color : "#7c6fff"
-                    }
+                    value={layer.color}
                     onChange={(val) => {
                       modifyConfig((p) => {
                         const layers = [...p.glowLayers];
@@ -112,24 +113,9 @@ export function GlowSection({
                         return { ...p, glowLayers: layers };
                       });
                     }}
-                    className="w-6 h-6"
-                  />
-                  <input
-                    type="text"
-                    value={layer.color}
-                    onChange={(e) => {
-                      modifyConfig((p) => {
-                        const layers = [...p.glowLayers];
-                        layers[lidx] = {
-                          ...layers[lidx],
-                          color: e.target.value,
-                        };
-                        return { ...p, glowLayers: layers };
-                      });
-                    }}
-                    className="flex-1 bg-[#15151C] border border-clypra-border p-1 text-[10px] text-white font-mono rounded"
                   />
                 </div>
+
 
                 {/* Blur & Opacity */}
                 <div className="grid grid-cols-2 gap-3.5 mt-1">

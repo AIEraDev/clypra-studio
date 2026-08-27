@@ -52,32 +52,18 @@ export function InkBrushSection({
         <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">
           Ink Color
         </label>
-        <div className="flex items-center gap-3">
-          <ControlColorPicker
-            value={config.inkColor || "#FFFFFF"}
-            onChange={(val) =>
-              modifyConfig({
-                inkColor: val,
-                fillColor: val,
-                customRenderer: "InkBrushEngine",
-              })
-            }
-            className="w-8 h-8"
-          />
-          <input
-            type="text"
-            value={config.inkColor || "#FFFFFF"}
-            onChange={(e) =>
-              modifyConfig({
-                inkColor: e.target.value,
-                fillColor: e.target.value,
-                customRenderer: "InkBrushEngine",
-              })
-            }
-            className="flex-1 bg-[#15151C] border border-clypra-border focus:border-[#7C6FFF] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none"
-          />
-        </div>
+        <ControlColorPicker
+          value={config.inkColor || "#FFFFFF"}
+          onChange={(val) =>
+            modifyConfig({
+              inkColor: val,
+              fillColor: val,
+              customRenderer: "InkBrushEngine",
+            })
+          }
+        />
       </div>
+
 
       {/* Bristle Density */}
       <div>

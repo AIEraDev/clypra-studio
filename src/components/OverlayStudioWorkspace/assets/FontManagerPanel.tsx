@@ -8,22 +8,24 @@ import {
 } from "@clypra-studio/engine";
 import { Type, Plus, Globe, Monitor, Search } from "lucide-react";
 
+import {
+  SUPPORTED_FONT_FAMILIES,
+  isSupportedFontFamily,
+  normalizeSupportedFontFamily,
+} from "@/constants/fonts";
+
 interface FontManagerPanelProps {
   doc: OverlayDocument;
   selectedNodeId?: string | null;
   onExecuteCommand: (cmd: DocumentCommand) => void;
 }
 
-const SYSTEM_FONTS: FontRef[] = [
-  { family: "Inter", source: "system", weight: 400, style: "normal" },
-  { family: "Roboto", source: "system", weight: 400, style: "normal" },
-  { family: "Outfit", source: "system", weight: 600, style: "normal" },
-  { family: "Geist", source: "system", weight: 400, style: "normal" },
-  { family: "Fira Code", source: "system", weight: 400, style: "normal" },
-  { family: "Arial", source: "system", weight: 400, style: "normal" },
-  { family: "Helvetica", source: "system", weight: 400, style: "normal" },
-  { family: "Georgia", source: "system", weight: 400, style: "normal" },
-];
+const SUPPORTED_REGISTERED_FONTS: FontRef[] = SUPPORTED_FONT_FAMILIES.map((family) => ({
+  family,
+  source: "builtin",
+  weight: 400,
+  style: "normal",
+}));
 
 const INPUT_CLS =
   "w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors placeholder:text-gray-600";
@@ -39,14 +41,14 @@ export function FontManagerPanel({
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Form state
-  const [family, setFamily] = useState("");
+  const [family, setFamily] = useState<string>(SUPPORTED_FONT_FAMILIES[0]);
   const [weight, setWeight] = useState(400);
   const [style, setStyle] = useState<"normal" | "italic">("normal");
   const [url, setUrl] = useState("");
 
-  const registeredFonts = fontRegistry.list();
+  const registeredFonts = fontRegistry.list().filter((f) => isSupportedFontFamily(f.family));
   const allFontsMap = new Map<string, FontRef>();
-  for (const f of SYSTEM_FONTS)
+  for (const f of SUPPORTED_REGISTERED_FONTS)
     allFontsMap.set(`${f.family}:${f.weight}:${f.style}`, f);
   for (const f of registeredFonts)
     allFontsMap.set(`${f.family}:${f.weight}:${f.style}`, f);
@@ -58,11 +60,12 @@ export function FontManagerPanel({
 
   const handleAddFont = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!family.trim()) return;
+    if (!family.trim() || !isSupportedFontFamily(family.trim())) return;
 
+    const canonicalFamily = normalizeSupportedFontFamily(family.trim());
     const ref: FontRef = {
-      family: family.trim(),
-      source: url.trim() ? "remote" : "builtin",
+      family: canonicalFamily,
+      source: "builtin",
       weight,
       style,
       url: url.trim() || undefined,
@@ -71,7 +74,6 @@ export function FontManagerPanel({
     fontRegistry.register(ref);
     runtimeAssetResolver.resolveFontAsync(ref);
 
-    setFamily("");
     setUrl("");
     setShowAddForm(false);
   };
@@ -111,15 +113,19 @@ export function FontManagerPanel({
             className="p-2.5 bg-[#151519] border border-white/[0.08] rounded-xl flex flex-col gap-2 mt-1"
           >
             <div>
-              <label className={LABEL_CLS}>Font Family Name</label>
-              <input
-                type="text"
+              <label className={LABEL_CLS}>Font Family</label>
+              <select
                 value={family}
                 onChange={(e) => setFamily(e.target.value)}
-                placeholder="e.g. Space Grotesk"
                 className={INPUT_CLS}
                 required
-              />
+              >
+                {SUPPORTED_FONT_FAMILIES.map((fam) => (
+                  <option key={fam} value={fam}>
+                    {fam}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -217,19 +223,15 @@ export function FontManagerPanel({
                 <div className="flex items-center gap-1.5">
                   <span
                     className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                      state === "ready" || f.source === "system"
+                      state === "ready" || isSupportedFontFamily(f.family)
                         ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                         : state === "loading"
                           ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                           : "bg-red-500/10 text-red-400 border border-red-500/20"
                     }`}
                   >
-                    {f.source === "system" ? (
-                      <Monitor size={9} />
-                    ) : (
-                      <Globe size={9} />
-                    )}
-                    {f.source === "system" ? "System" : state}
+                    <Monitor size={9} />
+                    {isSupportedFontFamily(f.family) ? "Native" : state}
                   </span>
 
                   {selectedNodeId && (

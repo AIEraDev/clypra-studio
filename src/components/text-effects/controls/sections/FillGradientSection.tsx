@@ -62,48 +62,26 @@ export function FillGradientSection({
             <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">
               Color Palette
             </label>
-            <div className="flex items-center gap-3">
-              <ControlColorPicker
-                value={
-                  config.fillColor.startsWith("#")
-                    ? config.fillColor
-                    : "#ffffff"
-                }
-                onChange={(fillColor) => {
-                  modifyConfig({
-                    fillColor,
-                    customRenderer: undefined,
-                    charFillColors: config.perCharFillEnabled
-                      ? resizeCharFillColors(
-                          config.text || "",
-                          config.charFillColors,
-                          fillColor,
-                        )
-                      : config.charFillColors,
-                  });
-                }}
-                className="w-8 h-8"
-              />
-              <input
-                type="text"
-                value={config.fillColor}
-                onChange={(e) => {
-                  const fillColor = e.target.value;
-                  modifyConfig({
-                    fillColor,
-                    customRenderer: undefined,
-                    charFillColors: config.perCharFillEnabled
-                      ? resizeCharFillColors(
-                          config.text || "",
-                          config.charFillColors,
-                          fillColor,
-                        )
-                      : config.charFillColors,
-                  });
-                }}
-                className="flex-1 bg-[#15151C] border border-clypra-border focus:border-[#7C6FFF] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none"
-              />
-            </div>
+            <ControlColorPicker
+              value={
+                config.fillColor.startsWith("#")
+                  ? config.fillColor
+                  : "#ffffff"
+              }
+              onChange={(fillColor) => {
+                modifyConfig({
+                  fillColor,
+                  customRenderer: undefined,
+                  charFillColors: config.perCharFillEnabled
+                    ? resizeCharFillColors(
+                        config.text || "",
+                        config.charFillColors,
+                        fillColor,
+                      )
+                    : config.charFillColors,
+                });
+              }}
+            />
           </div>
           {!config.customRenderer && (
             <PerCharColorEditor config={config} onChange={modifyConfig} />
@@ -185,7 +163,7 @@ export function FillGradientSection({
                       return { ...prev, fillGradientStops: stops };
                     });
                   }}
-                  className="w-5 h-5"
+                  showInput={false}
                 />
 
                 <input
@@ -239,34 +217,21 @@ export function FillGradientSection({
             <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">
               Pattern Color Accent
             </label>
-            <div className="flex items-center gap-3">
-              <ControlColorPicker
-                value={
-                  config.fillColor.startsWith("#")
-                    ? config.fillColor
-                    : "#ffffff"
-                }
-                onChange={(val) =>
-                  modifyConfig({
-                    fillColor: val,
-                    customRenderer: undefined,
-                  })
-                }
-                className="w-8 h-8"
-              />
-              <input
-                type="text"
-                value={config.fillColor}
-                onChange={(e) =>
-                  modifyConfig({
-                    fillColor: e.target.value,
-                    customRenderer: undefined,
-                  })
-                }
-                className="flex-1 bg-[#15151C] border border-clypra-border focus:border-[#7C6FFF] rounded p-1.5 text-xs text-white font-mono mt-0.5 focus:outline-none"
-              />
-            </div>
+            <ControlColorPicker
+              value={
+                config.fillColor.startsWith("#")
+                  ? config.fillColor
+                  : "#ffffff"
+              }
+              onChange={(val) =>
+                modifyConfig({
+                  fillColor: val,
+                  customRenderer: undefined,
+                })
+              }
+            />
           </div>
+
 
           <div>
             <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">

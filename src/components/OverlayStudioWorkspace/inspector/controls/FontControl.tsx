@@ -1,15 +1,8 @@
 import React from "react";
 import type { ControlProps } from "./PropertyControlRegistry";
+import { SUPPORTED_FONT_FAMILIES } from "@/constants/fonts";
 
-const FONTS = [
-  { label: "Inter", value: "Inter" },
-  { label: "Roboto", value: "Roboto" },
-  { label: "Outfit", value: "Outfit" },
-  { label: "Playfair Display", value: "Playfair Display" },
-  { label: "Fira Code", value: "Fira Code" },
-  { label: "Space Mono", value: "Space Mono" },
-  { label: "System Default", value: "system-ui" },
-];
+const FONTS = SUPPORTED_FONT_FAMILIES.map((fam) => ({ label: fam, value: fam }));
 
 export function FontControl({ value, onChange, label }: ControlProps<string>) {
   return (

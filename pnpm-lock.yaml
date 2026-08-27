@@ -27,8 +27,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
       '@clypra/ui-color-picker':
-        specifier: ^0.2.0
-        version: 0.2.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
+        specifier: ^0.2.1
+        version: 0.2.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
       '@floating-ui/react':
         specifier: ^0.27.20
         version: 0.27.20(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -228,8 +228,8 @@ packages:
       react: ^18.0.0
       react-dom: ^18.0.0
 
-  '@clypra/ui-color-picker@0.2.0':
-    resolution: {integrity: sha512-Q5surHcaCKflCWKZ+tZp2sx1K/H6WXPsf6cIsLDdoZougKRc3Gm0lBEnybzwkyNF/fylQU4e8RWgy8XGcsoGYw==}
+  '@clypra/ui-color-picker@0.2.1':
+    resolution: {integrity: sha512-m8oftv1K7/sRHc7gauLsv7avdLhsSPKVs0DhXRlYDOuUhvLEgMWXgqiIGucrinhwTC7UfqdSejlsGWz9NDlNpQ==}
     peerDependencies:
       react: '>=18.0.0 || >=19.0.0'
       react-dom: '>=18.0.0 || >=19.0.0'
@@ -1795,7 +1795,7 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  '@clypra/ui-color-picker@0.2.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))':
+  '@clypra/ui-color-picker@0.2.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))':
     dependencies:
       '@floating-ui/react': 0.27.20(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8

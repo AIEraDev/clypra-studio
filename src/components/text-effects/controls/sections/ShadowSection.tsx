@@ -32,7 +32,10 @@ export function ShadowSection({
 
       <div className="flex flex-col gap-3 border-t border-clypra-border/50 pt-3 select-none">
         {/* Color */}
-        <div className="flex items-center gap-3 bg-[#0E0E12] border border-clypra-border rounded-lg p-2">
+        <div>
+          <label className="text-[10px] uppercase font-mono text-clypra-muted block mb-1">
+            Shadow Color
+          </label>
           <ControlColorPicker
             value={
               config.shadowColor.startsWith("#")
@@ -42,20 +45,9 @@ export function ShadowSection({
             onChange={(val) =>
               modifyConfig({ shadowColor: val, shadowEnabled: true })
             }
-            className="w-7 h-7"
-          />
-          <input
-            type="text"
-            value={config.shadowColor}
-            onChange={(e) =>
-              modifyConfig({
-                shadowColor: e.target.value,
-                shadowEnabled: true,
-              })
-            }
-            className="flex-1 bg-transparent text-xs text-white font-mono focus:outline-none"
           />
         </div>
+
 
         {/* Blur */}
         <div>

@@ -152,110 +152,51 @@ export function StackExtrusionSection({
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">
+                <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-1">
                   Layer Color 1
                 </label>
-                <div className="flex items-center gap-1.5">
-                  <ControlColorPicker
-                    value={
-                      (config.stackColor1 || "#FF7C00").startsWith("#")
-                        ? config.stackColor1 || "#FF7C00"
-                        : "#000000"
-                    }
-                    onChange={(val) => modifyConfig({ stackColor1: val })}
-                    className="w-5 h-5"
-                  />
-                  <input
-                    type="text"
-                    value={config.stackColor1 || ""}
-                    placeholder="#FF7C00"
-                    onChange={(e) =>
-                      modifyConfig({ stackColor1: e.target.value })
-                    }
-                    className="flex-1 bg-[#15151C] border border-clypra-border/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full"
-                  />
-                </div>
+                <ControlColorPicker
+                  value={config.stackColor1 || "#FF7C00"}
+                  placeholder="#FF7C00"
+                  onChange={(val) => modifyConfig({ stackColor1: val })}
+                />
               </div>
 
               <div>
-                <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">
+                <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-1">
                   Layer Color 2
                 </label>
-                <div className="flex items-center gap-1.5">
-                  <ControlColorPicker
-                    value={
-                      (config.stackColor2 || "#00FFDD").startsWith("#")
-                        ? config.stackColor2 || "#00FFDD"
-                        : "#000000"
-                    }
-                    onChange={(val) => modifyConfig({ stackColor2: val })}
-                    className="w-5 h-5"
-                  />
-                  <input
-                    type="text"
-                    value={config.stackColor2 || ""}
-                    placeholder="#00FFDD"
-                    onChange={(e) =>
-                      modifyConfig({ stackColor2: e.target.value })
-                    }
-                    className="flex-1 bg-[#15151C] border border-clypra-border/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full"
-                  />
-                </div>
+                <ControlColorPicker
+                  value={config.stackColor2 || "#00FFDD"}
+                  placeholder="#00FFDD"
+                  onChange={(val) => modifyConfig({ stackColor2: val })}
+                />
               </div>
 
               <div>
-                <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">
+                <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-1">
                   Layer Color 3
                 </label>
-                <div className="flex items-center gap-1.5">
-                  <ControlColorPicker
-                    value={
-                      (config.stackColor3 || "#FF00AA").startsWith("#")
-                        ? config.stackColor3 || "#FF00AA"
-                        : "#000000"
-                    }
-                    onChange={(val) => modifyConfig({ stackColor3: val })}
-                    className="w-5 h-5"
-                  />
-                  <input
-                    type="text"
-                    value={config.stackColor3 || ""}
-                    placeholder="#FF00AA"
-                    onChange={(e) =>
-                      modifyConfig({ stackColor3: e.target.value })
-                    }
-                    className="flex-1 bg-[#15151C] border border-clypra-border/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full"
-                  />
-                </div>
+                <ControlColorPicker
+                  value={config.stackColor3 || "#FF00AA"}
+                  placeholder="#FF00AA"
+                  onChange={(val) => modifyConfig({ stackColor3: val })}
+                />
               </div>
 
               <div>
-                <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-0.5">
+                <label className="text-[9px] uppercase font-mono text-clypra-muted block mb-1">
                   Layer Color 4
                 </label>
-                <div className="flex items-center gap-1.5">
-                  <ControlColorPicker
-                    value={
-                      (config.stackColor4 || "#AA00FF").startsWith("#")
-                        ? config.stackColor4 || "#AA00FF"
-                        : "#000000"
-                    }
-                    onChange={(val) => modifyConfig({ stackColor4: val })}
-                    className="w-5 h-5"
-                  />
-                  <input
-                    type="text"
-                    value={config.stackColor4 || ""}
-                    placeholder="#AA00FF"
-                    onChange={(e) =>
-                      modifyConfig({ stackColor4: e.target.value })
-                    }
-                    className="flex-1 bg-[#15151C] border border-clypra-border/80 rounded p-1 text-[9px] text-white font-mono placeholder-gray-700 w-full"
-                  />
-                </div>
+                <ControlColorPicker
+                  value={config.stackColor4 || "#AA00FF"}
+                  placeholder="#AA00FF"
+                  onChange={(val) => modifyConfig({ stackColor4: val })}
+                />
               </div>
             </div>
           </div>
+
         </div>
       )}
     </ControlSectionCard>

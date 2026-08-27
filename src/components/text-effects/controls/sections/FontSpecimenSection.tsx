@@ -1,6 +1,6 @@
 import React from "react";
 import { Type } from "lucide-react";
-import { SYSTEM_FONTS, GOOGLE_FONTS } from "../../../../constants";
+import { SUPPORTED_FONT_FAMILIES } from "../../../../constants";
 import { ControlSectionCard } from "../common/ControlSectionCard";
 import type { BaseControlSectionProps } from "../common/types";
 
@@ -29,20 +29,11 @@ export function FontSpecimenSection({
           onChange={(e) => modifyConfig({ fontFamily: e.target.value })}
           className="w-full bg-[#0E0E12] border border-clypra-border rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#7C6FFF] cursor-pointer"
         >
-          <optgroup label="System Fonts">
-            {SYSTEM_FONTS.map((font) => (
-              <option key={font} value={font}>
-                {font}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="Google Web Fonts">
-            {GOOGLE_FONTS.map((font) => (
-              <option key={font} value={font}>
-                {font}
-              </option>
-            ))}
-          </optgroup>
+          {SUPPORTED_FONT_FAMILIES.map((font) => (
+            <option key={font} value={font}>
+              {font}
+            </option>
+          ))}
         </select>
       </div>
 

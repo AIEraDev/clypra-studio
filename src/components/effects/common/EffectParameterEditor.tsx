@@ -211,7 +211,7 @@ function ColorPicker({ label, value, onChange }: ColorPickerProps) {
           onChangeComplete={onChange}
           size="sm"
           placement="left-start"
-          triggerClassName="w-7 h-7 rounded border border-white/10"
+          triggerClassName="clypra-swatch-trigger w-7 h-7 rounded-md border border-white/20 hover:border-white/40 shadow-sm transition-transform hover:scale-105 cursor-pointer"
         />
         <span className="color-hex font-mono text-[11px]">{value}</span>
       </div>

@@ -86,9 +86,9 @@ describe("TextEffectControls Modular Architecture", () => {
     );
 
     const select = screen.getByDisplayValue("Bangers");
-    fireEvent.change(select, { target: { value: "Arial" } });
+    fireEvent.change(select, { target: { value: "Inter" } });
 
-    expect(handleModify).toHaveBeenCalledWith({ fontFamily: "Arial" });
+    expect(handleModify).toHaveBeenCalledWith({ fontFamily: "Inter" });
   });
 
   it("CanvasLayoutSection dispatches composition preset application", () => {
@@ -110,3 +110,45 @@ describe("TextEffectControls Modular Architecture", () => {
     expect(handlePreset).toHaveBeenCalledWith("youtube");
   });
 });
+
+describe("ControlColorPicker Studio Component", () => {
+  it("renders unified hex input and swatch", async () => {
+    const { ControlColorPicker } = await import("../common/ControlColorPicker");
+    const handleChange = vi.fn();
+    render(<ControlColorPicker value="#FFCE00" onChange={handleChange} label="Highlight Color" />);
+
+    expect(screen.getByText("Highlight Color")).toBeInTheDocument();
+    const input = screen.getByDisplayValue("#FFCE00");
+    expect(input).toBeInTheDocument();
+  });
+
+  it("updates value when user inputs a valid hex code", async () => {
+    const { ControlColorPicker } = await import("../common/ControlColorPicker");
+    const handleChange = vi.fn();
+    render(<ControlColorPicker value="#FFCE00" onChange={handleChange} />);
+
+    const input = screen.getByDisplayValue("#FFCE00");
+    fireEvent.change(input, { target: { value: "#00FF88" } });
+    expect(handleChange).toHaveBeenCalledWith("#00FF88");
+  });
+
+  it("auto-normalizes hex without hash prefix", async () => {
+    const { ControlColorPicker } = await import("../common/ControlColorPicker");
+    const handleChange = vi.fn();
+    render(<ControlColorPicker value="#FFFFFF" onChange={handleChange} />);
+
+    const input = screen.getByDisplayValue("#FFFFFF");
+    fireEvent.change(input, { target: { value: "FF5500" } });
+    expect(handleChange).toHaveBeenCalledWith("#FF5500");
+  });
+
+  it("supports compact swatch-only mode without rendering input", async () => {
+    const { ControlColorPicker } = await import("../common/ControlColorPicker");
+    const handleChange = vi.fn();
+    const { container } = render(<ControlColorPicker value="#123456" onChange={handleChange} showInput={false} />);
+
+    expect(container.querySelector("input")).toBeNull();
+    expect(container.querySelector(".clypra-swatch-trigger")).toBeInTheDocument();
+  });
+});
+

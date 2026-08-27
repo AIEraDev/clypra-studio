@@ -74,7 +74,7 @@ function ParamControl({ paramKey, schema, value, onChange }: ParamControlProps) 
             onChangeComplete={(newColor) => onChange(paramKey, newColor)}
             size="sm"
             placement="left-start"
-            triggerClassName="w-8 h-5 rounded border border-outline-variant/50 cursor-pointer"
+            triggerClassName="clypra-swatch-trigger w-8 h-5 rounded border border-outline-variant/50 cursor-pointer"
           />
           <span className="font-mono-data text-[10px]">{currentValue || schema.default}</span>
         </div>

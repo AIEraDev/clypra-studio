@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ClypraColorPicker } from "@clypra/ui-color-picker";
+import { SUPPORTED_FONT_FAMILIES } from "@/constants/fonts";
 
 import {
   TemplateRenderer,
@@ -2071,11 +2072,11 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                             }
                             className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
                           >
-                            <option value="Poppins">Poppins</option>
-                            <option value="Inter">Inter</option>
-                            <option value="Arial">Arial</option>
-                            <option value="Montserrat">Montserrat</option>
-                            <option value="Roboto">Roboto</option>
+                            {SUPPORTED_FONT_FAMILIES.map((fam) => (
+                              <option key={fam} value={fam}>
+                                {fam}
+                              </option>
+                            ))}
                           </select>
                         </div>
                         <div>
@@ -2112,7 +2113,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                               }
                               size="sm"
                               placement="bottom-start"
-                              triggerClassName="w-8 h-8 rounded border border-[#2A2A38]"
+                              triggerClassName="clypra-swatch-trigger w-8 h-8 rounded border border-[#2A2A38]"
                             />
                             <input
                               type="text"
@@ -2271,7 +2272,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                 }
                                 size="sm"
                                 placement="bottom-start"
-                                triggerClassName="w-8 h-8 rounded border border-[#2A2A38]"
+                                triggerClassName="clypra-swatch-trigger w-8 h-8 rounded border border-[#2A2A38]"
                               />
                               <input
                                 type="text"
@@ -2449,7 +2450,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                 }
                                 size="sm"
                                 placement="bottom-start"
-                                triggerClassName="w-8 h-8 rounded border border-[#2A2A38]"
+                                triggerClassName="clypra-swatch-trigger w-8 h-8 rounded border border-[#2A2A38]"
                               />
                               <input
                                 type="text"
@@ -2523,7 +2524,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                               }
                               size="sm"
                               placement="bottom-start"
-                              triggerClassName="w-8 h-8 rounded border border-[#2A2A38]"
+                              triggerClassName="clypra-swatch-trigger w-8 h-8 rounded border border-[#2A2A38]"
                             />
                             <input
                               type="text"

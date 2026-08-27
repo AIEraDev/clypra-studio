@@ -577,7 +577,7 @@ export function SidebarRight({
                         }}
                         size="sm"
                         placement="left-start"
-                        triggerClassName="w-5 h-5 rounded border border-outline-variant/50 cursor-pointer"
+                        triggerClassName="clypra-swatch-trigger w-5 h-5 rounded border border-outline-variant/50 cursor-pointer"
                       />
                       <span className="text-[8px] font-mono-data uppercase text-outline/80">{vibranceHue}</span>
                     </div>

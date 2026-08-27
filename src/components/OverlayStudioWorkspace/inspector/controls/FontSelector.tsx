@@ -12,16 +12,10 @@ interface FontSelectorProps {
   onExecuteCommand: (cmd: DocumentCommand) => void;
 }
 
-const SYSTEM_FAMILIES = [
-  "Inter",
-  "Roboto",
-  "Outfit",
-  "Geist",
-  "Fira Code",
-  "Arial",
-  "Helvetica",
-  "Georgia",
-];
+import {
+  SUPPORTED_FONT_FAMILIES,
+  isSupportedFontFamily,
+} from "@/constants/fonts";
 
 export function FontSelector({ node, onExecuteCommand }: FontSelectorProps) {
   const currentFontRef: FontRef | undefined = (node as any).style?.fontRef;
@@ -35,24 +29,14 @@ export function FontSelector({ node, onExecuteCommand }: FontSelectorProps) {
     currentWeight,
     currentStyle,
   );
-  const registeredFonts = fontRegistry.list();
-
-  // Combine system families and registered custom fonts
-  const allFamilies = Array.from(
-    new Set([...SYSTEM_FAMILIES, ...registeredFonts.map((f) => f.family)]),
-  );
+  const isSupported = isSupportedFontFamily(currentFamily);
 
   const updateFont = (patch: Partial<FontRef>) => {
     const updatedRef: FontRef = {
       family: patch.family ?? currentFamily,
       weight: patch.weight ?? currentWeight,
       style: patch.style ?? currentStyle,
-      source:
-        patch.source ??
-        currentFontRef?.source ??
-        (SYSTEM_FAMILIES.includes(patch.family ?? currentFamily)
-          ? "system"
-          : "builtin"),
+      source: "builtin",
       url: patch.url ?? currentFontRef?.url,
     };
 
@@ -72,14 +56,14 @@ export function FontSelector({ node, onExecuteCommand }: FontSelectorProps) {
         </label>
         <span
           className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
-            fontState === "ready" || SYSTEM_FAMILIES.includes(currentFamily)
+            fontState === "ready" || isSupported
               ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
               : fontState === "loading"
               ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
               : "bg-red-500/10 text-red-400 border border-red-500/20"
           }`}
         >
-          {SYSTEM_FAMILIES.includes(currentFamily) ? "System Ready" : fontState}
+          {isSupported ? "Native Ready" : fontState}
         </span>
       </div>
 
@@ -89,9 +73,9 @@ export function FontSelector({ node, onExecuteCommand }: FontSelectorProps) {
         onChange={(e) => updateFont({ family: e.target.value })}
         className="w-full bg-[#1C1C22] border border-white/6 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-medium focus:border-violet-500 outline-none transition-colors"
       >
-        {allFamilies.map((fam) => (
+        {SUPPORTED_FONT_FAMILIES.map((fam) => (
           <option key={fam} value={fam}>
-            {fam} {SYSTEM_FAMILIES.includes(fam) ? "(System)" : "(Custom)"}
+            {fam}
           </option>
         ))}
       </select>
