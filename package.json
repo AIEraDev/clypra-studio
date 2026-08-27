@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "turbo dev",
-    "build": "turbo build",
+    "build": "turbo build && cp -r apps/studio/dist ./dist",
     "build:packages": "turbo build --filter='./packages/*'",
     "build:studio": "turbo build --filter=clypra-studio-app",
     "clean": "turbo clean",
