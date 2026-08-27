@@ -9,7 +9,6 @@ import { CompositionToolbar } from "../CompositionToolbar";
 import { LabsPanel } from "../LabsPanel";
 import { PreviewCanvas } from "../PreviewCanvas";
 import { TextEffectCatalogPanel } from "../TextEffectCatalogPanel";
-import { TimelinePanel } from "../TimelinePanel";
 import type { RailItem } from "../../app/studioRoutes";
 import { AdminSettingsTabs } from "./AdminSettingsTabs";
 import { nativeAuroraPreset } from "../../samples/nativeAurora";
@@ -72,11 +71,11 @@ export interface TextEffectsWorkspaceProps {
   onConfigChange: (patch: ConfigUpdater) => void;
   onSceneChange: (scene: SceneUpdater) => void;
   onSelectLayer: (layerId: string | null) => void;
-  onPlayToggle: () => void;
-  onResetTimeline: () => void;
-  onTimeChange: (time: number) => void;
-  previewTime: number;
-  isPlaying: boolean;
+  onPlayToggle?: () => void;
+  onResetTimeline?: () => void;
+  onTimeChange?: (time: number) => void;
+  previewTime?: number;
+  isPlaying?: boolean;
   onOpenFontCompare: () => void;
   onCloseFontCompare: () => void;
   onEffectiveZoomChange: (zoom: number) => void;
@@ -277,16 +276,6 @@ export function TextEffectsWorkspace({
                   />
                 </Suspense>
               )}
-              <TimelinePanel
-                scene={scene}
-                previewTime={previewTime}
-                isPlaying={isPlaying}
-                uiMode={uiMode}
-                onPlayToggle={onPlayToggle}
-                onReset={onResetTimeline}
-                onTimeChange={onTimeChange}
-                onSceneChange={onSceneChange}
-              />
             </div>
 
             <Suspense
