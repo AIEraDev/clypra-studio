@@ -34,7 +34,7 @@ export function ColorControl({ value, onChange, label, disabled = false }: Contr
             "#000000",
           ]}
           triggerClassName="w-full justify-between h-7.5 bg-[#1C1C22] border-white/6 hover:border-white/15"
-          popoverClassName="right-0 left-auto mt-1 z-[100]"
+          placement="bottom-end"
         />
       </div>
     </div>
