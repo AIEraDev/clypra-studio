@@ -8,15 +8,6 @@ import React, {
 } from "react";
 import { TextEffectConfig, Preset } from "@clypra-studio/engine";
 import { defaultConfig, builtInPresets } from "@clypra-studio/engine";
-import {
-  generateEngineClass,
-  generateEffectDefinition,
-  toKebabCase,
-  toPascalCase,
-  stripTypesToJS,
-  generateHTMLFile,
-  getEnrichedEffectName,
-} from "./codeGenerator";
 import { GOOGLE_FONTS, GOOGLE_FONTS_LINK } from "./constants";
 import {
   textEffectConfigToScene,
@@ -537,7 +528,10 @@ export default function App() {
   }, []);
 
   // Sync effect names and kebab IDs
-  const activeEffectId = toKebabCase(getEnrichedEffectName(config));
+  const activeEffectId = (config.effectName || "custom-effect")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
   const timelinePanelMode = uiMode;
 
   // Unified, filtered, and sorted presets
@@ -636,24 +630,13 @@ export default function App() {
           handleOpenPublishModal();
         }
       }
-
-      // Ctrl + C on code block container to copy
-      const isCodeFocused = activeEl?.closest("#right-code-panel");
-      if (
-        isCodeFocused &&
-        (e.ctrlKey || e.metaKey) &&
-        e.key.toLowerCase() === "c"
-      ) {
-        e.preventDefault();
-        copyCodeToClipboard();
-      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [config, activeTab, activeRailItem, scene]);
+  }, [config, activeRailItem, scene]);
 
   // Push state to undo-history securely (debounced) — SceneDocument is source of truth
   const pushHistoryState = (newScene: SceneDocument) => {
@@ -1069,78 +1052,6 @@ export default function App() {
     return () => controller.abort();
   }, [config, scene, previewTime, effectiveZoom]);
 
-  // Format code strings
-  const engineCode = generateEngineClass(config);
-  const definitionCode = generateEffectDefinition(config);
-
-  const getCurrentCodeText = (): string => {
-    if (activeTab === "engine") {
-      if (engineFormat === "js") {
-        return stripTypesToJS(engineCode);
-      }
-      if (engineFormat === "html") {
-        return generateHTMLFile(config);
-      }
-      return engineCode;
-    } else {
-      if (definitionFormat === "json") {
-        const match = definitionCode.match(
-          /TextEffectDefinition\s*=\s*(\{[\s\S]*?\});/,
-        );
-        return match && match[1] ? match[1] : definitionCode;
-      }
-      if (definitionFormat === "html") {
-        return generateHTMLFile(config);
-      }
-      return definitionCode;
-    }
-  };
-
-  const [highlightedCode, setHighlightedCode] = useState<string>("");
-
-  // HLJS Synced Rendering
-  useEffect(() => {
-    let rawCode = getCurrentCodeText();
-    let language = "typescript";
-
-    if (activeTab === "engine") {
-      if (engineFormat === "js") {
-        language = "javascript";
-      } else if (engineFormat === "html") {
-        language = "xml"; // XML highlighting works perfectly with HTML standard structures
-      } else {
-        language = engineFormat === "txt" ? "plaintext" : "typescript";
-      }
-    } else {
-      if (definitionFormat === "json") {
-        language = "json";
-      } else if (definitionFormat === "html") {
-        language = "xml";
-      } else {
-        language = definitionFormat === "txt" ? "plaintext" : "typescript";
-      }
-    }
-
-    const hljs = (window as any).hljs;
-    if (hljs) {
-      try {
-        const highlighted = hljs.highlight(rawCode, { language }).value;
-        setHighlightedCode(highlighted);
-      } catch (err) {
-        setHighlightedCode(rawCode);
-      }
-    } else {
-      setHighlightedCode(rawCode);
-    }
-  }, [
-    config,
-    activeTab,
-    engineCode,
-    definitionCode,
-    engineFormat,
-    definitionFormat,
-  ]);
-
   // Preset Applicator
   const handleApplyPreset = (preset: Preset) => {
     forceSaveHistoryImmediately(scene);
@@ -1406,50 +1317,6 @@ export default function App() {
     } else if (updated.length === 0) {
       handleApplyPreset(builtInPresets[0]);
     }
-  };
-
-  // Copy code tab to clipboard
-  const copyCodeToClipboard = async () => {
-    const codeToCopy = getCurrentCodeText();
-    try {
-      await navigator.clipboard.writeText(codeToCopy);
-      setCopiedCodeFeedback(true);
-      setTimeout(() => setCopiedCodeFeedback(false), 2000);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Download code as a localized file with Dual-Output Export feature
-  const downloadCodeAsFile = () => {
-    const pascalName =
-      toPascalCase(getEnrichedEffectName(config)) || "MyEffect";
-
-    // 1. Interactive standalone [EffectName]Sandbox.html
-    const htmlContent = generateHTMLFile(config);
-    const htmlBlob = new Blob([htmlContent], {
-      type: "text/html;charset=utf-8",
-    });
-    const htmlUrl = URL.createObjectURL(htmlBlob);
-    const htmlLink = document.createElement("a");
-    htmlLink.href = htmlUrl;
-    htmlLink.download = `${pascalName}Sandbox.html`;
-    document.body.appendChild(htmlLink);
-    htmlLink.click();
-    document.body.removeChild(htmlLink);
-    URL.revokeObjectURL(htmlUrl);
-
-    // 2. Ready-to-drop-in native integration file [EffectName].ts
-    const tsContent = generateEngineClass(config);
-    const tsBlob = new Blob([tsContent], { type: "text/plain;charset=utf-8" });
-    const tsUrl = URL.createObjectURL(tsBlob);
-    const tsLink = document.createElement("a");
-    tsLink.href = tsUrl;
-    tsLink.download = `${pascalName}.ts`;
-    document.body.appendChild(tsLink);
-    tsLink.click();
-    document.body.removeChild(tsLink);
-    URL.revokeObjectURL(tsUrl);
   };
 
   const getCroppedCanvas = (canvas: HTMLCanvasElement): HTMLCanvasElement => {

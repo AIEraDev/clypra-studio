@@ -3,11 +3,7 @@ import {
   createBrowserRouter,
   Navigate,
   type RouteObject,
-  useNavigate,
 } from "react-router-dom";
-import { WebShowcase } from "../components/screens/WebShowcase";
-import { EffectGraphSandbox } from "../components/EffectGraphSandbox";
-import { StudioHub } from "../components/StudioHub";
 import {
   AdminRoute,
   AuthRoute,
@@ -17,44 +13,20 @@ import {
 } from "./routeShell";
 import { STUDIO_LAB_ROUTES, STUDIO_RAIL_ROUTES } from "./studioRoutes";
 
-const TextEffectsLabPage = lazy(() =>
-  import("../features/text-effects/TextEffectsLabPage"),
-);
-const TemplateWorkspace = lazy(() =>
-  import("../components/TemplateWorkspace").then((module) => ({
-    default: module.TemplateWorkspace,
-  })),
-);
-const VideoLabView = lazy(() =>
-  import("../labs/video").then((module) => ({ default: module.VideoLabView })),
-);
-const TransitionLabView = lazy(() =>
-  import("../labs/transition").then((module) => ({
-    default: module.TransitionLabView,
-  })),
-);
-const BodyLabView = lazy(() =>
-  import("../labs/body").then((module) => ({ default: module.BodyLabView })),
-);
-const FilterLabView = lazy(() =>
-  import("../labs/filter/NativeFilterLabView").then((module) => ({
-    default: module.NativeFilterLabView,
-  })),
-);
-const AudioLabView = lazy(() =>
-  import("../labs/audio").then((module) => ({ default: module.AudioLabView })),
-);
-const StickerLabView = lazy(() =>
-  import("../labs/stickers").then((module) => ({ default: module.StickerLabView })),
-);
-const OverlayLabView = lazy(() =>
-  import("../labs/overlays").then((module) => ({ default: module.OverlayLabView })),
-);
-const PerformanceAdminDashboard = lazy(() =>
-  import("../features/performance/PerformanceAdminDashboard").then((module) => ({
-    default: module.PerformanceAdminDashboard,
-  })),
-);
+// ── Lazy-loaded Page Routes from `src/pages/` ──────────────────────────
+const ShowcasePage = lazy(() => import("../pages/ShowcasePage"));
+const StudioHubPage = lazy(() => import("../pages/StudioHubPage"));
+const TextEffectsLabPage = lazy(() => import("../pages/TextEffectsLabPage"));
+const TemplateWorkspacePage = lazy(() => import("../pages/TemplateWorkspacePage"));
+const EffectGraphSandboxPage = lazy(() => import("../pages/EffectGraphSandboxPage"));
+const PerformanceAdminPage = lazy(() => import("../pages/PerformanceAdminPage"));
+const VideoLabPage = lazy(() => import("../pages/labs/VideoLabPage"));
+const TransitionLabPage = lazy(() => import("../pages/labs/TransitionLabPage"));
+const BodyLabPage = lazy(() => import("../pages/labs/BodyLabPage"));
+const FilterLabPage = lazy(() => import("../pages/labs/FilterLabPage"));
+const AudioLabPage = lazy(() => import("../pages/labs/AudioLabPage"));
+const StickerLabPage = lazy(() => import("../pages/labs/StickerLabPage"));
+const OverlayLabPage = lazy(() => import("../pages/labs/OverlayLabPage"));
 
 const METADATA = {
   showcase: {
@@ -176,29 +148,22 @@ function AuthLabRoute({
   );
 }
 
-function TemplateRoute() {
-  const navigate = useNavigate();
-  return (
-    <DocumentRoute metadata={METADATA.lottie}>
-      {withSuspense(
-        <TemplateWorkspace onBackToDesign={() => navigate("/studio")} />,
-      )}
-    </DocumentRoute>
-  );
-}
-
 const routes: RouteObject[] = [
   {
     path: "/",
     element: (
       <DocumentRoute metadata={METADATA.showcase} lockScroll={false}>
-        <WebShowcase />
+        {withSuspense(<ShowcasePage />)}
       </DocumentRoute>
     ),
   },
   {
     path: "/lottie",
-    element: <AuthRoute label="Text Templates"><TemplateRoute /></AuthRoute>,
+    element: (
+      <DocumentRoute metadata={METADATA.lottie}>
+        <AuthRoute label="Text Templates">{withSuspense(<TemplateWorkspacePage />)}</AuthRoute>
+      </DocumentRoute>
+    ),
   },
   {
     path: "/studio/mpg/*",
@@ -214,15 +179,15 @@ const routes: RouteObject[] = [
   },
   {
     path: `${STUDIO_RAIL_ROUTES.audio}/*`,
-    element: <AuthLabRoute metadata={METADATA.audioLab} label="the Audio Lab"><AudioLabView /></AuthLabRoute>,
+    element: <AuthLabRoute metadata={METADATA.audioLab} label="the Audio Lab"><AudioLabPage /></AuthLabRoute>,
   },
   {
     path: `${STUDIO_RAIL_ROUTES.stickers}/*`,
-    element: <AuthLabRoute metadata={METADATA.stickerLab} label="the Sticker Lab"><StickerLabView /></AuthLabRoute>,
+    element: <AuthLabRoute metadata={METADATA.stickerLab} label="the Sticker Lab"><StickerLabPage /></AuthLabRoute>,
   },
   {
     path: `${STUDIO_RAIL_ROUTES.overlays}/*`,
-    element: <AuthLabRoute metadata={METADATA.overlayLab} label="the Overlay Lab"><OverlayLabView /></AuthLabRoute>,
+    element: <AuthLabRoute metadata={METADATA.overlayLab} label="the Overlay Lab"><OverlayLabPage /></AuthLabRoute>,
   },
   // Retire the former Master Lab without allowing the catch-all Studio
   // workspace route to render it as a text-effects surface.
@@ -247,7 +212,7 @@ const routes: RouteObject[] = [
         metadata={METADATA.effects}
         label="the Effect Graph Sandbox"
       >
-        <EffectGraphSandbox />
+        <EffectGraphSandboxPage />
       </AuthLabRoute>
     ),
   },
@@ -255,7 +220,7 @@ const routes: RouteObject[] = [
     path: `${STUDIO_LAB_ROUTES.video}/*`,
     element: (
       <AuthLabRoute metadata={METADATA.videoLab} label="the Video Lab">
-        <VideoLabView />
+        <VideoLabPage />
       </AuthLabRoute>
     ),
   },
@@ -270,7 +235,7 @@ const routes: RouteObject[] = [
         metadata={METADATA.transitionLab}
         label="the Transition Lab"
       >
-        <TransitionLabView />
+        <TransitionLabPage />
       </AuthLabRoute>
     ),
   },
@@ -282,7 +247,7 @@ const routes: RouteObject[] = [
     path: `${STUDIO_LAB_ROUTES.body}/*`,
     element: (
       <AuthLabRoute metadata={METADATA.bodyLab} label="the Body Lab">
-        <BodyLabView />
+        <BodyLabPage />
       </AuthLabRoute>
     ),
   },
@@ -294,7 +259,7 @@ const routes: RouteObject[] = [
     path: `${STUDIO_LAB_ROUTES.filter}/*`,
     element: (
       <AuthLabRoute metadata={METADATA.filterLab} label="the Filter Lab">
-        <FilterLabView />
+        <FilterLabPage />
       </AuthLabRoute>
     ),
   },
@@ -309,7 +274,7 @@ const routes: RouteObject[] = [
         metadata={METADATA.colorGrading}
         label="the Color Grading Lab"
       >
-        <FilterLabView />
+        <FilterLabPage />
       </AuthLabRoute>
     ),
   },
@@ -317,7 +282,7 @@ const routes: RouteObject[] = [
     path: `${STUDIO_RAIL_ROUTES.admin}/performance/*`,
     element: (
       <DocumentRoute metadata={METADATA.adminPerformance}>
-        <AdminRoute label="Performance Intelligence">{withSuspense(<PerformanceAdminDashboard />)}</AdminRoute>
+        <AdminRoute label="Performance Intelligence">{withSuspense(<PerformanceAdminPage />)}</AdminRoute>
       </DocumentRoute>
     ),
   },
@@ -333,7 +298,7 @@ const routes: RouteObject[] = [
     path: "/studio/performance/*",
     element: (
       <DocumentRoute metadata={METADATA.adminPerformance}>
-        <AdminRoute label="Performance Intelligence">{withSuspense(<PerformanceAdminDashboard />)}</AdminRoute>
+        <AdminRoute label="Performance Intelligence">{withSuspense(<PerformanceAdminPage />)}</AdminRoute>
       </DocumentRoute>
     ),
   },
@@ -349,7 +314,7 @@ const routes: RouteObject[] = [
     path: "/studio",
     element: (
       <DocumentRoute metadata={METADATA.studio}>
-        <AuthRoute label="Clypra Studio"><StudioHub /></AuthRoute>
+        <AuthRoute label="Clypra Studio">{withSuspense(<StudioHubPage />)}</AuthRoute>
       </DocumentRoute>
     ),
   },
