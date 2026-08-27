@@ -135,7 +135,7 @@ const destinationGroups: StudioDestinationGroup[] = [
 
 const adminDestinations: StudioDestination[] = [
   {
-    href: "/studio/admin",
+    href: "/studio/performance",
     label: "Performance Intelligence",
     description: "Analyze cross-OS latency matrices, GPU bottlenecks, and isolated edge cases in production.",
     icon: Activity,

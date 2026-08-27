@@ -314,10 +314,18 @@ const routes: RouteObject[] = [
     ),
   },
   {
-    path: `${STUDIO_RAIL_ROUTES.admin}/*`,
+    path: `${STUDIO_RAIL_ROUTES.admin}/performance/*`,
     element: (
       <DocumentRoute metadata={METADATA.adminPerformance}>
-        <AdminRoute label="Studio administration">{withSuspense(<PerformanceAdminDashboard />)}</AdminRoute>
+        <AdminRoute label="Performance Intelligence">{withSuspense(<PerformanceAdminDashboard />)}</AdminRoute>
+      </DocumentRoute>
+    ),
+  },
+  {
+    path: `${STUDIO_RAIL_ROUTES.admin}/*`,
+    element: (
+      <DocumentRoute metadata={METADATA.studio}>
+        <AdminRoute label="Studio administration">{withSuspense(<TextEffectsLabPage />)}</AdminRoute>
       </DocumentRoute>
     ),
   },
