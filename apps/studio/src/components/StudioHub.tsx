@@ -133,13 +133,23 @@ const destinationGroups: StudioDestinationGroup[] = [
   },
 ];
 
-const adminDestination: StudioDestination = {
-  href: "/studio/admin",
-  label: "Admin Console",
-  description: "Review submissions and manage Studio infrastructure as an administrator.",
-  icon: Shield,
-  accent: "#60a5fa",
-};
+const adminDestinations: StudioDestination[] = [
+  {
+    href: "/studio/admin",
+    label: "Performance Intelligence",
+    description: "Analyze cross-OS latency matrices, GPU bottlenecks, and isolated edge cases in production.",
+    icon: Activity,
+    accent: "#38bdf8",
+    status: "Live telemetry",
+  },
+  {
+    href: "/studio/admin",
+    label: "Admin Console",
+    description: "Review submissions and manage Studio infrastructure as an administrator.",
+    icon: Shield,
+    accent: "#60a5fa",
+  },
+];
 
 function DestinationCard({ destination }: { destination: StudioDestination }) {
   const Icon = destination.icon;
@@ -279,7 +289,9 @@ export function StudioHub() {
               <p className="max-w-xl text-xs leading-5 text-(--studio-muted)">Operational tools are kept separate from everyday creative workspaces.</p>
             </div>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <DestinationCard destination={adminDestination} />
+              {adminDestinations.map((dest, i) => (
+                <DestinationCard key={`${dest.label}-${i}`} destination={dest} />
+              ))}
             </div>
           </section>
         </div>

@@ -50,6 +50,11 @@ const StickerLabView = lazy(() =>
 const OverlayLabView = lazy(() =>
   import("../labs/overlays").then((module) => ({ default: module.OverlayLabView })),
 );
+const PerformanceAdminDashboard = lazy(() =>
+  import("../features/performance/PerformanceAdminDashboard").then((module) => ({
+    default: module.PerformanceAdminDashboard,
+  })),
+);
 
 const METADATA = {
   showcase: {
@@ -126,6 +131,12 @@ const METADATA = {
     description:
       "Color Grading Lab - Design, test, and publish native color grading adjustments.",
     title: "Clypra Studio - Color Grading Lab",
+  },
+  adminPerformance: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/admin/performance",
+    description:
+      "Clypra Studio Production Performance & Telemetry Intelligence Console. Analyze cross-OS latency matrices, GPU bottlenecks, and isolated edge cases.",
+    title: "Clypra Studio - Performance Intelligence",
   },
 } satisfies Record<string, RouteMetadata>;
 
@@ -305,8 +316,16 @@ const routes: RouteObject[] = [
   {
     path: `${STUDIO_RAIL_ROUTES.admin}/*`,
     element: (
-      <DocumentRoute metadata={METADATA.studio}>
-        <AdminRoute label="Studio administration">{withSuspense(<TextEffectsLabPage />)}</AdminRoute>
+      <DocumentRoute metadata={METADATA.adminPerformance}>
+        <AdminRoute label="Studio administration">{withSuspense(<PerformanceAdminDashboard />)}</AdminRoute>
+      </DocumentRoute>
+    ),
+  },
+  {
+    path: "/studio/performance/*",
+    element: (
+      <DocumentRoute metadata={METADATA.adminPerformance}>
+        <AdminRoute label="Performance Intelligence">{withSuspense(<PerformanceAdminDashboard />)}</AdminRoute>
       </DocumentRoute>
     ),
   },
