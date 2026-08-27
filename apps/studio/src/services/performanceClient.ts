@@ -17,9 +17,11 @@ export interface OSComparisonMetric {
 export interface OSComparisonData {
   baselineOS: string;
   workloadMode: string;
-  videoResolution: string;
-  videoCodec: string;
+  videoResolution?: string;
+  videoCodec?: string;
+  resolutionBucket?: string;
   comparison: OSComparisonMetric[];
+  osMatrix?: OSComparisonMetric[];
 }
 
 export interface GPUArchitectureMetric {
@@ -149,7 +151,13 @@ export const performanceClient = {
         headers: { Accept: "application/json" },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      const json = await res.json();
+      const rows = json.comparison || json.osMatrix || [];
+      return {
+        ...json,
+        comparison: rows,
+        osMatrix: rows,
+      };
     } catch {
       return this.getLocalFallbackOSComparison();
     }
@@ -164,7 +172,11 @@ export const performanceClient = {
         headers: { Accept: "application/json" },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      const json = await res.json();
+      return {
+        ...json,
+        gpuMatrix: json.gpuMatrix || [],
+      };
     } catch {
       return this.getLocalFallbackHardwareComparison();
     }
@@ -179,7 +191,11 @@ export const performanceClient = {
         headers: { Accept: "application/json" },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      const json = await res.json();
+      return {
+        totalAnomaliesDetected: json.totalAnomaliesDetected ?? (json.anomalies?.length || 0),
+        anomalies: json.anomalies || [],
+      };
     } catch {
       return this.getLocalFallbackAnomalies();
     }
@@ -191,7 +207,11 @@ export const performanceClient = {
         headers: { Accept: "application/json" },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      const json = await res.json();
+      return {
+        ...json,
+        fallbackBreakdown: json.fallbackBreakdown || [],
+      };
     } catch {
       return this.getLocalFallbackFallbacks();
     }
@@ -266,7 +286,11 @@ export const performanceClient = {
         headers: { Accept: "application/json" },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      const json = await res.json();
+      return {
+        ...json,
+        cohorts: json.cohorts || [],
+      };
     } catch {
       return this.getLocalFallbackExportComparison();
     }
@@ -285,78 +309,81 @@ export const performanceClient = {
   },
 
   getLocalFallbackOSComparison(): OSComparisonData {
+    const comparison: OSComparisonMetric[] = [
+      {
+        osFamily: "macos",
+        sampleCount: 184200,
+        p50RenderTimeUs: 5800,
+        p95RenderTimeUs: 10400,
+        p99RenderTimeUs: 13200,
+        meanRenderTimeUs: 6400,
+        droppedFrameRatioP95: 0.001,
+        p95SeekLatencyMs: 38.5,
+        fallbackRate: 0.0,
+        relativeSlowdownVsBaseline: 1.0,
+        meetsSLA: true,
+      },
+      {
+        osFamily: "windows",
+        sampleCount: 215400,
+        p50RenderTimeUs: 8900,
+        p95RenderTimeUs: 15400,
+        p99RenderTimeUs: 18200,
+        meanRenderTimeUs: 9600,
+        droppedFrameRatioP95: 0.012,
+        p95SeekLatencyMs: 44.0,
+        fallbackRate: 0.002,
+        relativeSlowdownVsBaseline: 1.48,
+        meetsSLA: true,
+      },
+      {
+        osFamily: "linux",
+        sampleCount: 42100,
+        p50RenderTimeUs: 6200,
+        p95RenderTimeUs: 11200,
+        p99RenderTimeUs: 14800,
+        meanRenderTimeUs: 6900,
+        droppedFrameRatioP95: 0.003,
+        p95SeekLatencyMs: 41.2,
+        fallbackRate: 0.0,
+        relativeSlowdownVsBaseline: 1.08,
+        meetsSLA: true,
+      },
+      {
+        osFamily: "ios",
+        sampleCount: 92300,
+        p50RenderTimeUs: 7100,
+        p95RenderTimeUs: 12100,
+        p99RenderTimeUs: 15400,
+        meanRenderTimeUs: 7800,
+        droppedFrameRatioP95: 0.002,
+        p95SeekLatencyMs: 48.0,
+        fallbackRate: 0.0,
+        relativeSlowdownVsBaseline: 1.16,
+        meetsSLA: true,
+      },
+      {
+        osFamily: "android",
+        sampleCount: 74300,
+        p50RenderTimeUs: 11400,
+        p95RenderTimeUs: 24800,
+        p99RenderTimeUs: 36000,
+        meanRenderTimeUs: 13800,
+        droppedFrameRatioP95: 0.095,
+        p95SeekLatencyMs: 118.0,
+        fallbackRate: 0.068,
+        relativeSlowdownVsBaseline: 2.38,
+        meetsSLA: false,
+      },
+    ];
+
     return {
       baselineOS: "macos",
       workloadMode: "playback",
       videoResolution: "4k",
       videoCodec: "hevc",
-      comparison: [
-        {
-          osFamily: "macos",
-          sampleCount: 184200,
-          p50RenderTimeUs: 5800,
-          p95RenderTimeUs: 10400,
-          p99RenderTimeUs: 13200,
-          meanRenderTimeUs: 6400,
-          droppedFrameRatioP95: 0.001,
-          p95SeekLatencyMs: 38.5,
-          fallbackRate: 0.0,
-          relativeSlowdownVsBaseline: 1.0,
-          meetsSLA: true,
-        },
-        {
-          osFamily: "windows",
-          sampleCount: 215400,
-          p50RenderTimeUs: 8900,
-          p95RenderTimeUs: 19800,
-          p99RenderTimeUs: 28400,
-          meanRenderTimeUs: 10200,
-          droppedFrameRatioP95: 0.052,
-          p95SeekLatencyMs: 68.0,
-          fallbackRate: 0.015,
-          relativeSlowdownVsBaseline: 1.9,
-          meetsSLA: false,
-        },
-        {
-          osFamily: "linux",
-          sampleCount: 42300,
-          p50RenderTimeUs: 7200,
-          p95RenderTimeUs: 12800,
-          p99RenderTimeUs: 16900,
-          meanRenderTimeUs: 8100,
-          droppedFrameRatioP95: 0.003,
-          p95SeekLatencyMs: 44.0,
-          fallbackRate: 0.002,
-          relativeSlowdownVsBaseline: 1.23,
-          meetsSLA: true,
-        },
-        {
-          osFamily: "ios",
-          sampleCount: 92100,
-          p50RenderTimeUs: 6800,
-          p95RenderTimeUs: 11900,
-          p99RenderTimeUs: 15100,
-          meanRenderTimeUs: 7400,
-          droppedFrameRatioP95: 0.002,
-          p95SeekLatencyMs: 42.0,
-          fallbackRate: 0.0005,
-          relativeSlowdownVsBaseline: 1.14,
-          meetsSLA: true,
-        },
-        {
-          osFamily: "android",
-          sampleCount: 74300,
-          p50RenderTimeUs: 11400,
-          p95RenderTimeUs: 24800,
-          p99RenderTimeUs: 36000,
-          meanRenderTimeUs: 13800,
-          droppedFrameRatioP95: 0.095,
-          p95SeekLatencyMs: 118.0,
-          fallbackRate: 0.068,
-          relativeSlowdownVsBaseline: 2.38,
-          meetsSLA: false,
-        },
-      ],
+      comparison,
+      osMatrix: comparison,
     };
   },
 

@@ -391,7 +391,7 @@ export function PerformanceAdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-(--studio-border)">
-                    {osData?.comparison.map((row) => (
+                    {(osData?.comparison || osData?.osMatrix || []).map((row) => (
                       <tr
                         key={row.osFamily}
                         className="transition-colors hover:bg-white/[0.02]"
@@ -496,7 +496,7 @@ export function PerformanceAdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-(--studio-border)">
-                    {hwData?.gpuMatrix.map((item) => (
+                    {(hwData?.gpuMatrix || []).map((item) => (
                       <tr key={item.gpuModel} className="hover:bg-white/[0.02] transition-colors">
                         <td className="px-5 py-3.5 font-bold text-white">
                           {item.gpuModel}
@@ -633,7 +633,7 @@ export function PerformanceAdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-(--studio-border)">
-                    {exportData?.cohorts.map((cohort, idx) => (
+                    {(exportData?.cohorts || []).map((cohort, idx) => (
                       <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
                         <td className="px-5 py-3.5 font-semibold text-white uppercase flex items-center gap-2">
                           <Monitor size={14} className="text-sky-400" />
@@ -790,8 +790,8 @@ export function PerformanceAdminDashboard() {
               </span>
             </div>
 
-            <div className="space-y-3.5">
-              {anomaliesData.map((anomaly) => (
+            <div className="space-y-3">
+              {(anomaliesData || []).map((anomaly) => (
                 <div
                   key={anomaly.anomalyId}
                   className="rounded-2xl border border-rose-500/30 bg-rose-950/10 p-5 space-y-3 shadow-lg relative overflow-hidden"
@@ -861,7 +861,7 @@ export function PerformanceAdminDashboard() {
               </div>
 
               <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {fallbacksData?.fallbackBreakdown.map((item) => (
+                {(fallbacksData?.fallbackBreakdown || []).map((item) => (
                   <div
                     key={item.transition}
                     className="rounded-xl border border-(--studio-border) bg-(--studio-control)/40 p-4 space-y-3"
@@ -880,7 +880,7 @@ export function PerformanceAdminDashboard() {
                         Top Reason Codes:
                       </div>
                       <div className="space-y-1">
-                        {item.topReasons.map((r) => (
+                        {(item.topReasons || []).map((r) => (
                           <div
                             key={r.code}
                             className="flex items-center justify-between text-xs rounded bg-black/20 px-2.5 py-1"
@@ -962,7 +962,7 @@ export function PerformanceAdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {suitesData.map((suite) => (
+                {(suitesData || []).map((suite) => (
                   <div
                     key={suite.suiteId}
                     className="rounded-xl border border-(--studio-border) bg-(--studio-control)/30 p-4 space-y-2"
