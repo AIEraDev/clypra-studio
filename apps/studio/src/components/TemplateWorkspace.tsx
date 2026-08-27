@@ -30,6 +30,7 @@ import {
   Clock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ClypraColorPicker } from "@clypra/ui-color-picker";
 
 import {
   TemplateRenderer,
@@ -2101,16 +2102,17 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                             Text Color
                           </label>
                           <div className="flex gap-1">
-                            <input
-                              type="color"
-                              value={selectedLayer.color}
-                              onChange={(e) =>
-                                handleUpdateLayerProperty(
-                                  "color",
-                                  e.target.value,
-                                )
+                            <ClypraColorPicker
+                              value={selectedLayer.color || "#ffffff"}
+                              onChange={(val) =>
+                                handleUpdateLayerProperty("color", val)
                               }
-                              className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer"
+                              onChangeComplete={(val) =>
+                                handleUpdateLayerProperty("color", val)
+                              }
+                              size="sm"
+                              placement="bottom-start"
+                              triggerClassName="w-8 h-8 rounded border border-[#2A2A38]"
                             />
                             <input
                               type="text"
@@ -2251,18 +2253,25 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                               Background Color
                             </label>
                             <div className="flex gap-1">
-                              <input
-                                type="color"
+                              <ClypraColorPicker
                                 value={
                                   selectedLayer.backgroundColor || "#000000"
                                 }
-                                onChange={(e) =>
+                                onChange={(val) =>
                                   handleUpdateLayerProperty(
                                     "backgroundColor",
-                                    e.target.value,
+                                    val,
                                   )
                                 }
-                                className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer"
+                                onChangeComplete={(val) =>
+                                  handleUpdateLayerProperty(
+                                    "backgroundColor",
+                                    val,
+                                  )
+                                }
+                                size="sm"
+                                placement="bottom-start"
+                                triggerClassName="w-8 h-8 rounded border border-[#2A2A38]"
                               />
                               <input
                                 type="text"
@@ -2421,19 +2430,26 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                               Border Color
                             </label>
                             <div className="flex gap-1">
-                              <input
-                                type="color"
+                              <ClypraColorPicker
                                 value={
                                   selectedLayer.backgroundBorderColor ||
                                   "#ffffff"
                                 }
-                                onChange={(e) =>
+                                onChange={(val) =>
                                   handleUpdateLayerProperty(
                                     "backgroundBorderColor",
-                                    e.target.value,
+                                    val,
                                   )
                                 }
-                                className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer"
+                                onChangeComplete={(val) =>
+                                  handleUpdateLayerProperty(
+                                    "backgroundBorderColor",
+                                    val,
+                                  )
+                                }
+                                size="sm"
+                                placement="bottom-start"
+                                triggerClassName="w-8 h-8 rounded border border-[#2A2A38]"
                               />
                               <input
                                 type="text"
@@ -2497,16 +2513,17 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                             Fill Color
                           </label>
                           <div className="flex gap-1">
-                            <input
-                              type="color"
-                              value={selectedLayer.fill}
-                              onChange={(e) =>
-                                handleUpdateLayerProperty(
-                                  "fill",
-                                  e.target.value,
-                                )
+                            <ClypraColorPicker
+                              value={selectedLayer.fill || "#ffffff"}
+                              onChange={(val) =>
+                                handleUpdateLayerProperty("fill", val)
                               }
-                              className="w-8 h-8 rounded border border-[#2A2A38] bg-transparent outline-none cursor-pointer"
+                              onChangeComplete={(val) =>
+                                handleUpdateLayerProperty("fill", val)
+                              }
+                              size="sm"
+                              placement="bottom-start"
+                              triggerClassName="w-8 h-8 rounded border border-[#2A2A38]"
                             />
                             <input
                               type="text"
