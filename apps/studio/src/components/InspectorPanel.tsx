@@ -18,6 +18,7 @@ import type {
 } from "@clypra-studio/engine";
 import { newLayerId } from "@clypra-studio/engine";
 import { pruneTracksForLayer } from "@clypra-studio/engine";
+import { ClypraColorPicker } from "@clypra/ui-color-picker";
 import { LegacyControlsPanel } from "./LegacyControlsPanel";
 
 type ConfigPatch =
@@ -211,12 +212,14 @@ function ColorField({
 }) {
   const safe = value?.startsWith("#") ? value : "#ffffff";
   return (
-    <div className="studio-color-field">
-      <input
-        type="color"
+    <div className="studio-color-field flex items-center gap-2">
+      <ClypraColorPicker
         value={safe}
-        onChange={(e) => onChange(e.target.value)}
-        className="studio-color-swatch"
+        onChange={onChange}
+        onChangeComplete={onChange}
+        size="sm"
+        placement="bottom-end"
+        triggerClassName="w-7 h-7 rounded border border-white/10"
       />
       <input
         type="text"
