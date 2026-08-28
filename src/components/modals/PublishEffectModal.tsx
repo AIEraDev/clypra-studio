@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   X,
   UploadCloud,
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useTextEffectR2Upload } from "../../hooks/useTextEffectR2Upload";
 import { toast } from "sonner";
-import { textEffectConfigToScene, type TextEffectConfig } from "@clypra-studio/engine";
+import { canonicalizeSceneDocument, sceneToConfig, type SceneDocument } from "@clypra-studio/engine";
 import { getStudioApiBaseUrl } from "../../services/apiConfig";
 import {
   TEXT_EFFECT_CATEGORIES,
@@ -34,7 +34,7 @@ interface ValidationErrors {
 export interface PublishEffectModalProps {
   open: boolean;
   onClose: () => void;
-  config: TextEffectConfig;
+  scene: SceneDocument;
   thumbnailDataUrl?: string;
   category: EffectApiCategory;
   onCategoryChange: (value: EffectApiCategory) => void;
@@ -43,11 +43,12 @@ export interface PublishEffectModalProps {
 export function PublishEffectModal({
   open,
   onClose,
-  config,
+  scene,
   thumbnailDataUrl,
   category,
   onCategoryChange,
 }: PublishEffectModalProps) {
+  const config = useMemo(() => sceneToConfig(scene), [scene]);
   const [activeTab, setActiveTab] = useState<"metadata" | "preview">(
     "metadata",
   );
@@ -210,34 +211,26 @@ export function PublishEffectModal({
 
     try {
       // Ensure glow layers include strength and spread properties
-      const enhancedConfig = {
+      const publishConfig = {
         ...config,
+        effectName,
+      };
+      const canonicalScene: SceneDocument = canonicalizeSceneDocument({
+        ...scene,
         schemaVersion: 2,
-        scene: (() => {
-          const rawScene = textEffectConfigToScene(config) as any;
-          const counts = new Map<string, number>();
-          const idMap = new Map<string, string>();
-          const effectLayers = rawScene.effectLayers.map((layer: any) => {
-            const count = (counts.get(layer.type) || 0) + 1;
-            counts.set(layer.type, count);
-            const id = count === 1 ? layer.type : `${layer.type}-${count}`;
-            idMap.set(layer.id, id);
-            return { ...layer, id, enabled: layer.enabled !== false };
-          });
-          return {
-            ...rawScene,
-            schemaVersion: 2,
-            effectLayers,
-            timeline: {
-              ...rawScene.timeline,
-              tracks: (rawScene.timeline?.tracks || []).map((track: any) => ({
-                ...track,
-                layerId: idMap.get(track.layerId) || track.layerId,
-              })),
-            },
-          };
-        })(),
-        glowLayers: config.glowLayers.map((layer) => ({
+        effectName,
+        legacyConfig: publishConfig,
+        effectLayers: scene.effectLayers.map((layer) => ({
+          ...layer,
+          enabled: layer.enabled === true && layer.params.enabled !== false,
+          params: { ...layer.params, enabled: layer.enabled === true && layer.params.enabled !== false },
+        })),
+      });
+      const enhancedConfig = {
+        ...publishConfig,
+        schemaVersion: 2,
+        scene: canonicalScene,
+        glowLayers: publishConfig.glowLayers.map((layer) => ({
           ...layer,
           strength: layer.strength ?? 1, // Default to 1 if not set
           spread: layer.spread ?? 0, // Default to 0 if not set

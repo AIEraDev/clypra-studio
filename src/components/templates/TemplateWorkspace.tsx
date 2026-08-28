@@ -1282,9 +1282,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       if (result.template) {
         setTemplate(result.template);
       }
-      const lottieUrl = `${getStudioApiBaseUrl()}/media/text-templates/${
-        template.category
-      }/${template.id}.json`;
+      const lottieUrl = `${getStudioApiBaseUrl()}/text-templates/${encodeURIComponent(
+        template.category,
+      )}/${encodeURIComponent(template.id)}`;
       setPublishPrUrl(lottieUrl);
       setPublishMessage(
         `${result.message || "Template published successfully"}`,

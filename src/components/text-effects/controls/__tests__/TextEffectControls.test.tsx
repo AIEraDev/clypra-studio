@@ -32,7 +32,7 @@ describe("TextEffectControls Modular Architecture", () => {
 
     expect(screen.getByText("1. Text Configuration")).toBeInTheDocument();
     expect(screen.getByText("2. Font Specimen")).toBeInTheDocument();
-    expect(screen.getByText("3. Ink Brush Engine")).toBeInTheDocument();
+    expect(screen.queryByText("3. Ink Brush Engine")).not.toBeInTheDocument();
     expect(screen.getByText("3. Text Fill Color")).toBeInTheDocument();
     expect(screen.getByText("4. Stroke Border")).toBeInTheDocument();
     expect(screen.getByText("5. Outer / Inner Glows")).toBeInTheDocument();
@@ -151,4 +151,3 @@ describe("ControlColorPicker Studio Component", () => {
     expect(container.querySelector(".clypra-swatch-trigger")).toBeInTheDocument();
   });
 });
-

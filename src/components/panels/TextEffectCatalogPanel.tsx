@@ -15,6 +15,7 @@ import type { Preset, TextEffectConfig } from "@clypra-studio/engine";
 import { _buildConfig, defaultConfig } from "@clypra-studio/engine";
 import { getStudioApiBaseUrl } from "../../services/apiConfig";
 import { getStoredAuthToken } from "../../services/authSession";
+import { ensureStudioFontLoaded, preloadStudioFontFamilies } from "../../services/studioFontHydrator";
 import { studioQueryKeys } from "../../services/studioQueryKeys";
 import {
   TEXT_EFFECT_CATEGORIES,
@@ -34,6 +35,9 @@ interface RemoteEffectSummary {
   published?: boolean;
   creator?: string;
   createdAt?: number;
+  fontFamily?: string;
+  fontWeight?: string | number;
+  fontStyle?: "normal" | "italic";
 }
 
 interface TextEffectCatalogPanelProps {
@@ -219,11 +223,6 @@ function normalizeConfig(
     text: typeof nested.text === "string" ? nested.text : defaultConfig.text,
     effectName:
       typeof nested.effectName === "string" ? nested.effectName : summary.name,
-    // Preserve the one native procedural engine currently supported by the
-    // shared scene migration. Unknown legacy renderer names are intentionally
-    // dropped instead of creating a false native-compatibility claim.
-    customRenderer:
-      nested.customRenderer === "InkBrushEngine" ? "InkBrushEngine" : undefined,
   } as TextEffectConfig;
 
   if (!candidate.fontFamily || !candidate.fillType || !candidate.glowLayers) {
@@ -448,6 +447,15 @@ export function TextEffectCatalogPanel({
     });
   }, [catalogQuery.error]);
 
+  useEffect(() => {
+    // Catalog summaries carry typography metadata so Studio can hydrate every
+    // available effect family without waiting for a user click. The selected
+    // effect is still explicitly awaited in handleLoadRemote below.
+    void preloadStudioFontFamilies(
+      remoteEffects.map((effect) => effect.fontFamily).filter((family): family is string => Boolean(family)),
+    );
+  }, [remoteEffects]);
+
   const categories = useMemo(() => {
     const values = new Set<string>(["All", "Saved"]);
     remoteEffects.forEach((effect) => values.add(effect.category));
@@ -519,6 +527,12 @@ export function TextEffectCatalogPanel({
       if (!response.ok)
         throw new Error(`Unable to load ${summary.name} (${response.status})`);
       const definition = await response.json();
+      const font = definition?.scene?.text ?? definition?.font ?? definition?.config ?? definition;
+      await ensureStudioFontLoaded(
+        font?.fontFamily ?? summary.fontFamily,
+        font?.fontWeight ?? summary.fontWeight ?? 400,
+        font?.fontStyle ?? summary.fontStyle ?? "normal",
+      );
       const preset = remoteToPreset(summary, definition);
       if (!preset)
         throw new Error(

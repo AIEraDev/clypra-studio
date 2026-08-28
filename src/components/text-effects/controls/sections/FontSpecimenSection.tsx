@@ -71,13 +71,7 @@ export function FontSpecimenSection({
               key={style}
               type="button"
               onClick={() => {
-                const updates: any = { fontStyle: style };
-                if (style === "italic") {
-                  updates.skewX = -0.2;
-                } else {
-                  updates.skewX = 0;
-                }
-                modifyConfig(updates);
+                modifyConfig({ fontStyle: style as "normal" | "italic" });
               }}
               className={`py-1 text-[10px] rounded font-mono capitalize cursor-pointer transition-all ${
                 config.fontStyle === style

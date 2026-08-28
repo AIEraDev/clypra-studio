@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { TextEffectConfig, Preset } from "@clypra-studio/engine";
 import { defaultConfig, builtInPresets } from "@clypra-studio/engine";
-import { GOOGLE_FONTS, GOOGLE_FONTS_LINK } from "./constants";
+import { GOOGLE_FONTS } from "./constants";
 import {
   textEffectConfigToScene,
   sceneToConfig,
@@ -34,6 +34,8 @@ import {
 } from "./services/geminiService";
 import { getStudioApiBaseUrl } from "./services/apiConfig";
 import { getNativeRenderClient } from "./services/nativeRenderClient";
+import { restoreCanonicalScene } from "./state/studioSceneState";
+import { ensureStudioFontLoaded, preloadStudioFontFamilies } from "./services/studioFontHydrator";
 
 import { PublishEffectModal } from "./components/PublishEffectModal";
 import type { EffectApiCategory } from "./components/PublishEffectModal";
@@ -132,12 +134,32 @@ if (
 
 const CREATOR_SESSION_KEY = "clypra_studio_creator_session";
 
+function createBlankTextEffectConfig(): TextEffectConfig {
+  return {
+    ...defaultConfig,
+    text: "MY TEXT",
+    effectName: "Custom Effect",
+    strokeEnabled: false,
+    shadowEnabled: false,
+    bevelEnabled: false,
+    stackEnabled: false,
+    panelEnabled: false,
+    panelStrokeEnabled: false,
+    perCharFillEnabled: false,
+    glowLayers: defaultConfig.glowLayers.map((layer) => ({
+      ...layer,
+      enabled: false,
+    })),
+  };
+}
+
 export default function App() {
-  // Primary state configuration
-  const [config, setConfig] = useState<TextEffectConfig>(defaultConfig);
+  // SceneDocument is the only authoritative creative state. `config` remains
+  // as a derived compatibility view for existing controls and API adapters.
   const [scene, setScene] = useState<SceneDocument>(() =>
-    textEffectConfigToScene(defaultConfig),
+    textEffectConfigToScene(createBlankTextEffectConfig()),
   );
+  const config = useMemo(() => sceneToConfig(scene), [scene]);
   const {
     activeRailItem,
     activeTab,
@@ -153,7 +175,6 @@ export default function App() {
   // export tab competing with the library or Inspector.
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
-  const skipConfigToScene = useRef(false);
 
   // Custom localStorage presets
   const [customPresets, setCustomPresets] = useState<Preset[]>([]);
@@ -190,6 +211,7 @@ export default function App() {
 
   const nativePreviewGeneration = useRef(0);
   const nativePreviewAbort = useRef<AbortController | null>(null);
+  const lastLoggedPreviewScene = useRef<string>("");
   // Fix 5: Reuse a single OffscreenCanvas instead of allocating a new one every frame.
   const offscreenRef = useRef<HTMLCanvasElement | OffscreenCanvas | null>(null);
   const offscreenSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -403,7 +425,7 @@ export default function App() {
   const undoStack = useRef<string[]>([]);
   const redoStack = useRef<string[]>([]);
   const lastSavedStateString = useRef<string>(
-    JSON.stringify(textEffectConfigToScene(defaultConfig)),
+    JSON.stringify(textEffectConfigToScene(createBlankTextEffectConfig())),
   );
   const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [canUndo, setCanUndo] = useState<boolean>(false);
@@ -417,11 +439,9 @@ export default function App() {
 
   // Load custom presets and restore the main creator workspace session
   useEffect(() => {
-    // Inject combined google fonts stylesheet on mount to warm cache
-    const warmLink = document.createElement("link");
-    warmLink.rel = "stylesheet";
-    warmLink.href = GOOGLE_FONTS_LINK;
-    document.head.appendChild(warmLink);
+    // Warm every supported effect family in the background while prioritizing
+    // the active/default family so the first measurement uses real glyphs.
+    void preloadStudioFontFamilies(GOOGLE_FONTS, defaultConfig.fontFamily);
 
     const saved = localStorage.getItem("clypra_custom_presets");
     if (saved) {
@@ -433,15 +453,8 @@ export default function App() {
     }
 
     const restoreDefaultPreset = () => {
-      const nextCfg = {
-        ...defaultConfig,
-        text: "MY TEXT",
-        effectName: "Custom Effect",
-        customRenderer: undefined,
-      };
+      const nextCfg = createBlankTextEffectConfig();
       const nextScene = textEffectConfigToScene(nextCfg);
-      skipConfigToScene.current = true;
-      setConfig(nextCfg);
       setScene(nextScene);
       setActivePresetId("scratch");
       lastSavedStateString.current = JSON.stringify(nextScene);
@@ -451,13 +464,7 @@ export default function App() {
     if (savedSession) {
       try {
         const session = JSON.parse(savedSession);
-        const restoredScene =
-          session.scene ||
-          textEffectConfigToScene(session.config || defaultConfig);
-        const restoredConfig = session.config || sceneToConfig(restoredScene);
-
-        skipConfigToScene.current = true;
-        setConfig(restoredConfig);
+        const restoredScene = restoreCanonicalScene(session, defaultConfig);
         setScene(restoredScene);
         setActivePresetId(session.activePresetId || "scratch");
         lastSavedStateString.current = JSON.stringify(restoredScene);
@@ -517,8 +524,6 @@ export default function App() {
         try {
           const parsed = JSON.parse(savedActive);
           const restoredScene = textEffectConfigToScene(parsed);
-          skipConfigToScene.current = true;
-          setConfig(parsed);
           setScene(restoredScene);
           lastSavedStateString.current = JSON.stringify(restoredScene);
           const savedPresetId = localStorage.getItem("clypra_active_preset_id");
@@ -534,9 +539,7 @@ export default function App() {
     }
 
     setIsCreatorSessionLoaded(true);
-    return () => {
-      document.head.removeChild(warmLink);
-    };
+    return undefined;
   }, []);
 
   // Sync effect names and kebab IDs
@@ -692,11 +695,8 @@ export default function App() {
     redoStack.current.push(snapshotScene(scene));
 
     try {
-      const { scene: prevScene, config: prevConfig } =
-        parseHistorySnapshot(previousStateStr);
-      skipConfigToScene.current = true;
+      const { scene: prevScene } = parseHistorySnapshot(previousStateStr);
       setScene(prevScene);
-      setConfig(prevConfig);
       lastSavedStateString.current = previousStateStr;
       setCanUndo(undoStack.current.length > 0);
       setCanRedo(redoStack.current.length > 0);
@@ -711,11 +711,8 @@ export default function App() {
     undoStack.current.push(snapshotScene(scene));
 
     try {
-      const { scene: nextScene, config: nextConfig } =
-        parseHistorySnapshot(nextStateStr);
-      skipConfigToScene.current = true;
+      const { scene: nextScene } = parseHistorySnapshot(nextStateStr);
       setScene(nextScene);
-      setConfig(nextConfig);
       lastSavedStateString.current = nextStateStr;
       setCanUndo(undoStack.current.length > 0);
       setCanRedo(redoStack.current.length > 0);
@@ -730,13 +727,14 @@ export default function App() {
       | Partial<TextEffectConfig>
       | ((p: TextEffectConfig) => TextEffectConfig),
   ) => {
-    setConfig((prev) => {
+    setScene((prevScene) => {
+      const prev = sceneToConfig(prevScene);
       const next =
         typeof updater === "function" ? updater(prev) : { ...prev, ...updater };
 
-      // Handle auto-generation fonts or effects outside the updater to comply with pure-function paradigms
-      setTimeout(() => pushHistoryState(textEffectConfigToScene(next)), 0);
-      return next;
+      const nextScene = textEffectConfigToScene(next);
+      setTimeout(() => pushHistoryState(nextScene), 0);
+      return nextScene;
     });
   };
 
@@ -745,25 +743,10 @@ export default function App() {
   ) => {
     setScene((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      skipConfigToScene.current = true;
-      const cfg = sceneToConfig({ ...next, legacyConfig: sceneToConfig(next) });
-      setConfig(cfg);
       setTimeout(() => pushHistoryState(next), 0);
       return next;
     });
   };
-
-  // Fix 9: Debounce the config → scene conversion so rapid changes (typing,
-  // slider drags) don't run the potentially expensive textEffectConfigToScene()
-  // call on every individual state update.
-  useEffect(() => {
-    if (skipConfigToScene.current) {
-      skipConfigToScene.current = false;
-      return;
-    }
-    const id = setTimeout(() => setScene(textEffectConfigToScene(config)), 50);
-    return () => clearTimeout(id);
-  }, [config]);
 
   // Keep the full creator workspace matching across refresh reloads
   useEffect(() => {
@@ -886,6 +869,36 @@ export default function App() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    if (import.meta.env.DEV) {
+      const previewFingerprint = JSON.stringify({
+        schemaVersion: scene.schemaVersion,
+        canvas: scene.canvas,
+        text: scene.text,
+        contributors: scene.effectLayers.map((layer) => ({
+          id: layer.id,
+          type: layer.type,
+          enabled: layer.enabled,
+          opacity: layer.opacity,
+          params: layer.params,
+        })),
+      });
+      if (previewFingerprint !== lastLoggedPreviewScene.current) {
+        lastLoggedPreviewScene.current = previewFingerprint;
+        console.debug("[Clypra:Studio:text-render] canonical preview state", {
+          canvas: scene.canvas,
+          text: scene.text,
+          activeContributors: scene.effectLayers
+            .filter((layer) => layer.enabled && layer.params.enabled !== false)
+            .map((layer) => ({
+              id: layer.id,
+              type: layer.type,
+              opacity: layer.opacity,
+              params: layer.params,
+            })),
+        });
+      }
+    }
+
     nativePreviewAbort.current?.abort();
     const controller = new AbortController();
     nativePreviewAbort.current = controller;
@@ -894,8 +907,8 @@ export default function App() {
     setNativePreviewError(null);
 
     const { renderW, renderH, renderScale } = getPreviewRenderDimensions(
-      config.canvasWidth,
-      config.canvasHeight,
+      scene.canvas.width,
+      scene.canvas.height,
       effectiveZoom,
     );
 
@@ -903,8 +916,8 @@ export default function App() {
     canvas.width = renderW;
     canvas.height = renderH;
 
-    const w = config.canvasWidth || 800;
-    const h = config.canvasHeight || 200;
+    const w = scene.canvas.width || 800;
+    const h = scene.canvas.height || 200;
 
     // Fix 5+6: Reuse a single OffscreenCanvas; reallocate and patch filter only
     // when the target dimensions change (not on every single render).
@@ -1059,43 +1072,17 @@ export default function App() {
         setNativePreviewState("ready");
       };
 
-      // Fix 8: Skip document.fonts.load() when this font+weight combination is
-      // already confirmed loaded — avoids an async microtask-level stall on every
-      // config change (e.g. slider drag, text edit).
-      if (GOOGLE_FONTS.includes(config.fontFamily)) {
-        const family = config.fontFamily;
-        const fontId = `gfont-${family.replace(/\s+/g, "-").toLowerCase()}`;
-
-        // Inject the stylesheet if not already present
-        if (!document.getElementById(fontId)) {
-          const link = document.createElement("link");
-          link.id = fontId;
-          link.rel = "stylesheet";
-          link.href = `https://fonts.googleapis.com/css2?family=${family.replace(
-            /\s+/g,
-            "+",
-          )}:wght@400;500;600;700;800;900&display=swap`;
-          document.head.appendChild(link);
-        }
-
-        const cacheKey = `${config.fontWeight}-${family}`;
-        if (loadedFontsRef.current.has(cacheKey)) {
-          // Font already loaded — draw immediately, no async wait.
-          void draw().catch(reportError);
-        } else {
-          // Wait for this specific font + weight to be ready, then cache the result.
-          const fontSpec = `${config.fontWeight} ${config.fontSize}px "${family}"`;
-          document.fonts
-            .load(fontSpec)
-            .then(() => {
-              loadedFontsRef.current.add(cacheKey);
-              return draw();
-            })
-            .catch(reportError);
-        }
-      } else {
-        // System font — draw immediately, no loading needed.
+      const family = scene.text.fontFamily;
+      const cacheKey = `${scene.text.fontWeight}-${family}`;
+      if (loadedFontsRef.current.has(cacheKey)) {
         void draw().catch(reportError);
+      } else {
+        void ensureStudioFontLoaded(family, scene.text.fontWeight, scene.text.fontStyle)
+          .then(() => {
+            loadedFontsRef.current.add(cacheKey);
+            return draw();
+          })
+          .catch(reportError);
       }
     });
 
@@ -1103,7 +1090,7 @@ export default function App() {
       cancelAnimationFrame(raf);
       controller.abort();
     };
-  }, [config, scene, previewTime, effectiveZoom]);
+  }, [scene, previewTime, effectiveZoom]);
 
   // Preset Applicator
   const handleApplyPreset = (preset: Preset) => {
@@ -1113,8 +1100,6 @@ export default function App() {
       effectName: preset.config.effectName || preset.name,
     };
     const nextScene = getPresetScene({ ...preset, config: nextCfg });
-    skipConfigToScene.current = true;
-    setConfig(nextCfg);
     setScene(nextScene);
     setActivePresetId(preset.id);
     setPreviewTime(0);
@@ -1123,17 +1108,11 @@ export default function App() {
   // Start from Scratch (pushed history first)
   const handleStartFromScratch = () => {
     forceSaveHistoryImmediately(scene);
-    const nextCfg = {
-      ...defaultConfig,
-      text: "MY TEXT",
-      effectName: "Custom Effect",
-      customRenderer: undefined,
-    };
+    const nextCfg = createBlankTextEffectConfig();
     const nextScene = textEffectConfigToScene(nextCfg);
-    skipConfigToScene.current = true;
-    setConfig(nextCfg);
     setScene(nextScene);
     setActivePresetId("scratch");
+    setPreviewTime(0);
   };
 
   const handleResetCreatorSession = () => {
@@ -1148,6 +1127,13 @@ export default function App() {
     localStorage.removeItem("clypra_active_preset_id");
     setCreatorSaveStatus("idle");
     handleStartFromScratch();
+    undoStack.current = [];
+    redoStack.current = [];
+    setCanUndo(false);
+    setCanRedo(false);
+    lastSavedStateString.current = JSON.stringify(
+      textEffectConfigToScene(createBlankTextEffectConfig()),
+    );
   };
 
   // Blend Presets logic (layer-aware)
@@ -1170,8 +1156,6 @@ export default function App() {
       8,
     )} × ${presetB.name.substring(0, 8)}`;
     const blendedScene = textEffectConfigToScene(blended);
-    skipConfigToScene.current = true;
-    setConfig(blended);
     setScene(blendedScene);
     setActivePresetId("blended");
   };
@@ -1247,12 +1231,9 @@ export default function App() {
     const nextCfg = {
       ...researchResult.config,
       text: config.text,
-      customRenderer: undefined,
     };
     const nextScene = textEffectConfigToScene(nextCfg);
     nextScene.extensionCode = researchResult.extensionCode || null;
-    skipConfigToScene.current = true;
-    setConfig(nextCfg);
     setScene(nextScene);
     setActivePresetId("blended");
   };
@@ -1511,8 +1492,8 @@ export default function App() {
       await downloadSceneWebM(scene, `${activeEffectId}`, {
         fps: scene.timeline.fps,
         duration: scene.timeline.duration,
-        width: config.canvasWidth,
-        height: config.canvasHeight,
+        width: scene.canvas.width,
+        height: scene.canvas.height,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "WebM export failed";
@@ -1657,7 +1638,7 @@ export default function App() {
             setShowPublishModal(false);
             setPublishThumbnail(null);
           }}
-          config={config}
+          scene={scene}
           thumbnailDataUrl={publishThumbnail ?? undefined}
           category={effectApiCategory}
           onCategoryChange={setEffectApiCategory}

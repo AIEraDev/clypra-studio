@@ -2,7 +2,6 @@ import type { TextEffectConfig } from "@clypra-studio/engine";
 import type { ConfigUpdater } from "./common/types";
 import { TextConfigSection } from "./sections/TextConfigSection";
 import { FontSpecimenSection } from "./sections/FontSpecimenSection";
-import { InkBrushSection } from "./sections/InkBrushSection";
 import { FillGradientSection } from "./sections/FillGradientSection";
 import { StrokeSection } from "./sections/StrokeSection";
 import { GlowSection } from "./sections/GlowSection";
@@ -60,15 +59,7 @@ export function TextEffectControls({
         onToggle={() => toggleSection("font")}
       />
 
-      {/* 3. Ink Brush Engine */}
-      <InkBrushSection
-        config={config}
-        modifyConfig={modifyConfig}
-        isCollapsed={!!collapsedSections.inkBrush}
-        onToggle={() => toggleSection("inkBrush")}
-      />
-
-      {/* 4. Text Fill Color & Gradients */}
+      {/* 3. Text Fill Color & Gradients */}
       <FillGradientSection
         config={config}
         modifyConfig={modifyConfig}
@@ -76,7 +67,7 @@ export function TextEffectControls({
         onToggle={() => toggleSection("fill")}
       />
 
-      {/* 5. Stroke Border */}
+      {/* 4. Stroke Border */}
       <StrokeSection
         config={config}
         modifyConfig={modifyConfig}
@@ -84,7 +75,7 @@ export function TextEffectControls({
         onToggle={() => toggleSection("stroke")}
       />
 
-      {/* 6. Outer / Inner Glows */}
+      {/* 5. Outer / Inner Glows */}
       <GlowSection
         config={config}
         modifyConfig={modifyConfig}
@@ -92,7 +83,7 @@ export function TextEffectControls({
         onToggle={() => toggleSection("glow")}
       />
 
-      {/* 7. Back Shadow */}
+      {/* 6. Back Shadow */}
       <ShadowSection
         config={config}
         modifyConfig={modifyConfig}
@@ -100,7 +91,7 @@ export function TextEffectControls({
         onToggle={() => toggleSection("shadow")}
       />
 
-      {/* 8. 3D Extrusion Bevel */}
+      {/* 7. 3D Extrusion Bevel */}
       <BevelSection
         config={config}
         modifyConfig={modifyConfig}
@@ -108,7 +99,7 @@ export function TextEffectControls({
         onToggle={() => toggleSection("bevel")}
       />
 
-      {/* 9. Multi-Stack Layers */}
+      {/* 7.5. Multi-Stack Layers */}
       <StackExtrusionSection
         config={config}
         modifyConfig={modifyConfig}
@@ -116,7 +107,7 @@ export function TextEffectControls({
         onToggle={() => toggleSection("stack")}
       />
 
-      {/* 10. Bounding Plate */}
+      {/* 8. Bounding Plate */}
       <BoundingPlateSection
         config={config}
         modifyConfig={modifyConfig}
@@ -124,7 +115,7 @@ export function TextEffectControls({
         onToggle={() => toggleSection("panel")}
       />
 
-      {/* 11. Studio Canvas Layout */}
+      {/* 9. Studio Canvas Layout */}
       <CanvasLayoutSection
         config={config}
         modifyConfig={modifyConfig}
@@ -141,7 +132,6 @@ export function TextEffectControls({
 export {
   TextConfigSection,
   FontSpecimenSection,
-  InkBrushSection,
   FillGradientSection,
   StrokeSection,
   GlowSection,

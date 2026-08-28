@@ -20,38 +20,6 @@ export interface R2PublishResult {
   message: string;
 }
 
-interface EffectPublishPayload {
-  id: string;
-  category: string;
-  definition: {
-    id: string;
-    name: string;
-    category: string;
-    description?: string;
-    tags?: string[];
-    published?: boolean;
-    [key: string]: unknown;
-  };
-  thumbnailDataUrl: string;
-}
-
-interface TemplatePublishPayload {
-  id: string;
-  category: string;
-  definition: {
-    id: string;
-    name: string;
-    category: string;
-    description?: string;
-    tags?: string[];
-    published?: boolean;
-    [key: string]: unknown;
-  };
-  lottieData: unknown;
-  thumbnailDataUrl: string;
-  previewDataUrl?: string; // Optional .webm preview video
-}
-
 // ─── Helper Functions ────────────────────────────────────────────────────────
 
 function getAudioExtension(fileName: string): string {
@@ -100,104 +68,6 @@ function extensionFromFileName(name: string, fallback: string): string {
 // ─── Publishing Functions ────────────────────────────────────────────────────
 
 export function useR2Publish() {
-  /**
-   * Publish Text Effect to R2
-   */
-  const publishEffect = async (payload: EffectPublishPayload): Promise<R2PublishResult> => {
-    const config = getR2Config();
-    if (!config) throw new Error("R2 publishing is not configured.");
-
-    const category = payload.category.toLowerCase();
-    const definition = { ...payload.definition, id: payload.id, category };
-
-    const definitionKey = `text-effects/${category}/${payload.id}.json`;
-    const thumbnailKey = `thumbnails/${payload.id}.png`;
-    const categoryIndexKey = `text-effects/${category}/index.json`;
-    const globalIndexKey = `text-effects/index.json`;
-
-    // Upload definition and thumbnail
-    await uploadR2Json(config, definitionKey, definition);
-    await uploadFileFromDataUrl(config, thumbnailKey, payload.thumbnailDataUrl, "image/png");
-
-    // Update indexes
-    const categoryIndex = await getR2Json<any[]>(config, categoryIndexKey, []);
-    const globalIndex = await getR2Json<any[]>(config, globalIndexKey, []);
-
-    const summary = {
-      id: definition.id,
-      name: definition.name,
-      category,
-      tags: definition.tags || [],
-      description: definition.description || "",
-      thumbnail: getPublicUrl(config.bucketName, thumbnailKey),
-      published: definition.published,
-    };
-
-    await uploadR2Json(config, categoryIndexKey, upsertById(categoryIndex, summary as any));
-    await uploadR2Json(config, globalIndexKey, upsertById(globalIndex, summary as any));
-
-    return {
-      files: [definitionKey, thumbnailKey, categoryIndexKey, globalIndexKey],
-      urls: {
-        definition: getPublicUrl(config.bucketName, definitionKey),
-        thumbnail: getPublicUrl(config.bucketName, thumbnailKey),
-      },
-      message: `Published text effect: ${definition.name}`,
-    };
-  };
-
-  /**
-   * Publish Text Template to R2
-   */
-  const publishTemplate = async (payload: TemplatePublishPayload): Promise<R2PublishResult> => {
-    const config = getR2Config();
-    if (!config) throw new Error("R2 publishing is not configured.");
-
-    const category = payload.category.toLowerCase();
-    const definition = { ...payload.definition, id: payload.id, category };
-
-    const templateKey = `text-templates/${category}/${payload.id}.json`;
-    const thumbnailKey = `thumbnails/${payload.id}.png`;
-    const previewKey = `previews/${payload.id}.webm`;
-    const categoryIndexKey = `text-templates/${category}/index.json`;
-    const globalIndexKey = `text-templates/index.json`;
-
-    // Upload template JSON, thumbnail, and preview video (if available)
-    await uploadR2Json(config, templateKey, payload.lottieData);
-    await uploadFileFromDataUrl(config, thumbnailKey, payload.thumbnailDataUrl, "image/png");
-
-    // Upload preview video if provided
-    if (payload.previewDataUrl) {
-      await uploadFileFromDataUrl(config, previewKey, payload.previewDataUrl, "video/webm");
-    }
-
-    // Update indexes
-    const categoryIndex = await getR2Json<any[]>(config, categoryIndexKey, []);
-    const globalIndex = await getR2Json<any[]>(config, globalIndexKey, []);
-
-    const summary = {
-      ...definition,
-      thumbnail: getPublicUrl(config.bucketName, thumbnailKey),
-      preview: payload.previewDataUrl ? getPublicUrl(config.bucketName, previewKey) : undefined,
-      durationMs: (definition as any).duration ? Math.round((definition as any).duration * 1000) : undefined,
-    };
-
-    await uploadR2Json(config, categoryIndexKey, upsertById(categoryIndex, summary as any));
-    await uploadR2Json(config, globalIndexKey, upsertById(globalIndex, summary as any));
-
-    const files = [templateKey, thumbnailKey, categoryIndexKey, globalIndexKey];
-    if (payload.previewDataUrl) files.push(previewKey);
-
-    return {
-      files,
-      urls: {
-        lottie: getPublicUrl(config.bucketName, templateKey),
-        thumbnail: getPublicUrl(config.bucketName, thumbnailKey),
-        ...(payload.previewDataUrl ? { preview: getPublicUrl(config.bucketName, previewKey) } : {}),
-      },
-      message: `Published text template: ${definition.name}`,
-    };
-  };
 
   /**
    * Publish Audio to R2
@@ -609,8 +479,6 @@ export function useR2Publish() {
   };
 
   return {
-    publishEffect,
-    publishTemplate,
     publishAudio,
     publishSticker,
     publishOverlay,

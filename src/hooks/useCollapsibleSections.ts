@@ -3,7 +3,6 @@ import { useCallback, useState } from "react";
 const DEFAULT_COLLAPSED_SECTIONS: Record<string, boolean> = {
   text: false,
   font: false,
-  inkBrush: false,
   fill: false,
   stroke: false,
   glow: false,

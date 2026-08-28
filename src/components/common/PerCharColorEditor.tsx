@@ -49,7 +49,7 @@ export function PerCharColorEditor({ config, onChange }: PerCharColorEditorProps
   const glyphCount = countTextGlyphs(config.text || "");
 
   const patchColors = (next: string[]) => {
-    onChange({ charFillColors: next, perCharFillEnabled: true, customRenderer: undefined });
+    onChange({ charFillColors: next, perCharFillEnabled: true });
   };
 
   const toggleEnabled = (on: boolean) => {
@@ -61,7 +61,6 @@ export function PerCharColorEditor({ config, onChange }: PerCharColorEditorProps
           config.charFillColors,
           config.fillColor || "#ffffff"
         ),
-        customRenderer: undefined,
       });
     } else {
       onChange({ perCharFillEnabled: false });

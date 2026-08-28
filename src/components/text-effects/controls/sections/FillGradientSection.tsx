@@ -19,13 +19,7 @@ export function FillGradientSection({
       icon={<Flame size={14} className="text-clypra-accent" />}
       isCollapsed={isCollapsed}
       onToggle={onToggle}
-      badge={
-        !config.customRenderer ? (
-          <span className="text-[9px] bg-[#7C6FFF]/20 text-white font-mono px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
-            Active
-          </span>
-        ) : undefined
-      }
+      badge={<span className="text-[9px] bg-[#7C6FFF]/20 text-white font-mono px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Active</span>}
     >
       {/* Fill Radio Select */}
       <div>
@@ -40,7 +34,6 @@ export function FillGradientSection({
               onClick={() =>
                 modifyConfig({
                   fillType: type as any,
-                  customRenderer: undefined,
                 })
               }
               className={`flex-1 min-w-[55px] py-1 rounded text-[10px] font-mono cursor-pointer uppercase border transition-all ${
@@ -71,7 +64,6 @@ export function FillGradientSection({
               onChange={(fillColor) => {
                 modifyConfig({
                   fillColor,
-                  customRenderer: undefined,
                   charFillColors: config.perCharFillEnabled
                     ? resizeCharFillColors(
                         config.text || "",
@@ -83,9 +75,7 @@ export function FillGradientSection({
               }}
             />
           </div>
-          {!config.customRenderer && (
-            <PerCharColorEditor config={config} onChange={modifyConfig} />
-          )}
+          <PerCharColorEditor config={config} onChange={modifyConfig} />
         </div>
       )}
 
@@ -226,7 +216,6 @@ export function FillGradientSection({
               onChange={(val) =>
                 modifyConfig({
                   fillColor: val,
-                  customRenderer: undefined,
                 })
               }
             />
