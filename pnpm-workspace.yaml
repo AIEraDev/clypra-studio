@@ -2,3 +2,4 @@ allowBuilds:
   esbuild: false
 minimumReleaseAgeExclude:
   - '@clypra/ui-color-picker@0.2.1'
+  - '@clypra-studio/engine@1.4.0'
