@@ -1,2 +1,14 @@
 export { AudioLabView as default, AudioLabView } from "./AudioLabView";
-
+export * from "./types";
+export * from "./hooks/useAudioLabState";
+export * from "./hooks/useAudioWaveform";
+export * from "./hooks/useAudioCatalog";
+export * from "./components/AudioHeader";
+export * from "./components/AudioWaveformPlayer";
+export * from "./components/AudioTelemetryBar";
+export * from "./components/AudioDropzone";
+export * from "./components/AudioCoverArtCard";
+export * from "./components/AudioMetadataEditor";
+export * from "./components/AudioLicensingPanel";
+export * from "./components/AudioPreflightChecklist";
+export * from "./components/AudioCatalogBrowser";
