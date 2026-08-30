@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import type { NativeLabFrameRequest } from "../../services/nativeRenderClient";
-import { getNativeRenderClient } from "../../services/nativeRenderClient";
+import { getNativeRenderClient, NATIVE_RENDER_CONTRACT_VERSION } from "../../services/nativeRenderClient";
 import { PRESET_FILTERS } from "../../components/effects/filter/FilterPresets";
 
 const WIDTH = 960;
@@ -135,7 +135,7 @@ export function NativeFilterLabView() {
     try {
       const pixels = sourceContext.getImageData(0, 0, WIDTH, HEIGHT);
       const request: NativeLabFrameRequest = {
-        contractVersion: 1,
+        contractVersion: NATIVE_RENDER_CONTRACT_VERSION,
         requestId: `studio-filter:${generation}`,
         frameTime: {
           frameIndex: frame,

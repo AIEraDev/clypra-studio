@@ -18,7 +18,7 @@ import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
 import { PublishTransitionModal } from "../../components/PublishTransitionModal";
 
-import { getNativeRenderClient } from "../../services/nativeRenderClient";
+import { getNativeRenderClient, NATIVE_RENDER_CONTRACT_VERSION } from "../../services/nativeRenderClient";
 
 const DEFAULT_CLIP_A = "";
 const DEFAULT_CLIP_B = "";
@@ -650,7 +650,7 @@ export function TransitionLabView() {
       drawSource(ctxB, sourceB, 640, 360);
       const transitionType = nativeTransitionType(selectedTransition);
       const request: NativeLabFrameRequest = {
-        contractVersion: 1,
+        contractVersion: NATIVE_RENDER_CONTRACT_VERSION,
         requestId: `studio-transition-${Date.now()}-${diagFrameRef.current}`,
         frameTime: {
           frameIndex: Math.floor(currentSec * 60),

@@ -31,7 +31,7 @@ import {
   FeatureMapType,
   type FeatureProviderManager,
 } from "@clypra-studio/feature-providers";
-import { getNativeRenderClient } from "../../services/nativeRenderClient";
+import { getNativeRenderClient, NATIVE_RENDER_CONTRACT_VERSION } from "../../services/nativeRenderClient";
 
 // ─── Component Imports ───────────────────────────────────────────────────────
 
@@ -1025,7 +1025,7 @@ export function VideoLabView() {
       );
       const frameIndex = Math.max(0, Math.floor(video.currentTime * 60));
       const request: NativeLabFrameRequest = {
-        contractVersion: 1,
+        contractVersion: NATIVE_RENDER_CONTRACT_VERSION,
         requestId: `studio-video-${Date.now()}-${frameIndex}`,
         frameTime: {
           frameIndex,
