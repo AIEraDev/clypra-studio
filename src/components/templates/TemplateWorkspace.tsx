@@ -2121,6 +2121,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         creatorName: publishCreatorName,
         creatorLink: publishCreatorLink,
       };
+      const idempotencyKey = `template-submit:${template.id}:${Date.now()}`;
       const response = await fetch(
         `${getStudioApiBaseUrl()}/text-templates/submissions`,
         {
@@ -2128,13 +2129,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-            "Idempotency-Key": `template-submit:${template.id}:${Date.now()}`,
             "X-Clypra-Client": "studio-text-template",
           },
           body: JSON.stringify({
             artifact,
             thumbnailDataUrl: thumbnailUrl,
             previewDataUrl: videoUrl,
+            idempotencyKey,
           }),
         },
       );
