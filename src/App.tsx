@@ -33,7 +33,7 @@ import {
   performDeepResearch,
 } from "./services/geminiService";
 import { getStudioApiBaseUrl } from "./services/apiConfig";
-import { getNativeRenderClient } from "./services/nativeRenderClient";
+import { getNativeRenderClient, NATIVE_RENDER_CONTRACT_VERSION } from "./services/nativeRenderClient";
 import { restoreCanonicalScene } from "./state/studioSceneState";
 import { ensureStudioFontLoaded, preloadStudioFontFamilies } from "./services/studioFontHydrator";
 
@@ -1005,7 +1005,7 @@ export default function App() {
         const pixels = offCtx.getImageData(0, 0, w, h);
         const result = await getNativeRenderClient().renderFrame(
           {
-            contractVersion: 1,
+            contractVersion: NATIVE_RENDER_CONTRACT_VERSION,
             requestId: `studio-text:${generation}`,
             frameTime: {
               frameIndex: Math.max(0, Math.round(previewTime * 60)),
