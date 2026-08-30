@@ -24,10 +24,33 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
+  ChevronsUp,
+  ChevronsDown,
+  CopyPlus,
+  Move,
   Settings,
   Image as ImageIcon,
   Sparkle,
   Clock,
+  Split,
+  Anchor,
+  Variable,
+  Ghost,
+  LayoutGrid,
+  Columns,
+  Rows,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Hand,
+  Monitor,
+  ChevronRight,
+  CornerDownRight,
+  Type,
+  Square,
+  Box,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ClypraColorPicker } from "@clypra/ui-color-picker";
@@ -42,14 +65,21 @@ import {
   TemplateTextLayer,
   TemplateShapeLayer,
   TemplateImageLayer,
+  TemplateContainerLayer,
   LayerAnimation,
   AnimationPreset,
   AnimatableValue,
   TemplateKeyframe,
   TemplateEasingFunction,
+  BezierControlPoints,
+  SpringParams,
+  TextSplitAnimator,
+  ResponsiveAnchorConfig,
+  TemplateVariableDefinition,
   addKeyframe,
   removeTemplateKeyframe,
   isKeyframed,
+  evaluateAnimatable,
   getSupportedWebMMimeType,
 } from "@clypra-studio/engine";
 import { PublishTemplateModal } from "../PublishTemplateModal";
@@ -63,6 +93,24 @@ import {
   warmTextTemplateRenderer,
 } from "../../services/textTemplateRenderService";
 import { saveTextTemplateDraft } from "../../services/textTemplateDraftStore";
+import { BezierCurveEditor } from "./controls/BezierCurveEditor";
+import { TextSplitAnimatorControl } from "./controls/TextSplitAnimatorControl";
+import { ResponsiveAnchorControl } from "./controls/ResponsiveAnchorControl";
+import { TemplateVariableManager } from "./controls/TemplateVariableManager";
+import {
+  OnionSkinControl,
+  OnionSkinOptions,
+} from "./controls/OnionSkinControl";
+import {
+  QuickInsertToolbar,
+  QuickInsertType,
+  BoxStylePresetPicker,
+  BoxStylePreset,
+  QuickPositionGrid,
+  LayerAnimationTimeline,
+  MotionCatalogModal,
+  MotionCatalogPreset,
+} from "./controls";
 
 export interface TemplateWorkspaceProps {
   onBackToDesign: () => void;
@@ -75,6 +123,9 @@ const CATEGORIES: TemplateCategory[] = [
   "callout",
   "social",
   "countdown",
+  "kinetic-type",
+  "cta",
+  "credits",
 ];
 const PLACEMENTS = ["lower-third", "center", "top", "full-frame"] as const;
 
@@ -94,7 +145,14 @@ function buildCanonicalTemplatePayload(template: TextTemplate): TextTemplate {
   const dependencies = layers
     .filter((layer: any) => layer.kind === "text" && layer.styleRef)
     .map((layer: any) => layer.styleRef)
-    .filter((ref: any, index: number, all: any[]) => all.findIndex((item) => item.effectId === ref.effectId && item.revisionId === ref.revisionId) === index);
+    .filter(
+      (ref: any, index: number, all: any[]) =>
+        all.findIndex(
+          (item) =>
+            item.effectId === ref.effectId &&
+            item.revisionId === ref.revisionId,
+        ) === index,
+    );
   return {
     ...template,
     schemaVersion: 2,
@@ -109,38 +167,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [template, setTemplate] = useState<TextTemplate | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 
-  // Preview / Customization States
-  const [customTexts, setCustomTexts] = useState({
-    primary: "Primary Text",
-    secondary: "Secondary Text",
-    accent: "Accent Text",
-  });
-
-  // Sync customTexts with layer content when template loads or changes
-  useEffect(() => {
-    if (!template) return;
-
-    const newCustomTexts = { ...customTexts };
-    let hasChanges = false;
-
-    for (const layer of template.layers) {
-      if (layer.kind === "text" && layer.role && layer.role !== "none") {
-        const roleKey = layer.role as "primary" | "secondary" | "accent";
-        // Only update if the current value is still the default placeholder
-        if (
-          newCustomTexts[roleKey] ===
-          `${roleKey.charAt(0).toUpperCase() + roleKey.slice(1)} Text`
-        ) {
-          newCustomTexts[roleKey] = layer.content;
-          hasChanges = true;
-        }
-      }
-    }
-
-    if (hasChanges) {
-      setCustomTexts(newCustomTexts);
-    }
-  }, [template?.id, template?.layers]); // Only re-run when template changes
   const [colorOverrides, setColorOverrides] = useState<Map<string, string>>(
     new Map(),
   );
@@ -148,7 +174,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   // Playback / Timeline clock
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [previewState, setPreviewState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
+  const [previewState, setPreviewState] = useState<
+    "idle" | "rendering" | "ready" | "error"
+  >("idle");
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [thumbnailFrame, setThumbnailFrame] = useState(0);
@@ -164,7 +192,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   // Workspace visual layers settings
   const [lockedLayers, setLockedLayers] = useState<Set<string>>(new Set());
-  const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
 
   // Keyframe Editor State
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
@@ -176,6 +203,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   // Publishing States
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showMotionCatalog, setShowMotionCatalog] = useState(false);
   const [publishStatus, setPublishStatus] = useState<
     "idle" | "publishing" | "submitted" | "published" | "failed"
   >("idle");
@@ -194,10 +222,141 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [publishCreatorName, setPublishCreatorName] = useState("");
   const [publishCreatorLink, setPublishCreatorLink] = useState("");
 
+  // Responsive Aspect Ratio & Onion Skinning
+  const [aspectRatio, setAspectRatio] = useState<
+    "16:9" | "9:16" | "1:1" | "4:5"
+  >("16:9");
+  const [onionSkinOptions, setOnionSkinOptions] = useState<OnionSkinOptions>({
+    enabled: false,
+    frameCount: 2,
+    frameDelta: 0.066,
+  });
+  const [variableTestValues, setVariableTestValues] = useState<
+    Record<string, any>
+  >({});
+
   // Auto-save notification
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
     "idle",
   );
+
+  // Zoom & Pan state for the canvas viewport
+  const [zoom, setZoom] = useState(100); // percentage: 25–400
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [previewQuality, setPreviewQuality] = useState<
+    "auto" | "full" | "half" | "quarter"
+  >("auto");
+  const zoomRef = useRef(100);
+  const panOffsetRef = useRef({ x: 0, y: 0 });
+  const isPanningRef = useRef(false);
+  const previewQualityRef = useRef<"auto" | "full" | "half" | "quarter">(
+    "auto",
+  );
+  const panStartRef = useRef<{
+    mouseX: number;
+    mouseY: number;
+    panX: number;
+    panY: number;
+  } | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Professional Undo / Redo History Engine ───────────────────────────────
+  const [historyPast, setHistoryPast] = useState<TextTemplate[]>([]);
+  const [historyFuture, setHistoryFuture] = useState<TextTemplate[]>([]);
+  const historyPastRef = useRef<TextTemplate[]>([]);
+  const historyFutureRef = useRef<TextTemplate[]>([]);
+  const isUndoingOrRedoingRef = useRef(false);
+  const lastHistorySerializedRef = useRef<string>("");
+
+  useEffect(() => {
+    historyPastRef.current = historyPast;
+  }, [historyPast]);
+  useEffect(() => {
+    historyFutureRef.current = historyFuture;
+  }, [historyFuture]);
+
+  // Snapshot helper: captures the current template before a mutation
+  const pushHistorySnapshot = (prevTemplate: TextTemplate | null) => {
+    if (!prevTemplate || isUndoingOrRedoingRef.current) return;
+    try {
+      const serialized = JSON.stringify(prevTemplate);
+      if (serialized === lastHistorySerializedRef.current) return;
+      lastHistorySerializedRef.current = serialized;
+      const clone = JSON.parse(serialized) as TextTemplate;
+      setHistoryPast((prev) => [...prev.slice(-49), clone]);
+      setHistoryFuture([]);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleUndo = () => {
+    if (historyPastRef.current.length === 0 || !templateRef.current) return;
+    const past = [...historyPastRef.current];
+    const previousSnapshot = past.pop()!;
+    const currentSnapshot = JSON.parse(
+      JSON.stringify(templateRef.current),
+    ) as TextTemplate;
+
+    isUndoingOrRedoingRef.current = true;
+    lastHistorySerializedRef.current = JSON.stringify(previousSnapshot);
+    setHistoryPast(past);
+    setHistoryFuture((prev) => [currentSnapshot, ...prev]);
+    setTemplate(previousSnapshot);
+    templateRef.current = previousSnapshot;
+    toast.info("Undo", { id: "undo-action", duration: 900 });
+    setTimeout(() => {
+      isUndoingOrRedoingRef.current = false;
+    }, 60);
+  };
+
+  const handleRedo = () => {
+    if (historyFutureRef.current.length === 0 || !templateRef.current) return;
+    const future = [...historyFutureRef.current];
+    const nextSnapshot = future.shift()!;
+    const currentSnapshot = JSON.parse(
+      JSON.stringify(templateRef.current),
+    ) as TextTemplate;
+
+    isUndoingOrRedoingRef.current = true;
+    lastHistorySerializedRef.current = JSON.stringify(nextSnapshot);
+    setHistoryFuture(future);
+    setHistoryPast((prev) => [...prev.slice(-49), currentSnapshot]);
+    setTemplate(nextSnapshot);
+    templateRef.current = nextSnapshot;
+    toast.info("Redo", { id: "redo-action", duration: 900 });
+    setTimeout(() => {
+      isUndoingOrRedoingRef.current = false;
+    }, 60);
+  };
+
+  // Global Keyboard Shortcuts for Undo (Cmd/Ctrl + Z) and Redo (Cmd/Ctrl + Shift + Z or Cmd/Ctrl + Y)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isInput =
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        (document.activeElement as HTMLElement)?.isContentEditable;
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
+        if (isInput) return;
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "y") {
+        if (isInput) return;
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Fire a subtle toast when the workspace auto-saves so the header
   // doesn't need to hold a persistent "Auto-saved" indicator.
@@ -215,6 +374,14 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const templateRef = useRef(template);
   const previewSchedulerRef = useRef<TextTemplatePreviewScheduler | null>(null);
   const lastTimelineUiUpdateRef = useRef(0);
+  const [isDraggingLayer, setIsDraggingLayer] = useState(false);
+  const dragStartRef = useRef<{
+    layerId: string;
+    startX: number;
+    startY: number;
+    origX: number;
+    origY: number;
+  } | null>(null);
 
   useEffect(() => {
     currentTimeRef.current = currentTime;
@@ -226,6 +393,153 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   useEffect(() => {
     templateRef.current = template;
+  }, [template]);
+
+  const colorOverridesRef = useRef(colorOverrides);
+  useEffect(() => {
+    colorOverridesRef.current = colorOverrides;
+  }, [colorOverrides]);
+
+  const onionSkinOptionsRef = useRef(onionSkinOptions);
+  useEffect(() => {
+    onionSkinOptionsRef.current = onionSkinOptions;
+  }, [onionSkinOptions]);
+
+  const isPlayingRef = useRef(isPlaying);
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  // Keep zoom/pan refs in sync
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+  useEffect(() => {
+    panOffsetRef.current = panOffset;
+  }, [panOffset]);
+  useEffect(() => {
+    isPanningRef.current = isPanning;
+  }, [isPanning]);
+  useEffect(() => {
+    previewQualityRef.current = previewQuality;
+  }, [previewQuality]);
+
+  // Clamp and apply zoom helper
+  const applyZoom = (nextZoom: number, originX = 0, originY = 0) => {
+    const clamped = Math.round(Math.max(25, Math.min(400, nextZoom)));
+    const ratio = clamped / zoomRef.current;
+    // Keep the point under the cursor fixed during pinch/wheel zoom
+    setPanOffset((prev) => ({
+      x: originX + (prev.x - originX) * ratio,
+      y: originY + (prev.y - originY) * ratio,
+    }));
+    setZoom(clamped);
+    zoomRef.current = clamped;
+  };
+
+  const resetZoomAndPan = () => {
+    setZoom(100);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  // Fit template to viewport
+  const fitToViewport = () => {
+    if (!viewportRef.current || !template) return;
+    const vw = viewportRef.current.clientWidth - 64; // padding
+    const vh = viewportRef.current.clientHeight - 64;
+    const scaleX = (vw / template.canvasWidth) * 100;
+    const scaleY = (vh / template.canvasHeight) * 100;
+    const fit = Math.floor(Math.min(scaleX, scaleY, 400));
+    setZoom(Math.max(25, fit));
+    setPanOffset({ x: 0, y: 0 });
+    zoomRef.current = Math.max(25, fit);
+  };
+
+  // Wheel zoom + spacebar pan
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const rect = viewport.getBoundingClientRect();
+      const originX = e.clientX - rect.left - rect.width / 2;
+      const originY = e.clientY - rect.top - rect.height / 2;
+      const delta = e.deltaY < 0 ? 10 : -10;
+      applyZoom(zoomRef.current + delta, originX, originY);
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.code === "Space" &&
+        !isPanningRef.current &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        e.preventDefault();
+        setIsPanning(true);
+        isPanningRef.current = true;
+        viewport.style.cursor = "grab";
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        setIsPanning(false);
+        isPanningRef.current = false;
+        panStartRef.current = null;
+        viewport.style.cursor = "";
+      }
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (!isPanningRef.current) return;
+      e.preventDefault();
+      viewport.style.cursor = "grabbing";
+      panStartRef.current = {
+        mouseX: e.clientX,
+        mouseY: e.clientY,
+        panX: panOffsetRef.current.x,
+        panY: panOffsetRef.current.y,
+      };
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!panStartRef.current) return;
+      const dx = e.clientX - panStartRef.current.mouseX;
+      const dy = e.clientY - panStartRef.current.mouseY;
+      const next = {
+        x: panStartRef.current.panX + dx,
+        y: panStartRef.current.panY + dy,
+      };
+      setPanOffset(next);
+      panOffsetRef.current = next;
+    };
+
+    const onMouseUp = () => {
+      if (panStartRef.current) {
+        panStartRef.current = null;
+        if (isPanningRef.current) viewport.style.cursor = "grab";
+      }
+    };
+
+    viewport.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    viewport.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+
+    return () => {
+      viewport.removeEventListener("wheel", onWheel);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      viewport.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template]);
 
   // Saved templates management
@@ -332,24 +646,17 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       setTemplate(lottieData);
       setSelectedLayerId(lottieData.layers?.[0]?.id || null);
 
-      // Extract custom texts from layers
-      const textLayers = (lottieData.layers || []).filter(
-        (l: any) => l.kind === "text",
-      );
-      const primary =
-        textLayers.find((tl: any) => tl.role === "primary")?.content ||
-        "Primary Text";
-      const secondary =
-        textLayers.find((tl: any) => tl.role === "secondary")?.content ||
-        "Secondary Text";
-      const accent =
-        textLayers.find((tl: any) => tl.role === "accent")?.content ||
-        "Accent Text";
-      setCustomTexts({ primary, secondary, accent });
-
       setColorOverrides(new Map());
       setThumbnailFrame(0);
-      setCurrentTime(0);
+      const maxIn = Math.max(
+        ...(lottieData.layers || []).map(
+          (l: any) => l.animation?.inDuration || 0,
+        ),
+        0,
+      );
+      setCurrentTime(
+        maxIn > 0 ? Math.min(maxIn + 0.1, (lottieData.duration || 3) / 2) : 0,
+      );
       setIsPlaying(false);
       setSaveStatus("saved");
       setShowSavedTemplates(false);
@@ -370,17 +677,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         if (parsed) {
           setTemplate(parsed.template);
           setSelectedLayerId(parsed.selectedLayerId);
-          setCustomTexts(
-            parsed.customTexts || {
-              primary: "Primary Text",
-              secondary: "Secondary Text",
-              accent: "Accent Text",
-            },
-          );
           if (parsed.colorOverrides) {
             setColorOverrides(new Map(Object.entries(parsed.colorOverrides)));
           }
           setThumbnailFrame(parsed.thumbnailFrame || 0);
+          const maxIn = Math.max(
+            ...(parsed.template?.layers || []).map(
+              (l: any) => l.animation?.inDuration || 0,
+            ),
+            0,
+          );
+          setCurrentTime(
+            maxIn > 0
+              ? Math.min(maxIn + 0.1, (parsed.template?.duration || 3) / 2)
+              : 0,
+          );
           setSaveStatus("saved");
         }
       } catch (err) {
@@ -406,27 +717,14 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const applyCustomizations = (renderer: TemplateRenderer) => {
     if (!template) return;
     for (const layer of template.layers) {
-      if (hiddenLayers.has(layer.id)) {
+      if (layer.visible === false) {
         renderer.updateLayer(layer.id, {
-          x: -9999,
-          y: -9999,
+          opacity: 0,
         });
         continue;
       }
 
       const overrides: any = {};
-      if (layer.kind === "text") {
-        if (layer.role && layer.role !== "none") {
-          if (layer.role === "primary") {
-            overrides.content = customTexts.primary;
-          } else if (layer.role === "secondary") {
-            overrides.content = customTexts.secondary;
-          } else if (layer.role === "accent") {
-            overrides.content = customTexts.accent;
-          }
-        }
-      }
-
       const colorOverride = colorOverrides.get(layer.id);
       if (colorOverride) {
         if (layer.kind === "text") {
@@ -451,7 +749,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         const data = {
           template,
           selectedLayerId,
-          customTexts,
           colorOverrides: Object.fromEntries(colorOverrides),
           thumbnailFrame,
         };
@@ -463,9 +760,11 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           id: template.id,
           name: template.label || template.id,
           artifact: canonicalArtifactFromTemplate(template),
-          controlValues: { ...customTexts, colors: Object.fromEntries(colorOverrides) },
+          controlValues: { colors: Object.fromEntries(colorOverrides) },
           thumbnailFrame,
-        }).catch((error) => console.warn("Failed to persist canonical template draft", error));
+        }).catch((error) =>
+          console.warn("Failed to persist canonical template draft", error),
+        );
         setSaveStatus("saved");
       } catch (err) {
         console.error("Failed to save session", err);
@@ -473,7 +772,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [template, selectedLayerId, customTexts, colorOverrides, thumbnailFrame]);
+  }, [template, selectedLayerId, colorOverrides, thumbnailFrame]);
 
   useEffect(() => {
     // Match Text Effects Lab startup: initialize the long-lived GPU/WASM
@@ -497,16 +796,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const bitmap = await createImageBitmap(image);
-        if (import.meta.env.DEV) {
-          console.debug("[text-template] canvas.present", {
-            bitmap: `${bitmap.width}x${bitmap.height}`,
-            canvas: `${canvas.width}x${canvas.height}`,
-            current: isCurrent(),
-          });
-        }
         if (!isCurrent()) {
           bitmap.close();
           return;
+        }
+        if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
+          canvas.width = bitmap.width;
+          canvas.height = bitmap.height;
         }
         const ctx = canvas.getContext("2d");
         if (ctx) {
@@ -528,43 +824,103 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     previewSchedulerRef.current = scheduler;
     return () => {
       scheduler.dispose();
-      if (previewSchedulerRef.current === scheduler) previewSchedulerRef.current = null;
+      if (previewSchedulerRef.current === scheduler)
+        previewSchedulerRef.current = null;
     };
   }, []);
 
+  const requestPreviewFrame = (time: number, isDirectPlayback = false) => {
+    const activeTemplate = templateRef.current;
+    if (!activeTemplate || !canvasRef.current || !previewSchedulerRef.current)
+      return;
+
+    let previewTime = time;
+    if (
+      !isPlayingRef.current &&
+      !isDirectPlayback &&
+      time === 0 &&
+      activeTemplate.layers?.length
+    ) {
+      const maxInDuration = activeTemplate.layers.reduce((max, layer) => {
+        const dur = Number(layer.animation?.inDuration ?? 0);
+        const preset = layer.animation?.in ?? "none";
+        return preset !== "none" ? Math.max(max, dur) : max;
+      }, 0);
+      if (maxInDuration > 0) {
+        previewTime = Math.min(
+          maxInDuration + 0.05,
+          activeTemplate.duration * 0.5,
+        );
+      }
+    }
+
+    const dpr =
+      typeof window !== "undefined"
+        ? Math.min(window.devicePixelRatio || 1, 2)
+        : 1;
+    const zoomFraction = zoomRef.current / 100;
+    const q = previewQualityRef.current;
+
+    let scale = 1.0;
+    if (isPlayingRef.current || isDirectPlayback) {
+      // 1.0 native crisp resolution during playback — smooth 60fps with zero blur!
+      scale = 1.0;
+    } else {
+      if (q === "quarter") {
+        scale = 0.5;
+      } else if (q === "half") {
+        scale = 1.0;
+      } else {
+        // "auto" / "sharp": scale with zoom level and retina DPR up to 4.0x (8K vector crispness)
+        scale = Math.min(4.0, Math.max(1.0, zoomFraction * dpr));
+      }
+    }
+
+    previewSchedulerRef.current.request({
+      artifact: canonicalArtifactFromTemplate(activeTemplate),
+      legacyTemplate: activeTemplate,
+      time: previewTime,
+      outputScale: scale,
+      quality: "full",
+      customization: {
+        layerColors: Object.fromEntries(colorOverridesRef.current),
+      },
+      onionSkin: onionSkinOptionsRef.current.enabled
+        ? {
+            enabled: true,
+            frameCount: onionSkinOptionsRef.current.frameCount,
+            frameDelta: onionSkinOptionsRef.current.frameDelta,
+          }
+        : undefined,
+    });
+  };
+
+  // Re-render static preview on scrub / template change / zoom / quality changes
+  // — but NOT during live playback (the RAF tick handles that path)
   useEffect(() => {
     if (!template || !canvasRef.current) return;
-    // Do not toggle React state on every playhead sample. During playback the
-    // scheduler already provides back-pressure; the canvas keeps the last
-    // good frame until the next native frame is ready.
     if (!isPlaying) {
       setPreviewState("rendering");
       setPreviewError(null);
+      requestPreviewFrame(currentTime, false);
     }
-    previewSchedulerRef.current?.request({
-      artifact: canonicalArtifactFromTemplate(template),
-      legacyTemplate: template,
-      time: currentTime,
-      // Interactive preview is intentionally half-resolution. Export and
-      // thumbnail paths keep the full-resolution default below.
-      outputScale: 0.5,
-      quality: "half",
-      hiddenLayerIds: hiddenLayers,
-      customization: {
-        primaryText: customTexts.primary,
-        secondaryText: customTexts.secondary,
-        accentText: customTexts.accent,
-        layerColors: Object.fromEntries(colorOverrides),
-      },
-    });
-  }, [template, currentTime, customTexts, colorOverrides, hiddenLayers, isPlaying]);
+  }, [
+    template,
+    currentTime,
+    colorOverrides,
+    isPlaying,
+    onionSkinOptions,
+    zoom,
+    previewQuality,
+  ]);
 
   // RequestAnimationFrame tick for playing previews
   const tick = (timestamp: number) => {
     const activeTemplate = templateRef.current;
     if (previousTimeRef.current !== null && activeTemplate) {
       const elapsed = (timestamp - previousTimeRef.current) / 1000;
-      const nextTime = currentTimeRef.current + elapsed * playbackSpeedRef.current;
+      const nextTime =
+        currentTimeRef.current + elapsed * playbackSpeedRef.current;
       let shouldPublishTimelineState =
         timestamp - lastTimelineUiUpdateRef.current >= 1000 / 30;
       if (nextTime >= activeTemplate.duration) {
@@ -573,6 +929,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       } else {
         currentTimeRef.current = nextTime;
       }
+
+      // Live real-time frame dispatch directly to the scheduler
+      requestPreviewFrame(currentTimeRef.current, true);
+
       // The RAF clock remains smooth, but the large editor tree does not need
       // a React render for every display refresh. This keeps playback work
       // bounded while the preview scheduler handles the latest frame.
@@ -613,7 +973,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     const savedTemplate = {
       template,
       selectedLayerId,
-      customTexts,
       colorOverrides: Object.fromEntries(colorOverrides),
       thumbnailFrame,
     };
@@ -654,18 +1013,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       const parsed = JSON.parse(saved);
       setTemplate(parsed.template);
       setSelectedLayerId(parsed.selectedLayerId);
-      setCustomTexts(
-        parsed.customTexts || {
-          primary: "Primary Text",
-          secondary: "Secondary Text",
-          accent: "Accent Text",
-        },
-      );
       if (parsed.colorOverrides) {
         setColorOverrides(new Map(Object.entries(parsed.colorOverrides)));
       }
       setThumbnailFrame(parsed.thumbnailFrame || 0);
-      setCurrentTime(0);
+      const maxIn = Math.max(
+        ...(parsed.template?.layers || []).map(
+          (l: any) => l.animation?.inDuration || 0,
+        ),
+        0,
+      );
+      setCurrentTime(
+        maxIn > 0
+          ? Math.min(maxIn + 0.1, (parsed.template?.duration || 3) / 2)
+          : 0,
+      );
       setIsPlaying(false);
       setSaveStatus("saved");
       setShowSavedTemplates(false);
@@ -702,11 +1064,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
     setTemplate(null);
     setSelectedLayerId(null);
-    setCustomTexts({
-      primary: "Primary Text",
-      secondary: "Secondary Text",
-      accent: "Accent Text",
-    });
     setColorOverrides(new Map());
     setIsPlaying(false);
     setCurrentTime(0);
@@ -725,11 +1082,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     localStorage.removeItem("clypra_canvas_studio_session");
     setTemplate(null);
     setSelectedLayerId(null);
-    setCustomTexts({
-      primary: "Primary Text",
-      secondary: "Secondary Text",
-      accent: "Accent Text",
-    });
     setColorOverrides(new Map());
     setIsPlaying(false);
     setCurrentTime(0);
@@ -741,7 +1093,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     const clone = JSON.parse(JSON.stringify(preset)) as TextTemplate;
     setTemplate(clone);
     setSelectedLayerId(clone.layers[0]?.id || null);
-    setCurrentTime(0);
+    const maxIn = Math.max(
+      ...(clone.layers || []).map((l) => l.animation?.inDuration || 0),
+      0,
+    );
+    setCurrentTime(
+      maxIn > 0 ? Math.min(maxIn + 0.1, (clone.duration || 3) / 2) : 0,
+    );
   };
 
   // Create Blank Template Action
@@ -763,81 +1121,292 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     setCurrentTime(0);
   };
 
-  // Add layer handler
-  const handleAddLayer = (kind: "text" | "shape" | "image") => {
+  // Quick insert handler supporting text, text-box, lower-third, pill, shape, image
+  const handleQuickInsert = (type: QuickInsertType) => {
     if (!template) return;
     const id = `layer-${Date.now().toString(36)}`;
-    const animation: LayerAnimation = {
-      in: "slide-up",
-      out: "fade",
-      inDuration: 0.5,
-      outDuration: 0.3,
-      hold: "full",
-    };
-
-    // Center new layers on canvas
     const centerX = template.canvasWidth / 2;
     const centerY = template.canvasHeight / 2;
 
+    const baseAnimation: LayerAnimation = {
+      in: "none",
+      out: "none",
+      inDuration: 0,
+      outDuration: 0,
+      hold: "full",
+    };
+
     let newLayer: TemplateLayer;
-    if (kind === "text") {
-      const width = 600;
-      const height = 100;
-      newLayer = {
-        kind: "text",
-        id,
-        content: "New Text Layer",
-        fontFamily: "Poppins",
-        fontSize: 48,
-        fontWeight: 400,
-        color: "#ffffff",
-        align: "center",
-        x: centerX - width / 2, // Center horizontally
-        y: centerY - height / 2, // Center vertically
-        width,
-        height,
-        animation,
-        role: "primary",
-      };
-    } else if (kind === "shape") {
-      const width = 400;
-      const height = 200;
-      newLayer = {
-        kind: "shape",
-        id,
-        shape: "rect",
-        fill: "#7c6fff",
-        x: centerX - width / 2, // Center horizontally
-        y: centerY - height / 2, // Center vertically
-        width,
-        height,
-        animation,
-      };
-    } else {
-      const width = 400;
-      const height = 300;
-      newLayer = {
-        kind: "image",
-        id,
-        url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
-        x: centerX - width / 2, // Center horizontally
-        y: centerY - height / 2, // Center vertically
-        width,
-        height,
-        animation,
-      };
+
+    switch (type) {
+      case "text": {
+        const width = 600;
+        const height = 100;
+        newLayer = {
+          kind: "text",
+          id,
+          content: "Headline Text",
+          fontFamily: "Inter",
+          fontSize: 56,
+          fontWeight: 700,
+          color: "#ffffff",
+          align: "center",
+          verticalAlign: "middle",
+          x: centerX - width / 2,
+          y: centerY - height / 2,
+          width: "auto",
+          height: "auto",
+          animation: baseAnimation,
+        };
+        break;
+      }
+      case "text-box": {
+        newLayer = {
+          kind: "text",
+          id,
+          content: "Featured Badge",
+          fontFamily: "Inter",
+          fontSize: 38,
+          fontWeight: 600,
+          color: "#ffffff",
+          align: "center",
+          verticalAlign: "middle",
+          x: Math.round(centerX - 180),
+          y: Math.round(centerY - 40),
+          width: "auto",
+          height: "auto",
+          backgroundColor: "#12121c",
+          backgroundOpacity: 0.88,
+          paddingTop: 14,
+          paddingRight: 28,
+          paddingBottom: 14,
+          paddingLeft: 28,
+          backgroundRadius: 12,
+          backgroundBorderColor: "#2A2A3E",
+          backgroundBorderWidth: 1,
+          animation: {
+            in: "slide-up",
+            out: "fade",
+            inDuration: 0.5,
+            outDuration: 0.3,
+            hold: "full",
+          },
+        };
+        break;
+      }
+      case "lower-third": {
+        const posX = Math.round(template.canvasWidth * 0.06);
+        const posY = Math.round(template.canvasHeight * 0.78);
+        newLayer = {
+          kind: "text",
+          id,
+          content: "SPEAKER NAME | Title",
+          fontFamily: "Inter",
+          fontSize: 36,
+          fontWeight: 700,
+          color: "#ffffff",
+          align: "left",
+          verticalAlign: "middle",
+          x: posX,
+          y: posY,
+          width: "auto",
+          height: "auto",
+          backgroundColor: "#09090f",
+          backgroundOpacity: 0.94,
+          paddingTop: 16,
+          paddingRight: 36,
+          paddingBottom: 16,
+          paddingLeft: 36,
+          backgroundRadius: 6,
+          backgroundBorderColor: "#2dd4bf",
+          backgroundBorderWidth: 2,
+          animation: {
+            in: "slide-right",
+            out: "fade",
+            inDuration: 0.5,
+            outDuration: 0.3,
+            hold: "full",
+          },
+        };
+        break;
+      }
+      case "pill": {
+        newLayer = {
+          kind: "text",
+          id,
+          content: "STATUS TAG",
+          fontFamily: "Inter",
+          fontSize: 26,
+          fontWeight: 700,
+          color: "#2dd4bf",
+          align: "center",
+          verticalAlign: "middle",
+          x: Math.round(centerX - 110),
+          y: Math.round(centerY - 25),
+          width: "auto",
+          height: "auto",
+          backgroundColor: "#052e2b",
+          backgroundOpacity: 0.92,
+          paddingTop: 8,
+          paddingRight: 22,
+          paddingBottom: 8,
+          paddingLeft: 22,
+          backgroundRadius: 999,
+          backgroundBorderColor: "#14b8a6",
+          backgroundBorderWidth: 1,
+          animation: {
+            in: "scale-pop",
+            out: "scale-out",
+            inDuration: 0.4,
+            outDuration: 0.3,
+            hold: "full",
+          },
+        };
+        break;
+      }
+      case "shape": {
+        const width = 400;
+        const height = 200;
+        newLayer = {
+          kind: "shape",
+          id,
+          shape: "rect",
+          fill: "#7c6fff",
+          x: centerX - width / 2,
+          y: centerY - height / 2,
+          width,
+          height,
+          animation: baseAnimation,
+        };
+        break;
+      }
+      case "image": {
+        const width = 400;
+        const height = 300;
+        newLayer = {
+          kind: "image",
+          id,
+          url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
+          x: centerX - width / 2,
+          y: centerY - height / 2,
+          width,
+          height,
+          animation: baseAnimation,
+        };
+        break;
+      }
+      case "container": {
+        newLayer = {
+          kind: "container",
+          id,
+          name: "Flex Container",
+          layout: {
+            type: "flex",
+            direction: "column",
+            gap: 16,
+            alignItems: "start",
+            justifyContent: "start",
+            paddingTop: 20,
+            paddingRight: 24,
+            paddingBottom: 20,
+            paddingLeft: 24,
+          },
+          x: Math.round(centerX - 300),
+          y: Math.round(centerY - 150),
+          width: "auto",
+          height: "auto",
+          backgroundColor: "#0d0d15",
+          backgroundOpacity: 0.92,
+          backgroundRadius: 14,
+          backgroundBorderColor: "#6366f1",
+          backgroundBorderWidth: 1.5,
+          animation: {
+            in: "fade",
+            out: "fade",
+            inDuration: 0.4,
+            outDuration: 0.3,
+            hold: "full",
+          },
+        };
+        break;
+      }
     }
 
+    pushHistorySnapshot(template);
     setTemplate({
       ...template,
       layers: [...template.layers, newLayer],
     });
     setSelectedLayerId(id);
+    toast.success(`Added ${type.replace("-", " ")} layer`, { duration: 1200 });
+  };
+
+  // Add layer handler fallback
+  const handleAddLayer = (kind: "text" | "shape" | "image") => {
+    handleQuickInsert(
+      kind === "text" ? "text" : kind === "shape" ? "shape" : "image",
+    );
+  };
+
+  // Duplicate layer
+  const handleDuplicateLayer = (layerId: string) => {
+    if (!template) return;
+    const target = template.layers.find((l) => l.id === layerId);
+    if (!target) return;
+    const clone = JSON.parse(JSON.stringify(target)) as TemplateLayer;
+    const newId = `layer-${Date.now().toString(36)}`;
+    clone.id = newId;
+    if (typeof clone.x === "number") clone.x += 24;
+    if (typeof clone.y === "number") clone.y += 24;
+    if (clone.kind === "text") clone.content = `${clone.content} (Copy)`;
+
+    pushHistorySnapshot(template);
+    setTemplate({
+      ...template,
+      layers: [...template.layers, clone],
+    });
+    setSelectedLayerId(newId);
+    toast.success("Layer duplicated", { duration: 1200 });
+  };
+
+  // Apply 1-click Box Style Preset
+  const handleApplyBoxPreset = (preset: BoxStylePreset) => {
+    if (!selectedLayerId) return;
+    if (!preset.panel) {
+      handleUpdateMultipleLayerProperties({
+        backgroundColor: "",
+        backgroundOpacity: 0,
+        paddingTop: 0,
+        paddingRight: 0,
+        paddingBottom: 0,
+        paddingLeft: 0,
+        backgroundRadius: 0,
+        backgroundBorderWidth: 0,
+        backgroundBorderColor: "",
+      });
+      toast.success("Box background removed", { duration: 1000 });
+      return;
+    }
+    handleUpdateMultipleLayerProperties({
+      backgroundColor: preset.panel.backgroundColor,
+      backgroundOpacity: preset.panel.backgroundOpacity,
+      paddingTop: preset.panel.paddingTop,
+      paddingRight: preset.panel.paddingRight,
+      paddingBottom: preset.panel.paddingBottom,
+      paddingLeft: preset.panel.paddingLeft,
+      backgroundRadius: preset.panel.borderRadius,
+      backgroundBorderColor: preset.panel.backgroundBorderColor || "",
+      backgroundBorderWidth: preset.panel.backgroundBorderWidth || 0,
+      width: "auto",
+      height: "auto",
+    });
+    toast.success(`Applied ${preset.name} box style`, { duration: 1000 });
   };
 
   // Remove Layer
   const handleDeleteLayer = (id: string) => {
     if (!template) return;
+    pushHistorySnapshot(template);
     setTemplate({
       ...template,
       layers: template.layers.filter((l) => l.id !== id),
@@ -849,10 +1418,18 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   // Layer Visibility/Lock toggles
   const toggleVisibility = (id: string) => {
-    const updated = new Set(hiddenLayers);
-    if (updated.has(id)) updated.delete(id);
-    else updated.add(id);
-    setHiddenLayers(updated);
+    setTemplate((prev) => {
+      if (!prev) return prev;
+      pushHistorySnapshot(prev);
+      return {
+        ...prev,
+        layers: prev.layers.map((l) =>
+          l.id === id
+            ? { ...l, visible: l.visible === false ? true : false }
+            : l,
+        ),
+      };
+    });
   };
 
   const toggleLock = (id: string) => {
@@ -862,20 +1439,40 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     setLockedLayers(updated);
   };
 
-  // Reorder layers (bottom to top list reordering)
-  const handleMoveLayer = (idx: number, dir: "up" | "down") => {
+  // Reorder layers (step up/down, top/bottom)
+  const handleMoveLayerStack = (
+    idx: number,
+    action: "up" | "down" | "top" | "bottom",
+  ) => {
     if (!template) return;
     const layers = [...template.layers];
-    if (dir === "up" && idx < layers.length - 1) {
+    const layer = layers[idx];
+    if (!layer) return;
+
+    if (action === "top" && idx < layers.length - 1) {
+      layers.splice(idx, 1);
+      layers.push(layer);
+      toast.success("Brought to front", { duration: 800 });
+    } else if (action === "bottom" && idx > 0) {
+      layers.splice(idx, 1);
+      layers.unshift(layer);
+      toast.success("Sent to back", { duration: 800 });
+    } else if (action === "up" && idx < layers.length - 1) {
       const temp = layers[idx];
       layers[idx] = layers[idx + 1];
       layers[idx + 1] = temp;
-    } else if (dir === "down" && idx > 0) {
+    } else if (action === "down" && idx > 0) {
       const temp = layers[idx];
       layers[idx] = layers[idx - 1];
       layers[idx - 1] = temp;
     }
+    pushHistorySnapshot(template);
     setTemplate({ ...template, layers });
+  };
+
+  // Legacy reorder layers (bottom to top list reordering)
+  const handleMoveLayer = (idx: number, dir: "up" | "down") => {
+    handleMoveLayerStack(idx, dir);
   };
 
   // Update selected layer property
@@ -883,6 +1480,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     if (!selectedLayerId) return;
     setTemplate((prev) => {
       if (!prev) return prev;
+      pushHistorySnapshot(prev);
       return {
         ...prev,
         layers: prev.layers.map((l) => {
@@ -914,6 +1512,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     if (!selectedLayerId) return;
     setTemplate((prev) => {
       if (!prev) return prev;
+      pushHistorySnapshot(prev);
       return {
         ...prev,
         layers: prev.layers.map((l) => {
@@ -921,6 +1520,85 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           return { ...l, ...updates };
         }),
       };
+    });
+  };
+
+  // Apply a motion catalog preset animation to ALL layers in the template
+  const handleApplyMotionToAllLayers = (preset: MotionCatalogPreset) => {
+    setTemplate((prev) => {
+      if (!prev) return prev;
+      pushHistorySnapshot(prev);
+      return {
+        ...prev,
+        layers: prev.layers.map((l) => ({
+          ...l,
+          animation: { ...preset.animation },
+        })),
+      };
+    });
+    toast.success(`"${preset.name}" applied to all layers`, {
+      id: "motion-all",
+      duration: 2000,
+    });
+  };
+
+  // Apply a motion catalog preset animation to the selected layer only
+  const handleApplyMotionToLayer = (preset: MotionCatalogPreset) => {
+    handleUpdateMultipleLayerProperties({ animation: { ...preset.animation } });
+    toast.success(`"${preset.name}" applied to layer`, {
+      id: "motion-layer",
+      duration: 1800,
+    });
+  };
+
+  // --- Container assignment ---
+
+  // Assign a layer to a container (or remove from container when containerId is null)
+  const handleMoveLayerToContainer = (
+    layerId: string,
+    containerId: string | null,
+  ) => {
+    setTemplate((prev) => {
+      if (!prev) return prev;
+      pushHistorySnapshot(prev);
+      return {
+        ...prev,
+        layers: prev.layers.map((l) =>
+          l.id === layerId ? { ...l, parentId: containerId ?? undefined } : l,
+        ),
+      };
+    });
+    if (containerId) {
+      const containerName = template?.layers.find(
+        (l) => l.id === containerId && l.kind === "container",
+      ) as any;
+      toast.success(
+        `Layer moved into "${containerName?.name || "container"}"`,
+        { id: "layer-move", duration: 1800 },
+      );
+    } else {
+      toast.success("Layer ejected from container", {
+        id: "layer-eject",
+        duration: 1500,
+      });
+    }
+  };
+
+  // Drag-to-container state
+  const [dragLayerId, setDragLayerId] = useState<string | null>(null);
+  const [dropTargetContainerId, setDropTargetContainerId] = useState<
+    string | null
+  >(null);
+  const [collapsedContainers, setCollapsedContainers] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const toggleContainerCollapse = (containerId: string) => {
+    setCollapsedContainers((prev) => {
+      const next = new Set(prev);
+      if (next.has(containerId)) next.delete(containerId);
+      else next.add(containerId);
+      return next;
     });
   };
 
@@ -944,10 +1622,16 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     if (!template || !selectedLayerId || !selectedLayer) return;
 
     const currentValue = (selectedLayer as any)[property];
+    const defaultVal =
+      property === "opacity" || property === "backgroundOpacity" ? 1 : 0;
+    const initialOrCurrent = isKeyframed(currentValue)
+      ? evaluateAnimatable(currentValue, currentTime, template.duration)
+      : (currentValue ?? defaultVal);
+
     const newKeyframedValue = addKeyframe(
       currentValue,
       currentTime,
-      currentValue,
+      initialOrCurrent,
       easing,
     );
 
@@ -991,6 +1675,62 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     );
 
     handleUpdateLayerProperty(property, { keyframes });
+  };
+
+  const handleUpdateKeyframeBezier = (
+    property: string,
+    time: number,
+    bezier: BezierControlPoints,
+  ) => {
+    if (!template || !selectedLayerId || !selectedLayer) return;
+    const currentValue = (selectedLayer as any)[property];
+    if (!isKeyframed(currentValue)) return;
+    const keyframes = currentValue.keyframes.map(
+      (kf: TemplateKeyframe<any>) => {
+        if (Math.abs(kf.time - time) < 0.01) {
+          return {
+            ...kf,
+            easing: "cubic-bezier" as TemplateEasingFunction,
+            bezier,
+          };
+        }
+        return kf;
+      },
+    );
+    handleUpdateLayerProperty(property, { keyframes });
+  };
+
+  const handleAspectRatioChange = (ratio: "16:9" | "9:16" | "1:1" | "4:5") => {
+    setAspectRatio(ratio);
+    const dimensions = {
+      "16:9": { width: 1920, height: 1080 },
+      "9:16": { width: 1080, height: 1920 },
+      "1:1": { width: 1080, height: 1080 },
+      "4:5": { width: 1080, height: 1350 },
+    }[ratio];
+
+    setTemplate((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        canvasWidth: dimensions.width,
+        canvasHeight: dimensions.height,
+        aspectRatio: ratio,
+      };
+    });
+  };
+
+  const handleInsertVariableToken = (varToken: string) => {
+    if (!selectedLayer || selectedLayer.kind !== "text") {
+      toast.info("Select a text layer first to insert variable");
+      return;
+    }
+    const currentContent = (selectedLayer as TemplateTextLayer).content || "";
+    handleUpdateLayerProperty(
+      "content",
+      `${currentContent} ${varToken}`.trim(),
+    );
+    toast.success(`Inserted ${varToken}`);
   };
 
   interface CropRect {
@@ -1066,12 +1806,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       legacyTemplate: template,
       time: thumbnailFrame / artifact.timing.fps,
       customization: {
-        primaryText: customTexts.primary,
-        secondaryText: customTexts.secondary,
-        accentText: customTexts.accent,
         layerColors: Object.fromEntries(colorOverrides),
       },
-      hiddenLayerIds: hiddenLayers,
     });
     const bitmap = await createImageBitmap(frame.image);
     oCtx.drawImage(bitmap, 0, 0, offscreen.width, offscreen.height);
@@ -1128,15 +1864,17 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       legacyTemplate: template,
       time: artifact.timing.duration / 2,
       customization: {
-        primaryText: customTexts.primary,
-        secondaryText: customTexts.secondary,
-        accentText: customTexts.accent,
         layerColors: Object.fromEntries(colorOverrides),
       },
-      hiddenLayerIds: hiddenLayers,
     });
     const midBitmap = await createImageBitmap(midFrame.image);
-    renderCtx.drawImage(midBitmap, 0, 0, renderCanvas.width, renderCanvas.height);
+    renderCtx.drawImage(
+      midBitmap,
+      0,
+      0,
+      renderCanvas.width,
+      renderCanvas.height,
+    );
     midBitmap.close();
     const cropRect = getCanvasCropRect(renderCanvas);
 
@@ -1206,16 +1944,23 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             legacyTemplate: template,
             time,
             customization: {
-              primaryText: customTexts.primary,
-              secondaryText: customTexts.secondary,
-              accentText: customTexts.accent,
               layerColors: Object.fromEntries(colorOverrides),
             },
-            hiddenLayerIds: hiddenLayers,
           });
           const bitmap = await createImageBitmap(frame.image);
-          renderCtx.clearRect(0, 0, template.canvasWidth, template.canvasHeight);
-          renderCtx.drawImage(bitmap, 0, 0, template.canvasWidth, template.canvasHeight);
+          renderCtx.clearRect(
+            0,
+            0,
+            template.canvasWidth,
+            template.canvasHeight,
+          );
+          renderCtx.drawImage(
+            bitmap,
+            0,
+            0,
+            template.canvasWidth,
+            template.canvasHeight,
+          );
           bitmap.close();
 
           // Copy cropped region to recording canvas
@@ -1247,14 +1992,18 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         }
 
         if (currentFrame < totalFrames) {
-          requestAnimationFrame(() => { void tick(); });
+          requestAnimationFrame(() => {
+            void tick();
+          });
         } else {
           mediaRecorder.stop();
           stream.getTracks().forEach((t) => t.stop());
         }
       };
 
-      requestAnimationFrame(() => { void tick(); });
+      requestAnimationFrame(() => {
+        void tick();
+      });
     });
   };
 
@@ -1349,11 +2098,15 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       setPublishMessage("Uploading files to clypra-api…");
 
       const token = localStorage.getItem("clypra_auth_token");
-      if (!token) throw new Error("Your session has expired. Please sign in again.");
+      if (!token)
+        throw new Error("Your session has expired. Please sign in again.");
       const legacyPayload = {
         ...buildCanonicalTemplatePayload(template),
         description: publishDescription,
-        tags: publishTagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+        tags: publishTagsInput
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
         creatorName: publishCreatorName,
         creatorLink: publishCreatorLink,
       };
@@ -1361,20 +2114,30 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       artifact.metadata = {
         ...artifact.metadata,
         description: publishDescription,
-        tags: publishTagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+        tags: publishTagsInput
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
         creatorName: publishCreatorName,
         creatorLink: publishCreatorLink,
       };
-      const response = await fetch(`${getStudioApiBaseUrl()}/text-templates/submissions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "Idempotency-Key": `template-submit:${template.id}:${Date.now()}`,
-          "X-Clypra-Client": "studio-text-template",
+      const response = await fetch(
+        `${getStudioApiBaseUrl()}/text-templates/submissions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "Idempotency-Key": `template-submit:${template.id}:${Date.now()}`,
+            "X-Clypra-Client": "studio-text-template",
+          },
+          body: JSON.stringify({
+            artifact,
+            thumbnailDataUrl: thumbnailUrl,
+            previewDataUrl: videoUrl,
+          }),
         },
-        body: JSON.stringify({ artifact, thumbnailDataUrl: thumbnailUrl, previewDataUrl: videoUrl }),
-      });
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -1386,13 +2149,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       }
 
       const result = await response.json();
-      let finalStatus: "submitted" | "published" = result.status === "pending-review" ? "submitted" : "published";
+      let finalStatus: "submitted" | "published" =
+        result.status === "pending-review" ? "submitted" : "published";
       if (isAdmin && publishApproved && result.template?.revisionId) {
-        const approvalResponse = await fetch(`${getStudioApiBaseUrl()}/text-templates/${encodeURIComponent(template.category)}/${encodeURIComponent(template.id)}/revisions/${encodeURIComponent(result.template.revisionId)}/approve`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "X-Clypra-Client": "studio-text-template" },
-        });
-        if (!approvalResponse.ok) throw new Error("Revision submitted, but admin approval failed");
+        const approvalResponse = await fetch(
+          `${getStudioApiBaseUrl()}/text-templates/${encodeURIComponent(template.category)}/${encodeURIComponent(template.id)}/revisions/${encodeURIComponent(result.template.revisionId)}/approve`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "X-Clypra-Client": "studio-text-template",
+            },
+          },
+        );
+        if (!approvalResponse.ok)
+          throw new Error("Revision submitted, but admin approval failed");
         finalStatus = "published";
       }
       setPublishStatus(finalStatus);
@@ -1451,9 +2222,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <ClypraLogo size={23} />
           </Link>
           <div className="flex items-center gap-2">
-            <ClypraLogo size={20} />
             <h1 className="text-sm font-bold text-white tracking-tight">
-              Clypra Canvas Template Studio
+              Template Studio
             </h1>
           </div>
           {template && (
@@ -1463,7 +2233,35 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Professional Undo / Redo controls */}
+          <div className="flex items-center bg-[#181824] border border-[#2A2A38] rounded-lg p-0.5">
+            <button
+              type="button"
+              onClick={handleUndo}
+              disabled={historyPast.length === 0}
+              title={`Undo (⌘Z / Ctrl+Z)${historyPast.length > 0 ? ` · ${historyPast.length} available` : ""}`}
+              className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold text-[#888899] hover:text-white hover:bg-[#2A2A38] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <Undo2 size={13} />
+              <span className="text-[10px] font-medium hidden sm:inline">
+                Undo
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleRedo}
+              disabled={historyFuture.length === 0}
+              title={`Redo (⌘⇧Z / Ctrl+Y)${historyFuture.length > 0 ? ` · ${historyFuture.length} available` : ""}`}
+              className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold text-[#888899] hover:text-white hover:bg-[#2A2A38] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <Redo2 size={13} />
+              <span className="text-[10px] font-medium hidden sm:inline">
+                Redo
+              </span>
+            </button>
+          </div>
+
           {saveStatus === "saving" && (
             <span className="text-[11px] text-[#888899] flex items-center gap-1.5 font-medium">
               <Loader2 size={12} className="animate-spin text-teal-400" />{" "}
@@ -1860,162 +2658,898 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Sidebar Left: Layers Panel */}
           <aside className="w-72 border-r border-[#2A2A38] bg-[#121219] flex flex-col shrink-0 min-h-0">
-            <div className="p-4 border-b border-[#2A2A38] flex items-center justify-between shrink-0">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-[#888899] flex items-center gap-1.5">
-                <Layers size={13} className="text-teal-400" /> Layers
-              </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => handleAddLayer("text")}
-                  className="rounded border border-[#2A2A38] px-2 py-1 text-[10px] font-semibold hover:bg-[#2A2A38] text-white flex items-center gap-1"
-                >
-                  <Plus size={10} /> Text
-                </button>
-                <button
-                  onClick={() => handleAddLayer("shape")}
-                  className="rounded border border-[#2A2A38] px-2 py-1 text-[10px] font-semibold hover:bg-[#2A2A38] text-white flex items-center gap-1"
-                >
-                  <Plus size={10} /> Shape
-                </button>
+            {/* Header with Quick Insert Toolbar */}
+            <div className="p-3 border-b border-[#2A2A38] shrink-0 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-[#888899] flex items-center gap-1.5">
+                  <Layers size={13} className="text-teal-400" /> Layers (
+                  {template.layers.length})
+                </span>
               </div>
+              <QuickInsertToolbar
+                onInsert={handleQuickInsert}
+                disabled={!template}
+              />
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
               {template.layers.length === 0 ? (
-                <div className="h-40 flex items-center justify-center border border-dashed border-[#2A2A38] rounded-xl text-center p-4">
+                <div className="h-40 flex flex-col items-center justify-center border border-dashed border-[#2A2A38] rounded-xl text-center p-4 gap-2">
+                  <Layers size={22} className="text-[#2A2A38]" />
                   <p className="text-[11px] text-[#888899]">
-                    No layers added yet. Click Add Text or Add Shape to begin
-                    building.
+                    Use the insert bar above to add your first layer.
                   </p>
                 </div>
               ) : (
-                [...template.layers].reverse().map((layer, reverseIdx) => {
-                  const idx = template.layers.length - 1 - reverseIdx;
-                  const isSelected = layer.id === selectedLayerId;
-                  const isLocked = lockedLayers.has(layer.id);
-                  const isHidden = hiddenLayers.has(layer.id);
-
-                  return (
-                    <div
-                      key={layer.id}
-                      onClick={() => setSelectedLayerId(layer.id)}
-                      className={`group flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                        isSelected
-                          ? "bg-teal-500/10 border-teal-500/50"
-                          : "bg-[#181822] border-[#2A2A38] hover:border-[#3E3E52]"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[10px] font-mono text-[#555566] shrink-0">
-                          #{idx + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate">
-                            {layer.kind === "text"
-                              ? layer.content
-                              : `${layer.kind} (${
-                                  (layer as any).shape || "layer"
-                                })`}
-                          </p>
-                          <p className="text-[9px] text-teal-400 font-semibold tracking-wider uppercase mt-0.5">
-                            {layer.kind}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleVisibility(layer.id);
-                          }}
-                          className={`p-1 rounded hover:bg-[#2A2A38] ${
-                            isHidden ? "text-red-400" : "text-[#888899]"
-                          }`}
-                        >
-                          {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleLock(layer.id);
-                          }}
-                          className={`p-1 rounded hover:bg-[#2A2A38] ${
-                            isLocked ? "text-amber-400" : "text-[#888899]"
-                          }`}
-                        >
-                          {isLocked ? <Lock size={11} /> : <Unlock size={11} />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMoveLayer(idx, "up");
-                          }}
-                          disabled={idx === template.layers.length - 1}
-                          className="p-1 rounded hover:bg-[#2A2A38] text-[#888899] disabled:opacity-30"
-                        >
-                          <ChevronUp size={11} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMoveLayer(idx, "down");
-                          }}
-                          disabled={idx === 0}
-                          className="p-1 rounded hover:bg-[#2A2A38] text-[#888899] disabled:opacity-30"
-                        >
-                          <ChevronDown size={11} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteLayer(layer.id);
-                          }}
-                          className="p-1 rounded hover:bg-red-500/10 text-[#888899] hover:text-red-400"
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                    </div>
+                (() => {
+                  const containers = template.layers.filter(
+                    (l) => l.kind === "container",
                   );
-                })
+                  const rootLayers = [...template.layers]
+                    .reverse()
+                    .filter(
+                      (l) =>
+                        !l.parentId ||
+                        !template.layers.some(
+                          (p) => p.id === l.parentId && p.kind === "container",
+                        ),
+                    );
+
+                  return rootLayers.map((layer) => {
+                    const idx = template.layers.findIndex(
+                      (l) => l.id === layer.id,
+                    );
+                    const isSelected = layer.id === selectedLayerId;
+                    const isLocked = lockedLayers.has(layer.id);
+                    const isHidden = layer.visible === false;
+                    const isTop = idx === template.layers.length - 1;
+                    const isBottom = idx === 0;
+                    const isContainer = layer.kind === "container";
+
+                    if (isContainer) {
+                      const containerLayer = layer as TemplateContainerLayer;
+                      const children = template.layers.filter(
+                        (l) => l.parentId === layer.id,
+                      );
+                      const isCollapsed = collapsedContainers.has(layer.id);
+                      const isDragTarget = dropTargetContainerId === layer.id;
+                      const layout = containerLayer.layout || {
+                        type: "flex",
+                        direction: "column",
+                        gap: 0,
+                        alignItems: "center",
+                      };
+
+                      return (
+                        <div
+                          key={layer.id}
+                          onDragOver={(e) => {
+                            if (!dragLayerId || dragLayerId === layer.id)
+                              return;
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                            setDropTargetContainerId(layer.id);
+                          }}
+                          onDragLeave={() => {
+                            if (dropTargetContainerId === layer.id)
+                              setDropTargetContainerId(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const droppedId =
+                              e.dataTransfer.getData("text/plain") ||
+                              dragLayerId;
+                            if (droppedId && droppedId !== layer.id) {
+                              handleMoveLayerToContainer(droppedId, layer.id);
+                            }
+                            setDragLayerId(null);
+                            setDropTargetContainerId(null);
+                          }}
+                          className={`rounded-xl border transition-all overflow-hidden ${
+                            isDragTarget
+                              ? "bg-indigo-500/15 border-indigo-400 shadow-lg shadow-indigo-500/20"
+                              : isSelected
+                                ? "bg-indigo-500/10 border-indigo-500/60 shadow-md shadow-indigo-500/10"
+                                : "bg-[#141420] border-[#2A2A3E] hover:border-[#3E3E56]"
+                          }`}
+                        >
+                          {/* Container Header Card */}
+                          <div
+                            onClick={() => setSelectedLayerId(layer.id)}
+                            className="flex items-center justify-between p-2.5 cursor-pointer select-none"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {/* Expand / Collapse toggle */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleContainerCollapse(layer.id);
+                                }}
+                                className="p-0.5 rounded hover:bg-white/10 text-indigo-400 transition-colors"
+                              >
+                                {isCollapsed ? (
+                                  <ChevronRight size={13} />
+                                ) : (
+                                  <ChevronDown size={13} />
+                                )}
+                              </button>
+
+                              {/* Container Icon */}
+                              <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 shrink-0">
+                                {layout.direction === "row" ? (
+                                  <Rows size={12} />
+                                ) : (
+                                  <Columns size={12} />
+                                )}
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-white truncate">
+                                    {(layer as any).name || "Flex Container"}
+                                  </span>
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-bold">
+                                    {children.length}{" "}
+                                    {children.length === 1 ? "item" : "items"}
+                                  </span>
+                                </div>
+                                <p className="text-[9px] font-mono text-indigo-400/80 uppercase font-semibold">
+                                  Flex {layout.direction || "column"} ·{" "}
+                                  {Number(layout.gap || 0)}px gap
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Visibility + Lock + Actions */}
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleVisibility(layer.id);
+                                }}
+                                title={
+                                  isHidden ? "Show container" : "Hide container"
+                                }
+                                className={`p-1 rounded hover:bg-[#2A2A38] ${
+                                  isHidden ? "text-red-400" : "text-[#888899]"
+                                }`}
+                              >
+                                {isHidden ? (
+                                  <EyeOff size={11} />
+                                ) : (
+                                  <Eye size={11} />
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleLock(layer.id);
+                                }}
+                                title={
+                                  isLocked
+                                    ? "Unlock container"
+                                    : "Lock container"
+                                }
+                                className={`p-1 rounded hover:bg-[#2A2A38] ${
+                                  isLocked ? "text-amber-400" : "text-[#888899]"
+                                }`}
+                              >
+                                {isLocked ? (
+                                  <Lock size={11} />
+                                ) : (
+                                  <Unlock size={11} />
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDuplicateLayer(layer.id);
+                                }}
+                                title="Duplicate container"
+                                className="p-1 rounded hover:bg-[#2A2A38] text-[#888899] hover:text-indigo-400"
+                              >
+                                <CopyPlus size={11} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteLayer(layer.id);
+                                }}
+                                title="Delete container"
+                                className="p-1 rounded hover:bg-red-500/10 text-[#888899] hover:text-red-400"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Container Stack Reorder (when container selected) */}
+                          {isSelected && (
+                            <div className="flex items-center gap-0.5 px-3 pb-2 border-b border-indigo-500/20">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveLayerStack(idx, "top");
+                                }}
+                                disabled={isTop}
+                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold text-indigo-300 hover:bg-indigo-500/20 disabled:opacity-30"
+                              >
+                                <ChevronsUp size={10} /> Front
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveLayerStack(idx, "up");
+                                }}
+                                disabled={isTop}
+                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold text-indigo-300 hover:bg-indigo-500/20 disabled:opacity-30"
+                              >
+                                <ChevronUp size={10} /> Fwd
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveLayerStack(idx, "down");
+                                }}
+                                disabled={isBottom}
+                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold text-indigo-300 hover:bg-indigo-500/20 disabled:opacity-30"
+                              >
+                                <ChevronDown size={10} /> Back
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveLayerStack(idx, "bottom");
+                                }}
+                                disabled={isBottom}
+                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold text-indigo-300 hover:bg-indigo-500/20 disabled:opacity-30"
+                              >
+                                <ChevronsDown size={10} /> Behind
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Nested Indented Children Tree */}
+                          {!isCollapsed && (
+                            <div className="p-2 pt-1.5 bg-[#0D0D15]/60 border-t border-[#222232]">
+                              <div className="border-l-2 border-indigo-500/30 ml-3 pl-2.5 space-y-1.5 py-1">
+                                {children.length === 0 ? (
+                                  <div className="py-2.5 px-2 border border-dashed border-indigo-500/20 rounded-lg text-center">
+                                    <p className="text-[10px] text-indigo-300/60 font-semibold">
+                                      Empty Container · Drag layers here
+                                    </p>
+                                  </div>
+                                ) : (
+                                  children.map((child, childIdx) => {
+                                    const childIdxInAll =
+                                      template.layers.findIndex(
+                                        (l) => l.id === child.id,
+                                      );
+                                    const isChildSelected =
+                                      child.id === selectedLayerId;
+                                    const isChildLocked = lockedLayers.has(
+                                      child.id,
+                                    );
+                                    const isChildHidden =
+                                      child.visible === false;
+                                    const isChildTop =
+                                      childIdx === children.length - 1;
+                                    const isChildBottom = childIdx === 0;
+
+                                    return (
+                                      <div
+                                        key={child.id}
+                                        draggable
+                                        onDragStart={(e) => {
+                                          setDragLayerId(child.id);
+                                          e.dataTransfer.effectAllowed = "move";
+                                          e.dataTransfer.setData(
+                                            "text/plain",
+                                            child.id,
+                                          );
+                                        }}
+                                        onDragEnd={() => {
+                                          setDragLayerId(null);
+                                          setDropTargetContainerId(null);
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedLayerId(child.id);
+                                        }}
+                                        className={`flex flex-col rounded-lg border transition-all cursor-pointer ${
+                                          isChildSelected
+                                            ? "bg-teal-500/15 border-teal-400/70 shadow-sm"
+                                            : "bg-[#181826] border-[#2A2A3C] hover:border-[#3E3E56]"
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between p-2 gap-1.5">
+                                          <div className="flex items-center gap-1.5 min-w-0">
+                                            <span
+                                              className="text-[#555566] hover:text-white cursor-grab shrink-0"
+                                              title="Drag to reorder or move out"
+                                            >
+                                              <Move size={10} />
+                                            </span>
+                                            <span className="text-[8px] font-mono font-bold px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 shrink-0">
+                                              #{childIdx + 1}
+                                            </span>
+                                            <div className="flex items-center justify-center w-5 h-5 rounded bg-[#222232] text-teal-400 shrink-0">
+                                              {child.kind === "text" ? (
+                                                (child as any)
+                                                  .backgroundColor ? (
+                                                  <Box
+                                                    size={11}
+                                                    className="text-cyan-400"
+                                                  />
+                                                ) : (
+                                                  <Type size={11} />
+                                                )
+                                              ) : child.kind === "shape" ? (
+                                                <Square
+                                                  size={11}
+                                                  className="text-amber-400"
+                                                />
+                                              ) : (
+                                                <ImageIcon
+                                                  size={11}
+                                                  className="text-pink-400"
+                                                />
+                                              )}
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p className="text-xs font-semibold text-white truncate leading-tight">
+                                                {child.kind === "text"
+                                                  ? (
+                                                      child.content || "Text"
+                                                    ).substring(0, 18)
+                                                  : (child as any).name ||
+                                                    child.kind}
+                                              </p>
+                                              <p className="text-[8px] uppercase tracking-wider text-teal-400/70 font-semibold font-mono">
+                                                {child.kind}
+                                                {child.kind === "text" &&
+                                                (child as any).backgroundColor
+                                                  ? " · box"
+                                                  : ""}
+                                              </p>
+                                            </div>
+                                          </div>
+
+                                          {/* Child Actions */}
+                                          <div className="flex items-center gap-0.5 shrink-0">
+                                            {/* Eject from container */}
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleMoveLayerToContainer(
+                                                  child.id,
+                                                  null,
+                                                );
+                                              }}
+                                              title="Eject from container (move to root)"
+                                              className="p-1 rounded text-indigo-400 hover:bg-indigo-500/20 hover:text-white transition-colors"
+                                            >
+                                              <CornerDownRight size={11} />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleVisibility(child.id);
+                                              }}
+                                              title={
+                                                isChildHidden
+                                                  ? "Show layer"
+                                                  : "Hide layer"
+                                              }
+                                              className={`p-1 rounded hover:bg-[#2A2A38] ${
+                                                isChildHidden
+                                                  ? "text-red-400"
+                                                  : "text-[#888899]"
+                                              }`}
+                                            >
+                                              {isChildHidden ? (
+                                                <EyeOff size={11} />
+                                              ) : (
+                                                <Eye size={11} />
+                                              )}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleLock(child.id);
+                                              }}
+                                              title={
+                                                isChildLocked
+                                                  ? "Unlock layer"
+                                                  : "Lock layer"
+                                              }
+                                              className={`p-1 rounded hover:bg-[#2A2A38] ${
+                                                isChildLocked
+                                                  ? "text-amber-400"
+                                                  : "text-[#888899]"
+                                              }`}
+                                            >
+                                              {isChildLocked ? (
+                                                <Lock size={11} />
+                                              ) : (
+                                                <Unlock size={11} />
+                                              )}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteLayer(child.id);
+                                              }}
+                                              title="Delete layer"
+                                              className="p-1 rounded hover:bg-red-500/10 text-[#888899] hover:text-red-400"
+                                            >
+                                              <Trash2 size={11} />
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Stack order if child selected */}
+                                        {isChildSelected && (
+                                          <div className="flex items-center justify-between px-2 pb-1.5 border-t border-[#2A2A3C] pt-1">
+                                            <div className="flex items-center gap-0.5">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleMoveLayerStack(
+                                                    childIdxInAll,
+                                                    "up",
+                                                  );
+                                                }}
+                                                disabled={isChildTop}
+                                                title="Move Forward in container"
+                                                className="px-1 py-0.5 rounded text-[8px] font-semibold text-teal-300 hover:bg-teal-500/20 disabled:opacity-30 flex items-center gap-0.5"
+                                              >
+                                                <ChevronUp size={9} /> Up
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleMoveLayerStack(
+                                                    childIdxInAll,
+                                                    "down",
+                                                  );
+                                                }}
+                                                disabled={isChildBottom}
+                                                title="Move Backward in container"
+                                                className="px-1 py-0.5 rounded text-[8px] font-semibold text-teal-300 hover:bg-teal-500/20 disabled:opacity-30 flex items-center gap-0.5"
+                                              >
+                                                <ChevronDown size={9} /> Down
+                                              </button>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleMoveLayerToContainer(
+                                                  child.id,
+                                                  null,
+                                                );
+                                              }}
+                                              className="px-1.5 py-0.5 rounded text-[8px] font-bold text-indigo-300 bg-indigo-500/20 hover:bg-indigo-500/30 transition-all flex items-center gap-0.5"
+                                            >
+                                              ⏏ Eject to Root
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    // Root Standalone Layer (not inside a container)
+                    return (
+                      <div
+                        key={layer.id}
+                        draggable
+                        onDragStart={(e) => {
+                          setDragLayerId(layer.id);
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", layer.id);
+                        }}
+                        onDragEnd={() => {
+                          setDragLayerId(null);
+                          setDropTargetContainerId(null);
+                        }}
+                        onClick={() => setSelectedLayerId(layer.id)}
+                        className={`group flex flex-col rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? "bg-teal-500/10 border-teal-500/60 shadow-md shadow-teal-500/10"
+                            : "bg-[#181822] border-[#2A2A38] hover:border-[#3E3E52]"
+                        }`}
+                      >
+                        {/* Layer row */}
+                        <div className="flex items-center justify-between p-2.5 gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              className="text-[#333344] hover:text-[#666677] cursor-grab active:cursor-grabbing shrink-0"
+                              title="Drag into a container"
+                            >
+                              <Move size={11} />
+                            </span>
+                            <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-[#222232] text-teal-400 shrink-0">
+                              {layer.kind === "text" ? (
+                                (layer as any).backgroundColor ? (
+                                  <Box size={13} className="text-cyan-400" />
+                                ) : (
+                                  <Type size={13} />
+                                )
+                              ) : layer.kind === "shape" ? (
+                                <Square size={13} className="text-amber-400" />
+                              ) : (
+                                <ImageIcon
+                                  size={13}
+                                  className="text-pink-400"
+                                />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-white truncate leading-tight">
+                                {layer.kind === "text"
+                                  ? (layer.content || "Text").substring(0, 22)
+                                  : `${layer.kind} (${(layer as any).shape || "layer"})`}
+                              </p>
+                              <p className="text-[9px] font-semibold tracking-wider uppercase text-teal-400/80 font-mono">
+                                {layer.kind}
+                                {layer.kind === "text" &&
+                                (layer as any).backgroundColor
+                                  ? " · box"
+                                  : ""}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Visibility + Lock + Actions */}
+                          <div className="flex items-center gap-0.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleVisibility(layer.id);
+                              }}
+                              title={isHidden ? "Show layer" : "Hide layer"}
+                              className={`p-1 rounded hover:bg-[#2A2A38] ${
+                                isHidden ? "text-red-400" : "text-[#888899]"
+                              }`}
+                            >
+                              {isHidden ? (
+                                <EyeOff size={11} />
+                              ) : (
+                                <Eye size={11} />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleLock(layer.id);
+                              }}
+                              title={isLocked ? "Unlock layer" : "Lock layer"}
+                              className={`p-1 rounded hover:bg-[#2A2A38] ${
+                                isLocked ? "text-amber-400" : "text-[#888899]"
+                              }`}
+                            >
+                              {isLocked ? (
+                                <Lock size={11} />
+                              ) : (
+                                <Unlock size={11} />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDuplicateLayer(layer.id);
+                              }}
+                              title="Duplicate layer"
+                              className="p-1 rounded hover:bg-[#2A2A38] text-[#888899] hover:text-teal-400"
+                            >
+                              <CopyPlus size={11} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteLayer(layer.id);
+                              }}
+                              title="Delete layer"
+                              className="p-1 rounded hover:bg-red-500/10 text-[#888899] hover:text-red-400"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Stack ordering row (only when selected) */}
+                        {isSelected && (
+                          <div className="flex items-center gap-0.5 px-2.5 pb-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoveLayerStack(idx, "top");
+                              }}
+                              disabled={isTop}
+                              title="Bring to Front"
+                              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold text-[#9999AA] hover:text-teal-300 hover:bg-teal-500/10 disabled:opacity-30"
+                            >
+                              <ChevronsUp size={10} /> Front
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoveLayerStack(idx, "up");
+                              }}
+                              disabled={isTop}
+                              title="Move Forward"
+                              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold text-[#9999AA] hover:text-white hover:bg-[#2A2A38] disabled:opacity-30"
+                            >
+                              <ChevronUp size={10} /> Fwd
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoveLayerStack(idx, "down");
+                              }}
+                              disabled={isBottom}
+                              title="Move Backward"
+                              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold text-[#9999AA] hover:text-white hover:bg-[#2A2A38] disabled:opacity-30"
+                            >
+                              <ChevronDown size={10} /> Back
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoveLayerStack(idx, "bottom");
+                              }}
+                              disabled={isBottom}
+                              title="Send to Back"
+                              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold text-[#9999AA] hover:text-pink-300 hover:bg-pink-500/10 disabled:opacity-30"
+                            >
+                              <ChevronsDown size={10} /> Behind
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Move into container quick buttons */}
+                        {isSelected && containers.length > 0 && (
+                          <div className="flex items-center gap-1 px-2.5 pb-2 flex-wrap border-t border-[#2A2A38]/50 pt-1.5">
+                            <span className="text-[8px] text-[#666677] font-semibold">
+                              Move into →
+                            </span>
+                            {containers.map((c) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveLayerToContainer(layer.id, c.id);
+                                }}
+                                title={`Move into ${(c as any).name || "container"}`}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold text-indigo-300 bg-indigo-500/15 hover:bg-indigo-500/30 border border-indigo-500/30 transition-all"
+                              >
+                                <LayoutGrid size={9} />
+                                {(c as any).name || "Container"}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()
               )}
             </div>
           </aside>
 
           {/* Center Column: Preview and Scrubber controls */}
           <main className="flex-1 flex flex-col bg-[#09090D] min-w-0 h-full overflow-hidden p-6 gap-6">
-            {/* Canvas Player Box */}
-            <div className="flex-1 flex items-center justify-center rounded-2xl border border-[#2A2A38] relative overflow-hidden p-4 shadow-inner checkerboard">
-              <canvas
-                ref={canvasRef}
-                width={template.canvasWidth}
-                height={template.canvasHeight}
-                data-template-preview-state={previewState}
-                className="max-w-full max-h-full rounded-lg border border-[#1A1A26] shadow-lg"
-                style={{
-                  width: "auto",
-                  height: "auto",
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  objectFit: "contain",
-                }}
-              />
+            {/* Canvas Player Box — zoom/pan viewport */}
+            <div
+              ref={viewportRef}
+              className="flex-1 relative rounded-2xl border border-[#2A2A38] overflow-hidden shadow-inner checkerboard select-none"
+              style={{ cursor: isPanning ? "grab" : "default" }}
+            >
+              {/* Inner pan/zoom surface — centred then offset */}
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{ pointerEvents: "none" }}
+              >
+                <div
+                  style={{
+                    transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
+                    transition: isPanning ? "none" : "transform 0.05s ease-out",
+                    pointerEvents: "auto",
+                    // Display-size wrapper — CSS only, never touches canvas pixel buffer
+                    width:
+                      Math.round((template.canvasWidth * zoom) / 100) + "px",
+                    height:
+                      Math.round((template.canvasHeight * zoom) / 100) + "px",
+                    flexShrink: 0,
+                  }}
+                >
+                  {/*
+                    The canvas buffer dimensions (width/height HTML attributes) are
+                    intentionally NOT set here. The textTemplateRenderService scheduler
+                    owns them — it sets canvas.width/canvas.height imperatively via
+                    outputScale before drawing each frame, which avoids React clearing
+                    the pixel buffer on every re-render.
+                    CSS width/height (100% of wrapper) handle the display scaling.
+                  */}
+                  <canvas
+                    ref={canvasRef}
+                    data-template-preview-state={previewState}
+                    className="rounded-lg border border-[#1A1A26] shadow-2xl"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "block",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Error overlay */}
               {previewState === "error" && (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#09090D]/80 p-6 text-center">
+                <div className="absolute inset-0 flex items-center justify-center bg-[#09090D]/80 p-6 text-center pointer-events-none">
                   <div className="max-w-md rounded-xl border border-red-500/40 bg-[#121219] px-5 py-4 shadow-xl">
                     <div className="mb-1 flex items-center justify-center gap-2 text-sm font-semibold text-red-300">
                       <AlertTriangle size={16} /> Preview unavailable
                     </div>
-                    <p className="text-xs text-[#B7B7C7]">{previewError || "The native renderer could not produce a frame."}</p>
+                    <p className="text-xs text-[#B7B7C7]">
+                      {previewError ||
+                        "The native renderer could not produce a frame."}
+                    </p>
                   </div>
                 </div>
               )}
+
+              {/* Floating Zoom Toolbar */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-1.5 rounded-xl bg-[#101018]/90 border border-[#2A2A3A] shadow-xl backdrop-blur-md z-10">
+                {/* Fit button */}
+                <button
+                  type="button"
+                  onClick={fitToViewport}
+                  title="Fit to viewport"
+                  className="p-1.5 rounded-lg text-[#9999AA] hover:text-white hover:bg-[#2A2A38] transition-colors"
+                >
+                  <Maximize2 size={13} />
+                </button>
+
+                <div className="w-px h-4 bg-[#2A2A38]" />
+
+                {/* Zoom Out */}
+                <button
+                  type="button"
+                  onClick={() => applyZoom(zoom - 25)}
+                  disabled={zoom <= 25}
+                  title="Zoom out (–25%)"
+                  className="p-1.5 rounded-lg text-[#9999AA] hover:text-white hover:bg-[#2A2A38] disabled:opacity-30 transition-colors"
+                >
+                  <ZoomOut size={13} />
+                </button>
+
+                {/* Zoom % preset picker */}
+                <div className="flex items-center gap-0.5">
+                  {[25, 50, 75, 100, 150, 200, 400].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => {
+                        setZoom(pct);
+                        zoomRef.current = pct;
+                        setPanOffset({ x: 0, y: 0 });
+                      }}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all ${
+                        zoom === pct
+                          ? "bg-purple-500 text-white"
+                          : "text-[#9999AA] hover:text-white hover:bg-[#2A2A38]"
+                      }`}
+                    >
+                      {pct === 100
+                        ? "1×"
+                        : pct === 200
+                          ? "2×"
+                          : pct === 400
+                            ? "4×"
+                            : `${pct}%`}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Zoom In */}
+                <button
+                  type="button"
+                  onClick={() => applyZoom(zoom + 25)}
+                  disabled={zoom >= 400}
+                  title="Zoom in (+25%)"
+                  className="p-1.5 rounded-lg text-[#9999AA] hover:text-white hover:bg-[#2A2A38] disabled:opacity-30 transition-colors"
+                >
+                  <ZoomIn size={13} />
+                </button>
+
+                <div className="w-px h-4 bg-[#2A2A38]" />
+
+                {/* Reset */}
+                <button
+                  type="button"
+                  onClick={resetZoomAndPan}
+                  title="Reset zoom & pan"
+                  className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold text-[#9999AA] hover:text-white hover:bg-[#2A2A38] transition-colors"
+                >
+                  {zoom}%
+                </button>
+
+                <div className="w-px h-4 bg-[#2A2A38]" />
+
+                {/* Quality picker — Canvas2D renderer only (Auto/Sharp/Fast) */}
+                <div className="flex items-center gap-0.5">
+                  <Monitor size={11} className="text-[#666677]" />
+                  {(["auto", "half", "quarter"] as const).map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => setPreviewQuality(q)}
+                      title={
+                        q === "auto"
+                          ? "Auto quality (scales with zoom, max 2×)"
+                          : q === "half"
+                            ? "Sharp: 2× pixel buffer"
+                            : "Fast: ½× pixel buffer"
+                      }
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase transition-all ${
+                        previewQuality === q
+                          ? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
+                          : "text-[#777788] hover:text-white"
+                      }`}
+                    >
+                      {q === "quarter"
+                        ? "Fast"
+                        : q === "half"
+                          ? "Sharp"
+                          : "Auto"}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="w-px h-4 bg-[#2A2A38]" />
+
+                {/* Pan hint */}
+                <div
+                  className={`flex items-center gap-1 px-1.5 text-[9px] font-semibold transition-colors ${isPanning ? "text-purple-400" : "text-[#555566]"}`}
+                >
+                  <Hand size={10} />
+                  {isPanning ? "Panning" : "Space+Drag"}
+                </div>
+              </div>
             </div>
 
             {/* Playback & Customization Controls */}
@@ -2024,7 +3558,11 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
-                  aria-label={isPlaying ? "Pause template preview" : "Play template preview"}
+                  aria-label={
+                    isPlaying
+                      ? "Pause template preview"
+                      : "Play template preview"
+                  }
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500 text-black hover:bg-teal-400 transition-colors"
                 >
                   {isPlaying ? <Pause size={18} /> : <Play size={18} />}
@@ -2095,64 +3633,12 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 </div>
               </div>
 
-              {/* Custom Live Testing Values */}
-              <div className="border-t border-[#2A2A38]/50 pt-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={13} className="text-teal-400" />
-                  <span className="text-[10px] font-bold text-[#888899] uppercase tracking-wider">
-                    Test Customizations
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#888899] mb-1">
-                      Primary Text
-                    </label>
-                    <input
-                      type="text"
-                      value={customTexts.primary}
-                      onChange={(e) =>
-                        setCustomTexts({
-                          ...customTexts,
-                          primary: e.target.value,
-                        })
-                      }
-                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#888899] mb-1">
-                      Secondary Text
-                    </label>
-                    <input
-                      type="text"
-                      value={customTexts.secondary}
-                      onChange={(e) =>
-                        setCustomTexts({
-                          ...customTexts,
-                          secondary: e.target.value,
-                        })
-                      }
-                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-wider text-[#888899] mb-1">
-                      Accent Text
-                    </label>
-                    <input
-                      type="text"
-                      value={customTexts.accent}
-                      onChange={(e) =>
-                        setCustomTexts({
-                          ...customTexts,
-                          accent: e.target.value,
-                        })
-                      }
-                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
-                    />
-                  </div>
-                </div>
+              {/* Onion Skin */}
+              <div className="border-t border-[#2A2A38]/50 pt-2 pb-1">
+                <OnionSkinControl
+                  options={onionSkinOptions}
+                  onChange={setOnionSkinOptions}
+                />
               </div>
             </div>
           </main>
@@ -2334,32 +3820,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
-                          Role / Placement Mapping
-                        </label>
-                        <select
-                          value={selectedLayer.role || "none"}
-                          onChange={(e) =>
-                            handleUpdateLayerProperty("role", e.target.value)
-                          }
-                          className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
-                        >
-                          <option value="none">
-                            none (Use Static Content)
-                          </option>
-                          <option value="primary">
-                            primary (Primary Text)
-                          </option>
-                          <option value="secondary">
-                            secondary (Secondary Subtext)
-                          </option>
-                          <option value="accent">
-                            accent (Attribution / Highlight)
-                          </option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
                           Overflow Strategy
                         </label>
                         <select
@@ -2392,6 +3852,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                         <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
                           Background Panel (Optional)
                         </h4>
+
+                        {/* 1-Click Box Style Presets */}
+                        <BoxStylePresetPicker
+                          currentBackgroundColor={selectedLayer.backgroundColor}
+                          currentBorderRadius={selectedLayer.backgroundRadius}
+                          onApplyPreset={handleApplyBoxPreset}
+                        />
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
@@ -2703,264 +4170,452 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       />
                     </div>
                   )}
-                </div>
 
-                {/* Layer Layout Coordinates */}
-                <div className="border-t border-[#2A2A38]/50 pt-4 space-y-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
-                    Layout Bounds (px)
-                  </h4>
+                  {selectedLayer.kind === "container" &&
+                    (() => {
+                      const container = selectedLayer as TemplateContainerLayer;
+                      const layout = container.layout || {
+                        type: "flex",
+                        direction: "column",
+                        gap: 16,
+                        alignItems: "start",
+                        justifyContent: "start",
+                      };
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">
-                        X Coordinate
-                      </label>
-                      <input
-                        type="number"
-                        value={selectedLayer.x}
-                        onChange={(e) =>
-                          handleUpdateLayerProperty(
-                            "x",
-                            parseInt(e.target.value) || 0,
-                          )
-                        }
-                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">
-                        Y Coordinate
-                      </label>
-                      <input
-                        type="number"
-                        value={selectedLayer.y}
-                        onChange={(e) =>
-                          handleUpdateLayerProperty(
-                            "y",
-                            parseInt(e.target.value) || 0,
-                          )
-                        }
-                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
-                      />
-                    </div>
-                  </div>
+                      return (
+                        <div className="space-y-3.5 border-t border-[#2A2A38]/50 pt-3">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                              <LayoutGrid size={13} /> Flex Container Layout
+                            </label>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono font-semibold">
+                              {layout.direction === "row"
+                                ? "ROW FLOW"
+                                : "COLUMN FLOW"}
+                            </span>
+                          </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <label className="block text-[9px] text-[#888899]">
-                          Width
-                        </label>
-                        {selectedLayer.kind === "text" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleUpdateLayerProperty(
-                                "width",
-                                selectedLayer.width === "auto" ? 400 : "auto",
-                              )
-                            }
-                            className={`text-[9px] px-1 rounded transition-colors ${
-                              selectedLayer.width === "auto"
-                                ? "text-teal-400 bg-teal-500/10 border border-teal-500/30"
-                                : "text-[#666677] hover:text-white"
-                            }`}
-                          >
-                            Auto
-                          </button>
-                        )}
-                      </div>
-                      <input
-                        type={
-                          selectedLayer.width === "auto" ? "text" : "number"
-                        }
-                        value={
-                          selectedLayer.width === "auto"
-                            ? "auto"
-                            : selectedLayer.width ?? ""
-                        }
-                        disabled={selectedLayer.width === "auto"}
-                        onChange={(e) =>
-                          handleUpdateLayerProperty(
-                            "width",
-                            parseInt(e.target.value) || 50,
-                          )
-                        }
-                        className={`w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500 ${
-                          selectedLayer.width === "auto"
-                            ? "opacity-50 cursor-not-allowed text-center font-semibold"
-                            : ""
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <label className="block text-[9px] text-[#888899]">
-                          Height
-                        </label>
-                        {selectedLayer.kind === "text" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleUpdateLayerProperty(
-                                "height",
-                                selectedLayer.height === "auto" ? 100 : "auto",
-                              )
-                            }
-                            className={`text-[9px] px-1 rounded transition-colors ${
-                              selectedLayer.height === "auto"
-                                ? "text-teal-400 bg-teal-500/10 border border-teal-500/30"
-                                : "text-[#666677] hover:text-white"
-                            }`}
-                          >
-                            Auto
-                          </button>
-                        )}
-                      </div>
-                      <input
-                        type={
-                          selectedLayer.height === "auto" ? "text" : "number"
-                        }
-                        value={
-                          selectedLayer.height === "auto"
-                            ? "auto"
-                            : selectedLayer.height ?? ""
-                        }
-                        disabled={selectedLayer.height === "auto"}
-                        onChange={(e) =>
-                          handleUpdateLayerProperty(
-                            "height",
-                            parseInt(e.target.value) || 50,
-                          )
-                        }
-                        className={`w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500 ${
-                          selectedLayer.height === "auto"
-                            ? "opacity-50 cursor-not-allowed text-center font-semibold"
-                            : ""
-                        }`}
-                      />
-                    </div>
-                  </div>
-                </div>
+                          {/* Width Sizing Mode */}
+                          <div>
+                            <label className="block text-[9px] text-[#888899] mb-1">
+                              Container Width Sizing
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleUpdateLayerProperty("width", "auto")
+                                }
+                                className={`py-1.5 px-2 rounded-lg border text-xs font-semibold transition-all ${
+                                  container.width === "auto" || !container.width
+                                    ? "bg-indigo-500/20 border-indigo-500 text-indigo-300"
+                                    : "bg-[#09090D] border-[#2A2A38] text-[#888899] hover:border-[#3E3E52]"
+                                }`}
+                              >
+                                Hug Contents (Auto)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleUpdateLayerProperty(
+                                    "width",
+                                    typeof container.width === "number"
+                                      ? container.width
+                                      : 520,
+                                  )
+                                }
+                                className={`py-1.5 px-2 rounded-lg border text-xs font-semibold transition-all ${
+                                  typeof container.width === "number"
+                                    ? "bg-indigo-500/20 border-indigo-500 text-indigo-300"
+                                    : "bg-[#09090D] border-[#2A2A38] text-[#888899] hover:border-[#3E3E52]"
+                                }`}
+                              >
+                                Fixed Width
+                              </button>
+                            </div>
+                            {typeof container.width === "number" && (
+                              <div className="flex items-center gap-2 mt-1.5 bg-[#09090D] border border-[#2A2A38] rounded-lg px-2 py-1">
+                                <span className="text-[9px] text-[#888899]">
+                                  Width:
+                                </span>
+                                <input
+                                  type="number"
+                                  min="100"
+                                  max="2000"
+                                  value={container.width}
+                                  onChange={(e) =>
+                                    handleUpdateLayerProperty(
+                                      "width",
+                                      parseInt(e.target.value, 10) || 500,
+                                    )
+                                  }
+                                  className="w-full bg-transparent text-xs text-white outline-none"
+                                />
+                                <span className="text-[9px] text-[#666677]">
+                                  px
+                                </span>
+                              </div>
+                            )}
+                          </div>
 
-                {/* Layer Transitions & Animations */}
-                <div className="border-t border-[#2A2A38]/50 pt-4 space-y-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
-                    Transitions & Animations
-                  </h4>
+                          {/* Direction Toggle */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleUpdateLayerProperty("layout", {
+                                  ...layout,
+                                  direction: "column",
+                                })
+                              }
+                              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border text-xs font-semibold transition-all ${
+                                layout.direction === "column"
+                                  ? "bg-indigo-500/20 border-indigo-500 text-indigo-300"
+                                  : "bg-[#09090D] border-[#2A2A38] text-[#888899] hover:border-[#3E3E52]"
+                              }`}
+                            >
+                              <Rows size={13} /> Column (Vertical)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleUpdateLayerProperty("layout", {
+                                  ...layout,
+                                  direction: "row",
+                                })
+                              }
+                              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border text-xs font-semibold transition-all ${
+                                layout.direction === "row"
+                                  ? "bg-indigo-500/20 border-indigo-500 text-indigo-300"
+                                  : "bg-[#09090D] border-[#2A2A38] text-[#888899] hover:border-[#3E3E52]"
+                              }`}
+                            >
+                              <Columns size={13} /> Row (Horizontal)
+                            </button>
+                          </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">
-                        Entrance Preset
+                          {/* Gap & Align Items */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[9px] text-[#888899] mb-1">
+                                Gap:{" "}
+                                {typeof layout.gap === "number"
+                                  ? layout.gap
+                                  : 16}
+                                px
+                              </label>
+                              <input
+                                type="range"
+                                min="0"
+                                max="80"
+                                step="2"
+                                value={
+                                  typeof layout.gap === "number"
+                                    ? layout.gap
+                                    : 16
+                                }
+                                onChange={(e) =>
+                                  handleUpdateLayerProperty("layout", {
+                                    ...layout,
+                                    gap: parseInt(e.target.value, 10),
+                                  })
+                                }
+                                className="w-full accent-indigo-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] text-[#888899] mb-1">
+                                Align Items
+                              </label>
+                              <select
+                                value={layout.alignItems || "start"}
+                                onChange={(e) =>
+                                  handleUpdateLayerProperty("layout", {
+                                    ...layout,
+                                    alignItems: e.target.value as any,
+                                  })
+                                }
+                                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-indigo-500"
+                              >
+                                <option value="start">
+                                  Start (Left / Top)
+                                </option>
+                                <option value="center">Center</option>
+                                <option value="end">
+                                  End (Right / Bottom)
+                                </option>
+                                <option value="stretch">Stretch</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Padding Controls */}
+                          <div>
+                            <label className="block text-[9px] text-[#888899] mb-1">
+                              Container Padding (T · R · B · L)
+                            </label>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {(
+                                [
+                                  "paddingTop",
+                                  "paddingRight",
+                                  "paddingBottom",
+                                  "paddingLeft",
+                                ] as const
+                              ).map((side, sIdx) => {
+                                const labels = ["T", "R", "B", "L"];
+                                const val = (layout as any)[side] ?? 16;
+                                return (
+                                  <div
+                                    key={side}
+                                    className="flex items-center gap-1 bg-[#09090D] border border-[#2A2A38] rounded px-1.5 py-1"
+                                  >
+                                    <span className="text-[8px] font-mono text-[#666677]">
+                                      {labels[sIdx]}
+                                    </span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="120"
+                                      value={typeof val === "number" ? val : 0}
+                                      onChange={(e) =>
+                                        handleUpdateLayerProperty("layout", {
+                                          ...layout,
+                                          [side]:
+                                            parseInt(e.target.value, 10) || 0,
+                                        })
+                                      }
+                                      className="w-full bg-transparent text-[10px] text-white text-center outline-none"
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Box Appearance */}
+                          <div className="border-t border-[#2A2A38]/30 pt-2 space-y-2">
+                            <span className="text-[9px] font-semibold text-[#888899] uppercase tracking-wider block">
+                              Box Appearance
+                            </span>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[9px] text-[#888899] mb-1">
+                                  Background Fill
+                                </label>
+                                <div className="flex gap-1">
+                                  <ClypraColorPicker
+                                    value={
+                                      container.backgroundColor || "#0d0d15"
+                                    }
+                                    onChange={(val) =>
+                                      handleUpdateLayerProperty(
+                                        "backgroundColor",
+                                        val,
+                                      )
+                                    }
+                                    onChangeComplete={(val) =>
+                                      handleUpdateLayerProperty(
+                                        "backgroundColor",
+                                        val,
+                                      )
+                                    }
+                                    size="sm"
+                                    placement="bottom-start"
+                                    triggerClassName="clypra-swatch-trigger w-7 h-7 rounded border border-[#2A2A38]"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={
+                                      container.backgroundColor || "#0d0d15"
+                                    }
+                                    onChange={(e) =>
+                                      handleUpdateLayerProperty(
+                                        "backgroundColor",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1 text-[10px] font-mono text-center text-white outline-none focus:border-indigo-500"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-[9px] text-[#888899] mb-1">
+                                  Corner Radius:{" "}
+                                  {container.backgroundRadius ?? 14}px
+                                </label>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="40"
+                                  value={container.backgroundRadius ?? 14}
+                                  onChange={(e) =>
+                                    handleUpdateLayerProperty(
+                                      "backgroundRadius",
+                                      parseInt(e.target.value, 10),
+                                    )
+                                  }
+                                  className="w-full accent-indigo-400 mt-1.5"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[9px] text-[#888899] mb-1">
+                                  Border Color
+                                </label>
+                                <div className="flex gap-1">
+                                  <ClypraColorPicker
+                                    value={
+                                      container.backgroundBorderColor ||
+                                      "#6366f1"
+                                    }
+                                    onChange={(val) =>
+                                      handleUpdateLayerProperty(
+                                        "backgroundBorderColor",
+                                        val,
+                                      )
+                                    }
+                                    onChangeComplete={(val) =>
+                                      handleUpdateLayerProperty(
+                                        "backgroundBorderColor",
+                                        val,
+                                      )
+                                    }
+                                    size="sm"
+                                    placement="bottom-start"
+                                    triggerClassName="clypra-swatch-trigger w-7 h-7 rounded border border-[#2A2A38]"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={
+                                      container.backgroundBorderColor ||
+                                      "#6366f1"
+                                    }
+                                    onChange={(e) =>
+                                      handleUpdateLayerProperty(
+                                        "backgroundBorderColor",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1 text-[10px] font-mono text-center text-white outline-none focus:border-indigo-500"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-[9px] text-[#888899] mb-1">
+                                  Border Width:{" "}
+                                  {container.backgroundBorderWidth ?? 1.5}px
+                                </label>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="10"
+                                  step="0.5"
+                                  value={container.backgroundBorderWidth ?? 1.5}
+                                  onChange={(e) =>
+                                    handleUpdateLayerProperty(
+                                      "backgroundBorderWidth",
+                                      parseFloat(e.target.value),
+                                    )
+                                  }
+                                  className="w-full accent-indigo-400 mt-1.5"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                  {/* Parent Container Selector (for any layer) */}
+                  {template.layers.some(
+                    (l) => l.kind === "container" && l.id !== selectedLayer.id,
+                  ) && (
+                    <div className="border-t border-[#2A2A38]/50 pt-3">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-indigo-300 mb-1 flex items-center gap-1.5">
+                        <LayoutGrid size={12} /> Parent Container
                       </label>
                       <select
-                        value={selectedLayer.animation.in}
+                        value={selectedLayer.parentId || ""}
                         onChange={(e) =>
                           handleUpdateLayerProperty(
-                            "animation.in",
-                            e.target.value,
+                            "parentId",
+                            e.target.value || undefined,
                           )
                         }
-                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-indigo-500"
                       >
-                        <option value="fade">fade</option>
-                        <option value="slide-up">slide-up</option>
-                        <option value="slide-down">slide-down</option>
-                        <option value="slide-left">slide-left</option>
-                        <option value="slide-right">slide-right</option>
-                        <option value="scale-in">scale-in</option>
-                        <option value="blur-in">blur-in</option>
-                        <option value="typewriter">typewriter</option>
-                        <option value="none">none</option>
+                        <option value="">None (Canvas Root)</option>
+                        {template.layers
+                          .filter(
+                            (l) =>
+                              l.kind === "container" &&
+                              l.id !== selectedLayer.id,
+                          )
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {(c as any).name ||
+                                `Container (${c.id.substring(0, 8)})`}
+                            </option>
+                          ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">
-                        Duration (in)
-                      </label>
-                      <input
-                        type="number"
-                        step={0.1}
-                        value={selectedLayer.animation.inDuration}
-                        onChange={(e) =>
-                          handleUpdateLayerProperty(
-                            "animation.inDuration",
-                            parseFloat(e.target.value) || 0,
-                          )
-                        }
-                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">
-                        Exit Preset
-                      </label>
-                      <select
-                        value={selectedLayer.animation.out}
-                        onChange={(e) =>
-                          handleUpdateLayerProperty(
-                            "animation.out",
-                            e.target.value,
-                          )
-                        }
-                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
-                      >
-                        <option value="fade">fade</option>
-                        <option value="slide-down">slide-down</option>
-                        <option value="slide-up">slide-up</option>
-                        <option value="scale-out">scale-out</option>
-                        <option value="blur-out">blur-out</option>
-                        <option value="none">none</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[9px] text-[#888899] mb-0.5">
-                        Duration (out)
-                      </label>
-                      <input
-                        type="number"
-                        step={0.1}
-                        value={selectedLayer.animation.outDuration}
-                        onChange={(e) =>
-                          handleUpdateLayerProperty(
-                            "animation.outDuration",
-                            parseFloat(e.target.value) || 0,
-                          )
-                        }
-                        className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[9px] text-[#888899] mb-0.5">
-                      Hold Timing
-                    </label>
-                    <select
-                      value={selectedLayer.animation.hold}
-                      onChange={(e) =>
-                        handleUpdateLayerProperty(
-                          "animation.hold",
-                          e.target.value === "full"
-                            ? "full"
-                            : parseFloat(e.target.value) || 0,
-                        )
-                      }
-                      className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
-                    >
-                      <option value="full">
-                        hold full timeline between transition
-                      </option>
-                      <option value={1}>1.0 second</option>
-                      <option value={2}>2.0 seconds</option>
-                    </select>
-                  </div>
+                  )}
                 </div>
+
+                {/* Layer Layout & Alignment */}
+                <div className="border-t border-[#2A2A38]/50 pt-4">
+                  <QuickPositionGrid
+                    x={selectedLayer.x}
+                    y={selectedLayer.y}
+                    width={selectedLayer.width}
+                    height={selectedLayer.height}
+                    canvasWidth={template.canvasWidth}
+                    canvasHeight={template.canvasHeight}
+                    isTextNode={selectedLayer.kind === "text"}
+                    onUpdateBounds={(updates) =>
+                      handleUpdateMultipleLayerProperties(updates as any)
+                    }
+                  />
+                </div>
+
+                {/* Transitions & Animations */}
+                <div className="border-t border-[#2A2A38]/50 pt-4">
+                  <LayerAnimationTimeline
+                    animation={selectedLayer.animation}
+                    totalDuration={template.duration}
+                    onChange={(updatedAnimation) =>
+                      handleUpdateMultipleLayerProperties({
+                        animation: updatedAnimation,
+                      })
+                    }
+                    onOpenCatalog={() => setShowMotionCatalog(true)}
+                  />
+                </div>
+
+                {/* Kinetic Text Splitting (for text layers) */}
+                {selectedLayer.kind === "text" && (
+                  <TextSplitAnimatorControl
+                    animator={
+                      (selectedLayer as TemplateTextLayer).splitAnimator
+                    }
+                    onChange={(animator) =>
+                      handleUpdateLayerProperty("splitAnimator", animator)
+                    }
+                  />
+                )}
+
+                {/* 9-Point Spatial Anchoring */}
+                <ResponsiveAnchorControl
+                  anchor={selectedLayer.anchor}
+                  onChange={(anchor) =>
+                    handleUpdateLayerProperty("anchor", anchor)
+                  }
+                  aspectRatio={aspectRatio}
+                  onAspectRatioChange={handleAspectRatioChange}
+                />
 
                 {/* Keyframe Editor */}
                 <div className="border-t border-[#2A2A38]/50 pt-4 space-y-3">
@@ -2977,192 +4632,377 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     </button>
                   </div>
 
-                  {showKeyframeEditor && (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-[9px] text-[#888899] mb-1">
-                          Animate Property
-                        </label>
-                        <select
-                          value={selectedProperty || ""}
-                          onChange={(e) =>
-                            setSelectedProperty(e.target.value || null)
-                          }
-                          className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                        >
-                          <option value="">Select property...</option>
-                          {selectedLayer.kind === "text" && (
-                            <>
-                              <option value="fontSize">Font Size</option>
-                              <option value="fontWeight">Font Weight</option>
-                              <option value="color">Text Color</option>
-                              <option value="backgroundColor">
-                                Background Color
-                              </option>
-                              <option value="backgroundOpacity">
-                                Background Opacity
-                              </option>
-                              <option value="backgroundRadius">
-                                Background Radius
-                              </option>
-                              <option value="padding">Padding</option>
-                              <option value="backgroundBorderColor">
-                                Border Color
-                              </option>
-                              <option value="backgroundBorderWidth">
-                                Border Width
-                              </option>
-                            </>
+                  {showKeyframeEditor &&
+                    (() => {
+                      const getCount = (prop: string) => {
+                        const v = (selectedLayer as any)[prop];
+                        return isKeyframed(v) ? v.keyframes.length : 0;
+                      };
+                      const propLabelMap: Record<string, string> = {
+                        x: "X Position",
+                        y: "Y Position",
+                        width: "Width",
+                        height: "Height",
+                        opacity: "Opacity",
+                        fontSize: "Font Size",
+                        fontWeight: "Font Weight",
+                        color: "Text Color",
+                        backgroundColor: "Background Color",
+                        backgroundOpacity: "Background Opacity",
+                        backgroundRadius: "Background Radius",
+                        padding: "Padding",
+                        backgroundBorderColor: "Border Color",
+                        backgroundBorderWidth: "Border Width",
+                        fill: "Fill Color",
+                      };
+                      const activeTracks = Object.entries(propLabelMap)
+                        .map(([k, label]) => ({
+                          key: k,
+                          label,
+                          count: getCount(k),
+                        }))
+                        .filter((t) => t.count > 0);
+
+                      return (
+                        <div className="space-y-3">
+                          {activeTracks.length > 0 && (
+                            <div className="rounded border border-purple-500/20 bg-purple-950/10 p-2.5 space-y-1.5">
+                              <span className="text-[9px] font-semibold text-purple-300 uppercase tracking-wider block">
+                                Active Animated Tracks ({activeTracks.length})
+                              </span>
+                              <div className="flex flex-wrap gap-1.5">
+                                {activeTracks.map((track) => (
+                                  <button
+                                    key={track.key}
+                                    type="button"
+                                    onClick={() =>
+                                      setSelectedProperty(track.key)
+                                    }
+                                    className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                                      selectedProperty === track.key
+                                        ? "bg-purple-500 text-white shadow-sm"
+                                        : "bg-[#181822] text-[#CCC] border border-[#2A2A38] hover:border-purple-500/50"
+                                    }`}
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-300"></span>
+                                    <span>{track.label}</span>
+                                    <span className="font-mono text-[9px] opacity-75">
+                                      ({track.count})
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           )}
-                          {selectedLayer.kind === "shape" && (
-                            <>
-                              <option value="fill">Fill Color</option>
-                              {selectedLayer.stroke && (
+
+                          <div>
+                            <label className="block text-[9px] text-[#888899] mb-1">
+                              Animate Property
+                            </label>
+                            <select
+                              value={selectedProperty || ""}
+                              onChange={(e) =>
+                                setSelectedProperty(e.target.value || null)
+                              }
+                              className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                            >
+                              <option value="">Select property...</option>
+                              {selectedLayer.kind === "text" && (
                                 <>
-                                  <option value="stroke.color">
-                                    Stroke Color
+                                  <option value="fontSize">
+                                    Font Size{" "}
+                                    {getCount("fontSize") > 0
+                                      ? `• (${getCount("fontSize")} kf)`
+                                      : ""}
                                   </option>
-                                  <option value="stroke.width">
-                                    Stroke Width
+                                  <option value="fontWeight">
+                                    Font Weight{" "}
+                                    {getCount("fontWeight") > 0
+                                      ? `• (${getCount("fontWeight")} kf)`
+                                      : ""}
+                                  </option>
+                                  <option value="color">
+                                    Text Color{" "}
+                                    {getCount("color") > 0
+                                      ? `• (${getCount("color")} kf)`
+                                      : ""}
+                                  </option>
+                                  <option value="backgroundColor">
+                                    Background Color{" "}
+                                    {getCount("backgroundColor") > 0
+                                      ? `• (${getCount("backgroundColor")} kf)`
+                                      : ""}
+                                  </option>
+                                  <option value="backgroundOpacity">
+                                    Background Opacity{" "}
+                                    {getCount("backgroundOpacity") > 0
+                                      ? `• (${getCount("backgroundOpacity")} kf)`
+                                      : ""}
+                                  </option>
+                                  <option value="backgroundRadius">
+                                    Background Radius{" "}
+                                    {getCount("backgroundRadius") > 0
+                                      ? `• (${getCount("backgroundRadius")} kf)`
+                                      : ""}
+                                  </option>
+                                  <option value="padding">
+                                    Padding{" "}
+                                    {getCount("padding") > 0
+                                      ? `• (${getCount("padding")} kf)`
+                                      : ""}
+                                  </option>
+                                  <option value="backgroundBorderColor">
+                                    Border Color{" "}
+                                    {getCount("backgroundBorderColor") > 0
+                                      ? `• (${getCount("backgroundBorderColor")} kf)`
+                                      : ""}
+                                  </option>
+                                  <option value="backgroundBorderWidth">
+                                    Border Width{" "}
+                                    {getCount("backgroundBorderWidth") > 0
+                                      ? `• (${getCount("backgroundBorderWidth")} kf)`
+                                      : ""}
                                   </option>
                                 </>
                               )}
-                            </>
-                          )}
-                          <option value="x">X Position</option>
-                          <option value="y">Y Position</option>
-                          <option value="width">Width</option>
-                          <option value="height">Height</option>
-                          <option value="opacity">Opacity (Display)</option>
-                        </select>
-                      </div>
-
-                      {selectedProperty && (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() =>
-                                handleAddKeyframe(selectedProperty)
-                              }
-                              className="flex-1 rounded bg-purple-500 hover:bg-purple-400 px-3 py-2 text-[10px] font-bold text-white transition-colors flex items-center justify-center gap-1.5"
-                            >
-                              <Plus size={12} /> Add Keyframe at{" "}
-                              {currentTime.toFixed(2)}s
-                            </button>
+                              {selectedLayer.kind === "shape" && (
+                                <>
+                                  <option value="fill">
+                                    Fill Color{" "}
+                                    {getCount("fill") > 0
+                                      ? `• (${getCount("fill")} kf)`
+                                      : ""}
+                                  </option>
+                                  {selectedLayer.stroke && (
+                                    <>
+                                      <option value="stroke.color">
+                                        Stroke Color{" "}
+                                        {getCount("stroke.color") > 0
+                                          ? `• (${getCount("stroke.color")} kf)`
+                                          : ""}
+                                      </option>
+                                      <option value="stroke.width">
+                                        Stroke Width{" "}
+                                        {getCount("stroke.width") > 0
+                                          ? `• (${getCount("stroke.width")} kf)`
+                                          : ""}
+                                      </option>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                              <option value="x">
+                                X Position{" "}
+                                {getCount("x") > 0
+                                  ? `• (${getCount("x")} kf)`
+                                  : ""}
+                              </option>
+                              <option value="y">
+                                Y Position{" "}
+                                {getCount("y") > 0
+                                  ? `• (${getCount("y")} kf)`
+                                  : ""}
+                              </option>
+                              <option value="width">
+                                Width{" "}
+                                {getCount("width") > 0
+                                  ? `• (${getCount("width")} kf)`
+                                  : ""}
+                              </option>
+                              <option value="height">
+                                Height{" "}
+                                {getCount("height") > 0
+                                  ? `• (${getCount("height")} kf)`
+                                  : ""}
+                              </option>
+                              <option value="opacity">
+                                Opacity (Display){" "}
+                                {getCount("opacity") > 0
+                                  ? `• (${getCount("opacity")} kf)`
+                                  : ""}
+                              </option>
+                            </select>
                           </div>
 
-                          {(() => {
-                            const keyframes =
-                              getPropertyKeyframes(selectedProperty);
-                            if (!keyframes || keyframes.length === 0) {
-                              return (
-                                <div className="rounded border border-dashed border-[#2A2A38] p-3 text-center">
-                                  <p className="text-[10px] text-[#666677]">
-                                    No keyframes yet. Click "Add Keyframe" to
-                                    animate this property over time.
-                                  </p>
-                                </div>
-                              );
-                            }
-
-                            return (
-                              <div className="space-y-2">
-                                <p className="text-[9px] text-[#888899] uppercase font-bold tracking-wider">
-                                  Keyframes ({keyframes.length})
-                                </p>
-                                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                                  {keyframes.map((kf, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="rounded border border-[#2A2A38] bg-[#0E0E14] p-2.5 space-y-2"
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-mono text-purple-400 font-bold">
-                                          {kf.time.toFixed(2)}s
-                                        </span>
-                                        <button
-                                          onClick={() =>
-                                            handleRemoveKeyframe(
-                                              selectedProperty,
-                                              kf.time,
-                                            )
-                                          }
-                                          className="text-[#666677] hover:text-red-400 transition-colors"
-                                        >
-                                          <Trash2 size={11} />
-                                        </button>
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                          <label className="block text-[8px] text-[#666677] mb-0.5">
-                                            Value
-                                          </label>
-                                          <input
-                                            type={
-                                              typeof kf.value === "number"
-                                                ? "number"
-                                                : "text"
-                                            }
-                                            value={kf.value}
-                                            onChange={(e) => {
-                                              const newValue =
-                                                typeof kf.value === "number"
-                                                  ? parseFloat(
-                                                      e.target.value,
-                                                    ) || 0
-                                                  : e.target.value;
-                                              handleUpdateKeyframe(
-                                                selectedProperty,
-                                                kf.time,
-                                                newValue,
-                                              );
-                                            }}
-                                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1.5 py-1 text-[10px] text-white outline-none focus:border-purple-500"
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="block text-[8px] text-[#666677] mb-0.5">
-                                            Easing
-                                          </label>
-                                          <select
-                                            value={kf.easing || "linear"}
-                                            onChange={(e) =>
-                                              handleUpdateKeyframe(
-                                                selectedProperty,
-                                                kf.time,
-                                                kf.value,
-                                                e.target
-                                                  .value as TemplateEasingFunction,
-                                              )
-                                            }
-                                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1.5 py-1 text-[10px] text-white outline-none focus:border-purple-500"
-                                          >
-                                            <option value="linear">
-                                              Linear
-                                            </option>
-                                            <option value="ease">Ease</option>
-                                            <option value="ease-in">
-                                              Ease In
-                                            </option>
-                                            <option value="ease-out">
-                                              Ease Out
-                                            </option>
-                                            <option value="ease-in-out">
-                                              Ease In-Out
-                                            </option>
-                                          </select>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
+                          {selectedProperty && (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() =>
+                                    handleAddKeyframe(selectedProperty)
+                                  }
+                                  className="flex-1 rounded bg-purple-500 hover:bg-purple-400 px-3 py-2 text-[10px] font-bold text-white transition-colors flex items-center justify-center gap-1.5"
+                                >
+                                  <Plus size={12} /> Add Keyframe at{" "}
+                                  {currentTime.toFixed(2)}s
+                                </button>
                               </div>
-                            );
-                          })()}
-                        </>
-                      )}
-                    </div>
-                  )}
+
+                              {(() => {
+                                const keyframes =
+                                  getPropertyKeyframes(selectedProperty);
+                                if (!keyframes || keyframes.length === 0) {
+                                  return (
+                                    <div className="rounded border border-dashed border-[#2A2A38] p-3 text-center">
+                                      <p className="text-[10px] text-[#666677]">
+                                        No keyframes yet. Click "Add Keyframe"
+                                        to animate this property over time.
+                                      </p>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <div className="space-y-2">
+                                    <p className="text-[9px] text-[#888899] uppercase font-bold tracking-wider">
+                                      Keyframes ({keyframes.length})
+                                    </p>
+                                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                      {keyframes.map((kf, idx) => (
+                                        <div
+                                          key={idx}
+                                          className="rounded border border-[#2A2A38] bg-[#0E0E14] p-2.5 space-y-2"
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-mono text-purple-400 font-bold">
+                                              {kf.time.toFixed(2)}s
+                                            </span>
+                                            <button
+                                              onClick={() =>
+                                                handleRemoveKeyframe(
+                                                  selectedProperty,
+                                                  kf.time,
+                                                )
+                                              }
+                                              className="text-[#666677] hover:text-red-400 transition-colors"
+                                            >
+                                              <Trash2 size={11} />
+                                            </button>
+                                          </div>
+                                          <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                              <label className="block text-[8px] text-[#666677] mb-0.5">
+                                                Value
+                                              </label>
+                                              <input
+                                                type={
+                                                  typeof kf.value === "number"
+                                                    ? "number"
+                                                    : "text"
+                                                }
+                                                step={
+                                                  selectedProperty ===
+                                                    "opacity" ||
+                                                  selectedProperty ===
+                                                    "backgroundOpacity"
+                                                    ? "0.05"
+                                                    : typeof kf.value ===
+                                                        "number"
+                                                      ? "1"
+                                                      : undefined
+                                                }
+                                                min={
+                                                  selectedProperty ===
+                                                    "opacity" ||
+                                                  selectedProperty ===
+                                                    "backgroundOpacity"
+                                                    ? 0
+                                                    : undefined
+                                                }
+                                                max={
+                                                  selectedProperty ===
+                                                    "opacity" ||
+                                                  selectedProperty ===
+                                                    "backgroundOpacity"
+                                                    ? 1
+                                                    : undefined
+                                                }
+                                                value={kf.value}
+                                                onChange={(e) => {
+                                                  const newValue =
+                                                    typeof kf.value === "number"
+                                                      ? parseFloat(
+                                                          e.target.value,
+                                                        ) || 0
+                                                      : e.target.value;
+                                                  handleUpdateKeyframe(
+                                                    selectedProperty,
+                                                    kf.time,
+                                                    newValue,
+                                                  );
+                                                }}
+                                                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1.5 py-1 text-[10px] text-white outline-none focus:border-purple-500"
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="block text-[8px] text-[#666677] mb-0.5">
+                                                Easing
+                                              </label>
+                                              <select
+                                                value={kf.easing || "linear"}
+                                                onChange={(e) =>
+                                                  handleUpdateKeyframe(
+                                                    selectedProperty,
+                                                    kf.time,
+                                                    kf.value,
+                                                    e.target
+                                                      .value as TemplateEasingFunction,
+                                                  )
+                                                }
+                                                className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1.5 py-1 text-[10px] text-white outline-none focus:border-purple-500"
+                                              >
+                                                <option value="linear">
+                                                  Linear
+                                                </option>
+                                                <option value="ease">
+                                                  Ease
+                                                </option>
+                                                <option value="ease-in">
+                                                  Ease In
+                                                </option>
+                                                <option value="ease-out">
+                                                  Ease Out
+                                                </option>
+                                                <option value="ease-in-out">
+                                                  Ease In-Out
+                                                </option>
+                                                <option value="cubic-bezier">
+                                                  Cubic Bezier (Custom)
+                                                </option>
+                                                <option value="spring">
+                                                  Spring (Physics)
+                                                </option>
+                                                <option value="bounce">
+                                                  Bounce
+                                                </option>
+                                              </select>
+                                            </div>
+                                          </div>
+                                          {kf.easing === "cubic-bezier" && (
+                                            <div className="pt-1">
+                                              <BezierCurveEditor
+                                                bezier={kf.bezier}
+                                                onChange={(bezier) =>
+                                                  handleUpdateKeyframeBezier(
+                                                    selectedProperty,
+                                                    kf.time,
+                                                    bezier,
+                                                  )
+                                                }
+                                              />
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
                 </div>
               </div>
             ) : (
@@ -3292,13 +5132,42 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     Canvas templates default to 1920x1080 resolution.
                   </p>
                 </div>
+
+                {/* Dynamic Variable Manager */}
+                <div className="border-t border-[#2A2A38]/50 pt-4">
+                  <TemplateVariableManager
+                    variables={template.variables ?? []}
+                    onChange={(vars) =>
+                      setTemplate((prev) =>
+                        prev ? { ...prev, variables: vars } : null,
+                      )
+                    }
+                    onInsertVariable={handleInsertVariableToken}
+                    variableValues={variableTestValues}
+                    onVariableValueChange={(key, val) =>
+                      setVariableTestValues((prev) => ({ ...prev, [key]: val }))
+                    }
+                  />
+                </div>
               </div>
             )}
           </aside>
         </div>
       )}
 
+      {/* Motion Catalog Modal */}
+      {template && selectedLayer && (
+        <MotionCatalogModal
+          isOpen={showMotionCatalog}
+          onClose={() => setShowMotionCatalog(false)}
+          currentAnimation={selectedLayer.animation}
+          onApplyToLayer={handleApplyMotionToLayer}
+          onApplyToAllLayers={handleApplyMotionToAllLayers}
+        />
+      )}
+
       {/* Publish Template modal */}
+
       {showPublishModal && template && (
         <PublishTemplateModal
           open={showPublishModal}
