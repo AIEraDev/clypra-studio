@@ -1,7 +1,7 @@
 import {
   compileTextTemplate,
   normalizeTextTemplateArtifact,
-  TemplateRenderer,
+  renderTextTemplateToCanvas,
   type CompiledTextTemplate,
   type TextTemplateArtifact,
 } from "@clypra-studio/engine";
@@ -235,7 +235,7 @@ export class TextTemplatePreviewScheduler {
     traceTemplate("scheduler.start", { generation: requestGeneration, time: request.time });
     try {
       const frame = await this.render(request, controller.signal);
-      if (!this.disposed && !controller.signal.aborted) {
+      if (!this.disposed && !controller.signal.aborted && requestGeneration === this.generation) {
         traceTemplate("scheduler.frame-ready", { generation: requestGeneration, time: request.time });
         await this.onFrame(frame, () => !this.disposed && !controller.signal.aborted);
       }
@@ -257,47 +257,20 @@ export class TextTemplatePreviewScheduler {
   }
 }
 
-function applyLegacyCustomization(renderer: any, template: TemplateDefinition, customization?: TemplateCustomization, hiddenLayerIds?: ReadonlySet<string>): void {
-  for (const layer of template.layers || []) {
-    if (layer.visible === false || hiddenLayerIds?.has(layer.id)) {
-      renderer.updateLayer(layer.id, { opacity: 0 });
-      continue;
-    }
-    if (layer.kind === "text") {
-      const content = layer.role === "primary" ? customization?.primaryText : layer.role === "secondary" ? customization?.secondaryText : layer.role === "accent" ? customization?.accentText : undefined;
-      const color = customization?.layerColors?.[layer.id] || (layer.role === "primary" ? customization?.primaryColor : layer.role === "secondary" ? customization?.secondaryColor : undefined);
-      if (content !== undefined || color) renderer.updateLayer(layer.id, { ...(content !== undefined ? { content } : {}), ...(color ? { color } : {}) });
-    } else if (layer.kind === "shape") {
-      const color = customization?.layerColors?.[layer.id] || (layer.id === "primary-fill-layer" ? customization?.primaryColor : layer.id === "secondary-fill-layer" ? customization?.secondaryColor : undefined);
-      if (color) renderer.updateLayer(layer.id, { fill: color });
+function controlValuesFromCustomization(artifact: TextTemplateArtifact, customization?: TemplateCustomization): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  const textNodes = artifact.document.nodes.filter((node: any) => node.type === "text") as any[];
+  for (const control of artifact.controls) {
+    const node = artifact.document.nodes.find((candidate: any) => candidate.id === control.target.nodeId) as any;
+    const role = node?.role || "";
+    const index = textNodes.findIndex((candidate) => candidate.id === control.target.nodeId);
+    if (control.type === "text") {
+      values[control.id] = (role === "primary" || index === 0 ? customization?.primaryText : role === "secondary" || index === 1 ? customization?.secondaryText : customization?.accentText) ?? control.defaultValue;
+    } else if (control.type === "color") {
+      values[control.id] = customization?.layerColors?.[control.target.nodeId] ?? (role === "secondary" ? customization?.secondaryColor : customization?.primaryColor) ?? control.defaultValue;
     }
   }
-}
-
-function rasterizeCompiled(compiled: CompiledTextTemplate, canvas: HTMLCanvasElement, scale: number): void {
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) throw new Error("Unable to create template raster context");
-  ctx.save();
-  ctx.scale(scale, scale);
-  for (const layer of compiled.layers) {
-    if (!layer.visible || layer.opacity <= 0) continue;
-    ctx.save();
-    ctx.globalAlpha = layer.opacity;
-    if (layer.type === "text" && layer.text) {
-      const fontSize = (layer.style?.fontSize as number) || 48;
-      const fontFamily = (layer.style?.fontFamily as string) || "sans-serif";
-      const fontWeight = (layer.style?.fontWeight as string | number) || 400;
-      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
-      ctx.fillStyle = (layer.style?.textColor as string) || "#ffffff";
-      ctx.textAlign = (layer.style?.textAlign as CanvasTextAlign) || "center";
-      ctx.fillText(layer.text, layer.x, layer.y);
-    } else if (layer.type === "shape") {
-      ctx.fillStyle = (layer.style?.fillColor as string) || "#ffffff";
-      ctx.fillRect(layer.x, layer.y, layer.width, layer.height);
-    }
-    ctx.restore();
-  }
-  ctx.restore();
+  return values;
 }
 
 async function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
@@ -318,6 +291,7 @@ async function renderTextTemplateFrameExclusive(options: {
   controlValues?: Record<string, unknown>;
   customization?: TemplateCustomization;
   hiddenLayerIds?: ReadonlySet<string>;
+  onionSkin?: OnionSkinFrameOptions;
 }, signal?: AbortSignal): Promise<NativeTemplateFrame> {
   const renderStartedAt = typeof performance !== "undefined" ? performance.now() : 0;
   const { artifact } = options;
@@ -352,23 +326,35 @@ async function renderTextTemplateFrameExclusive(options: {
   if (!context) throw new Error("Unable to create template raster context");
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, outputWidth, outputHeight);
-  if (options.legacyTemplate && (options.legacyTemplate.layers || []).length > 0) {
-    const renderer = new TemplateRenderer(options.legacyTemplate as any);
-    applyLegacyCustomization(renderer, options.legacyTemplate, options.customization, options.hiddenLayerIds);
-    context.save();
-    context.scale(outputScale, outputScale);
-    if (options.onionSkin?.enabled) {
-      renderer.drawOnionSkin(context, compiled.time, {
-        frameCount: options.onionSkin.frameCount,
-        frameDelta: options.onionSkin.frameDelta,
-      });
-    } else {
-      renderer.drawFrame(context, compiled.time);
+  const renderArtifact = options.hiddenLayerIds?.size
+    ? {
+        ...artifact,
+        document: {
+          ...artifact.document,
+          nodes: artifact.document.nodes.map((node) =>
+            options.hiddenLayerIds?.has(node.id) ? { ...node, visible: false } : node,
+          ),
+        },
+      }
+    : artifact;
+  const controlValues = {
+    ...controlValuesFromCustomization(renderArtifact, options.customization),
+    ...(options.controlValues || {}),
+  };
+  const renderAtTime = (time: number) => renderTextTemplateToCanvas(context, {
+    artifact: renderArtifact,
+    context: { environment: "studio", time, width: outputWidth, height: outputHeight, controlValues },
+  });
+  if (options.onionSkin?.enabled) {
+    const count = Math.max(1, Math.min(8, options.onionSkin.frameCount));
+    for (let index = count; index >= 1; index -= 1) {
+      context.save();
+      context.globalAlpha = Math.min(0.35, 0.35 / index);
+      renderAtTime(compiled.time - index * options.onionSkin.frameDelta);
+      context.restore();
     }
-    context.restore();
-  } else {
-    rasterizeCompiled(compiled, canvas, outputScale);
   }
+  const finalRender = renderAtTime(compiled.time);
 
   const blob = await canvasToBlob(canvas);
   traceTemplate("render.rasterized", {
@@ -383,7 +369,7 @@ async function renderTextTemplateFrameExclusive(options: {
   });
 
   if (staticKey) cacheSet(staticKey, blob);
-  return { image: blob, compiled };
+  return { image: blob, compiled: finalRender.compiledTemplate ?? compiled };
 }
 
 // Thumbnail/export calls can overlap with playback. Serialize the reusable
@@ -402,4 +388,48 @@ export function renderTextTemplateFrame(
 
 export function canonicalArtifactFromTemplate(template: TemplateDefinition): TextTemplateArtifact {
   return getCachedArtifact(template);
+}
+
+/**
+ * Immediate interactive path for Studio playback. It intentionally avoids a
+ * PNG encode/decode round trip; visual semantics still come exclusively from
+ * the package renderer used by export and editor playback.
+ */
+export function renderTextTemplatePreviewToCanvas(
+  canvas: HTMLCanvasElement,
+  options: Pick<TextTemplateFrameOptions, "artifact" | "time" | "controlValues" | "customization" | "hiddenLayerIds">,
+): CompiledTextTemplate {
+  const { artifact } = options;
+  const renderArtifact = options.hiddenLayerIds?.size
+    ? {
+        ...artifact,
+        document: {
+          ...artifact.document,
+          nodes: artifact.document.nodes.map((node) =>
+            options.hiddenLayerIds?.has(node.id) ? { ...node, visible: false } : node,
+          ),
+        },
+      }
+    : artifact;
+  const width = Math.max(1, canvas.width || renderArtifact.document.canvas.width);
+  const height = Math.max(1, canvas.height || renderArtifact.document.canvas.height);
+  if (canvas.width !== width) canvas.width = width;
+  if (canvas.height !== height) canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Unable to create template preview context");
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, width, height);
+  const controlValues = {
+    ...controlValuesFromCustomization(renderArtifact, options.customization),
+    ...(options.controlValues || {}),
+  };
+  const result = renderTextTemplateToCanvas(context, {
+    artifact: renderArtifact,
+    context: { environment: "studio", time: options.time, width, height, controlValues },
+  });
+  return result.compiledTemplate ?? compileTextTemplate(renderArtifact, {
+    target: "studio",
+    time: options.time,
+    controlValues,
+  });
 }
