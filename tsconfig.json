@@ -24,6 +24,12 @@
       ],
       "@clypra-studio/ui": [
         "../clypra-packages/packages/ui/dist/index.d.ts"
+      ],
+      "@clypra-studio/engine": [
+        "../clypra-packages/packages/clypra-engine/src/index.ts"
+      ],
+      "@clypra-studio/engine/*": [
+        "../clypra-packages/packages/clypra-engine/src/*"
       ]
     },
     "allowImportingTsExtensions": true,
