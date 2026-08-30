@@ -75,7 +75,7 @@ export interface PublishTemplateModalProps {
   onUseCurrentFrame: () => void;
   onPreviewThumbnail: () => void;
   onPublish: () => Promise<void>;
-  publishStatus: "idle" | "publishing" | "published" | "failed";
+  publishStatus: "idle" | "publishing" | "submitted" | "published" | "failed";
   publishMessage: string | null;
   publishPrUrl: string | null;
   published: boolean;
@@ -132,13 +132,14 @@ export function PublishTemplateModal({
   const hasErrors = Object.keys(validationErrors).length > 0;
   const isPublishing = publishStatus === "publishing";
   const isPublished = publishStatus === "published";
+  const isSubmitted = publishStatus === "submitted";
   const isFailed = publishStatus === "failed";
 
   useEffect(() => {
     if (!publishMessage) return;
-    if (isPublished) toast.success(publishMessage, { id: "template-publish" });
+    if (isPublished || isSubmitted) toast.success(publishMessage, { id: "template-publish" });
     else if (isFailed) toast.error(publishMessage, { id: "template-publish" });
-  }, [publishMessage, isPublished, isFailed]);
+  }, [publishMessage, isPublished, isSubmitted, isFailed]);
 
   const handleGenerateMetadata = async () => {
     setIsGeneratingMetadata(true);
@@ -207,11 +208,10 @@ export function PublishTemplateModal({
               </div>
               <div className="min-w-0">
                 <h3 className="text-sm font-bold text-white">
-                  Publish Text Template to API
+                  Submit Text Template to API
                 </h3>
                 <p className="mt-1 text-[11px] leading-relaxed text-[#9A9AAA]">
-                  Review metadata and upload your template directly to the
-                  Clypra API
+                  Review metadata and submit an immutable revision for approval.
                 </p>
               </div>
             </div>
@@ -801,12 +801,12 @@ export function PublishTemplateModal({
               disabled={isPublishing}
               className="rounded-lg border border-[#2A2A38] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2A2A38] disabled:opacity-50"
             >
-              {isPublished ? "Close" : "Cancel"}
+              {isPublished || isSubmitted ? "Close" : "Cancel"}
             </button>
             <button
               type="button"
               onClick={handlePublish}
-              disabled={hasErrors || isPublishing || isPublished}
+              disabled={hasErrors || isPublishing || isPublished || isSubmitted}
               className="rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-2"
             >
               {isPublishing ? (
@@ -818,6 +818,11 @@ export function PublishTemplateModal({
                 <>
                   <CheckCircle size={14} />
                   Published
+                </>
+              ) : isSubmitted ? (
+                <>
+                  <CheckCircle size={14} />
+                  Submitted for Approval
                 </>
               ) : (
                 <>
