@@ -56,6 +56,13 @@ import { PublishTemplateModal } from "../PublishTemplateModal";
 import { getStudioApiBaseUrl } from "../../services/apiConfig";
 import { ClypraLogo } from "../ClypraLogo";
 import { Link } from "react-router-dom";
+import {
+  canonicalArtifactFromTemplate,
+  renderTextTemplateFrame,
+  TextTemplatePreviewScheduler,
+  warmTextTemplateRenderer,
+} from "../../services/textTemplateRenderService";
+import { saveTextTemplateDraft } from "../../services/textTemplateDraftStore";
 
 export interface TemplateWorkspaceProps {
   onBackToDesign: () => void;
@@ -141,6 +148,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   // Playback / Timeline clock
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [previewState, setPreviewState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [thumbnailFrame, setThumbnailFrame] = useState(0);
 
@@ -168,7 +177,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   // Publishing States
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [publishStatus, setPublishStatus] = useState<
-    "idle" | "publishing" | "published" | "failed"
+    "idle" | "publishing" | "submitted" | "published" | "failed"
   >("idle");
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const [publishPrUrl, setPublishPrUrl] = useState<string | null>(null);
@@ -201,6 +210,23 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const requestRef = useRef<number | null>(null);
   const previousTimeRef = useRef<number | null>(null);
+  const currentTimeRef = useRef(currentTime);
+  const playbackSpeedRef = useRef(playbackSpeed);
+  const templateRef = useRef(template);
+  const previewSchedulerRef = useRef<TextTemplatePreviewScheduler | null>(null);
+  const lastTimelineUiUpdateRef = useRef(0);
+
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
+
+  useEffect(() => {
+    playbackSpeedRef.current = playbackSpeed;
+  }, [playbackSpeed]);
+
+  useEffect(() => {
+    templateRef.current = template;
+  }, [template]);
 
   // Saved templates management
   const [savedTemplates, setSavedTemplates] = useState<
@@ -272,6 +298,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         `${getStudioApiBaseUrl()}/text-templates/${category}/${id}/publish`,
         {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("clypra_auth_token") || ""}`,
+            "X-Clypra-Client": "studio-text-template",
+          },
         },
       );
       if (!response.ok) {
@@ -429,6 +459,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           "clypra_canvas_studio_session",
           JSON.stringify(data),
         );
+        void saveTextTemplateDraft({
+          id: template.id,
+          name: template.label || template.id,
+          artifact: canonicalArtifactFromTemplate(template),
+          controlValues: { ...customTexts, colors: Object.fromEntries(colorOverrides) },
+          thumbnailFrame,
+        }).catch((error) => console.warn("Failed to persist canonical template draft", error));
         setSaveStatus("saved");
       } catch (err) {
         console.error("Failed to save session", err);
@@ -438,59 +475,110 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     return () => clearTimeout(timeout);
   }, [template, selectedLayerId, customTexts, colorOverrides, thumbnailFrame]);
 
-  // Preview Redraw Loop
+  useEffect(() => {
+    // Match Text Effects Lab startup: initialize the long-lived GPU/WASM
+    // renderer while the workspace mounts so the first visible frame does not
+    // pay the adapter, pipeline, and shader initialization cost.
+    void warmTextTemplateRenderer().catch((error) => {
+      if (import.meta.env.DEV) {
+        console.debug("[text-template] warmup.error", {
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
+  }, []);
+
+  // Keep one bounded render pipeline for interactive preview. The scheduler
+  // coalesces playhead updates while the native render is in flight, so a
+  // slow WASM frame can finish and the latest frame can follow it.
+  useEffect(() => {
+    const scheduler = new TextTemplatePreviewScheduler(
+      async ({ image }, isCurrent) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const bitmap = await createImageBitmap(image);
+        if (import.meta.env.DEV) {
+          console.debug("[text-template] canvas.present", {
+            bitmap: `${bitmap.width}x${bitmap.height}`,
+            canvas: `${canvas.width}x${canvas.height}`,
+            current: isCurrent(),
+          });
+        }
+        if (!isCurrent()) {
+          bitmap.close();
+          return;
+        }
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+          setPreviewState("ready");
+          setPreviewError(null);
+        }
+        bitmap.close();
+      },
+      (error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        setPreviewState("error");
+        setPreviewError(message);
+        console.warn("Native text-template preview unavailable", error);
+      },
+    );
+    previewSchedulerRef.current = scheduler;
+    return () => {
+      scheduler.dispose();
+      if (previewSchedulerRef.current === scheduler) previewSchedulerRef.current = null;
+    };
+  }, []);
+
   useEffect(() => {
     if (!template || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Build template rendering snapshot with overrides applied
-    const renderer = new TemplateRenderer(template);
-    applyCustomizations(renderer);
-
-    renderer.drawFrame(ctx, currentTime);
-
-    // Draw selection bounding outline on active layer
-    if (selectedLayerId) {
-      const activeLayer = template.layers.find(
-        (l) => l.id === selectedLayerId,
-      ) as any;
-      if (activeLayer) {
-        ctx.save();
-        ctx.strokeStyle = "#3b82f6";
-        ctx.lineWidth = 3;
-        ctx.setLineDash([6, 6]);
-        const layout = renderer.getLayerLayout(activeLayer.id) || {
-          x: activeLayer.x,
-          y: activeLayer.y,
-          width:
-            typeof activeLayer.width === "number" ? activeLayer.width : 100,
-          height:
-            typeof activeLayer.height === "number" ? activeLayer.height : 50,
-        };
-        ctx.strokeRect(layout.x, layout.y, layout.width, layout.height);
-        ctx.restore();
-      }
+    // Do not toggle React state on every playhead sample. During playback the
+    // scheduler already provides back-pressure; the canvas keeps the last
+    // good frame until the next native frame is ready.
+    if (!isPlaying) {
+      setPreviewState("rendering");
+      setPreviewError(null);
     }
-  }, [
-    template,
-    currentTime,
-    customTexts,
-    colorOverrides,
-    selectedLayerId,
-    hiddenLayers,
-  ]);
+    previewSchedulerRef.current?.request({
+      artifact: canonicalArtifactFromTemplate(template),
+      legacyTemplate: template,
+      time: currentTime,
+      // Interactive preview is intentionally half-resolution. Export and
+      // thumbnail paths keep the full-resolution default below.
+      outputScale: 0.5,
+      quality: "half",
+      hiddenLayerIds: hiddenLayers,
+      customization: {
+        primaryText: customTexts.primary,
+        secondaryText: customTexts.secondary,
+        accentText: customTexts.accent,
+        layerColors: Object.fromEntries(colorOverrides),
+      },
+    });
+  }, [template, currentTime, customTexts, colorOverrides, hiddenLayers, isPlaying]);
 
   // RequestAnimationFrame tick for playing previews
   const tick = (timestamp: number) => {
-    if (previousTimeRef.current !== null && template) {
+    const activeTemplate = templateRef.current;
+    if (previousTimeRef.current !== null && activeTemplate) {
       const elapsed = (timestamp - previousTimeRef.current) / 1000;
-      const nextTime = currentTime + elapsed * playbackSpeed;
-      if (nextTime >= template.duration) {
-        setCurrentTime(0);
+      const nextTime = currentTimeRef.current + elapsed * playbackSpeedRef.current;
+      let shouldPublishTimelineState =
+        timestamp - lastTimelineUiUpdateRef.current >= 1000 / 30;
+      if (nextTime >= activeTemplate.duration) {
+        currentTimeRef.current = 0;
+        shouldPublishTimelineState = true;
       } else {
-        setCurrentTime(nextTime);
+        currentTimeRef.current = nextTime;
+      }
+      // The RAF clock remains smooth, but the large editor tree does not need
+      // a React render for every display refresh. This keeps playback work
+      // bounded while the preview scheduler handles the latest frame.
+      if (shouldPublishTimelineState) {
+        lastTimelineUiUpdateRef.current = timestamp;
+        setCurrentTime(currentTimeRef.current);
       }
     }
     previousTimeRef.current = timestamp;
@@ -509,7 +597,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [isPlaying, currentTime, playbackSpeed, template]);
+  }, [isPlaying]);
 
   // Save current template to library
   const handleSaveTemplate = () => {
@@ -963,23 +1051,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     };
   };
 
-  const getTemplateCropRect = (padding = 15): CropRect | null => {
-    if (!template) return null;
-    const canvas = document.createElement("canvas");
-    canvas.width = template.canvasWidth;
-    canvas.height = template.canvasHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-
-    const renderer = new TemplateRenderer(template);
-    applyCustomizations(renderer);
-    // Render at the middle of the duration where all layers are fully resolved
-    const midTime = template.duration / 2;
-    renderer.drawFrame(ctx, midTime);
-
-    return getCanvasCropRect(canvas, padding);
-  };
-
   // Export static high-res thumbnail frame
   const captureThumbnail = async (crop = true): Promise<string> => {
     if (!template) return "";
@@ -989,16 +1060,28 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     const oCtx = offscreen.getContext("2d");
     if (!oCtx) return "";
 
-    const renderer = new TemplateRenderer(template);
-    applyCustomizations(renderer);
-
-    // Draw using same layout logic at thumbnail frame time
-    const fps = 30;
-    const time = thumbnailFrame / fps;
-    renderer.drawFrame(oCtx, time);
+    const artifact = canonicalArtifactFromTemplate(template);
+    const frame = await renderTextTemplateFrame({
+      artifact,
+      legacyTemplate: template,
+      time: thumbnailFrame / artifact.timing.fps,
+      customization: {
+        primaryText: customTexts.primary,
+        secondaryText: customTexts.secondary,
+        accentText: customTexts.accent,
+        layerColors: Object.fromEntries(colorOverrides),
+      },
+      hiddenLayerIds: hiddenLayers,
+    });
+    const bitmap = await createImageBitmap(frame.image);
+    oCtx.drawImage(bitmap, 0, 0, offscreen.width, offscreen.height);
+    bitmap.close();
 
     if (crop) {
-      const rect = getTemplateCropRect();
+      // Crop the exact native-composited pixels that will be delivered to the
+      // editor/export path. This prevents thumbnails from using a second,
+      // legacy-only geometry implementation.
+      const rect = getCanvasCropRect(offscreen);
       if (rect) {
         const croppedCanvas = document.createElement("canvas");
         croppedCanvas.width = rect.width;
@@ -1028,19 +1111,34 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const generatePreviewVideo = async (): Promise<string> => {
     if (!template) return "";
 
-    const renderer = new TemplateRenderer(template);
-    applyCustomizations(renderer);
-    const fps = 30;
-    const totalFrames = Math.ceil(template.duration * fps);
+    const artifact = canonicalArtifactFromTemplate(template);
+    const fps = artifact.timing.fps;
+    const totalFrames = Math.ceil(artifact.timing.duration * fps);
 
-    // Render the middle frame onto a temporary canvas to determine the crop rectangle
+    // Render the middle frame through the same native pipeline used by the
+    // interactive preview to determine the crop rectangle.
     const renderCanvas = document.createElement("canvas");
     renderCanvas.width = template.canvasWidth;
     renderCanvas.height = template.canvasHeight;
     const renderCtx = renderCanvas.getContext("2d");
     if (!renderCtx) return "";
 
-    const cropRect = getTemplateCropRect();
+    const midFrame = await renderTextTemplateFrame({
+      artifact,
+      legacyTemplate: template,
+      time: artifact.timing.duration / 2,
+      customization: {
+        primaryText: customTexts.primary,
+        secondaryText: customTexts.secondary,
+        accentText: customTexts.accent,
+        layerColors: Object.fromEntries(colorOverrides),
+      },
+      hiddenLayerIds: hiddenLayers,
+    });
+    const midBitmap = await createImageBitmap(midFrame.image);
+    renderCtx.drawImage(midBitmap, 0, 0, renderCanvas.width, renderCanvas.height);
+    midBitmap.close();
+    const cropRect = getCanvasCropRect(renderCanvas);
 
     // Create the recording canvas (cropped to cropRect if found, otherwise full size)
     const canvas = document.createElement("canvas");
@@ -1089,7 +1187,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       let currentFrame = 0;
       const startTime = performance.now();
 
-      const tick = () => {
+      const tick = async () => {
         if (currentFrame >= totalFrames) {
           mediaRecorder.stop();
           stream.getTracks().forEach((t) => t.stop());
@@ -1103,14 +1201,22 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           // Use precise timing based on frame number to avoid drift
           const time = currentFrame / fps;
 
-          // Render full size
-          renderCtx.clearRect(
-            0,
-            0,
-            template.canvasWidth,
-            template.canvasHeight,
-          );
-          renderer.drawFrame(renderCtx, time);
+          const frame = await renderTextTemplateFrame({
+            artifact,
+            legacyTemplate: template,
+            time,
+            customization: {
+              primaryText: customTexts.primary,
+              secondaryText: customTexts.secondary,
+              accentText: customTexts.accent,
+              layerColors: Object.fromEntries(colorOverrides),
+            },
+            hiddenLayerIds: hiddenLayers,
+          });
+          const bitmap = await createImageBitmap(frame.image);
+          renderCtx.clearRect(0, 0, template.canvasWidth, template.canvasHeight);
+          renderCtx.drawImage(bitmap, 0, 0, template.canvasWidth, template.canvasHeight);
+          bitmap.close();
 
           // Copy cropped region to recording canvas
           ctx.clearRect(0, 0, width, height);
@@ -1141,14 +1247,14 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         }
 
         if (currentFrame < totalFrames) {
-          requestAnimationFrame(tick);
+          requestAnimationFrame(() => { void tick(); });
         } else {
           mediaRecorder.stop();
           stream.getTracks().forEach((t) => t.stop());
         }
       };
 
-      requestAnimationFrame(tick);
+      requestAnimationFrame(() => { void tick(); });
     });
   };
 
@@ -1242,30 +1348,33 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
       setPublishMessage("Uploading files to clypra-api…");
 
-      const response = await fetch(
-        `${getStudioApiBaseUrl()}/text-templates/upload`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            template: {
-              ...buildCanonicalTemplatePayload(template),
-              description: publishDescription,
-              tags: publishTagsInput
-                .split(",")
-                .map((t) => t.trim())
-                .filter(Boolean),
-              published: isAdmin ? publishApproved : false,
-              creatorName: publishCreatorName,
-              creatorLink: publishCreatorLink,
-            },
-            thumbnailDataUrl: thumbnailUrl,
-            previewDataUrl: videoUrl,
-          }),
+      const token = localStorage.getItem("clypra_auth_token");
+      if (!token) throw new Error("Your session has expired. Please sign in again.");
+      const legacyPayload = {
+        ...buildCanonicalTemplatePayload(template),
+        description: publishDescription,
+        tags: publishTagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+        creatorName: publishCreatorName,
+        creatorLink: publishCreatorLink,
+      };
+      const artifact = canonicalArtifactFromTemplate(legacyPayload as any);
+      artifact.metadata = {
+        ...artifact.metadata,
+        description: publishDescription,
+        tags: publishTagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+        creatorName: publishCreatorName,
+        creatorLink: publishCreatorLink,
+      };
+      const response = await fetch(`${getStudioApiBaseUrl()}/text-templates/submissions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "Idempotency-Key": `template-submit:${template.id}:${Date.now()}`,
+          "X-Clypra-Client": "studio-text-template",
         },
-      );
+        body: JSON.stringify({ artifact, thumbnailDataUrl: thumbnailUrl, previewDataUrl: videoUrl }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -1277,17 +1386,22 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       }
 
       const result = await response.json();
-
-      setPublishStatus("published");
-      if (result.template) {
-        setTemplate(result.template);
+      let finalStatus: "submitted" | "published" = result.status === "pending-review" ? "submitted" : "published";
+      if (isAdmin && publishApproved && result.template?.revisionId) {
+        const approvalResponse = await fetch(`${getStudioApiBaseUrl()}/text-templates/${encodeURIComponent(template.category)}/${encodeURIComponent(template.id)}/revisions/${encodeURIComponent(result.template.revisionId)}/approve`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "X-Clypra-Client": "studio-text-template" },
+        });
+        if (!approvalResponse.ok) throw new Error("Revision submitted, but admin approval failed");
+        finalStatus = "published";
       }
-      const lottieUrl = `${getStudioApiBaseUrl()}/text-templates/${encodeURIComponent(
+      setPublishStatus(finalStatus);
+      const templateUrl = `${getStudioApiBaseUrl()}/text-templates/${encodeURIComponent(
         template.category,
       )}/${encodeURIComponent(template.id)}`;
-      setPublishPrUrl(lottieUrl);
+      setPublishPrUrl(templateUrl);
       setPublishMessage(
-        `${result.message || "Template published successfully"}`,
+        `${result.message || (result.status === "pending-review" ? "Template submitted for approval" : "Template submitted successfully")}`,
       );
     } catch (error) {
       setPublishStatus("failed");
@@ -1316,6 +1430,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const selectedLayer = template?.layers.find(
     (l) => l.id === selectedLayerId,
   ) as any;
+  const templateFps = Number((template as any)?.fps ?? 30);
 
   return (
     <div className="flex h-screen w-screen flex-col bg-[#09090D] text-white overflow-hidden font-sans">
@@ -1881,6 +1996,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 ref={canvasRef}
                 width={template.canvasWidth}
                 height={template.canvasHeight}
+                data-template-preview-state={previewState}
                 className="max-w-full max-h-full rounded-lg border border-[#1A1A26] shadow-lg"
                 style={{
                   width: "auto",
@@ -1890,6 +2006,16 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   objectFit: "contain",
                 }}
               />
+              {previewState === "error" && (
+                <div className="absolute inset-0 flex items-center justify-center bg-[#09090D]/80 p-6 text-center">
+                  <div className="max-w-md rounded-xl border border-red-500/40 bg-[#121219] px-5 py-4 shadow-xl">
+                    <div className="mb-1 flex items-center justify-center gap-2 text-sm font-semibold text-red-300">
+                      <AlertTriangle size={16} /> Preview unavailable
+                    </div>
+                    <p className="text-xs text-[#B7B7C7]">{previewError || "The native renderer could not produce a frame."}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Playback & Customization Controls */}
@@ -1898,6 +2024,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
+                  aria-label={isPlaying ? "Pause template preview" : "Play template preview"}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500 text-black hover:bg-teal-400 transition-colors"
                 >
                   {isPlaying ? <Pause size={18} /> : <Play size={18} />}
@@ -1905,8 +2032,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 <div className="flex-1 flex flex-col gap-1">
                   <div className="flex items-center justify-between text-[10px] font-mono text-[#888899]">
                     <span>
-                      Frame {Math.round(currentTime * 30)} /{" "}
-                      {Math.round(template.duration * 30)}
+                      Frame {Math.round(currentTime * templateFps)} /{" "}
+                      {Math.round(template.duration * templateFps)}
                     </span>
                     <span>
                       {currentTime.toFixed(2)}s / {template.duration.toFixed(1)}
@@ -1917,7 +2044,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     type="range"
                     min={0}
                     max={template.duration}
-                    step={0.033}
+                    step={1 / templateFps}
                     value={currentTime}
                     onChange={(e) => {
                       setIsPlaying(false);
@@ -3185,7 +3312,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           creatorLink={publishCreatorLink}
           placement={publishPlacement}
           thumbnailFrame={thumbnailFrame}
-          durationFrames={Math.round(template.duration * 30)}
+          durationFrames={Math.round(template.duration * templateFps)}
           validationErrors={{}}
           lottieData={template} // pass full template
           thumbnailDataUrl={thumbnailDataUrl || undefined}
@@ -3211,7 +3338,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           onPlacementChange={setPublishPlacement}
           onThumbnailFrameChange={setThumbnailFrame}
           onUseCurrentFrame={() =>
-            setThumbnailFrame(Math.round(currentTime * 30))
+            setThumbnailFrame(Math.round(currentTime * templateFps))
           }
           onPreviewThumbnail={async () => {
             const url = await captureThumbnail();
