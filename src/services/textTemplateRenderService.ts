@@ -1,13 +1,12 @@
 import {
   compileTextTemplate,
   normalizeTextTemplateArtifact,
-  renderEvaluatedSceneToCanvas,
   TemplateRenderer,
   type CompiledTextTemplate,
   type TextTemplateArtifact,
 } from "@clypra-studio/engine";
 import type { TextTemplate as TemplateDefinition } from "@clypra-studio/engine";
-import { getNativeRenderClient, NATIVE_RENDER_CONTRACT_VERSION } from "./nativeRenderClient";
+import { getNativeRenderClient, isRendererReady, NATIVE_RENDER_CONTRACT_VERSION } from "./nativeRenderClient";
 
 export interface TemplateCustomization {
   primaryText?: string;
@@ -94,9 +93,9 @@ function getRasterSurface(width: number, height: number): HTMLCanvasElement {
   canvas.width = width;
   canvas.height = height;
   rasterSurfaceCache.set(key, canvas);
-  // Interactive preview normally uses one half-resolution surface and export
-  // may use one full-resolution surface. Keep this bounded across a session.
-  while (rasterSurfaceCache.size > 3) {
+  // Interactive preview uses dynamic raster surfaces based on zoom & DPR.
+  // Keep cache bounded across a session.
+  while (rasterSurfaceCache.size > 6) {
     const oldest = rasterSurfaceCache.keys().next().value;
     if (!oldest) break;
     rasterSurfaceCache.delete(oldest);
@@ -120,7 +119,14 @@ function hasAnimation(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
   if (Array.isArray(value)) return value.some(hasAnimation);
   const record = value as Record<string, unknown>;
-  if (record.animation || record.keyframes || record.animationTracks) return true;
+  if (record.keyframes && Array.isArray(record.keyframes) && record.keyframes.length > 0) return true;
+  if (record.animationTracks && Array.isArray(record.animationTracks) && record.animationTracks.length > 0) return true;
+  if (record.animation && typeof record.animation === "object") {
+    const anim = record.animation as Record<string, unknown>;
+    const hasIn = anim.in && anim.in !== "none" && Number(anim.inDuration ?? 0) > 0;
+    const hasOut = anim.out && anim.out !== "none" && Number(anim.outDuration ?? 0) > 0;
+    if (hasIn || hasOut) return true;
+  }
   return Object.values(record).some(hasAnimation);
 }
 
@@ -141,6 +147,12 @@ function getCachedArtifact(template: TemplateDefinition): TextTemplateArtifact {
   return artifact;
 }
 
+export interface OnionSkinFrameOptions {
+  enabled: boolean;
+  frameCount: number;
+  frameDelta: number;
+}
+
 export interface TextTemplateFrameOptions {
   artifact: TextTemplateArtifact;
   legacyTemplate?: TemplateDefinition;
@@ -150,6 +162,7 @@ export interface TextTemplateFrameOptions {
   controlValues?: Record<string, unknown>;
   customization?: TemplateCustomization;
   hiddenLayerIds?: ReadonlySet<string>;
+  onionSkin?: OnionSkinFrameOptions;
 }
 
 export type TextTemplatePreviewSchedulerRequest = TextTemplateFrameOptions;
@@ -222,9 +235,9 @@ export class TextTemplatePreviewScheduler {
     traceTemplate("scheduler.start", { generation: requestGeneration, time: request.time });
     try {
       const frame = await this.render(request, controller.signal);
-      if (!this.disposed && !controller.signal.aborted && requestGeneration === this.generation) {
+      if (!this.disposed && !controller.signal.aborted) {
         traceTemplate("scheduler.frame-ready", { generation: requestGeneration, time: request.time });
-        await this.onFrame(frame, () => !this.disposed && !controller.signal.aborted && requestGeneration === this.generation);
+        await this.onFrame(frame, () => !this.disposed && !controller.signal.aborted);
       }
     } catch (error) {
       if (!controller.signal.aborted && !this.disposed) {
@@ -246,7 +259,7 @@ export class TextTemplatePreviewScheduler {
 
 function applyLegacyCustomization(renderer: any, template: TemplateDefinition, customization?: TemplateCustomization, hiddenLayerIds?: ReadonlySet<string>): void {
   for (const layer of template.layers || []) {
-    if (hiddenLayerIds?.has(layer.id)) {
+    if (layer.visible === false || hiddenLayerIds?.has(layer.id)) {
       renderer.updateLayer(layer.id, { opacity: 0 });
       continue;
     }
@@ -266,8 +279,34 @@ function rasterizeCompiled(compiled: CompiledTextTemplate, canvas: HTMLCanvasEle
   if (!ctx) throw new Error("Unable to create template raster context");
   ctx.save();
   ctx.scale(scale, scale);
-  renderEvaluatedSceneToCanvas(compiled.evaluatedScene, ctx);
+  for (const layer of compiled.layers) {
+    if (!layer.visible || layer.opacity <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = layer.opacity;
+    if (layer.type === "text" && layer.text) {
+      const fontSize = (layer.style?.fontSize as number) || 48;
+      const fontFamily = (layer.style?.fontFamily as string) || "sans-serif";
+      const fontWeight = (layer.style?.fontWeight as string | number) || 400;
+      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+      ctx.fillStyle = (layer.style?.textColor as string) || "#ffffff";
+      ctx.textAlign = (layer.style?.textAlign as CanvasTextAlign) || "center";
+      ctx.fillText(layer.text, layer.x, layer.y);
+    } else if (layer.type === "shape") {
+      ctx.fillStyle = (layer.style?.fillColor as string) || "#ffffff";
+      ctx.fillRect(layer.x, layer.y, layer.width, layer.height);
+    }
+    ctx.restore();
+  }
   ctx.restore();
+}
+
+async function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Failed to export raster canvas to blob"));
+    }, "image/png");
+  });
 }
 
 async function renderTextTemplateFrameExclusive(options: {
@@ -294,7 +333,7 @@ async function renderTextTemplateFrameExclusive(options: {
   const compileStartedAt = typeof performance !== "undefined" ? performance.now() : 0;
   const compiled = compileTextTemplate(artifact, { target: "studio", time: options.time, controlValues: options.controlValues });
   const compileTimeMs = typeof performance !== "undefined" ? performance.now() - compileStartedAt : null;
-  const outputScale = Math.max(0.25, Math.min(1, options.outputScale ?? 1));
+  const outputScale = Math.max(0.25, Math.min(4, options.outputScale ?? 1));
   const outputWidth = Math.max(1, Math.round(compiled.width * outputScale));
   const outputHeight = Math.max(1, Math.round(compiled.height * outputScale));
   const quality = options.quality || (outputScale < 1 ? "half" : "full");
@@ -318,79 +357,33 @@ async function renderTextTemplateFrameExclusive(options: {
     applyLegacyCustomization(renderer, options.legacyTemplate, options.customization, options.hiddenLayerIds);
     context.save();
     context.scale(outputScale, outputScale);
-    renderer.drawFrame(context, compiled.time);
+    if (options.onionSkin?.enabled) {
+      renderer.drawOnionSkin(context, compiled.time, {
+        frameCount: options.onionSkin.frameCount,
+        frameDelta: options.onionSkin.frameDelta,
+      });
+    } else {
+      renderer.drawFrame(context, compiled.time);
+    }
     context.restore();
   } else {
     rasterizeCompiled(compiled, canvas, outputScale);
   }
-  const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-  // Scanning every pixel solely for diagnostics made every playback frame do
-  // a second full CPU pass. Sample first; only perform the full diagnostic
-  // scan when verbose tracing is enabled or the sample suggests a blank frame.
-  const verboseTrace = isVerboseTemplateTraceEnabled();
-  let alphaPixels: number | null = null;
-  let sampledAlpha = 0;
-  const sampleStride = Math.max(4, Math.floor(pixels.data.length / 256));
-  for (let index = 3; index < pixels.data.length; index += sampleStride) {
-    if (pixels.data[index] > 0) {
-      sampledAlpha = 1;
-      break;
-    }
-  }
-  if (verboseTrace || sampledAlpha === 0) {
-    alphaPixels = 0;
-    for (let index = 3; index < pixels.data.length; index += 4) {
-      if (pixels.data[index] > 0) alphaPixels += 1;
-    }
-  }
+
+  const blob = await canvasToBlob(canvas);
   traceTemplate("render.rasterized", {
     renderId,
     width: canvas.width,
     height: canvas.height,
-    alphaPixels,
-    sampledAlpha,
     layerCount: compiled.layers.length,
     diagnostics: compiled.diagnostics.length,
     compileTimeMs,
     rasterTimeMs: typeof performance !== "undefined" ? performance.now() - rasterStartedAt : null,
-  }, alphaPixels === 0);
-  const handshake = await getNativeHandshake(signal);
-  traceTemplate("render.gpu", {
-    renderId,
-    state: handshake.gpu.state,
-    available: handshake.gpu.available,
-    adapter: handshake.gpu.adapterName,
-    backend: handshake.gpu.backend,
-    contractVersion: handshake.contractVersion,
-  }, handshake.gpu.state !== "ready" || !handshake.gpu.available);
-  if (signal?.aborted) throw new DOMException("Render cancelled", "AbortError");
-  if (handshake.gpu.state !== "ready" || !handshake.gpu.available) {
-    nativeHandshakePromise = null;
-    throw new Error(handshake.gpu.failureReason || "Native GPU renderer is unavailable");
-  }
-  const nativeStartedAt = typeof performance !== "undefined" ? performance.now() : 0;
-  const result = await getNativeRenderClient().renderFrame({
-    contractVersion: NATIVE_RENDER_CONTRACT_VERSION,
-    requestId: `text-template:${artifact.metadata.id}:${artifact.revision.revisionId}:${compiled.time.toFixed(4)}:${outputWidth}x${outputHeight}:${quality}:${customizationKey}`,
-    frameTime: { frameIndex: Math.floor(compiled.time * compiled.fps), ticks: Math.floor(compiled.time * 1_000_000), timescale: 1_000_000 },
-    project: { schemaVersion: 1, projectRevision: `${artifact.revision.contentHash}:${customizationKey}:${outputWidth}x${outputHeight}:${quality}`, canvasWidth: outputWidth, canvasHeight: outputHeight, clearColor: [0, 0, 0, 0], videoLayers: [], rasterLayers: [{ assetId: `template-raster:${artifact.revision.contentHash}:${customizationKey}:${compiled.time.toFixed(4)}:${outputWidth}x${outputHeight}`, rgba: Array.from(pixels.data), width: outputWidth, height: outputHeight, x: 0, y: 0, rotation: 0, opacity: 1, zIndex: 0, blendMode: "normal", isText: true }], transition: null },
-    outputWidth,
-    outputHeight,
-    quality,
-    colorPolicy: { version: 1, workingSpace: "linear-rec709", outputFormat: "rgba8Srgb", toneMapHdrToSdr: true, displayProfile: "srgb-reference" },
-    renderGraphVersion: 1,
-  }, signal);
-  traceTemplate("render.native-complete", {
-    renderId,
-    requestId: result.requestId,
-    contentType: result.contentType,
-    outputWidth,
-    outputHeight,
-    nativeTimeMs: typeof performance !== "undefined" ? performance.now() - nativeStartedAt : null,
     totalTimeMs: typeof performance !== "undefined" ? performance.now() - renderStartedAt : null,
   });
-  if (staticKey) cacheSet(staticKey, result.image);
-  return { image: result.image, compiled };
+
+  if (staticKey) cacheSet(staticKey, blob);
+  return { image: blob, compiled };
 }
 
 // Thumbnail/export calls can overlap with playback. Serialize the reusable
