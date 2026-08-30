@@ -145,7 +145,7 @@ export function TextEffectsHeader({
             <a href="/studio" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)">
               <LayoutGrid size={13} className="text-(--studio-accent)" /> All labs
             </a>
-            <a href="/lottie" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)">
+            <a href="/studio/text-template" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-white no-underline transition-colors hover:bg-(--studio-hover)">
               <Video size={13} className="text-violet-300" /> Text Templates
             </a>
             {isAdmin && (
