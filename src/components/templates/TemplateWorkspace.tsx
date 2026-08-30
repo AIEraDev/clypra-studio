@@ -92,6 +92,7 @@ import {
   TextTemplatePreviewScheduler,
   warmTextTemplateRenderer,
 } from "../../services/textTemplateRenderService";
+import { getNativeRenderClient } from "../../services/nativeRenderClient";
 import { saveTextTemplateDraft } from "../../services/textTemplateDraftStore";
 import { BezierCurveEditor } from "./controls/BezierCurveEditor";
 import { TextSplitAnimatorControl } from "./controls/TextSplitAnimatorControl";
@@ -215,12 +216,74 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   );
   const [isGeneratingPublishVideo, setIsGeneratingPublishVideo] =
     useState(false);
-  const [publishDescription, setPublishDescription] = useState("");
-  const [publishTagsInput, setPublishTagsInput] = useState("");
+  const [publishDescription, setPublishDescription] = useState(() => {
+    try {
+      const saved = localStorage.getItem("clypra_publish_metadata_draft");
+      if (saved) return JSON.parse(saved).description || "";
+    } catch {}
+    return "";
+  });
+  const [publishTagsInput, setPublishTagsInput] = useState(() => {
+    try {
+      const saved = localStorage.getItem("clypra_publish_metadata_draft");
+      if (saved) return JSON.parse(saved).tagsInput || "";
+    } catch {}
+    return "";
+  });
   const [publishPlacement, setPublishPlacement] =
-    useState<(typeof PLACEMENTS)[number]>("center");
-  const [publishCreatorName, setPublishCreatorName] = useState("");
-  const [publishCreatorLink, setPublishCreatorLink] = useState("");
+    useState<(typeof PLACEMENTS)[number]>(() => {
+      try {
+        const saved = localStorage.getItem("clypra_publish_metadata_draft");
+        if (saved && saved.placement) return JSON.parse(saved).placement;
+      } catch {}
+      return "center";
+    });
+  const [publishCreatorName, setPublishCreatorName] = useState(() => {
+    try {
+      const saved = localStorage.getItem("clypra_publish_metadata_draft");
+      if (saved) return JSON.parse(saved).creatorName || "";
+    } catch {}
+    return "";
+  });
+  const [publishCreatorLink, setPublishCreatorLink] = useState(() => {
+    try {
+      const saved = localStorage.getItem("clypra_publish_metadata_draft");
+      if (saved) return JSON.parse(saved).creatorLink || "";
+    } catch {}
+    return "";
+  });
+
+  // Persist publish metadata to LocalStorage until successfully published
+  useEffect(() => {
+    try {
+      const draft = {
+        description: publishDescription,
+        tagsInput: publishTagsInput,
+        placement: publishPlacement,
+        creatorName: publishCreatorName,
+        creatorLink: publishCreatorLink,
+      };
+      if (
+        publishDescription ||
+        publishTagsInput ||
+        publishCreatorName ||
+        publishCreatorLink
+      ) {
+        localStorage.setItem(
+          "clypra_publish_metadata_draft",
+          JSON.stringify(draft),
+        );
+      }
+    } catch (e) {
+      console.warn("Failed to persist publish metadata draft", e);
+    }
+  }, [
+    publishDescription,
+    publishTagsInput,
+    publishPlacement,
+    publishCreatorName,
+    publishCreatorLink,
+  ]);
 
   // Responsive Aspect Ratio & Onion Skinning
   const [aspectRatio, setAspectRatio] = useState<
@@ -547,6 +610,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     Array<{ id: string; name: string; savedAt: number }>
   >([]);
   const [showSavedTemplates, setShowSavedTemplates] = useState(false);
+  const [showFileMenu, setShowFileMenu] = useState(false);
 
   // Admin API template loading states
   const [isAdmin, setIsAdmin] = useState(false);
@@ -558,6 +622,47 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     string | null
   >(null);
   const [publishApproved, setPublishApproved] = useState(true); // admin publish checkbox
+
+  const [nativeGpuState, setNativeGpuState] = useState<
+    "probing" | "ready" | "live" | "error"
+  >("probing");
+  const [nativeGpuInfo, setNativeGpuInfo] = useState<{
+    adapterName?: string;
+    backend?: string;
+    failureReason?: string;
+  } | null>(null);
+
+  // Probe native GPU WebAssembly/WebGPU compositor
+  useEffect(() => {
+    let cancelled = false;
+    getNativeRenderClient()
+      .handshake()
+      .then((handshake) => {
+        if (cancelled) return;
+        if (handshake.gpu.available && handshake.gpu.state === "ready") {
+          setNativeGpuState("ready");
+          setNativeGpuInfo({
+            adapterName: handshake.gpu.adapterName || "WebGPU Adapter",
+            backend: handshake.gpu.backend || "wgpu",
+          });
+        } else {
+          setNativeGpuState("live");
+          setNativeGpuInfo({
+            adapterName: handshake.gpu.adapterName,
+            backend: handshake.gpu.backend,
+            failureReason: handshake.gpu.failureReason,
+          });
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setNativeGpuState("live");
+        setNativeGpuInfo({ failureReason: String(err) });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Parse JWT token to check if user is admin
   useEffect(() => {
@@ -2141,12 +2246,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            errorData.error ||
-            `Upload failed: ${response.statusText}`,
-        );
+        let errorMsg = `Upload failed (${response.status} ${response.statusText})`;
+        try {
+          const rawText = await response.text();
+          try {
+            const errorData = JSON.parse(rawText);
+            errorMsg = errorData.message || errorData.error || errorMsg;
+          } catch {
+            if (response.status === 404) {
+              errorMsg = "API endpoint /text-templates/submissions is not deployed on the remote worker yet. Please deploy clypra-api via wrangler deploy.";
+            } else if (rawText && rawText.trim().length > 0 && rawText.length < 200) {
+              errorMsg = `Server error (${response.status}): ${rawText.trim()}`;
+            }
+          }
+        } catch {}
+        throw new Error(errorMsg);
       }
 
       const result = await response.json();
@@ -2175,11 +2289,46 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       setPublishMessage(
         `${result.message || (result.status === "pending-review" ? "Template submitted for approval" : "Template submitted successfully")}`,
       );
+
+      // Clean persisted drafts upon successful submission/publishing
+      try {
+        localStorage.removeItem("clypra_publish_metadata_draft");
+        localStorage.removeItem("clypra_canvas_studio_session");
+      } catch {}
+      setPublishDescription("");
+      setPublishTagsInput("");
+      setPublishCreatorName("");
+      setPublishCreatorLink("");
+      setThumbnailDataUrl(null);
+      setPublishVideoDataUrl(null);
+      toast.success(
+        finalStatus === "published"
+          ? "Template published live and draft cleaned!"
+          : "Template submitted for review and draft cleaned!",
+      );
     } catch (error) {
       setPublishStatus("failed");
       setPublishMessage(
         error instanceof Error ? error.message : "Publishing failed",
       );
+    }
+  };
+
+  const handleExportJson = () => {
+    if (!template) return;
+    try {
+      const jsonStr = JSON.stringify(template, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = `${template.id || "template"}.json`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Template JSON exported successfully!");
+    } catch (e) {
+      console.error("Failed to export JSON", e);
+      toast.error("Failed to export template JSON");
     }
   };
 
@@ -2232,6 +2381,28 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               {template.category}
             </span>
           )}
+          {/* Native GPU Indicator Badge matching Text Effects */}
+          <span
+            className={`studio-gpu-pill hidden sm:inline-flex ${
+              nativeGpuState === "ready"
+                ? "ready"
+                : nativeGpuState === "error"
+                  ? "error"
+                  : "live"
+            }`}
+            title={
+              nativeGpuInfo?.adapterName
+                ? `Clypra Native Engine · ${nativeGpuInfo.adapterName} (${nativeGpuInfo.backend || "WebGPU"})`
+                : "Clypra Native GPU Compositor Active"
+            }
+          >
+            <span className="studio-gpu-pill-dot" />
+            {nativeGpuState === "ready"
+              ? "GPU · Ready"
+              : nativeGpuState === "error"
+                ? "GPU · Fallback"
+                : "GPU · Live"}
+          </span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -2271,31 +2442,55 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           )}
           {template && (
             <>
-              <button
-                onClick={handleSaveTemplate}
-                className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5"
-              >
-                <Copy size={13} /> Save Template
-              </button>
-              <button
-                onClick={handleDownloadThumbnail}
-                className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5"
-                title="Download cropped template thumbnail as PNG"
-              >
-                <Download size={13} /> Download PNG
-              </button>
-              <button
-                onClick={() => setShowSavedTemplates(true)}
-                className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5"
-              >
-                <FolderPlus size={13} /> Load ({savedTemplates.length})
-              </button>
-              <button
-                onClick={handleNewTemplate}
-                className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5"
-              >
-                <Plus size={13} /> New
-              </button>
+              {/* File dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowFileMenu((v) => !v)}
+                  className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5"
+                >
+                  <Copy size={13} /> File <ChevronDown size={11} className={`transition-transform ${showFileMenu ? "rotate-180" : ""}`} />
+                </button>
+                {showFileMenu && (
+                  <>
+                    {/* click-outside overlay */}
+                    <div className="fixed inset-0 z-40" onClick={() => setShowFileMenu(false)} />
+                    <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[180px] rounded-xl border border-[#2A2A38] bg-[#121219] shadow-2xl overflow-hidden py-1">
+                      <button
+                        onClick={() => { handleSaveTemplate(); setShowFileMenu(false); }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-[#CCCCD6] hover:bg-[#2A2A38] hover:text-white transition-colors"
+                      >
+                        <Copy size={13} className="shrink-0" /> Save Template
+                      </button>
+                      <button
+                        onClick={() => { handleExportJson(); setShowFileMenu(false); }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-[#CCCCD6] hover:bg-[#2A2A38] hover:text-white transition-colors"
+                      >
+                        <FileJson size={13} className="text-teal-400 shrink-0" /> Export JSON
+                      </button>
+                      <button
+                        onClick={() => { handleDownloadThumbnail(); setShowFileMenu(false); }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-[#CCCCD6] hover:bg-[#2A2A38] hover:text-white transition-colors"
+                      >
+                        <Download size={13} className="shrink-0" /> Download PNG
+                      </button>
+                      <div className="my-1 border-t border-[#2A2A38]" />
+                      <button
+                        onClick={() => { setShowSavedTemplates(true); setShowFileMenu(false); }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-[#CCCCD6] hover:bg-[#2A2A38] hover:text-white transition-colors"
+                      >
+                        <FolderPlus size={13} className="shrink-0" /> Load ({savedTemplates.length})
+                      </button>
+                      <button
+                        onClick={() => { handleNewTemplate(); setShowFileMenu(false); }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-[#CCCCD6] hover:bg-[#2A2A38] hover:text-white transition-colors"
+                      >
+                        <Plus size={13} className="shrink-0" /> New Template
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
               <button
                 onClick={handleGeneratePreview}
                 disabled={isGeneratingPreview}
@@ -2321,6 +2516,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           )}
         </div>
       </header>
+
 
       {/* Saved Templates Modal */}
       {showSavedTemplates && (
@@ -3519,6 +3715,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           : "Auto"}
                     </button>
                   ))}
+                </div>
+
+                <div className="w-px h-4 bg-[#2A2A38]" />
+
+                {/* GPU acceleration chip */}
+                <div
+                  className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20"
+                  title={
+                    nativeGpuInfo?.adapterName
+                      ? `Native GPU Compositor: ${nativeGpuInfo.adapterName} (${nativeGpuInfo.backend || "WebGPU"})`
+                      : "Native GPU Compositor Active"
+                  }
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>GPU: ACCEL</span>
                 </div>
 
                 <div className="w-px h-4 bg-[#2A2A38]" />
