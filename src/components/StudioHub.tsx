@@ -123,7 +123,7 @@ const destinationGroups: StudioDestinationGroup[] = [
         accent: "#a78bfa",
       },
       {
-        href: "/lottie",
+        href: "/studio/text-template",
         label: "Text Templates",
         description: "Design reusable animated templates for the editor template library.",
         icon: FileCode,
