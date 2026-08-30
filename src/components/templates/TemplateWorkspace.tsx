@@ -2657,7 +2657,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       ) : (
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Sidebar Left: Layers Panel */}
-          <aside className="w-72 border-r border-[#2A2A38] bg-[#121219] flex flex-col shrink-0 min-h-0">
+          <aside className="w-80 border-r border-[#2A2A38] bg-[#121219] flex flex-col shrink-0 min-h-0">
             {/* Header with Quick Insert Toolbar */}
             <div className="p-3 border-b border-[#2A2A38] shrink-0 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -2672,7 +2672,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {template.layers.length === 0 ? (
                 <div className="h-40 flex flex-col items-center justify-center border border-dashed border-[#2A2A38] rounded-xl text-center p-4 gap-2">
                   <Layers size={22} className="text-[#2A2A38]" />
@@ -2756,9 +2756,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           {/* Container Header Card */}
                           <div
                             onClick={() => setSelectedLayerId(layer.id)}
-                            className="flex items-center justify-between p-2.5 cursor-pointer select-none"
+                            className="flex items-center justify-between p-2.5 cursor-pointer select-none gap-2"
                           >
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
                               {/* Expand / Collapse toggle */}
                               <button
                                 type="button"
@@ -2766,7 +2766,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                   e.stopPropagation();
                                   toggleContainerCollapse(layer.id);
                                 }}
-                                className="p-0.5 rounded hover:bg-white/10 text-indigo-400 transition-colors"
+                                className="p-1 -ml-1 rounded hover:bg-white/10 text-indigo-400 shrink-0 transition-colors"
                               >
                                 {isCollapsed ? (
                                   <ChevronRight size={13} />
@@ -2776,25 +2776,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                               </button>
 
                               {/* Container Icon */}
-                              <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 shrink-0">
-                                {layout.direction === "row" ? (
-                                  <Rows size={12} />
-                                ) : (
-                                  <Columns size={12} />
-                                )}
+                              <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 shrink-0">
+                                <LayoutGrid size={12} />
                               </div>
 
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-xs font-bold text-white truncate">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="text-xs font-bold text-white truncate leading-tight">
                                     {(layer as any).name || "Flex Container"}
                                   </span>
-                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-bold">
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-semibold shrink-0">
                                     {children.length}{" "}
                                     {children.length === 1 ? "item" : "items"}
                                   </span>
                                 </div>
-                                <p className="text-[9px] font-mono text-indigo-400/80 uppercase font-semibold">
+                                <p className="text-[9px] font-mono text-indigo-400/80 uppercase font-semibold whitespace-nowrap truncate mt-0.5">
                                   Flex {layout.direction || "column"} ·{" "}
                                   {Number(layout.gap || 0)}px gap
                                 </p>
@@ -2921,7 +2917,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           {/* Nested Indented Children Tree */}
                           {!isCollapsed && (
                             <div className="p-2 pt-1.5 bg-[#0D0D15]/60 border-t border-[#222232]">
-                              <div className="border-l-2 border-indigo-500/30 ml-3 pl-2.5 space-y-1.5 py-1">
+                              <div className="border-l-2 border-indigo-500/30 ml-2 pl-2 space-y-1.5 py-1">
                                 {children.length === 0 ? (
                                   <div className="py-2.5 px-2 border border-dashed border-indigo-500/20 rounded-lg text-center">
                                     <p className="text-[10px] text-indigo-300/60 font-semibold">
@@ -2965,21 +2961,21 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                           e.stopPropagation();
                                           setSelectedLayerId(child.id);
                                         }}
-                                        className={`flex flex-col rounded-lg border transition-all cursor-pointer ${
+                                        className={`group flex flex-col rounded-lg border transition-all cursor-pointer ${
                                           isChildSelected
                                             ? "bg-teal-500/15 border-teal-400/70 shadow-sm"
                                             : "bg-[#181826] border-[#2A2A3C] hover:border-[#3E3E56]"
                                         }`}
                                       >
-                                        <div className="flex items-center justify-between p-2 gap-1.5">
-                                          <div className="flex items-center gap-1.5 min-w-0">
+                                        <div className="flex items-center justify-between p-2 gap-2">
+                                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                             <span
                                               className="text-[#555566] hover:text-white cursor-grab shrink-0"
                                               title="Drag to reorder or move out"
                                             >
                                               <Move size={10} />
                                             </span>
-                                            <span className="text-[8px] font-mono font-bold px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 shrink-0">
+                                            <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 shrink-0">
                                               #{childIdx + 1}
                                             </span>
                                             <div className="flex items-center justify-center w-5 h-5 rounded bg-[#222232] text-teal-400 shrink-0">
@@ -3005,16 +3001,14 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                                 />
                                               )}
                                             </div>
-                                            <div className="min-w-0">
+                                            <div className="min-w-0 flex-1">
                                               <p className="text-xs font-semibold text-white truncate leading-tight">
                                                 {child.kind === "text"
-                                                  ? (
-                                                      child.content || "Text"
-                                                    ).substring(0, 18)
+                                                  ? child.content || "Text"
                                                   : (child as any).name ||
                                                     child.kind}
                                               </p>
-                                              <p className="text-[8px] uppercase tracking-wider text-teal-400/70 font-semibold font-mono">
+                                              <p className="text-[8px] uppercase tracking-wider text-teal-400/70 font-semibold font-mono whitespace-nowrap truncate mt-0.5">
                                                 {child.kind}
                                                 {child.kind === "text" &&
                                                 (child as any).backgroundColor
@@ -3025,22 +3019,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                           </div>
 
                                           {/* Child Actions */}
-                                          <div className="flex items-center gap-0.5 shrink-0">
-                                            {/* Eject from container */}
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleMoveLayerToContainer(
-                                                  child.id,
-                                                  null,
-                                                );
-                                              }}
-                                              title="Eject from container (move to root)"
-                                              className="p-1 rounded text-indigo-400 hover:bg-indigo-500/20 hover:text-white transition-colors"
-                                            >
-                                              <CornerDownRight size={11} />
-                                            </button>
+                                          <div className="flex items-center gap-0.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
                                             <button
                                               type="button"
                                               onClick={(e) => {
@@ -3103,8 +3082,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
                                         {/* Stack order if child selected */}
                                         {isChildSelected && (
-                                          <div className="flex items-center justify-between px-2 pb-1.5 border-t border-[#2A2A3C] pt-1">
-                                            <div className="flex items-center gap-0.5">
+                                          <div className="flex items-center justify-between px-2.5 py-1 border-t border-[#2A2A3C] bg-black/20">
+                                            <div className="flex items-center gap-1">
                                               <button
                                                 type="button"
                                                 onClick={(e) => {
@@ -3116,7 +3095,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                                 }}
                                                 disabled={isChildTop}
                                                 title="Move Forward in container"
-                                                className="px-1 py-0.5 rounded text-[8px] font-semibold text-teal-300 hover:bg-teal-500/20 disabled:opacity-30 flex items-center gap-0.5"
+                                                className="px-1.5 py-0.5 rounded text-[8px] font-semibold text-teal-300 hover:bg-teal-500/20 disabled:opacity-30 flex items-center gap-0.5"
                                               >
                                                 <ChevronUp size={9} /> Up
                                               </button>
@@ -3131,7 +3110,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                                 }}
                                                 disabled={isChildBottom}
                                                 title="Move Backward in container"
-                                                className="px-1 py-0.5 rounded text-[8px] font-semibold text-teal-300 hover:bg-teal-500/20 disabled:opacity-30 flex items-center gap-0.5"
+                                                className="px-1.5 py-0.5 rounded text-[8px] font-semibold text-teal-300 hover:bg-teal-500/20 disabled:opacity-30 flex items-center gap-0.5"
                                               >
                                                 <ChevronDown size={9} /> Down
                                               </button>
@@ -3145,7 +3124,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                                   null,
                                                 );
                                               }}
-                                              className="px-1.5 py-0.5 rounded text-[8px] font-bold text-indigo-300 bg-indigo-500/20 hover:bg-indigo-500/30 transition-all flex items-center gap-0.5"
+                                              title="Eject layer from container to canvas root"
+                                              className="px-2 py-0.5 rounded text-[8px] font-bold text-indigo-300 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 transition-all flex items-center gap-1"
                                             >
                                               ⏏ Eject to Root
                                             </button>
@@ -3675,16 +3655,20 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   {selectedLayer.kind === "text" && (
                     <>
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
-                          Static Text Content
-                        </label>
-                        <input
-                          type="text"
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899]">
+                            Static Text Content (Multi-Line)
+                          </label>
+                          <span className="text-[9px] text-[#666677]">Press Enter for new line</span>
+                        </div>
+                        <textarea
+                          rows={3}
                           value={selectedLayer.content}
+                          placeholder="Type text or press Enter for multiple lines..."
                           onChange={(e) =>
                             handleUpdateLayerProperty("content", e.target.value)
                           }
-                          className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                          className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500 font-sans resize-y leading-relaxed"
                         />
                       </div>
 
@@ -3780,6 +3764,58 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                         </div>
                       </div>
 
+                      {/* Typography Multi-Line & Spacing Controls */}
+                      <div className="grid grid-cols-2 gap-2 bg-[#12121c] p-2 rounded-lg border border-[#2A2A38]">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-[9px] font-semibold text-[#888899] uppercase">
+                              Line Spacing
+                            </label>
+                            <span className="text-[9px] font-mono text-teal-300">
+                              {Number(selectedLayer.lineHeight ?? 1.25).toFixed(2)}x
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.8"
+                            max="2.5"
+                            step="0.05"
+                            value={selectedLayer.lineHeight ?? 1.25}
+                            onChange={(e) =>
+                              handleUpdateLayerProperty(
+                                "lineHeight",
+                                parseFloat(e.target.value) || 1.25,
+                              )
+                            }
+                            className="w-full accent-teal-400"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-[9px] font-semibold text-[#888899] uppercase">
+                              Letter Spacing
+                            </label>
+                            <span className="text-[9px] font-mono text-teal-300">
+                              {selectedLayer.letterSpacing ?? 0}px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-5"
+                            max="20"
+                            step="0.5"
+                            value={selectedLayer.letterSpacing ?? 0}
+                            onChange={(e) =>
+                              handleUpdateLayerProperty(
+                                "letterSpacing",
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
+                            className="w-full accent-teal-400"
+                          />
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
@@ -3820,10 +3856,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
-                          Overflow Strategy
+                          Text Overflow & Auto-Wrap Strategy
                         </label>
                         <select
-                          value={selectedLayer.overflow || "clip"}
+                          value={selectedLayer.overflow || "expand-panel"}
                           onChange={(e) =>
                             handleUpdateLayerProperty(
                               "overflow",
@@ -3832,17 +3868,17 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           }
                           className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
                         >
-                          <option value="clip">
-                            clip (Safety Net Clipping)
+                          <option value="expand-panel">
+                            Auto-Expand Box (Hug Multi-Line Text)
                           </option>
                           <option value="wrap">
-                            wrap (Approach 5: Multi-line Word Wrap)
+                            Multi-Line Word Wrap (Wrap to Width / Container)
                           </option>
                           <option value="shrink">
-                            shrink (Approach 1: Auto-Fit/Shrink Font Size)
+                            Auto-Shrink Font Size (Fit in Single Line)
                           </option>
-                          <option value="expand-panel">
-                            expand-panel (Approach 2: Dynamic Panel Expansion)
+                          <option value="clip">
+                            Clip at Boundaries
                           </option>
                         </select>
                       </div>
