@@ -62,8 +62,8 @@ const METADATA = {
     description: "Compose native overlays, layers, data bindings, and reusable visual components.",
     title: "Clypra Studio - Overlay Lab",
   },
-  lottie: {
-    canonical: "https://clypra.abdulkabirmusa.com/lottie",
+  textTemplate: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/text-template",
     description:
       "Professional text animation editor and template creator. Design, customize, and publish templates with advanced layer controls, keyframe animation, and GitHub integration.",
     title: "Clypra Text Templates - Animation Template Editor",
@@ -158,10 +158,20 @@ const routes: RouteObject[] = [
     ),
   },
   {
+    path: "/studio/text-template",
+    element: (
+      <DocumentRoute metadata={METADATA.textTemplate}>
+        <AuthRoute label="Text Templates">{withSuspense(<TemplateWorkspacePage />)}</AuthRoute>
+      </DocumentRoute>
+    ),
+  },
+  {
     path: "/lottie",
     element: (
-      <DocumentRoute metadata={METADATA.lottie}>
-        <AuthRoute label="Text Templates">{withSuspense(<TemplateWorkspacePage />)}</AuthRoute>
+      <DocumentRoute metadata={METADATA.textTemplate}>
+        <AuthRoute label="Text Templates">
+          <Navigate to="/studio/text-template" replace />
+        </AuthRoute>
       </DocumentRoute>
     ),
   },

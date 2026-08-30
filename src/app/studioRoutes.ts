@@ -1,5 +1,6 @@
 export const STUDIO_RAIL_ROUTES = {
   "text-effects": "/studio/text-effects",
+  "text-template": "/studio/text-template",
   audio: "/studio/audio",
   stickers: "/studio/stickers",
   overlays: "/studio/overlays",
@@ -28,6 +29,7 @@ export function isRailItem(value: string | null): value is RailItem {
 
 export function railItemFromPathname(pathname: string): RailItem {
   if (pathname === STUDIO_RAIL_ROUTES["text-effects"]) return "text-effects";
+  if (pathname === STUDIO_RAIL_ROUTES["text-template"]) return "text-template";
 
   const studioSubpath = pathname.match(/^\/studio\/([^/]+)/)?.[1];
   if (!studioSubpath) return "text-effects";
