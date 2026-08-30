@@ -8,11 +8,8 @@ import {
   CheckCircle,
   FileJson,
   Tag,
-  FolderOpen,
-  MapPin,
   Image as ImageIcon,
   ExternalLink,
-  Sparkles,
   Video,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -122,10 +119,6 @@ export function PublishTemplateModal({
   onPublishedChange,
   isAdmin,
 }: PublishTemplateModalProps) {
-  const [activeTab, setActiveTab] = useState<"metadata" | "preview">(
-    "metadata",
-  );
-  const [isGeneratingMetadata, setIsGeneratingMetadata] = useState(false);
 
   if (!open) return null;
 
@@ -140,51 +133,6 @@ export function PublishTemplateModal({
     if (isPublished || isSubmitted) toast.success(publishMessage, { id: "template-publish" });
     else if (isFailed) toast.error(publishMessage, { id: "template-publish" });
   }, [publishMessage, isPublished, isSubmitted, isFailed]);
-
-  const handleGenerateMetadata = async () => {
-    setIsGeneratingMetadata(true);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/ai/template-metadata`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateName,
-          currentId: templateId,
-          currentCategory: category,
-          currentDescription: description,
-          currentTags: tagsInput,
-          lottieData,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || errorData.error || "Failed to generate metadata",
-        );
-      }
-
-      const result = await response.json();
-
-      let mappedCategory = result.category;
-      if (mappedCategory === "title") mappedCategory = "title-card";
-      if (mappedCategory === "outro") mappedCategory = "social";
-
-      if (mappedCategory) onCategoryChange(mappedCategory as TemplateCategory);
-      onTemplateIdChange(result.id);
-      onTemplateNameChange(result.name);
-      onDescriptionChange(result.description);
-      onTagsInputChange(result.tags.join(", "));
-    } catch (error) {
-      console.error("Metadata generation error:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to generate metadata",
-      );
-    } finally {
-      setIsGeneratingMetadata(false);
-    }
-  };
 
   const tags = tagsInput
     .split(",")
@@ -226,69 +174,9 @@ export function PublishTemplateModal({
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-[#2A2A38] bg-[#15151C] shrink-0">
-          <button
-            onClick={() => setActiveTab("metadata")}
-            className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-              activeTab === "metadata"
-                ? "text-teal-300 bg-[#121219] border-b-2 border-teal-500"
-                : "text-[#888899] hover:text-white"
-            }`}
-          >
-            <FileJson size={13} /> Metadata
-          </button>
-          <button
-            onClick={() => setActiveTab("preview")}
-            className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-              activeTab === "preview"
-                ? "text-teal-300 bg-[#121219] border-b-2 border-teal-500"
-                : "text-[#888899] hover:text-white"
-            }`}
-          >
-            <CheckCircle size={13} /> Review
-          </button>
-        </div>
-
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0">
-          {activeTab === "metadata" ? (
-            <>
-              {/* AI Generation Banner */}
-              <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Sparkles size={14} className="text-purple-300 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-bold text-purple-200">
-                        AI-Powered Metadata
-                      </p>
-                      <p className="text-[10px] text-purple-300/80">
-                        Generate category, ID, name, description, and tags using
-                        Gemini
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleGenerateMetadata}
-                    disabled={isGeneratingMetadata || isPublishing}
-                    className="shrink-0 rounded-lg border border-purple-500/40 bg-purple-500/20 px-3 py-1.5 text-[10px] font-bold text-purple-200 hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
-                  >
-                    {isGeneratingMetadata ? (
-                      <>
-                        <Loader2 size={11} className="animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles size={11} />
-                        Generate
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
+          <>
 
               {/* Template ID */}
               <div>
@@ -589,195 +477,7 @@ export function PublishTemplateModal({
                   </div>
                 )}
               </div>
-            </>
-          ) : (
-            <>
-              {/* Review Tab */}
-              <div className="space-y-4">
-                <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
-                  <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-                    <FileJson size={14} className="text-teal-300" /> Template
-                    Information
-                  </h4>
-                  <div className="space-y-2.5">
-                    <div className="flex items-start gap-2">
-                      <span className="text-[10px] text-[#888899] w-24 shrink-0">
-                        ID:
-                      </span>
-                      <span className="text-[10px] font-mono text-white">
-                        {templateId || (
-                          <span className="text-red-400">Not set</span>
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[10px] text-[#888899] w-24 shrink-0">
-                        Name:
-                      </span>
-                      <span className="text-[10px] text-white">
-                        {templateName || (
-                          <span className="text-red-400">Not set</span>
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[10px] text-[#888899] w-24 shrink-0">
-                        Description:
-                      </span>
-                      <span className="text-[10px] text-[#CCCCD6]">
-                        {description || (
-                          <span className="text-[#555566]">No description</span>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
-                    <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-                      <FolderOpen size={14} className="text-purple-300" />{" "}
-                      Category
-                    </h4>
-                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-1.5">
-                      <Tag size={12} className="text-purple-300" />
-                      <span className="text-[11px] font-semibold text-purple-200">
-                        {category}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
-                    <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-                      <MapPin size={14} className="text-blue-300" /> Placement
-                    </h4>
-                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-2.5 py-1.5">
-                      <span className="text-[11px] font-semibold text-blue-200">
-                        {placement}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {tags.length > 0 && (
-                  <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
-                    <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-                      <Tag size={14} className="text-teal-300" /> Tags
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {tags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center rounded-lg border border-[#2A2A38] bg-[#15151C] px-2.5 py-1 text-[10px] font-medium text-[#CCCCD6]"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {(creatorName || creatorLink) && (
-                  <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
-                    <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-                      <ExternalLink size={14} className="text-teal-300" />{" "}
-                      Creator Credits
-                    </h4>
-                    <div className="space-y-2 text-[10px]">
-                      {creatorName && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#888899] w-24 shrink-0">
-                            Name:
-                          </span>
-                          <span className="text-white font-semibold">
-                            {creatorName}
-                          </span>
-                        </div>
-                      )}
-                      {creatorLink && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#888899] w-24 shrink-0">
-                            Social Link:
-                          </span>
-                          <a
-                            href={creatorLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-teal-400 hover:underline flex items-center gap-1"
-                          >
-                            {creatorLink} <ExternalLink size={10} />
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
-                    <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-                      <ImageIcon size={14} className="text-amber-300" />{" "}
-                      Thumbnail
-                    </h4>
-                    <div className="text-[10px] text-[#CCCCD6]">
-                      Frame{" "}
-                      <span className="font-mono text-white">
-                        {thumbnailFrame}
-                      </span>{" "}
-                      of{" "}
-                      <span className="font-mono text-white">
-                        {durationFrames - 1}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-[#2A2A38] bg-[#0B0B10] p-4">
-                    <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-                      <Video size={14} className="text-purple-300" /> Preview
-                      Video
-                    </h4>
-                    <div className="text-[10px] text-[#CCCCD6]">
-                      {isGeneratingVideo ? (
-                        <span className="flex items-center gap-1.5 text-amber-400">
-                          <Loader2 size={12} className="animate-spin" />{" "}
-                          Generating...
-                        </span>
-                      ) : previewVideoUrl ? (
-                        <span className="text-teal-300 font-semibold">
-                          Ready (WebM)
-                        </span>
-                      ) : (
-                        <span className="text-red-400">Not generated</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {hasErrors && (
-                  <div className="rounded-xl border border-red-900/40 bg-red-950/30 p-4">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle
-                        size={16}
-                        className="text-red-400 shrink-0 mt-0.5"
-                      />
-                      <div>
-                        <h4 className="text-xs font-bold text-red-300 mb-2">
-                          Validation Errors
-                        </h4>
-                        <ul className="space-y-1 text-[10px] text-red-400">
-                          {Object.entries(validationErrors).map(
-                            ([key, message]) => (
-                              <li key={key}>• {message}</li>
-                            ),
-                          )}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+          </>
         </div>
 
         {/* Footer */}
