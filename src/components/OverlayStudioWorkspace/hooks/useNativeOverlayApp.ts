@@ -1,170 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
   evaluateOverlayDocument,
-  type EvaluatedNode,
+  renderEvaluatedSceneToCanvas,
   type OverlayDocument,
 } from "@clypra-studio/engine";
 import type { NativeLabFrameRequest } from "../../../services/nativeRenderClient";
-import { getNativeRenderClient } from "../../../services/nativeRenderClient";
+import { getNativeRenderClient, NATIVE_RENDER_CONTRACT_VERSION } from "../../../services/nativeRenderClient";
 
 type NativeOverlayState = "probing" | "native" | "fallback";
-
-function alpha(value: number | undefined, fallback = 1): number {
-  if (value === undefined) return fallback;
-  return value > 1 ? value / 100 : Math.max(0, Math.min(1, value));
-}
-
-function roundedRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-) {
-  const r = Math.max(0, Math.min(radius, Math.min(width, height) / 2));
-  ctx.beginPath();
-  ctx.roundRect(x, y, width, height, r);
-}
-
-function drawText(
-  ctx: CanvasRenderingContext2D,
-  node: EvaluatedNode,
-  text: string,
-) {
-  const style = node.style;
-  const size = style.fontSize ?? 20;
-  const weight = style.fontWeight ?? "400";
-  const family = style.fontFamily ?? "Inter, sans-serif";
-  const lineHeight = (style.lineHeight ?? 1.2) * size;
-  const maxWidth = Math.max(1, node.transform.width);
-  const words = text.split(/\s+/);
-  const lines: string[] = [];
-  let line = "";
-  for (const word of words) {
-    const candidate = line ? `${line} ${word}` : word;
-    if (line && ctx.measureText(candidate).width > maxWidth) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = candidate;
-    }
-  }
-  if (line || !lines.length) lines.push(line);
-  const maxLines = (style as EvaluatedStyleWithExtras).maxLines;
-  const visibleLines = maxLines ? lines.slice(0, maxLines) : lines;
-  ctx.font = `${weight} ${size}px ${family}`;
-  ctx.fillStyle = style.textColor ?? style.fillColor ?? "#ffffff";
-  ctx.textAlign = style.textAlign ?? "left";
-  ctx.textBaseline = "top";
-  const x =
-    style.textAlign === "center"
-      ? maxWidth / 2
-      : style.textAlign === "right"
-      ? maxWidth
-      : 0;
-  visibleLines.forEach((value, index) =>
-    ctx.fillText(value, x, index * lineHeight, maxWidth),
-  );
-}
-
-type EvaluatedStyleWithExtras = EvaluatedNode["style"] & { maxLines?: number };
-
-function drawEvaluatedNode(ctx: CanvasRenderingContext2D, node: EvaluatedNode) {
-  if (!node.visible || node.style.opacity <= 0.001) return;
-  const { x, y, width, height, rotation, scaleX, scaleY } = node.transform;
-  const style = node.style;
-  ctx.save();
-  ctx.translate(x + width / 2, y + height / 2);
-  ctx.rotate((rotation * Math.PI) / 180);
-  ctx.scale(scaleX || 1, scaleY || 1);
-  ctx.globalAlpha *= alpha(style.opacity);
-  if (style.shadowColor || style.shadowBlur) {
-    ctx.shadowColor = style.shadowColor ?? "rgba(0,0,0,0.5)";
-    ctx.shadowBlur = style.shadowBlur ?? 0;
-  }
-  ctx.translate(-width / 2, -height / 2);
-
-  const fill =
-    style.fillColor ?? (node.type === "shape" ? "#334155" : undefined);
-  const fillOpacity = alpha(style.fillOpacity);
-  if (style.fillGradient?.colors?.length) {
-    const gradient =
-      style.fillGradient.type === "radial"
-        ? ctx.createRadialGradient(
-            width / 2,
-            height / 2,
-            0,
-            width / 2,
-            height / 2,
-            Math.max(width, height) / 2,
-          )
-        : ctx.createLinearGradient(0, 0, width, height);
-    style.fillGradient.colors.forEach((color, index) =>
-      gradient.addColorStop(
-        index / Math.max(1, style.fillGradient!.colors.length - 1),
-        color,
-      ),
-    );
-    ctx.fillStyle = gradient;
-    ctx.globalAlpha *= fillOpacity;
-    roundedRect(ctx, 0, 0, width, height, style.borderRadius ?? 0);
-    ctx.fill();
-    ctx.globalAlpha /= Math.max(0.001, fillOpacity);
-  } else if (fill) {
-    ctx.fillStyle = fill;
-    ctx.globalAlpha *= fillOpacity;
-    roundedRect(ctx, 0, 0, width, height, style.borderRadius ?? 0);
-    ctx.fill();
-    ctx.globalAlpha /= Math.max(0.001, fillOpacity);
-  }
-
-  if (style.strokeColor && (style.strokeWidth ?? 0) > 0) {
-    ctx.strokeStyle = style.strokeColor;
-    ctx.lineWidth = style.strokeWidth ?? 1;
-    roundedRect(ctx, 0, 0, width, height, style.borderRadius ?? 0);
-    ctx.stroke();
-  }
-
-  if (
-    node.type === "text" ||
-    node.type === "rich-text" ||
-    node.type === "metric" ||
-    node.type === "callout" ||
-    node.type === "annotation"
-  ) {
-    const content =
-      node.content?.text ??
-      node.content?.formattedValue ??
-      node.content?.props?.body ??
-      node.content?.props?.label ??
-      "";
-    if (content) drawText(ctx, node, content);
-  } else if (
-    node.type === "line" ||
-    node.type === "divider" ||
-    node.type === "connector"
-  ) {
-    ctx.strokeStyle = style.strokeColor ?? "#94a3b8";
-    ctx.lineWidth = style.strokeWidth ?? 2;
-    ctx.beginPath();
-    ctx.moveTo(0, height / 2);
-    ctx.lineTo(width, height / 2);
-    ctx.stroke();
-  } else if (
-    node.type === "media" ||
-    node.type === "video" ||
-    node.type === "lottie"
-  ) {
-    ctx.fillStyle = "rgba(30,41,59,0.65)";
-    ctx.fillRect(0, 0, width, height);
-    ctx.strokeStyle = "rgba(148,163,184,0.65)";
-    ctx.strokeRect(4, 4, Math.max(0, width - 8), Math.max(0, height - 8));
-  }
-
-  ctx.restore();
-  node.children?.forEach((child) => drawEvaluatedNode(ctx, child));
-}
 
 function rasterizeDocument(
   doc: OverlayDocument,
@@ -175,7 +18,6 @@ function rasterizeDocument(
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx)
     throw new Error("Overlay native bridge could not create a raster context");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
   const scene = evaluateOverlayDocument(
     doc,
     {
@@ -186,15 +28,9 @@ function rasterizeDocument(
     },
     currentTime,
   );
-  if (
-    !hasReferenceVideo &&
-    scene.canvas.backgroundColor &&
-    scene.canvas.backgroundColor !== "transparent"
-  ) {
-    ctx.fillStyle = scene.canvas.backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
-  scene.nodes.forEach((node) => drawEvaluatedNode(ctx, node));
+  renderEvaluatedSceneToCanvas(scene, ctx, {
+    background: !hasReferenceVideo,
+  });
   return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
@@ -265,7 +101,7 @@ export function useNativeOverlayApp(
             raster,
           );
           const request: NativeLabFrameRequest = {
-            contractVersion: 1,
+            contractVersion: NATIVE_RENDER_CONTRACT_VERSION,
             requestId: `studio-overlay:${Date.now()}`,
             frameTime: {
               frameIndex: Math.floor(time * 60),
