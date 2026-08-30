@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /studio
 Disallow: /lottie
+Disallow: /studio/text-template
 
 Sitemap: https://clypra.abdulkabirmusa.com/sitemap.xml
