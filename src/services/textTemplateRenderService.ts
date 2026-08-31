@@ -7,6 +7,7 @@ import {
 } from "@clypra-studio/engine";
 import type { TextTemplate as TemplateDefinition } from "@clypra-studio/engine";
 import { getNativeRenderClient, isRendererReady, NATIVE_RENDER_CONTRACT_VERSION } from "./nativeRenderClient";
+import { recordStudioTextRender } from "./textPerformanceTelemetry";
 
 export interface TemplateCustomization {
   primaryText?: string;
@@ -47,31 +48,10 @@ const canonicalArtifactCache = new WeakMap<object, TextTemplateArtifact>();
 const staticTemplateCache = new WeakMap<object, boolean>();
 const rasterSurfaceCache = new Map<string, HTMLCanvasElement>();
 let renderSequence = 0;
-let lastTraceAt = 0;
-
-function isVerboseTemplateTraceEnabled(): boolean {
-  if (!import.meta.env.DEV) return false;
-  try {
-    return globalThis.localStorage?.getItem("clypra:debug:text-template") === "1";
-  } catch {
-    return false;
-  }
-}
-
 function traceTemplate(stage: string, details: Record<string, unknown> = {}, force = false): void {
-  if (!import.meta.env.DEV) return;
-  const now = typeof performance !== "undefined" ? performance.now() : 0;
-  // Playback can produce several renders per second. Keep normal tracing
-  // bounded; errors and explicit debug mode are always emitted.
-  let explicit = false;
-  try {
-    explicit = globalThis.localStorage?.getItem("clypra:debug:text-template") === "1";
-  } catch {
-    // Storage can be unavailable in privacy-restricted browser contexts.
-  }
-  if (!force && !explicit && now - lastTraceAt < 350) return;
-  lastTraceAt = now;
-  console.debug("[text-template]", stage, details);
+  void stage;
+  void details;
+  void force;
 }
 
 function cacheSet(key: string, value: Blob): void {
@@ -318,7 +298,10 @@ async function renderTextTemplateFrameExclusive(options: {
     : null;
   if (staticKey) {
     const cachedImage = staticFrameCache.get(staticKey);
-    if (cachedImage) return { image: cachedImage, compiled };
+    if (cachedImage) {
+      recordStudioTextRender({ kind: "template", phase: "interactive-preview", compileUs: Math.round((compileTimeMs || 0) * 1000), rasterUs: 0, totalTimeUs: Math.round((compileTimeMs || 0) * 1000), outputPixels: outputWidth * outputHeight, cacheHit: true });
+      return { image: cachedImage, compiled };
+    }
   }
   const rasterStartedAt = typeof performance !== "undefined" ? performance.now() : 0;
   const canvas = getRasterSurface(outputWidth, outputHeight);
@@ -357,6 +340,9 @@ async function renderTextTemplateFrameExclusive(options: {
   const finalRender = renderAtTime(compiled.time);
 
   const blob = await canvasToBlob(canvas);
+  const rasterTimeMs = typeof performance !== "undefined" ? performance.now() - rasterStartedAt : 0;
+  const totalTimeMs = typeof performance !== "undefined" ? performance.now() - renderStartedAt : 0;
+  recordStudioTextRender({ kind: "template", phase: "interactive-preview", compileUs: Math.round((compileTimeMs || 0) * 1000), rasterUs: Math.round(rasterTimeMs * 1000), totalTimeUs: Math.round(totalTimeMs * 1000), outputPixels: canvas.width * canvas.height, cacheHit: false });
   traceTemplate("render.rasterized", {
     renderId,
     width: canvas.width,
@@ -364,8 +350,8 @@ async function renderTextTemplateFrameExclusive(options: {
     layerCount: compiled.layers.length,
     diagnostics: compiled.diagnostics.length,
     compileTimeMs,
-    rasterTimeMs: typeof performance !== "undefined" ? performance.now() - rasterStartedAt : null,
-    totalTimeMs: typeof performance !== "undefined" ? performance.now() - renderStartedAt : null,
+    rasterTimeMs,
+    totalTimeMs,
   });
 
   if (staticKey) cacheSet(staticKey, blob);
@@ -399,6 +385,7 @@ export function renderTextTemplatePreviewToCanvas(
   canvas: HTMLCanvasElement,
   options: Pick<TextTemplateFrameOptions, "artifact" | "time" | "controlValues" | "customization" | "hiddenLayerIds">,
 ): CompiledTextTemplate {
+  const startedAt = typeof performance !== "undefined" ? performance.now() : 0;
   const { artifact } = options;
   const renderArtifact = options.hiddenLayerIds?.size
     ? {
@@ -427,6 +414,8 @@ export function renderTextTemplatePreviewToCanvas(
     artifact: renderArtifact,
     context: { environment: "studio", time: options.time, width, height, controlValues },
   });
+  const totalTimeMs = typeof performance !== "undefined" ? performance.now() - startedAt : 0;
+  recordStudioTextRender({ kind: "template", phase: "interactive-preview", compileUs: 0, rasterUs: Math.round(totalTimeMs * 1000), totalTimeUs: Math.round(totalTimeMs * 1000), outputPixels: width * height, cacheHit: false });
   return result.compiledTemplate ?? compileTextTemplate(renderArtifact, {
     target: "studio",
     time: options.time,
