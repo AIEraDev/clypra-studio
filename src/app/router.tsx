@@ -21,6 +21,8 @@ const TemplateWorkspacePage = lazy(() => import("../pages/TemplateWorkspacePage"
 const EffectGraphSandboxPage = lazy(() => import("../pages/EffectGraphSandboxPage"));
 const PerformanceAdminPage = lazy(() => import("../pages/PerformanceAdminPage"));
 const PreviewPerformanceAdminPage = lazy(() => import("../pages/PreviewPerformanceAdminPage"));
+const AudioPerformanceAdminPage = lazy(() => import("../pages/AudioPerformanceAdminPage"));
+const TextPerformanceAdminPage = lazy(() => import("../pages/TextPerformanceAdminPage"));
 const VideoLabPage = lazy(() => import("../pages/labs/VideoLabPage"));
 const TransitionLabPage = lazy(() => import("../pages/labs/TransitionLabPage"));
 const BodyLabPage = lazy(() => import("../pages/labs/BodyLabPage"));
@@ -116,6 +118,18 @@ const METADATA = {
     description:
       "Clypra Studio live comparison of WebView DOM readback and native program preview surface performance.",
     title: "Clypra Studio - Program Preview Performance",
+  },
+  adminAudioPerformance: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/admin/performance/audio",
+    description:
+      "Clypra Studio live analysis of Native CPAL and Web Audio playback health, callback cost, buffering, underruns, and clock drift.",
+    title: "Clypra Studio - Audio Performance",
+  },
+  adminTextPerformance: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/admin/performance/text",
+    description:
+      "Clypra Studio live analysis of normal text, text effects, and text template rendering stages.",
+    title: "Clypra Studio - Text Performance",
   },
 } satisfies Record<string, RouteMetadata>;
 
@@ -293,6 +307,22 @@ const routes: RouteObject[] = [
       >
         <FilterLabPage />
       </AuthLabRoute>
+    ),
+  },
+  {
+    path: `${STUDIO_RAIL_ROUTES.admin}/performance/audio`,
+    element: (
+      <DocumentRoute metadata={METADATA.adminAudioPerformance}>
+        <AdminRoute label="Audio Performance">{withSuspense(<AudioPerformanceAdminPage />)}</AdminRoute>
+      </DocumentRoute>
+    ),
+  },
+  {
+    path: `${STUDIO_RAIL_ROUTES.admin}/performance/text`,
+    element: (
+      <DocumentRoute metadata={METADATA.adminTextPerformance}>
+        <AdminRoute label="Text Performance">{withSuspense(<TextPerformanceAdminPage />)}</AdminRoute>
+      </DocumentRoute>
     ),
   },
   {
