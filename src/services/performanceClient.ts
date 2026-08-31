@@ -139,6 +139,27 @@ export interface SessionRollupData {
   avgCacheHitRatio: number;
 }
 
+export interface PreviewComparisonCohort {
+  view: "webview" | "native";
+  surface: "dom-canvas" | "native-surface";
+  runtimeEnvironment: "development" | "production";
+  sampleCount: number;
+  p50RenderTimeUs: number;
+  p95RenderTimeUs: number;
+  p99RenderTimeUs: number;
+  droppedFrameRatioP95: number;
+  p95ReadbackUs: number;
+  p95PresentUs: number;
+  jankEvents: number;
+  meetsSLA: boolean;
+}
+
+export interface PreviewComparisonData {
+  workloadMode: string;
+  totalSampleSize: number;
+  cohorts: PreviewComparisonCohort[];
+}
+
 export const performanceClient = {
   async getOSComparison(workload = "playback", resolution = "4k", codec = "hevc"): Promise<OSComparisonData | null> {
     try {
@@ -153,13 +174,14 @@ export const performanceClient = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       const rows = json.comparison || json.osMatrix || [];
+      if (rows.length === 0) return null;
       return {
         ...json,
         comparison: rows,
         osMatrix: rows,
       };
     } catch {
-      return this.getLocalFallbackOSComparison();
+      return null;
     }
   },
 
@@ -173,12 +195,13 @@ export const performanceClient = {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
+      if ((json.gpuMatrix || []).length === 0) return null;
       return {
         ...json,
         gpuMatrix: json.gpuMatrix || [],
       };
     } catch {
-      return this.getLocalFallbackHardwareComparison();
+      return null;
     }
   },
 
@@ -197,7 +220,7 @@ export const performanceClient = {
         anomalies: json.anomalies || [],
       };
     } catch {
-      return this.getLocalFallbackAnomalies();
+      return null;
     }
   },
 
@@ -213,7 +236,7 @@ export const performanceClient = {
         fallbackBreakdown: json.fallbackBreakdown || [],
       };
     } catch {
-      return this.getLocalFallbackFallbacks();
+      return null;
     }
   },
 
@@ -229,7 +252,7 @@ export const performanceClient = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch {
-      return this.getLocalFallbackReleaseRegression();
+      return null;
     }
   },
 
@@ -241,42 +264,7 @@ export const performanceClient = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch {
-      return {
-        suites: [
-          {
-            suiteId: "clypra-suite-4k60-hevc10",
-            name: "4K 60fps HEVC 10-bit HDR10 Playback Cadence",
-            description: "High-stress 4K 10-bit playback testing zero-copy GPU decoder throughput and P99 frame pacing.",
-            targetResolution: "4k",
-            targetFps: 60,
-            testCasesCount: 4,
-          },
-          {
-            suiteId: "clypra-suite-seek-cold-4k",
-            name: "4K 60fps Cold Keyframe Seek Response",
-            description: "Rapid timeline random seeking evaluating demuxer seeking, keyframe seek distance, and first-frame visible latency.",
-            targetResolution: "4k",
-            targetFps: 60,
-            testCasesCount: 5,
-          },
-          {
-            suiteId: "clypra-suite-vfr-scrub-120",
-            name: "1080p 120fps VFR High-Speed Scrub",
-            description: "Variable frame rate scrubbing evaluating timeline timebase interpolation without audio drift.",
-            targetResolution: "1080p",
-            targetFps: 120,
-            testCasesCount: 3,
-          },
-          {
-            suiteId: "clypra-suite-prores-8k-export",
-            name: "8K ProRes 422 Real-time Shader Composite",
-            description: "Extreme bandwidth export pipeline testing multi-layer blending, color grade shaders, and NVENC/VideoToolbox export.",
-            targetResolution: "8k",
-            targetFps: 60,
-            testCasesCount: 2,
-          },
-        ],
-      };
+      return null;
     }
   },
 
@@ -292,7 +280,7 @@ export const performanceClient = {
         cohorts: json.cohorts || [],
       };
     } catch {
-      return this.getLocalFallbackExportComparison();
+      return null;
     }
   },
 
@@ -304,7 +292,26 @@ export const performanceClient = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch {
-      return this.getLocalFallbackSessionRollups();
+      return null;
+    }
+  },
+
+  async getPreviewComparison(workload = "playback"): Promise<PreviewComparisonData | null> {
+    try {
+      const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/preview`);
+      url.searchParams.set("workload", workload);
+      const res = await fetch(url.toString(), {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return {
+        workloadMode: json.workloadMode || workload,
+        totalSampleSize: json.totalSampleSize || 0,
+        cohorts: json.cohorts || [],
+      };
+    } catch {
+      return null;
     }
   },
 
