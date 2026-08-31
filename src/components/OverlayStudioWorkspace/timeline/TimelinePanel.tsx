@@ -303,7 +303,7 @@ export function TimelinePanel({
               return (
                 <React.Fragment key={t.nodeId}>
                   <div
-                    className="h-7 px-2 flex items-center justify-between border-b border-[#1A1A24] hover:bg-white/[0.02] cursor-pointer"
+                    className="h-7 px-2 flex items-center justify-between border-b border-[#1A1A24] hover:bg-white/2 cursor-pointer"
                     onClick={() => toggleExpand(t.nodeId)}
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
