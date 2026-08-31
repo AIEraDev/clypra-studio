@@ -152,6 +152,14 @@ const adminDestinations: StudioDestination[] = [
     status: "Live API comparison",
   },
   {
+    href: "/studio/admin/performance/text",
+    label: "Text Performance",
+    description: "Compare normal text, Studio effects, and templates across their real rendering stages.",
+    icon: Type,
+    accent: "#a78bfa",
+    status: "Live API comparison",
+  },
+  {
     href: "/studio/admin",
     label: "Admin Console",
     description: "Review submissions and manage Studio infrastructure as an administrator.",
