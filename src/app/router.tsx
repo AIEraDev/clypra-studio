@@ -20,6 +20,7 @@ const TextEffectsLabPage = lazy(() => import("../pages/TextEffectsLabPage"));
 const TemplateWorkspacePage = lazy(() => import("../pages/TemplateWorkspacePage"));
 const EffectGraphSandboxPage = lazy(() => import("../pages/EffectGraphSandboxPage"));
 const PerformanceAdminPage = lazy(() => import("../pages/PerformanceAdminPage"));
+const PreviewPerformanceAdminPage = lazy(() => import("../pages/PreviewPerformanceAdminPage"));
 const VideoLabPage = lazy(() => import("../pages/labs/VideoLabPage"));
 const TransitionLabPage = lazy(() => import("../pages/labs/TransitionLabPage"));
 const BodyLabPage = lazy(() => import("../pages/labs/BodyLabPage"));
@@ -109,6 +110,12 @@ const METADATA = {
     description:
       "Clypra Studio Production Performance & Telemetry Intelligence Console. Analyze cross-OS latency matrices, GPU bottlenecks, and isolated edge cases.",
     title: "Clypra Studio - Performance Intelligence",
+  },
+  adminPreviewPerformance: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/admin/performance/preview",
+    description:
+      "Clypra Studio live comparison of WebView DOM readback and native program preview surface performance.",
+    title: "Clypra Studio - Program Preview Performance",
   },
 } satisfies Record<string, RouteMetadata>;
 
@@ -286,6 +293,14 @@ const routes: RouteObject[] = [
       >
         <FilterLabPage />
       </AuthLabRoute>
+    ),
+  },
+  {
+    path: `${STUDIO_RAIL_ROUTES.admin}/performance/preview`,
+    element: (
+      <DocumentRoute metadata={METADATA.adminPreviewPerformance}>
+        <AdminRoute label="Program Preview Performance">{withSuspense(<PreviewPerformanceAdminPage />)}</AdminRoute>
+      </DocumentRoute>
     ),
   },
   {
