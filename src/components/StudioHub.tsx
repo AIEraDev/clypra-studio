@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Beaker,
   FileCode,
+  Eye,
   Layers,
   Music2,
   Palette,
@@ -141,6 +142,14 @@ const adminDestinations: StudioDestination[] = [
     icon: Activity,
     accent: "#38bdf8",
     status: "Live telemetry",
+  },
+  {
+    href: "/studio/admin/performance/preview",
+    label: "Program Preview Performance",
+    description: "Compare live WebView readback and native preview-surface performance from real API telemetry.",
+    icon: Eye,
+    accent: "#34d399",
+    status: "Live API comparison",
   },
   {
     href: "/studio/admin",
