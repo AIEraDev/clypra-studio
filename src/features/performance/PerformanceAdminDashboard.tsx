@@ -38,7 +38,14 @@ import {
 
 export function PerformanceAdminDashboard() {
   const [activeSubTab, setActiveSubTab] = useState<
-    "matrix" | "hardware" | "exports" | "sessions" | "anomalies" | "fallbacks" | "releases" | "suites"
+    | "matrix"
+    | "hardware"
+    | "exports"
+    | "sessions"
+    | "anomalies"
+    | "fallbacks"
+    | "releases"
+    | "suites"
   >("matrix");
 
   // Filters
@@ -49,11 +56,15 @@ export function PerformanceAdminDashboard() {
   // Data states are populated only by live API responses.
   const [osData, setOsData] = useState<OSComparisonData | null>(null);
   const [hwData, setHwData] = useState<HardwareComparisonData | null>(null);
-  const [exportData, setExportData] = useState<ExportComparisonData | null>(null);
-  const [sessionData, setSessionRollupData] = useState<SessionRollupData | null>(null);
+  const [exportData, setExportData] = useState<ExportComparisonData | null>(
+    null,
+  );
+  const [sessionData, setSessionRollupData] =
+    useState<SessionRollupData | null>(null);
   const [anomaliesData, setAnomaliesData] = useState<AnomalyItem[]>([]);
   const [fallbacksData, setFallbacksData] = useState<FallbackData | null>(null);
-  const [releasesData, setReleasesData] = useState<ReleaseRegressionData | null>(null);
+  const [releasesData, setReleasesData] =
+    useState<ReleaseRegressionData | null>(null);
   const [suitesData, setSuitesData] = useState<BenchmarkSuite[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -61,14 +72,14 @@ export function PerformanceAdminDashboard() {
 
   const hasLiveData = Boolean(
     osData?.comparison?.length ||
-      osData?.osMatrix?.length ||
-      hwData?.gpuMatrix?.length ||
-      exportData?.cohorts?.length ||
-      sessionData?.totalRollupSessions ||
-      anomaliesData.length ||
-      fallbacksData?.fallbackBreakdown?.length ||
-      releasesData?.totalBaseSamples ||
-      releasesData?.totalTargetSamples,
+    osData?.osMatrix?.length ||
+    hwData?.gpuMatrix?.length ||
+    exportData?.cohorts?.length ||
+    sessionData?.totalRollupSessions ||
+    anomaliesData.length ||
+    fallbacksData?.fallbackBreakdown?.length ||
+    releasesData?.totalBaseSamples ||
+    releasesData?.totalTargetSamples,
   );
 
   const loadAllData = async () => {
@@ -157,7 +168,8 @@ export function PerformanceAdminDashboard() {
                   </span>
                 </div>
                 <p className="text-[11px] text-(--studio-muted)">
-                  Cross-OS Matrix · GPU Bottleneck Profiler · Edge Case Isolation
+                  Cross-OS Matrix · GPU Bottleneck Profiler · Edge Case
+                  Isolation
                 </p>
               </div>
             </div>
@@ -177,7 +189,9 @@ export function PerformanceAdminDashboard() {
             >
               <RefreshCw
                 size={13}
-                className={refreshing ? "animate-spin text-(--studio-accent)" : ""}
+                className={
+                  refreshing ? "animate-spin text-(--studio-accent)" : ""
+                }
               />
               {refreshing ? "Refreshing…" : "Refresh"}
             </button>
@@ -210,9 +224,12 @@ export function PerformanceAdminDashboard() {
                 <strong className="text-white">
                   in development and production environments
                 </strong>{" "}
-                solely to compare preview paths and analyze edge-case hardware bottlenecks, frame pacing regressions, and driver anomalies across operating systems.{" "}
+                solely to compare preview paths and analyze edge-case hardware
+                bottlenecks, frame pacing regressions, and driver anomalies
+                across operating systems.{" "}
                 <span className="text-sky-200 font-medium">
-                  Zero video files, media content, project titles, or user identities are ever accessed or captured.
+                  Zero video files, media content, project titles, or user
+                  identities are ever accessed or captured.
                 </span>
               </p>
               <div className="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-(--studio-muted)">
@@ -222,7 +239,8 @@ export function PerformanceAdminDashboard() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Database size={12} className="text-emerald-400" />
-                  Sampling: 100% on Dropped Frames/Anomalies · 1% on Smooth Playback
+                  Sampling: 100% on Dropped Frames/Anomalies · 1% on Smooth
+                  Playback
                 </span>
               </div>
             </div>
@@ -314,7 +332,11 @@ export function PerformanceAdminDashboard() {
                 icon: AlertTriangle,
               },
               { id: "fallbacks", label: "Hardware Fallbacks", icon: Layers },
-              { id: "releases", label: "Release Regression", icon: TrendingDown },
+              {
+                id: "releases",
+                label: "Release Regression",
+                icon: TrendingDown,
+              },
               { id: "suites", label: "Benchmark Manifests", icon: FileCheck },
             ].map((tab) => {
               const Icon = tab.icon;
@@ -377,9 +399,12 @@ export function PerformanceAdminDashboard() {
 
         {!hasLiveData && (
           <section className="rounded-2xl border border-(--studio-border) bg-(--studio-panel) px-5 py-10 text-center">
-            <p className="text-sm font-semibold text-white">No live performance data to display</p>
+            <p className="text-sm font-semibold text-white">
+              No live performance data to display
+            </p>
             <p className="mx-auto mt-2 max-w-xl text-xs leading-relaxed text-(--studio-muted)">
-              The API has not returned real telemetry yet. No local fixtures or mock values are shown here.
+              The API has not returned real telemetry yet. No local fixtures or
+              mock values are shown here.
             </p>
           </section>
         )}
@@ -394,11 +419,15 @@ export function PerformanceAdminDashboard() {
                     Cross-OS Latency & Frame Pacing Matrix
                   </h3>
                   <p className="text-xs text-(--studio-muted)">
-                    Evaluated for {resolutionFilter.toUpperCase()} {codecFilter.toUpperCase()} during {workloadFilter}
+                    Evaluated for {resolutionFilter.toUpperCase()}{" "}
+                    {codecFilter.toUpperCase()} during {workloadFilter}
                   </p>
                 </div>
                 <div className="text-xs text-(--studio-muted)">
-                  Baseline OS: <strong className="text-white uppercase">{osData?.baselineOS || "macos"}</strong>
+                  Baseline OS:{" "}
+                  <strong className="text-white uppercase">
+                    {osData?.baselineOS || "macos"}
+                  </strong>
                 </div>
               </div>
 
@@ -408,7 +437,9 @@ export function PerformanceAdminDashboard() {
                     <tr>
                       <th className="px-5 py-3">Operating System</th>
                       <th className="px-5 py-3">Sample Count</th>
-                      <th className="px-5 py-3">Render Latency (P50 / P95 / P99)</th>
+                      <th className="px-5 py-3">
+                        Render Latency (P50 / P95 / P99)
+                      </th>
                       <th className="px-5 py-3">P95 Seek Latency</th>
                       <th className="px-5 py-3">Dropped Frames (P95)</th>
                       <th className="px-5 py-3">Relative Slowdown</th>
@@ -416,77 +447,97 @@ export function PerformanceAdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-(--studio-border)">
-                    {(osData?.comparison || osData?.osMatrix || []).map((row) => (
-                      <tr
-                        key={row.osFamily}
-                        className="transition-colors hover:bg-white/[0.02]"
-                      >
-                        <td className="px-5 py-3.5 font-semibold text-white flex items-center gap-2">
-                          {row.osFamily === "macos" || row.osFamily === "windows" || row.osFamily === "linux" ? (
-                            <Monitor size={15} className="text-(--studio-accent)" />
-                          ) : (
-                            <Smartphone size={15} className="text-pink-400" />
-                          )}
-                          <span className="uppercase">{row.osFamily}</span>
-                        </td>
-                        <td className="px-5 py-3.5 text-(--studio-muted)">
-                          {row.sampleCount.toLocaleString()}
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <span className="font-semibold text-white">
-                            {(row.p50RenderTimeUs / 1000).toFixed(1)}ms
-                          </span>
-                          {" / "}
-                          <span className={row.p95RenderTimeUs > 16667 ? "font-bold text-rose-400" : "text-emerald-400"}>
-                            {(row.p95RenderTimeUs / 1000).toFixed(1)}ms
-                          </span>
-                          {" / "}
-                          <span className="text-(--studio-muted)">
-                            {(row.p99RenderTimeUs / 1000).toFixed(1)}ms
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 font-medium text-(--studio-muted)">
-                          {row.p95SeekLatencyMs.toFixed(1)} ms
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                              row.droppedFrameRatioP95 > 0.05
-                                ? "bg-rose-500/20 text-rose-300"
-                                : "bg-emerald-500/20 text-emerald-300"
-                            }`}
-                          >
-                            {(row.droppedFrameRatioP95 * 100).toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 font-bold">
-                          {row.relativeSlowdownVsBaseline === 1.0 ? (
-                            <span className="text-(--studio-muted)">Baseline (1.00×)</span>
-                          ) : (
+                    {(osData?.comparison || osData?.osMatrix || []).map(
+                      (row) => (
+                        <tr
+                          key={row.osFamily}
+                          className="transition-colors hover:bg-white/2"
+                        >
+                          <td className="px-5 py-3.5 font-semibold text-white flex items-center gap-2">
+                            {row.osFamily === "macos" ||
+                            row.osFamily === "windows" ||
+                            row.osFamily === "linux" ? (
+                              <Monitor
+                                size={15}
+                                className="text-(--studio-accent)"
+                              />
+                            ) : (
+                              <Smartphone size={15} className="text-pink-400" />
+                            )}
+                            <span className="uppercase">{row.osFamily}</span>
+                          </td>
+                          <td className="px-5 py-3.5 text-(--studio-muted)">
+                            {row.sampleCount.toLocaleString()}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <span className="font-semibold text-white">
+                              {(row.p50RenderTimeUs / 1000).toFixed(1)}ms
+                            </span>
+                            {" / "}
                             <span
                               className={
-                                row.relativeSlowdownVsBaseline > 1.5
-                                  ? "text-rose-400"
-                                  : "text-amber-400"
+                                row.p95RenderTimeUs > 16667
+                                  ? "font-bold text-rose-400"
+                                  : "text-emerald-400"
                               }
                             >
-                              +{((row.relativeSlowdownVsBaseline - 1) * 100).toFixed(0)}% Slower
+                              {(row.p95RenderTimeUs / 1000).toFixed(1)}ms
                             </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3.5">
-                          {row.meetsSLA ? (
-                            <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold text-[11px]">
-                              <CheckCircle2 size={13} /> Passing
+                            {" / "}
+                            <span className="text-(--studio-muted)">
+                              {(row.p99RenderTimeUs / 1000).toFixed(1)}ms
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-rose-400 font-semibold text-[11px]">
-                              <XCircle size={13} /> Violated
+                          </td>
+                          <td className="px-5 py-3.5 font-medium text-(--studio-muted)">
+                            {row.p95SeekLatencyMs.toFixed(1)} ms
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                                row.droppedFrameRatioP95 > 0.05
+                                  ? "bg-rose-500/20 text-rose-300"
+                                  : "bg-emerald-500/20 text-emerald-300"
+                              }`}
+                            >
+                              {(row.droppedFrameRatioP95 * 100).toFixed(1)}%
                             </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-5 py-3.5 font-bold">
+                            {row.relativeSlowdownVsBaseline === 1.0 ? (
+                              <span className="text-(--studio-muted)">
+                                Baseline (1.00×)
+                              </span>
+                            ) : (
+                              <span
+                                className={
+                                  row.relativeSlowdownVsBaseline > 1.5
+                                    ? "text-rose-400"
+                                    : "text-amber-400"
+                                }
+                              >
+                                +
+                                {(
+                                  (row.relativeSlowdownVsBaseline - 1) *
+                                  100
+                                ).toFixed(0)}
+                                % Slower
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {row.meetsSLA ? (
+                              <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold text-[11px]">
+                                <CheckCircle2 size={13} /> Passing
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-rose-400 font-semibold text-[11px]">
+                                <XCircle size={13} /> Violated
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ),
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -503,7 +554,8 @@ export function PerformanceAdminDashboard() {
                   GPU Architecture Performance & Primary Bottleneck
                 </h3>
                 <p className="text-xs text-(--studio-muted)">
-                  Isolates hardware decode, texture upload, shader composition, and frame readback latencies
+                  Isolates hardware decode, texture upload, shader composition,
+                  and frame readback latencies
                 </p>
               </div>
 
@@ -522,7 +574,10 @@ export function PerformanceAdminDashboard() {
                   </thead>
                   <tbody className="divide-y divide-(--studio-border)">
                     {(hwData?.gpuMatrix || []).map((item) => (
-                      <tr key={item.gpuModel} className="hover:bg-white/[0.02] transition-colors">
+                      <tr
+                        key={item.gpuModel}
+                        className="hover:bg-white/2 transition-colors"
+                      >
                         <td className="px-5 py-3.5 font-bold text-white">
                           {item.gpuModel}
                         </td>
@@ -537,7 +592,13 @@ export function PerformanceAdminDashboard() {
                             {(item.p50RenderTimeUs / 1000).toFixed(1)}ms
                           </span>
                           {" / "}
-                          <span className={item.p95RenderTimeUs > 16667 ? "font-bold text-rose-400" : "text-emerald-400"}>
+                          <span
+                            className={
+                              item.p95RenderTimeUs > 16667
+                                ? "font-bold text-rose-400"
+                                : "text-emerald-400"
+                            }
+                          >
                             {(item.p95RenderTimeUs / 1000).toFixed(1)}ms
                           </span>
                         </td>
@@ -622,7 +683,11 @@ export function PerformanceAdminDashboard() {
                 <div className="mt-1.5 text-xl font-bold text-emerald-400 tracking-tight">
                   {exportData?.cohorts.length
                     ? `${(
-                        (exportData.cohorts.reduce((sum, cohort) => sum + cohort.successRate * cohort.sampleCount, 0) /
+                        (exportData.cohorts.reduce(
+                          (sum, cohort) =>
+                            sum + cohort.successRate * cohort.sampleCount,
+                          0,
+                        ) /
                           exportData.totalExports) *
                         100
                       ).toFixed(1)}%`
@@ -641,7 +706,8 @@ export function PerformanceAdminDashboard() {
                     Hardware Architecture Export Throughput & Pipeline Split
                   </h3>
                   <p className="text-xs text-(--studio-muted)">
-                    Evaluates FFmpeg / Hardware Encoder execution speed, real-time factor, and GPU composition vs encode balance
+                    Evaluates FFmpeg / Hardware Encoder execution speed,
+                    real-time factor, and GPU composition vs encode balance
                   </p>
                 </div>
                 <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-sky-400">
@@ -665,7 +731,10 @@ export function PerformanceAdminDashboard() {
                   </thead>
                   <tbody className="divide-y divide-(--studio-border)">
                     {(exportData?.cohorts || []).map((cohort, idx) => (
-                      <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
+                      <tr
+                        key={idx}
+                        className="hover:bg-white/2 transition-colors"
+                      >
                         <td className="px-5 py-3.5 font-semibold text-white uppercase flex items-center gap-2">
                           <Monitor size={14} className="text-sky-400" />
                           {cohort.osFamily}
@@ -682,12 +751,24 @@ export function PerformanceAdminDashboard() {
                           {cohort.sampleCount.toLocaleString()}
                         </td>
                         <td className="px-5 py-3.5 font-bold text-white">
-                          <span className={cohort.avgExportFps >= 30 ? "text-emerald-400" : "text-amber-400"}>
+                          <span
+                            className={
+                              cohort.avgExportFps >= 30
+                                ? "text-emerald-400"
+                                : "text-amber-400"
+                            }
+                          >
                             {cohort.avgExportFps.toFixed(1)} FPS
                           </span>
                         </td>
                         <td className="px-5 py-3.5 font-semibold text-white">
-                          <span className={cohort.avgRealTimeFactor < 1.0 ? "text-sky-400" : "text-amber-400"}>
+                          <span
+                            className={
+                              cohort.avgRealTimeFactor < 1.0
+                                ? "text-sky-400"
+                                : "text-amber-400"
+                            }
+                          >
                             {cohort.avgRealTimeFactor.toFixed(2)}×
                           </span>
                         </td>
@@ -713,7 +794,8 @@ export function PerformanceAdminDashboard() {
                         </td>
                         <td className="px-5 py-3.5">
                           <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold text-[11px]">
-                            <CheckCircle2 size={12} /> {(cohort.successRate * 100).toFixed(1)}%
+                            <CheckCircle2 size={12} />{" "}
+                            {(cohort.successRate * 100).toFixed(1)}%
                           </span>
                         </td>
                       </tr>
@@ -746,7 +828,9 @@ export function PerformanceAdminDashboard() {
                   Continuous Frames Accumulated
                 </div>
                 <div className="mt-1.5 text-xl font-bold text-sky-400 tracking-tight">
-                  {sessionData ? sessionData.totalAccumulatedFrames.toLocaleString() : "—"}
+                  {sessionData
+                    ? sessionData.totalAccumulatedFrames.toLocaleString()
+                    : "—"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-(--studio-muted)">
                   Across active 30s session windows
@@ -770,7 +854,9 @@ export function PerformanceAdminDashboard() {
                   GPU Evaluator Cache Hit Rate
                 </div>
                 <div className="mt-1.5 text-xl font-bold text-emerald-400 tracking-tight">
-                  {sessionData ? `${(sessionData.avgCacheHitRatio * 100).toFixed(1)}%` : "—"}
+                  {sessionData
+                    ? `${(sessionData.avgCacheHitRatio * 100).toFixed(1)}%`
+                    : "—"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-(--studio-muted)">
                   Zero-copy image & raster cache
@@ -781,22 +867,38 @@ export function PerformanceAdminDashboard() {
             <div className="rounded-2xl border border-sky-500/20 bg-gradient-to-r from-sky-950/20 to-(--studio-panel) p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck size={18} className="text-sky-400" />
-                <h4 className="text-sm font-bold text-white">Dual-Tier Precision Accumulation Architecture</h4>
+                <h4 className="text-sm font-bold text-white">
+                  Dual-Tier Precision Accumulation Architecture
+                </h4>
               </div>
               <p className="text-xs text-(--studio-muted) leading-relaxed">
-                Rather than flooding the network with 60 individual frame spans per second, Clypra client accumulators roll up render statistics into 30-second windows calculating P50, P90, P95, P99, and Mean frame render times. If a frame exceeds 16.67ms or dropped frames spike above 5%, the system immediately triggers a 100% anomaly trap with per-stage GPU decode, compose, upload, and readback microseconds.
+                Rather than flooding the network with 60 individual frame spans
+                per second, Clypra client accumulators roll up render statistics
+                into 30-second windows calculating P50, P90, P95, P99, and Mean
+                frame render times. If a frame exceeds 16.67ms or dropped frames
+                spike above 5%, the system immediately triggers a 100% anomaly
+                trap with per-stage GPU decode, compose, upload, and readback
+                microseconds.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
                 <div className="rounded-lg bg-black/30 p-3 border border-white/5 space-y-1">
-                  <div className="font-semibold text-sky-300">Sleep & Backgrounding Discontinuity Gate</div>
+                  <div className="font-semibold text-sky-300">
+                    Sleep & Backgrounding Discontinuity Gate
+                  </div>
                   <div className="text-[11px] text-(--studio-muted)">
-                    Time gaps &gt; 1,500ms caused by OS sleep, display turn-off, or tab minimization are automatically detected and discarded, preventing artificial multi-hour latency spikes.
+                    Time gaps &gt; 1,500ms caused by OS sleep, display turn-off,
+                    or tab minimization are automatically detected and
+                    discarded, preventing artificial multi-hour latency spikes.
                   </div>
                 </div>
                 <div className="rounded-lg bg-black/30 p-3 border border-white/5 space-y-1">
-                  <div className="font-semibold text-emerald-300">Bounded Offline Storage & Auto-Drain</div>
+                  <div className="font-semibold text-emerald-300">
+                    Bounded Offline Storage & Auto-Drain
+                  </div>
                   <div className="text-[11px] text-(--studio-muted)">
-                    Network drops safely store up to 50 batches in bounded localStorage (&lt; 2 MB memory footprint) and automatically drain upon receiving window online events.
+                    Network drops safely store up to 50 batches in bounded
+                    localStorage (&lt; 2 MB memory footprint) and automatically
+                    drain upon receiving window online events.
                   </div>
                 </div>
               </div>
@@ -813,7 +915,8 @@ export function PerformanceAdminDashboard() {
                   Surfaced Production Edge Cases & Hardware Regressions
                 </h3>
                 <p className="text-xs text-(--studio-muted)">
-                  Auto-isolated via statistical $Z$-score and multi-dimensional cohort clustering
+                  Auto-isolated via statistical $Z$-score and multi-dimensional
+                  cohort clustering
                 </p>
               </div>
               <span className="rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-1 text-xs font-bold text-rose-400">
@@ -842,31 +945,48 @@ export function PerformanceAdminDashboard() {
                           </h4>
                         </div>
                         <p className="text-xs text-(--studio-muted) mt-1">
-                          Cohort: <strong className="text-white uppercase">{anomaly.impactedCohort.osFamily}</strong> (GPU: {anomaly.impactedCohort.gpuVendor || "Any"}) with {anomaly.impactedCohort.resolutionBucket?.toUpperCase()} {anomaly.impactedCohort.videoCodec?.toUpperCase()}
+                          Cohort:{" "}
+                          <strong className="text-white uppercase">
+                            {anomaly.impactedCohort.osFamily}
+                          </strong>{" "}
+                          (GPU: {anomaly.impactedCohort.gpuVendor || "Any"})
+                          with{" "}
+                          {anomaly.impactedCohort.resolutionBucket?.toUpperCase()}{" "}
+                          {anomaly.impactedCohort.videoCodec?.toUpperCase()}
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right shrink-0">
                       <div className="text-base font-bold text-rose-400">
-                        +{((anomaly.metrics.relativeSlowdownFactor - 1) * 100).toFixed(0)}% Slower
+                        +
+                        {(
+                          (anomaly.metrics.relativeSlowdownFactor - 1) *
+                          100
+                        ).toFixed(0)}
+                        % Slower
                       </div>
                       <div className="text-[10px] text-(--studio-muted)">
-                        {anomaly.affectedSessionsCount.toLocaleString()} affected sessions ({anomaly.affectedUsersPct}%)
+                        {anomaly.affectedSessionsCount.toLocaleString()}{" "}
+                        affected sessions ({anomaly.affectedUsersPct}%)
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-(--studio-border)/60 text-xs">
                     <div className="rounded-xl bg-black/20 p-3 border border-white/5 space-y-1">
-                      <div className="font-bold text-amber-400">Root Cause Hypothesis:</div>
+                      <div className="font-bold text-amber-400">
+                        Root Cause Hypothesis:
+                      </div>
                       <p className="text-(--studio-muted) leading-relaxed">
                         {anomaly.rootCauseHypothesis}
                       </p>
                     </div>
 
                     <div className="rounded-xl bg-black/20 p-3 border border-white/5 space-y-1">
-                      <div className="font-bold text-emerald-400">Suggested Mitigation:</div>
+                      <div className="font-bold text-emerald-400">
+                        Suggested Mitigation:
+                      </div>
                       <p className="text-(--studio-muted) leading-relaxed">
                         {anomaly.suggestedMitigation}
                       </p>
@@ -887,7 +1007,8 @@ export function PerformanceAdminDashboard() {
                   Hardware Fallback Transitions in Production
                 </h3>
                 <p className="text-xs text-(--studio-muted)">
-                  Monitors runtime fallback triggers from WebGPU/Metal to WebGL/FFmpeg software pipelines
+                  Monitors runtime fallback triggers from WebGPU/Metal to
+                  WebGL/FFmpeg software pipelines
                 </p>
               </div>
 
@@ -916,8 +1037,12 @@ export function PerformanceAdminDashboard() {
                             key={r.code}
                             className="flex items-center justify-between text-xs rounded bg-black/20 px-2.5 py-1"
                           >
-                            <span className="font-mono text-rose-300 text-[11px]">{r.code}</span>
-                            <span className="text-(--studio-muted)">{r.count}</span>
+                            <span className="font-mono text-rose-300 text-[11px]">
+                              {r.code}
+                            </span>
+                            <span className="text-(--studio-muted)">
+                              {r.count}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -935,44 +1060,72 @@ export function PerformanceAdminDashboard() {
             <div className="rounded-2xl border border-(--studio-border) bg-(--studio-panel) overflow-hidden shadow-xl p-5 space-y-5">
               <div>
                 <h3 className="text-sm font-bold text-white">
-                  Build-over-Build Release Regression: v{releasesData?.baseVersion} → v{releasesData?.targetVersion}
+                  Build-over-Build Release Regression: v
+                  {releasesData?.baseVersion} → v{releasesData?.targetVersion}
                 </h3>
                 <p className="text-xs text-(--studio-muted)">
-                  Calculated using Welch's t-test approximation across {releasesData?.totalTargetSamples.toLocaleString()} target release samples
+                  Calculated using Welch's t-test approximation across{" "}
+                  {releasesData?.totalTargetSamples.toLocaleString()} target
+                  release samples
                 </p>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-xl bg-(--studio-control) p-3 border border-(--studio-border)">
-                  <div className="text-[10px] font-bold uppercase text-(--studio-muted)">P95 Render Delta</div>
-                  <div className="text-lg font-bold text-emerald-400 mt-1">
-                    {releasesData?.overallDelta.p95RenderTimePctDelta.toFixed(1)}%
+                  <div className="text-[10px] font-bold uppercase text-(--studio-muted)">
+                    P95 Render Delta
                   </div>
-                  <div className="text-[10px] text-(--studio-muted)">({releasesData?.overallDelta.p95RenderTimeDeltaUs} µs)</div>
+                  <div className="text-lg font-bold text-emerald-400 mt-1">
+                    {releasesData?.overallDelta.p95RenderTimePctDelta.toFixed(
+                      1,
+                    )}
+                    %
+                  </div>
+                  <div className="text-[10px] text-(--studio-muted)">
+                    ({releasesData?.overallDelta.p95RenderTimeDeltaUs} µs)
+                  </div>
                 </div>
 
                 <div className="rounded-xl bg-(--studio-control) p-3 border border-(--studio-border)">
-                  <div className="text-[10px] font-bold uppercase text-(--studio-muted)">Dropped Frames Delta</div>
-                  <div className="text-lg font-bold text-emerald-400 mt-1">
-                    {releasesData?.overallDelta.droppedFrameRatioPctDelta.toFixed(1)}%
+                  <div className="text-[10px] font-bold uppercase text-(--studio-muted)">
+                    Dropped Frames Delta
                   </div>
-                  <div className="text-[10px] text-emerald-400">Pacing Improvement</div>
+                  <div className="text-lg font-bold text-emerald-400 mt-1">
+                    {releasesData?.overallDelta.droppedFrameRatioPctDelta.toFixed(
+                      1,
+                    )}
+                    %
+                  </div>
+                  <div className="text-[10px] text-emerald-400">
+                    Pacing Improvement
+                  </div>
                 </div>
 
                 <div className="rounded-xl bg-(--studio-control) p-3 border border-(--studio-border)">
-                  <div className="text-[10px] font-bold uppercase text-(--studio-muted)">P95 Seek Delta</div>
-                  <div className="text-lg font-bold text-emerald-400 mt-1">
-                    {releasesData?.overallDelta.p95SeekLatencyPctDelta.toFixed(1)}%
+                  <div className="text-[10px] font-bold uppercase text-(--studio-muted)">
+                    P95 Seek Delta
                   </div>
-                  <div className="text-[10px] text-(--studio-muted)">Faster keyframe seeks</div>
+                  <div className="text-lg font-bold text-emerald-400 mt-1">
+                    {releasesData?.overallDelta.p95SeekLatencyPctDelta.toFixed(
+                      1,
+                    )}
+                    %
+                  </div>
+                  <div className="text-[10px] text-(--studio-muted)">
+                    Faster keyframe seeks
+                  </div>
                 </div>
 
                 <div className="rounded-xl bg-(--studio-control) p-3 border border-(--studio-border)">
-                  <div className="text-[10px] font-bold uppercase text-(--studio-muted)">Statistical Significance</div>
+                  <div className="text-[10px] font-bold uppercase text-(--studio-muted)">
+                    Statistical Significance
+                  </div>
                   <div className="text-lg font-bold text-sky-400 mt-1">
                     $p &lt; {releasesData?.overallDelta.pValue}$
                   </div>
-                  <div className="text-[10px] text-emerald-400">Statistically Significant</div>
+                  <div className="text-[10px] text-emerald-400">
+                    Statistically Significant
+                  </div>
                 </div>
               </div>
             </div>
@@ -988,7 +1141,8 @@ export function PerformanceAdminDashboard() {
                   Standard Synthetic Benchmark Manifests
                 </h3>
                 <p className="text-xs text-(--studio-muted)">
-                  Standardized stress workloads used to qualify new desktop releases and hardware drivers
+                  Standardized stress workloads used to qualify new desktop
+                  releases and hardware drivers
                 </p>
               </div>
 
@@ -999,7 +1153,9 @@ export function PerformanceAdminDashboard() {
                     className="rounded-xl border border-(--studio-border) bg-(--studio-control)/30 p-4 space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-white">{suite.name}</h4>
+                      <h4 className="text-xs font-bold text-white">
+                        {suite.name}
+                      </h4>
                       <span className="rounded bg-sky-500/20 border border-sky-500/30 px-2 py-0.5 text-[9px] font-bold text-sky-300 uppercase">
                         {suite.targetResolution} @ {suite.targetFps} FPS
                       </span>
