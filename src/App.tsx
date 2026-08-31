@@ -36,6 +36,7 @@ import { getStudioApiBaseUrl } from "./services/apiConfig";
 import { getNativeRenderClient, NATIVE_RENDER_CONTRACT_VERSION } from "./services/nativeRenderClient";
 import { restoreCanonicalScene } from "./state/studioSceneState";
 import { ensureStudioFontLoaded, preloadStudioFontFamilies } from "./services/studioFontHydrator";
+import { recordStudioTextRender } from "./services/textPerformanceTelemetry";
 
 import { PublishEffectModal } from "./components/PublishEffectModal";
 import type { EffectApiCategory } from "./components/PublishEffectModal";
@@ -211,7 +212,6 @@ export default function App() {
 
   const nativePreviewGeneration = useRef(0);
   const nativePreviewAbort = useRef<AbortController | null>(null);
-  const lastLoggedPreviewScene = useRef<string>("");
   // Fix 5: Reuse a single OffscreenCanvas instead of allocating a new one every frame.
   const offscreenRef = useRef<HTMLCanvasElement | OffscreenCanvas | null>(null);
   const offscreenSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -869,36 +869,6 @@ export default function App() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    if (import.meta.env.DEV) {
-      const previewFingerprint = JSON.stringify({
-        schemaVersion: scene.schemaVersion,
-        canvas: scene.canvas,
-        text: scene.text,
-        contributors: scene.effectLayers.map((layer) => ({
-          id: layer.id,
-          type: layer.type,
-          enabled: layer.enabled,
-          opacity: layer.opacity,
-          params: layer.params,
-        })),
-      });
-      if (previewFingerprint !== lastLoggedPreviewScene.current) {
-        lastLoggedPreviewScene.current = previewFingerprint;
-        console.debug("[Clypra:Studio:text-render] canonical preview state", {
-          canvas: scene.canvas,
-          text: scene.text,
-          activeContributors: scene.effectLayers
-            .filter((layer) => layer.enabled && layer.params.enabled !== false)
-            .map((layer) => ({
-              id: layer.id,
-              type: layer.type,
-              opacity: layer.opacity,
-              params: layer.params,
-            })),
-        });
-      }
-    }
-
     nativePreviewAbort.current?.abort();
     const controller = new AbortController();
     nativePreviewAbort.current = controller;
@@ -970,11 +940,14 @@ export default function App() {
       // Skip the entire WASM round-trip — no getImageData, no Array.from(pixels.data),
       // no WASM call. Render the scene directly at the correct scale instead.
       if (renderScale > 1) {
+        const startedAt = performance.now();
         ctx.clearRect(0, 0, renderW, renderH);
         ctx.save();
         ctx.scale(renderScale, renderScale);
         evaluateScene(scene, previewTime, ctx);
         ctx.restore();
+        const totalTimeUs = Math.round((performance.now() - startedAt) * 1000);
+        recordStudioTextRender({ kind: scene.effectLayers.length > 0 ? "effect" : "plain", phase: "interactive-preview", compileUs: 0, rasterUs: totalTimeUs, readbackUs: 0, transferUs: 0, paintUs: 0, totalTimeUs, outputPixels: renderW * renderH, cacheHit: false });
         setNativePreviewState("ready");
         return;
       }
@@ -993,6 +966,7 @@ export default function App() {
       const draw = async () => {
         if (controller.signal.aborted) return;
 
+        const startedAt = performance.now();
         offCtx.clearRect(0, 0, w, h);
         // Fix 4: Single evaluateScene call — no longer called twice.
         evaluateScene(
@@ -1002,7 +976,11 @@ export default function App() {
         );
         if (controller.signal.aborted) return;
 
+        const readbackStartedAt = performance.now();
         const pixels = offCtx.getImageData(0, 0, w, h);
+        const readbackMs = performance.now() - readbackStartedAt;
+        const rasterMs = Math.max(0, performance.now() - startedAt - readbackMs);
+        const transferStartedAt = performance.now();
         const result = await getNativeRenderClient().renderFrame(
           {
             contractVersion: NATIVE_RENDER_CONTRACT_VERSION,
@@ -1066,9 +1044,14 @@ export default function App() {
           bitmap.close();
           return;
         }
+        const paintStartedAt = performance.now();
         ctx.clearRect(0, 0, renderW, renderH);
         ctx.drawImage(bitmap, 0, 0, renderW, renderH);
+        const paintMs = performance.now() - paintStartedAt;
         bitmap.close();
+        const transferMs = performance.now() - transferStartedAt;
+        const totalTimeUs = Math.round((performance.now() - startedAt) * 1000);
+        recordStudioTextRender({ kind: scene.effectLayers.length > 0 ? "effect" : "plain", phase: "interactive-preview", compileUs: 0, rasterUs: Math.round(rasterMs * 1000), readbackUs: Math.round(readbackMs * 1000), transferUs: Math.round(transferMs * 1000), paintUs: Math.round(paintMs * 1000), totalTimeUs, outputPixels: renderW * renderH, cacheHit: false });
         setNativePreviewState("ready");
       };
 
