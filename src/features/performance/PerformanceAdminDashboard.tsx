@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Smartphone,
   TrendingDown,
+  Type,
   Waves,
   XCircle,
   Zap,
@@ -320,6 +321,20 @@ export function PerformanceAdminDashboard() {
             >
               <Eye size={14} />
               Preview Paths
+            </Link>
+            <Link
+              to="/studio/admin/performance/audio"
+              className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-(--studio-muted) hover:bg-(--studio-control) hover:text-white shrink-0"
+            >
+              <Waves size={14} />
+              Audio Performance
+            </Link>
+            <Link
+              to="/studio/admin/performance/text"
+              className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-(--studio-muted) hover:bg-(--studio-control) hover:text-white shrink-0"
+            >
+              <Type size={14} />
+              Text Performance
             </Link>
             {[
               { id: "matrix", label: "Cross-OS Matrix", icon: BarChart3 },
