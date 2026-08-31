@@ -202,7 +202,123 @@ export interface PreviewComparisonData {
   cohorts: PreviewComparisonCohort[];
 }
 
+export interface AudioPerformanceCohort {
+  backend: "native-cpal" | "web-audio";
+  runtimeEnvironment: "development" | "production";
+  sampleCount: number;
+  windowDurationMs: number;
+  callbackCount: number;
+  renderedFrames: number;
+  nonSilentFrames: number;
+  underruns: number;
+  mixerLockMisses: number;
+  bufferHitRatio: number;
+  callbackP50Us: number;
+  callbackP95Us: number;
+  callbackP99Us: number;
+  callbackMaxUs: number;
+  callbackOverBudgetCount: number;
+  p95DecodeUs: number;
+  p95BufferWaitUs: number;
+  p95MixerUs: number;
+  p95OutputUs: number;
+  p95SeekMs: number;
+  p95ClockDriftMs: number;
+  activeClipCount: number;
+  activeVoiceCount: number;
+  latestTimestampMs?: number;
+  lastError?: string;
+  meetsSLA: boolean;
+  bottleneck: string;
+}
+
+export interface AudioComparisonData {
+  totalApiSamples: number;
+  totalWindows: number;
+  latestTimestampMs?: number;
+  cohorts: AudioPerformanceCohort[];
+}
+
+export interface TextPerformanceCohort {
+  kind: "plain" | "effect" | "template";
+  rendererPath: "native-raster" | "webview-canvas" | "studio-preview";
+  runtimeEnvironment: "development" | "production";
+  phase: "session-prewarm" | "text-prefetch" | "visible-playback" | "interactive-preview";
+  sampleCount: number;
+  renderCount: number;
+  windowDurationMs: number;
+  cacheHitRatio: number;
+  p50RenderTimeUs: number;
+  p95RenderTimeUs: number;
+  p99RenderTimeUs: number;
+  p95FontWaitUs: number;
+  p95CompileUs: number;
+  p95RasterUs: number;
+  p95ReadbackUs: number;
+  p95TransferUs: number;
+  p95PaintUs: number;
+  bottleneck: string;
+  latestTimestampMs?: number;
+  confidence: "insufficient" | "preliminary" | "qualified";
+  meetsSLA: boolean;
+}
+
+export interface TextComparisonData {
+  totalApiSamples: number;
+  totalWindows: number;
+  latestTimestampMs?: number;
+  cohorts: TextPerformanceCohort[];
+}
+
 export const performanceClient = {
+  async getAudioComparison(options: {
+    backend?: "native-cpal" | "web-audio";
+    environment?: "development" | "production";
+  } = {}): Promise<AudioComparisonData | null> {
+    try {
+      const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/audio`);
+      if (options.backend) url.searchParams.set("backend", options.backend);
+      if (options.environment) url.searchParams.set("environment", options.environment);
+      const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return {
+        totalApiSamples: json.totalApiSamples || 0,
+        totalWindows: json.totalWindows || 0,
+        latestTimestampMs: json.latestTimestampMs,
+        cohorts: json.cohorts || [],
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  async getTextComparison(options: {
+    kind?: TextPerformanceCohort["kind"];
+    rendererPath?: TextPerformanceCohort["rendererPath"];
+    environment?: TextPerformanceCohort["runtimeEnvironment"];
+    phase?: TextPerformanceCohort["phase"];
+  } = {}): Promise<TextComparisonData | null> {
+    try {
+      const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/text`);
+      if (options.kind) url.searchParams.set("kind", options.kind);
+      if (options.rendererPath) url.searchParams.set("renderer_path", options.rendererPath);
+      if (options.environment) url.searchParams.set("environment", options.environment);
+      if (options.phase) url.searchParams.set("phase", options.phase);
+      const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return {
+        totalApiSamples: json.totalApiSamples || 0,
+        totalWindows: json.totalWindows || 0,
+        latestTimestampMs: json.latestTimestampMs,
+        cohorts: json.cohorts || [],
+      };
+    } catch {
+      return null;
+    }
+  },
+
   async getOSComparison(workload = "playback", resolution = "4k", codec = "hevc"): Promise<OSComparisonData | null> {
     try {
       const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/os`);
