@@ -4,10 +4,7 @@ import { Loader2, Upload, Film, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import lottie from "lottie-web";
 import { Player } from "@lottiefiles/react-lottie-player";
-import {
-  TemplateRenderer,
-  getSupportedWebMMimeType,
-} from "@clypra-studio/engine";
+import { getSupportedWebMMimeType } from "@clypra-studio/engine";
 import { getStudioApiBaseUrl } from "../../services/apiConfig";
 
 const API_BASE_URL = getStudioApiBaseUrl();
