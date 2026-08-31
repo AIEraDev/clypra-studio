@@ -3,17 +3,21 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Eye, RefreshCw } from "lucide-react";
 import {
   performanceClient,
+  type PreviewComparisonCohort,
   type PreviewComparisonData,
 } from "../../services/performanceClient";
 
 export function PreviewPerformanceAdminPage() {
   const [workload, setWorkload] = useState("playback");
+  const [scenario, setScenario] = useState<"all" | "playback" | "seek" | "scrub" | "paused-interaction" | "qualification">("all");
   const [data, setData] = useState<PreviewComparisonData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = async () => {
     setRefreshing(true);
-    const next = await performanceClient.getPreviewComparison(workload);
+    const next = await performanceClient.getPreviewComparison(workload, {
+      scenario: scenario === "all" ? undefined : scenario,
+    });
     setData(next);
     setRefreshing(false);
   };
@@ -22,7 +26,7 @@ export function PreviewPerformanceAdminPage() {
     void refresh();
     const interval = window.setInterval(() => void refresh(), 15000);
     return () => window.clearInterval(interval);
-  }, [workload]);
+  }, [workload, scenario]);
 
   return (
     <div
@@ -63,6 +67,19 @@ export function PreviewPerformanceAdminPage() {
               <option value="scrub">Scrub</option>
               <option value="frame-step">Frame step</option>
             </select>
+            <select
+              value={scenario}
+              onChange={(event) => setScenario(event.target.value as typeof scenario)}
+              className="rounded-lg border border-(--studio-border) bg-(--studio-control) px-2.5 py-1.5 text-[11px] font-medium text-white focus:border-(--studio-accent) focus:outline-none"
+              aria-label="Preview scenario"
+            >
+              <option value="all">All scenarios</option>
+              <option value="playback">Continuous playback</option>
+              <option value="qualification">Qualification run</option>
+              <option value="seek">Seek</option>
+              <option value="scrub">Scrub</option>
+              <option value="paused-interaction">Paused interaction</option>
+            </select>
             <button
               type="button"
               onClick={() => void refresh()}
@@ -93,7 +110,7 @@ export function PreviewPerformanceAdminPage() {
             <div className="flex items-center justify-between border-b border-(--studio-border) px-5 py-4">
               <div>
                 <h2 className="text-sm font-bold text-white">Preview Path Comparison</h2>
-                <p className="text-xs text-(--studio-muted)">{data.totalSampleSize.toLocaleString()} API samples · refreshes every 15 seconds</p>
+                <p className="text-xs text-(--studio-muted)">{data.totalSampleSize.toLocaleString()} measured frames · refreshes every 15 seconds</p>
               </div>
               <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
                 Live
@@ -104,35 +121,49 @@ export function PreviewPerformanceAdminPage() {
                 <thead className="border-b border-(--studio-border) bg-(--studio-control)/50 text-[10px] font-bold uppercase tracking-wider text-(--studio-muted)">
                   <tr>
                     <th className="px-5 py-3">Path</th>
-                    <th className="px-5 py-3">Environment</th>
-                    <th className="px-5 py-3">Samples</th>
+                    <th className="px-5 py-3">Environment / scenario</th>
+                    <th className="px-5 py-3">Frames / samples</th>
                     <th className="px-5 py-3">Render P50 / P95 / P99</th>
-                    <th className="px-5 py-3">Dropped P95</th>
-                    <th className="px-5 py-3">Readback / Present P95</th>
+                    <th className="px-5 py-3">Dropped ratio</th>
+                    <th className="px-5 py-3">Stage P95</th>
+                    <th className="px-5 py-3">Readback / transfer / paint</th>
                     <th className="px-5 py-3">Jank</th>
-                    <th className="px-5 py-3">SLA</th>
+                    <th className="px-5 py-3">Confidence / SLA</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-(--studio-border)">
                   {data.cohorts.map((row) => (
-                    <tr key={`${row.view}-${row.surface}-${row.runtimeEnvironment}`} className="hover:bg-white/[0.02]">
+                    <tr key={`${row.view}-${row.surface}-${row.runtimeEnvironment}-${row.scenario ?? "unknown"}-${row.qualificationRunId ?? ""}`} className="hover:bg-white/[0.02]">
                       <td className="px-5 py-3.5 font-semibold text-white">
                         {row.view === "native" ? "Native surface" : "WebView / DOM canvas"}
                         <div className="text-[10px] font-normal text-(--studio-muted)">{row.surface}</div>
                       </td>
-                      <td className="px-5 py-3.5 uppercase text-(--studio-muted)">{row.runtimeEnvironment}</td>
-                      <td className="px-5 py-3.5 text-(--studio-muted)">{row.sampleCount.toLocaleString()}</td>
+                      <td className="px-5 py-3.5 uppercase text-(--studio-muted)">
+                        {row.runtimeEnvironment}
+                        <div className="normal-case text-[10px]">{scenarioLabel(row.scenario)}</div>
+                        {row.qualificationRunId ? <div className="normal-case text-[10px] text-sky-300">Run {row.qualificationRunId.slice(0, 12)}</div> : null}
+                      </td>
+                      <td className="px-5 py-3.5 text-(--studio-muted)">
+                        {row.measuredFrameCount.toLocaleString()}
+                        <div className="text-[10px]">{row.sampleCount.toLocaleString()} API samples</div>
+                      </td>
                       <td className="px-5 py-3.5 text-white">
                         {(row.p50RenderTimeUs / 1000).toFixed(1)} / {(row.p95RenderTimeUs / 1000).toFixed(1)} / {(row.p99RenderTimeUs / 1000).toFixed(1)} ms
                       </td>
-                      <td className="px-5 py-3.5 text-(--studio-muted)">{(row.droppedFrameRatioP95 * 100).toFixed(2)}%</td>
+                      <td className="px-5 py-3.5 text-(--studio-muted)">{(row.droppedFrameRatio * 100).toFixed(2)}%</td>
                       <td className="px-5 py-3.5 text-(--studio-muted)">
-                        {(row.p95ReadbackUs / 1000).toFixed(1)} / {(row.p95PresentUs / 1000).toFixed(1)} ms
+                        {row.primaryBottleneck === "none" ? "None" : `${stageLabel(row.primaryBottleneck)} ${(stageValue(row) / 1000).toFixed(1)} ms`}
+                        <div className="whitespace-nowrap text-[10px]">Decode {(row.p95DecodeUs / 1000).toFixed(1)} · Compose {(row.p95ComposeUs / 1000).toFixed(1)} · GPU wait {(row.p95GpuQueueWaitUs / 1000).toFixed(1)} ms</div>
+                      </td>
+                      <td className="px-5 py-3.5 text-(--studio-muted)">
+                        {(row.p95ReadbackUs / 1000).toFixed(1)} / {(row.p95TransferUs / 1000).toFixed(1)} / {(row.p95CanvasPaintUs / 1000).toFixed(1)} ms
+                        <div className="text-[10px]">Native present: {(row.p95PresentUs / 1000).toFixed(1)} ms</div>
                       </td>
                       <td className="px-5 py-3.5 text-(--studio-muted)">{row.jankEvents.toLocaleString()}</td>
                       <td className="px-5 py-3.5">
-                        <span className={row.meetsSLA ? "text-emerald-400" : "text-rose-400"}>
-                          {row.meetsSLA ? "Passing" : "Violated"}
+                        <div className="font-semibold text-white">{confidenceLabel(row.confidence)}</div>
+                        <span className={row.confidence === "insufficient" ? "text-amber-300" : row.meetsSLA ? "text-emerald-400" : "text-rose-400"}>
+                          {row.confidence === "insufficient" ? "Not qualified" : row.meetsSLA ? "Passing" : "Violated"}
                         </span>
                       </td>
                     </tr>
@@ -145,6 +176,39 @@ export function PreviewPerformanceAdminPage() {
       </main>
     </div>
   );
+}
+
+function scenarioLabel(scenario?: PreviewComparisonCohort["scenario"]): string {
+  if (!scenario) return "Legacy / unspecified scenario";
+  return scenario.replaceAll("-", " ");
+}
+
+function confidenceLabel(confidence?: PreviewComparisonCohort["confidence"]): string {
+  if (confidence === "qualified") return "Qualified comparison";
+  if (confidence === "preliminary") return "Preliminary";
+  return "Insufficient data";
+}
+
+function stageLabel(stage: PreviewComparisonCohort["primaryBottleneck"]): string {
+  return stage.replace(/([A-Z])/g, " $1").replace(/^./, (value) => value.toUpperCase());
+}
+
+function stageValue(row: PreviewComparisonCohort): number {
+  const values: Record<string, number> = {
+    decode: row.p95DecodeUs,
+    decoderMutexWait: row.p95DecoderMutexWaitUs,
+    conversionUpload: row.p95ConversionUploadUs,
+    compose: row.p95ComposeUs,
+    surfaceAcquire: row.p95SurfaceAcquireUs,
+    gpuQueueWait: row.p95GpuQueueWaitUs,
+    readback: row.p95ReadbackUs,
+    transfer: row.p95TransferUs,
+    canvasPaint: row.p95CanvasPaintUs,
+    submitPresent: row.p95PresentUs,
+    schedulerWait: row.p95SchedulerWaitUs,
+    ipcWait: row.p95IpcWaitUs,
+  };
+  return values[row.primaryBottleneck] || 0;
 }
 
 function EmptyState({ message }: { message: string }) {
