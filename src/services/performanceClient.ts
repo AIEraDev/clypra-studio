@@ -154,6 +154,18 @@ export interface PreviewComparisonCohort {
   measurementSource?: "frontend-span" | "native-sample" | "session-rollup";
   sampleCount: number;
   measuredFrameCount: number;
+  totalFrames: number;
+  droppedFrames: number;
+  staleFrames: number;
+  cancelledFrames: number;
+  durationMs: number;
+  latestTimestampMs?: number;
+  sourceCounts: {
+    frontendSpan: number;
+    nativeSample: number;
+    sessionRollup: number;
+    legacy: number;
+  };
   confidence: "insufficient" | "preliminary" | "qualified";
   p50RenderTimeUs: number;
   p95RenderTimeUs: number;
@@ -183,6 +195,10 @@ export interface PreviewComparisonData {
   scenario?: PreviewComparisonCohort["scenario"];
   qualificationRunId?: string;
   totalSampleSize: number;
+  totalApiSamples: number;
+  totalMeasuredFrames: number;
+  latestTimestampMs?: number;
+  sourceCounts: PreviewComparisonCohort["sourceCounts"];
   cohorts: PreviewComparisonCohort[];
 }
 
@@ -324,13 +340,22 @@ export const performanceClient = {
 
   async getPreviewComparison(
     workload = "playback",
-    options: { scenario?: PreviewComparisonCohort["scenario"]; qualificationRunId?: string } = {},
+    options: {
+      scenario?: PreviewComparisonCohort["scenario"];
+      qualificationRunId?: string;
+      runtimeEnvironment?: "development" | "production";
+      view?: "native" | "webview";
+      measurementSource?: "frontend-span" | "native-sample" | "session-rollup";
+    } = {},
   ): Promise<PreviewComparisonData | null> {
     try {
       const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/preview`);
       url.searchParams.set("workload", workload);
       if (options.scenario) url.searchParams.set("scenario", options.scenario);
       if (options.qualificationRunId) url.searchParams.set("qualification_run_id", options.qualificationRunId);
+      if (options.runtimeEnvironment) url.searchParams.set("environment", options.runtimeEnvironment);
+      if (options.view) url.searchParams.set("view", options.view);
+      if (options.measurementSource) url.searchParams.set("measurement_source", options.measurementSource);
       const res = await fetch(url.toString(), {
         headers: { Accept: "application/json" },
       });
@@ -341,6 +366,10 @@ export const performanceClient = {
         scenario: json.scenario,
         qualificationRunId: json.qualificationRunId,
         totalSampleSize: json.totalSampleSize || 0,
+        totalApiSamples: json.totalApiSamples || 0,
+        totalMeasuredFrames: json.totalMeasuredFrames || json.totalSampleSize || 0,
+        latestTimestampMs: json.latestTimestampMs,
+        sourceCounts: json.sourceCounts || { frontendSpan: 0, nativeSample: 0, sessionRollup: 0, legacy: 0 },
         cohorts: json.cohorts || [],
       };
     } catch {
