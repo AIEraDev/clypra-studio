@@ -244,6 +244,8 @@ export interface TextPerformanceCohort {
   rendererPath: "native-raster" | "webview-canvas" | "studio-preview";
   runtimeEnvironment: "development" | "production";
   phase: "session-prewarm" | "text-prefetch" | "visible-playback" | "interactive-preview";
+  operation: "render" | "entrance" | "exit" | "animation" | "content-edit" | "property-edit" | "transform" | "resize" | "prefetch";
+  property?: "content" | "color" | "fontFamily" | "fontSize" | "fontWeight" | "fontStyle" | "lineHeight" | "letterSpacing" | "alignment" | "effect" | "template" | "transform" | "resize";
   sampleCount: number;
   renderCount: number;
   windowDurationMs: number;
@@ -298,6 +300,8 @@ export const performanceClient = {
     rendererPath?: TextPerformanceCohort["rendererPath"];
     environment?: TextPerformanceCohort["runtimeEnvironment"];
     phase?: TextPerformanceCohort["phase"];
+    operation?: TextPerformanceCohort["operation"];
+    property?: NonNullable<TextPerformanceCohort["property"]>;
   } = {}): Promise<TextComparisonData | null> {
     try {
       const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/text`);
@@ -305,6 +309,8 @@ export const performanceClient = {
       if (options.rendererPath) url.searchParams.set("renderer_path", options.rendererPath);
       if (options.environment) url.searchParams.set("environment", options.environment);
       if (options.phase) url.searchParams.set("phase", options.phase);
+      if (options.operation) url.searchParams.set("operation", options.operation);
+      if (options.property) url.searchParams.set("property", options.property);
       const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
