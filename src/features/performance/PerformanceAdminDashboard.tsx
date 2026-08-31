@@ -47,31 +47,29 @@ export function PerformanceAdminDashboard() {
   const [codecFilter, setCodecFilter] = useState("hevc");
 
   // Data states with immediate fallback defaults
-  const [osData, setOsData] = useState<OSComparisonData | null>(() =>
-    performanceClient.getLocalFallbackOSComparison(),
-  );
-  const [hwData, setHwData] = useState<HardwareComparisonData | null>(() =>
-    performanceClient.getLocalFallbackHardwareComparison(),
-  );
-  const [exportData, setExportData] = useState<ExportComparisonData | null>(() =>
-    performanceClient.getLocalFallbackExportComparison(),
-  );
-  const [sessionData, setSessionRollupData] = useState<SessionRollupData | null>(() =>
-    performanceClient.getLocalFallbackSessionRollups(),
-  );
-  const [anomaliesData, setAnomaliesData] = useState<AnomalyItem[]>(() =>
-    performanceClient.getLocalFallbackAnomalies().anomalies,
-  );
-  const [fallbacksData, setFallbacksData] = useState<FallbackData | null>(() =>
-    performanceClient.getLocalFallbackFallbacks(),
-  );
-  const [releasesData, setReleasesData] = useState<ReleaseRegressionData | null>(
-    () => performanceClient.getLocalFallbackReleaseRegression(),
-  );
+  const [osData, setOsData] = useState<OSComparisonData | null>(null);
+  const [hwData, setHwData] = useState<HardwareComparisonData | null>(null);
+  const [exportData, setExportData] = useState<ExportComparisonData | null>(null);
+  const [sessionData, setSessionRollupData] = useState<SessionRollupData | null>(null);
+  const [anomaliesData, setAnomaliesData] = useState<AnomalyItem[]>([]);
+  const [fallbacksData, setFallbacksData] = useState<FallbackData | null>(null);
+  const [releasesData, setReleasesData] = useState<ReleaseRegressionData | null>(null);
   const [suitesData, setSuitesData] = useState<BenchmarkSuite[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const hasLiveData = Boolean(
+    osData?.comparison?.length ||
+      osData?.osMatrix?.length ||
+      hwData?.gpuMatrix?.length ||
+      exportData?.cohorts?.length ||
+      sessionData?.totalRollupSessions ||
+      anomaliesData.length ||
+      fallbacksData?.fallbackBreakdown?.length ||
+      releasesData?.totalBaseSamples ||
+      releasesData?.totalTargetSamples,
+  );
 
   const loadAllData = async () => {
     try {
@@ -199,9 +197,9 @@ export function PerformanceAdminDashboard() {
               <p className="text-xs leading-relaxed text-(--studio-muted) max-w-4xl">
                 Telemetry is collected{" "}
                 <strong className="text-white">
-                  exclusively in production environments
+                  in development and production environments
                 </strong>{" "}
-                solely to analyze edge-case hardware bottlenecks, frame pacing regressions, and driver anomalies across operating systems.{" "}
+                solely to compare preview paths and analyze edge-case hardware bottlenecks, frame pacing regressions, and driver anomalies across operating systems.{" "}
                 <span className="text-sky-200 font-medium">
                   Zero video files, media content, project titles, or user identities are ever accessed or captured.
                 </span>
@@ -227,10 +225,10 @@ export function PerformanceAdminDashboard() {
               Total Ingested Sessions
             </div>
             <div className="mt-1.5 text-xl font-bold text-white tracking-tight">
-              608,300+
+              {osData ? "Loaded" : "—"}
             </div>
             <div className="mt-0.5 text-[10px] text-emerald-400 flex items-center gap-1">
-              <Zap size={10} /> Active multi-platform streams
+              <Zap size={10} /> Live API data only
             </div>
           </div>
 
@@ -239,10 +237,10 @@ export function PerformanceAdminDashboard() {
               Global P95 Render Time
             </div>
             <div className="mt-1.5 text-xl font-bold text-emerald-400 tracking-tight">
-              10.4 ms
+              {osData ? "API result" : "—"}
             </div>
             <div className="mt-0.5 text-[10px] text-(--studio-muted)">
-              SLA Budget: 16.6 ms (60 FPS)
+              Waiting for live API telemetry
             </div>
           </div>
 
@@ -251,10 +249,10 @@ export function PerformanceAdminDashboard() {
               Global Dropped Frame Ratio
             </div>
             <div className="mt-1.5 text-xl font-bold text-white tracking-tight">
-              0.18%
+              {osData ? "API result" : "—"}
             </div>
             <div className="mt-0.5 text-[10px] text-emerald-400">
-              Within &lt; 0.5% SLA limit
+              Waiting for live API telemetry
             </div>
           </div>
 
@@ -263,10 +261,10 @@ export function PerformanceAdminDashboard() {
               Active Edge Anomalies
             </div>
             <div className="mt-1.5 text-xl font-bold text-amber-400 tracking-tight">
-              {anomaliesData.length} Surfaced
+              {anomaliesData.length ? anomaliesData.length : "—"}
             </div>
             <div className="mt-0.5 text-[10px] text-(--studio-muted)">
-              Requires driver mitigations
+              {anomaliesData.length ? "From live API" : "No live API data"}
             </div>
           </div>
 
@@ -275,10 +273,10 @@ export function PerformanceAdminDashboard() {
               Overall SLA Compliance
             </div>
             <div className="mt-1.5 text-xl font-bold text-white tracking-tight">
-              94.2%
+              {osData ? "API result" : "—"}
             </div>
             <div className="mt-0.5 text-[10px] text-emerald-400">
-              macOS, Linux, iOS Passing
+              Waiting for live API telemetry
             </div>
           </div>
         </div>
@@ -287,6 +285,13 @@ export function PerformanceAdminDashboard() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-(--studio-border) pb-3">
           {/* Diagnostic Sub-Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            <Link
+              to="/studio/admin/performance/preview"
+              className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-(--studio-muted) hover:bg-(--studio-control) hover:text-white shrink-0"
+            >
+              <Eye size={14} />
+              Preview Paths
+            </Link>
             {[
               { id: "matrix", label: "Cross-OS Matrix", icon: BarChart3 },
               { id: "hardware", label: "GPU & Bottlenecks", icon: Cpu },
@@ -358,6 +363,15 @@ export function PerformanceAdminDashboard() {
             </div>
           )}
         </div>
+
+        {!hasLiveData && (
+          <section className="rounded-2xl border border-(--studio-border) bg-(--studio-panel) px-5 py-10 text-center">
+            <p className="text-sm font-semibold text-white">No live performance data to display</p>
+            <p className="mx-auto mt-2 max-w-xl text-xs leading-relaxed text-(--studio-muted)">
+              The API has not returned real telemetry yet. No local fixtures or mock values are shown here.
+            </p>
+          </section>
+        )}
 
         {/* ─── 1. Cross-OS Performance Matrix View ───────────────────────────── */}
         {activeSubTab === "matrix" && (
@@ -559,7 +573,7 @@ export function PerformanceAdminDashboard() {
                   Global Export Throughput
                 </div>
                 <div className="mt-1.5 text-xl font-bold text-emerald-400 tracking-tight">
-                  {exportData?.globalAvgFps || 58.4} FPS
+                  {exportData ? `${exportData.globalAvgFps} FPS` : "—"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-(--studio-muted)">
                   Target: ≥ 30 FPS across 4K HEVC
@@ -571,7 +585,7 @@ export function PerformanceAdminDashboard() {
                   Real-Time Factor (RTF)
                 </div>
                 <div className="mt-1.5 text-xl font-bold text-sky-400 tracking-tight">
-                  {exportData?.globalAvgRTF || 0.52}× Real-Time
+                  {exportData ? `${exportData.globalAvgRTF}× Real-Time` : "—"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-emerald-400">
                   Sub-1.0 = Faster than video duration
@@ -583,7 +597,7 @@ export function PerformanceAdminDashboard() {
                   Production Export Volume
                 </div>
                 <div className="mt-1.5 text-xl font-bold text-white tracking-tight">
-                  {(exportData?.totalExports || 4200).toLocaleString()}
+                  {exportData ? exportData.totalExports.toLocaleString() : "—"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-(--studio-muted)">
                   Across Desktop & Studio runtimes
@@ -595,7 +609,13 @@ export function PerformanceAdminDashboard() {
                   Encoder Pipeline Reliability
                 </div>
                 <div className="mt-1.5 text-xl font-bold text-emerald-400 tracking-tight">
-                  99.6%
+                  {exportData?.cohorts.length
+                    ? `${(
+                        (exportData.cohorts.reduce((sum, cohort) => sum + cohort.successRate * cohort.sampleCount, 0) /
+                          exportData.totalExports) *
+                        100
+                      ).toFixed(1)}%`
+                    : "—"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-emerald-400">
                   Clean VideoToolbox / NVENC / QuickSync
@@ -703,7 +723,7 @@ export function PerformanceAdminDashboard() {
                   P95 A/V Playhead Drift
                 </div>
                 <div className="mt-1.5 text-xl font-bold text-emerald-400 tracking-tight">
-                  {sessionData?.p95AvDriftMs || 3.8} ms
+                  {sessionData ? `${sessionData.p95AvDriftMs} ms` : "—"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-emerald-400">
                   Strict budget: ≤ 20.0 ms
@@ -715,7 +735,7 @@ export function PerformanceAdminDashboard() {
                   Continuous Frames Accumulated
                 </div>
                 <div className="mt-1.5 text-xl font-bold text-sky-400 tracking-tight">
-                  {(sessionData?.totalAccumulatedFrames || 17040000).toLocaleString()}
+                  {sessionData ? sessionData.totalAccumulatedFrames.toLocaleString() : "—"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-(--studio-muted)">
                   Across active 30s session windows
@@ -727,7 +747,7 @@ export function PerformanceAdminDashboard() {
                   Pacing Jank Events / Session
                 </div>
                 <div className="mt-1.5 text-xl font-bold text-white tracking-tight">
-                  {sessionData?.avgJankEventsPerSession || 0.42}
+                  {sessionData ? sessionData.avgJankEventsPerSession : "—"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-emerald-400">
                   Frames exceeding 1.5× frame budget
@@ -739,7 +759,7 @@ export function PerformanceAdminDashboard() {
                   GPU Evaluator Cache Hit Rate
                 </div>
                 <div className="mt-1.5 text-xl font-bold text-emerald-400 tracking-tight">
-                  {((sessionData?.avgCacheHitRatio || 0.945) * 100).toFixed(1)}%
+                  {sessionData ? `${(sessionData.avgCacheHitRatio * 100).toFixed(1)}%` : "—"}
                 </div>
                 <div className="mt-0.5 text-[10px] text-(--studio-muted)">
                   Zero-copy image & raster cache
