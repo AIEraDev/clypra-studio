@@ -1,4 +1,10 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   viewportTransform,
   snapEngine,
@@ -12,16 +18,37 @@ import {
   type SceneNode,
   type ViewportState,
   type DocumentCommand,
-  type AlignmentGuide
+  type AlignmentGuide,
 } from "@clypra-studio/engine";
 import {
-  AlignLeft, AlignCenter, AlignRight, AlignVerticalSpaceAround, AlignHorizontalSpaceAround,
-  MoveHorizontal, MoveVertical, RotateCw, Layers, ArrowUp, ArrowDown, Trash2, Copy
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignVerticalSpaceAround,
+  AlignHorizontalSpaceAround,
+  MoveHorizontal,
+  MoveVertical,
+  RotateCw,
+  Layers,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+  Copy,
 } from "lucide-react";
 import { useNativeOverlayApp } from "../hooks/useNativeOverlayApp";
 import { InsertPalette } from "./InsertPalette";
 
-type HandleType = "tl" | "tr" | "bl" | "br" | "t" | "b" | "l" | "r" | "rot" | null;
+type HandleType =
+  | "tl"
+  | "tr"
+  | "bl"
+  | "br"
+  | "t"
+  | "b"
+  | "l"
+  | "r"
+  | "rot"
+  | null;
 
 interface CanvasViewportProps {
   doc: OverlayDocument;
@@ -42,37 +69,43 @@ export function CanvasViewport({
   referenceVideo,
   onSelectNodeIds,
   onExecuteCommand,
-  onSetZoom
+  onSetZoom,
 }: CanvasViewportProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRefContainer = useRef<HTMLDivElement | null>(null);
   const [isInsertPaletteOpen, setIsInsertPaletteOpen] = useState(false);
 
-  const findNodeDeep = useCallback((nodes: SceneNode[], id: string): SceneNode | null => {
-    for (const n of nodes) {
-      if (n.id === id) return n;
-      if ("children" in n && Array.isArray((n as any).children)) {
-        const found = findNodeDeep((n as any).children, id);
-        if (found) return found;
-      }
-    }
-    return null;
-  }, []);
-
-  const getAllNodesFlattened = useCallback((nodes: SceneNode[]): SceneNode[] => {
-    const result: SceneNode[] = [];
-    const traverse = (list: SceneNode[]) => {
-      for (const n of list) {
-        result.push(n);
+  const findNodeDeep = useCallback(
+    (nodes: SceneNode[], id: string): SceneNode | null => {
+      for (const n of nodes) {
+        if (n.id === id) return n;
         if ("children" in n && Array.isArray((n as any).children)) {
-          traverse((n as any).children);
+          const found = findNodeDeep((n as any).children, id);
+          if (found) return found;
         }
       }
-    };
-    traverse(nodes);
-    return result;
-  }, []);
+      return null;
+    },
+    [],
+  );
+
+  const getAllNodesFlattened = useCallback(
+    (nodes: SceneNode[]): SceneNode[] => {
+      const result: SceneNode[] = [];
+      const traverse = (list: SceneNode[]) => {
+        for (const n of list) {
+          result.push(n);
+          if ("children" in n && Array.isArray((n as any).children)) {
+            traverse((n as any).children);
+          }
+        }
+      };
+      traverse(nodes);
+      return result;
+    },
+    [],
+  );
 
   // Derive selected node objects (supports nested children at any depth)
   const selectedNodes = useMemo(
@@ -93,10 +126,10 @@ export function CanvasViewport({
           sourceHeight: referenceVideo.videoHeight,
           userScale: 1,
           userOffsetX: 0,
-          userOffsetY: 0
+          userOffsetY: 0,
         },
         doc.canvas.width,
-        doc.canvas.height
+        doc.canvas.height,
       )
     : null;
 
@@ -120,7 +153,13 @@ export function CanvasViewport({
         container.removeChild(referenceVideo);
       }
     };
-  }, [referenceVideo, videoConform?.x, videoConform?.y, videoConform?.width, videoConform?.height]);
+  }, [
+    referenceVideo,
+    videoConform?.x,
+    videoConform?.y,
+    videoConform?.width,
+    videoConform?.height,
+  ]);
 
   // Trackpad pinch / Ctrl+wheel zoom on viewport canvas container
   useEffect(() => {
@@ -145,7 +184,11 @@ export function CanvasViewport({
     const containerW = containerRef.current.clientWidth - 64;
     const containerH = containerRef.current.clientHeight - 72;
     if (containerW > 0 && containerH > 0) {
-      const fitScale = Math.min(containerW / doc.canvas.width, containerH / doc.canvas.height, 1.0);
+      const fitScale = Math.min(
+        containerW / doc.canvas.width,
+        containerH / doc.canvas.height,
+        1.0,
+      );
       const fitZoom = Math.max(20, Math.floor(fitScale * 100));
       if (viewport.zoom !== fitZoom) {
         onSetZoom?.(fitZoom);
@@ -169,28 +212,46 @@ export function CanvasViewport({
   }, [doc.canvas.width, doc.canvas.height, viewport.zoom, handleAutoFit]);
 
   // Native compositor preview; editing interactions remain in this DOM layer.
-  const nativeOverlayState = useNativeOverlayApp(canvasRef, doc, currentTime, !!referenceVideo);
+  const nativeOverlayState = useNativeOverlayApp(
+    canvasRef,
+    doc,
+    currentTime,
+    !!referenceVideo,
+  );
 
   // Drag & Marquee & Handle States
-  const dragModeRef = useRef<"move" | "resize" | "rotate" | "marquee" | null>(null);
+  const dragModeRef = useRef<"move" | "resize" | "rotate" | "marquee" | null>(
+    null,
+  );
   const activeHandleRef = useRef<HandleType>(null);
 
-  const [marqueeBox, setMarqueeBox] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [marqueeBox, setMarqueeBox] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const [activeGuides, setActiveGuides] = useState<AlignmentGuide[]>([]);
   const [hoverCursor, setHoverCursor] = useState<string>("default");
 
   const getHandleCursor = (handle: HandleType): string => {
     switch (handle) {
-      case "rot": return "grab";
+      case "rot":
+        return "grab";
       case "tl":
-      case "br": return "nwse-resize";
+      case "br":
+        return "nwse-resize";
       case "tr":
-      case "bl": return "nesw-resize";
+      case "bl":
+        return "nesw-resize";
       case "t":
-      case "b": return "ns-resize";
+      case "b":
+        return "ns-resize";
       case "l":
-      case "r": return "ew-resize";
-      default: return "default";
+      case "r":
+        return "ew-resize";
+      default:
+        return "default";
     }
   };
 
@@ -198,14 +259,28 @@ export function CanvasViewport({
   const dragStartRef = useRef<{
     startX: number;
     startY: number;
-    nodeStarts: Array<{ id: string; x: number; y: number; width: number; height: number; rotation: number; origX: number; origY: number; origW: number; origH: number }>;
+    nodeStarts: Array<{
+      id: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rotation: number;
+      origX: number;
+      origY: number;
+      origW: number;
+      origH: number;
+    }>;
   } | null>(null);
 
   // Compute layout state using layoutEngine for accurate bounding boxes (Fill/Hug/Auto-Layout)
   const computedLayout = useMemo(() => layoutEngine.computeLayout(doc), [doc]);
 
   // Calculate selection bounding box
-  let selMinX = Infinity, selMinY = Infinity, selMaxX = -Infinity, selMaxY = -Infinity;
+  let selMinX = Infinity,
+    selMinY = Infinity,
+    selMaxX = -Infinity,
+    selMaxY = -Infinity;
 
   for (const n of selectedNodes) {
     const cb = computedLayout.nodes[n.id];
@@ -230,11 +305,19 @@ export function CanvasViewport({
 
     // Responsive handle hit radius bounded to element dimension
     const maxHandleRadius = Math.max(6, Math.min(12, 10 / scale));
-    const cornerRadius = Math.min(maxHandleRadius, Math.max(5, Math.min(selW, selH) * 0.4));
-    const edgeRadius = Math.min(maxHandleRadius, Math.max(4, Math.min(selW, selH) * 0.35));
+    const cornerRadius = Math.min(
+      maxHandleRadius,
+      Math.max(5, Math.min(selW, selH) * 0.4),
+    );
+    const edgeRadius = Math.min(
+      maxHandleRadius,
+      Math.max(4, Math.min(selW, selH) * 0.35),
+    );
 
     const singleNode = selectedNodes.length === 1 ? selectedNodes[0] : null;
-    const rotDeg = singleNode ? ((singleNode as any).rotation || (singleNode.style as any)?.rotation || 0) : 0;
+    const rotDeg = singleNode
+      ? (singleNode as any).rotation || (singleNode.style as any)?.rotation || 0
+      : 0;
 
     let testX = docX;
     let testY = docY;
@@ -252,13 +335,21 @@ export function CanvasViewport({
     // 1. Rotation knob
     const rotX = selMinX + selW / 2;
     const rotY = selMinY - 24;
-    if (Math.hypot(testX - rotX, testY - rotY) <= Math.max(10, 12 / scale)) return "rot";
+    if (Math.hypot(testX - rotX, testY - rotY) <= Math.max(10, 12 / scale))
+      return "rot";
 
     // 2. 4 Corner Handles (tl, tr, bl, br)
-    if (Math.hypot(testX - selMinX, testY - selMinY) <= cornerRadius) return "tl";
-    if (Math.hypot(testX - (selMinX + selW), testY - selMinY) <= cornerRadius) return "tr";
-    if (Math.hypot(testX - selMinX, testY - (selMinY + selH)) <= cornerRadius) return "bl";
-    if (Math.hypot(testX - (selMinX + selW), testY - (selMinY + selH)) <= cornerRadius) return "br";
+    if (Math.hypot(testX - selMinX, testY - selMinY) <= cornerRadius)
+      return "tl";
+    if (Math.hypot(testX - (selMinX + selW), testY - selMinY) <= cornerRadius)
+      return "tr";
+    if (Math.hypot(testX - selMinX, testY - (selMinY + selH)) <= cornerRadius)
+      return "bl";
+    if (
+      Math.hypot(testX - (selMinX + selW), testY - (selMinY + selH)) <=
+      cornerRadius
+    )
+      return "br";
 
     // 3. 4 Edge Midpoint Handles (t, b, l, r)
     const midX = selMinX + selW / 2;
@@ -266,10 +357,18 @@ export function CanvasViewport({
     const verticalKnobRadius = Math.min(edgeRadius, Math.max(4, selH * 0.35));
     const horizontalKnobRadius = Math.min(edgeRadius, Math.max(4, selW * 0.35));
 
-    if (Math.hypot(testX - midX, testY - selMinY) <= verticalKnobRadius) return "t";
-    if (Math.hypot(testX - midX, testY - (selMinY + selH)) <= verticalKnobRadius) return "b";
-    if (Math.hypot(testX - selMinX, testY - midY) <= horizontalKnobRadius) return "l";
-    if (Math.hypot(testX - (selMinX + selW), testY - midY) <= horizontalKnobRadius) return "r";
+    if (Math.hypot(testX - midX, testY - selMinY) <= verticalKnobRadius)
+      return "t";
+    if (
+      Math.hypot(testX - midX, testY - (selMinY + selH)) <= verticalKnobRadius
+    )
+      return "b";
+    if (Math.hypot(testX - selMinX, testY - midY) <= horizontalKnobRadius)
+      return "l";
+    if (
+      Math.hypot(testX - (selMinX + selW), testY - midY) <= horizontalKnobRadius
+    )
+      return "r";
 
     return null;
   };
@@ -312,7 +411,7 @@ export function CanvasViewport({
 
     const docPt = {
       x: ((e.clientX - rect.left) / rect.width) * doc.canvas.width,
-      y: ((e.clientY - rect.top) / rect.height) * doc.canvas.height
+      y: ((e.clientY - rect.top) / rect.height) * doc.canvas.height,
     };
 
     // 1. Check Handle Hit
@@ -336,9 +435,9 @@ export function CanvasViewport({
             y: cb ? cb.y : n.y,
             width: cb ? cb.width : n.width,
             height: cb ? cb.height : n.height,
-            rotation: n.rotation || 0
+            rotation: n.rotation || 0,
           };
-        })
+        }),
       };
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
       return;
@@ -348,7 +447,9 @@ export function CanvasViewport({
     const allFlattenedNodes = getAllNodesFlattened(doc.nodes);
     const hitNode = [...allFlattenedNodes].reverse().find((n) => {
       const { minX, maxX, minY, maxY } = getNodeHitBounds(n);
-      return docPt.x >= minX && docPt.x <= maxX && docPt.y >= minY && docPt.y <= maxY;
+      return (
+        docPt.x >= minX && docPt.x <= maxX && docPt.y >= minY && docPt.y <= maxY
+      );
     });
 
     if (hitNode) {
@@ -358,7 +459,9 @@ export function CanvasViewport({
           ? selectedNodeIds.filter((id) => id !== hitNode.id)
           : [...selectedNodeIds, hitNode.id];
       } else {
-        nextIds = selectedNodeIds.includes(hitNode.id) ? selectedNodeIds : [hitNode.id];
+        nextIds = selectedNodeIds.includes(hitNode.id)
+          ? selectedNodeIds
+          : [hitNode.id];
       }
       onSelectNodeIds(nextIds);
 
@@ -382,16 +485,20 @@ export function CanvasViewport({
             y: cb ? cb.y : n.y,
             width: cb ? cb.width : n.width,
             height: cb ? cb.height : n.height,
-            rotation: n.rotation || 0
+            rotation: n.rotation || 0,
           };
-        })
+        }),
       };
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
     } else {
       if (!e.shiftKey) onSelectNodeIds([]);
       dragModeRef.current = "marquee";
       setHoverCursor("crosshair");
-      dragStartRef.current = { startX: docPt.x, startY: docPt.y, nodeStarts: [] };
+      dragStartRef.current = {
+        startX: docPt.x,
+        startY: docPt.y,
+        nodeStarts: [],
+      };
       setMarqueeBox({ x: docPt.x, y: docPt.y, width: 0, height: 0 });
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
     }
@@ -404,7 +511,7 @@ export function CanvasViewport({
 
     const docPt = {
       x: ((e.clientX - rect.left) / rect.width) * doc.canvas.width,
-      y: ((e.clientY - rect.top) / rect.height) * doc.canvas.height
+      y: ((e.clientY - rect.top) / rect.height) * doc.canvas.height,
     };
 
     if (!dragStartRef.current || !dragModeRef.current) {
@@ -415,9 +522,20 @@ export function CanvasViewport({
         const allFlattenedNodes = getAllNodesFlattened(doc.nodes);
         const hitNode = [...allFlattenedNodes].reverse().find((n) => {
           const { minX, maxX, minY, maxY } = getNodeHitBounds(n);
-          return docPt.x >= minX && docPt.x <= maxX && docPt.y >= minY && docPt.y <= maxY;
+          return (
+            docPt.x >= minX &&
+            docPt.x <= maxX &&
+            docPt.y >= minY &&
+            docPt.y <= maxY
+          );
         });
-        setHoverCursor(hitNode ? "grab" : (selectedNodeIds.length > 0 ? "default" : "crosshair"));
+        setHoverCursor(
+          hitNode
+            ? "grab"
+            : selectedNodeIds.length > 0
+              ? "default"
+              : "crosshair",
+        );
       }
       return;
     }
@@ -441,14 +559,22 @@ export function CanvasViewport({
         .filter((n) => !selectedNodeIds.includes(n.id))
         .map((n) => {
           const cb = computedLayout.nodes[n.id];
-          return cb ? ({ ...n, x: cb.x, y: cb.y, width: cb.width, height: cb.height } as any) : n;
+          return cb
+            ? ({
+                ...n,
+                x: cb.x,
+                y: cb.y,
+                width: cb.width,
+                height: cb.height,
+              } as any)
+            : n;
         });
 
       const snapResult = snapEngine.calculateSnap(
         { x: targetX, y: targetY, width: movingWidth, height: movingHeight },
         otherNodes,
         doc.canvas.width,
-        doc.canvas.height
+        doc.canvas.height,
       );
 
       setActiveGuides(snapResult.guides);
@@ -462,7 +588,11 @@ export function CanvasViewport({
           node.y = ns.origY + snappedDeltaY;
         }
       }
-    } else if (dragModeRef.current === "resize" && activeHandleRef.current && selectedNode) {
+    } else if (
+      dragModeRef.current === "resize" &&
+      activeHandleRef.current &&
+      selectedNode
+    ) {
       const start = dragStartRef.current.nodeStarts[0];
       if (!start) return;
 
@@ -472,7 +602,11 @@ export function CanvasViewport({
       let newH = start.height;
 
       const handle = activeHandleRef.current;
-      const isCorner = handle === "tr" || handle === "tl" || handle === "br" || handle === "bl";
+      const isCorner =
+        handle === "tr" ||
+        handle === "tl" ||
+        handle === "br" ||
+        handle === "bl";
       const isVertical = handle === "t" || handle === "b";
       const isHorizontal = handle === "l" || handle === "r";
 
@@ -500,7 +634,15 @@ export function CanvasViewport({
         .filter((n) => !selectedNodeIds.includes(n.id))
         .map((n) => {
           const cb = computedLayout.nodes[n.id];
-          return cb ? ({ ...n, x: cb.x, y: cb.y, width: cb.width, height: cb.height } as any) : n;
+          return cb
+            ? ({
+                ...n,
+                x: cb.x,
+                y: cb.y,
+                width: cb.width,
+                height: cb.height,
+              } as any)
+            : n;
         });
 
       const resizeSnap = snapEngine.calculateResizeSnap(
@@ -508,7 +650,7 @@ export function CanvasViewport({
         handle,
         otherNodes,
         doc.canvas.width,
-        doc.canvas.height
+        doc.canvas.height,
       );
 
       newX = resizeSnap.x;
@@ -523,12 +665,20 @@ export function CanvasViewport({
       selectedNode.height = Math.round(newH);
 
       // Primitive-Specific Scaling across ALL sides and handles (fill space without leaving empty gaps)
-      if (selectedNode.type === "line" || (selectedNode as any).shapeKind === "line") {
+      if (
+        selectedNode.type === "line" ||
+        (selectedNode as any).shapeKind === "line"
+      ) {
         if (isVertical || isCorner) {
           (selectedNode as any).strokeWidth = Math.max(1, Math.round(newH));
-          if (selectedNode.style) selectedNode.style.strokeWidth = Math.max(1, Math.round(newH));
+          if (selectedNode.style)
+            selectedNode.style.strokeWidth = Math.max(1, Math.round(newH));
         }
-      } else if (selectedNode.type === "text" || selectedNode.type === "rich-text" || selectedNode.type === "metric") {
+      } else if (
+        selectedNode.type === "text" ||
+        selectedNode.type === "rich-text" ||
+        selectedNode.type === "metric"
+      ) {
         let scaleFactor = 1;
         if (isVertical && start.height > 0) {
           scaleFactor = Math.max(0.2, newH / start.height);
@@ -541,8 +691,12 @@ export function CanvasViewport({
         }
 
         if (scaleFactor !== 1) {
-          const startFontSize = (start as any).fontSize || (start as any).style?.fontSize || 24;
-          const newFontSize = Math.max(8, Math.round(startFontSize * scaleFactor));
+          const startFontSize =
+            (start as any).fontSize || (start as any).style?.fontSize || 24;
+          const newFontSize = Math.max(
+            8,
+            Math.round(startFontSize * scaleFactor),
+          );
           if (selectedNode.style) selectedNode.style.fontSize = newFontSize;
           (selectedNode as any).fontSize = newFontSize;
 
@@ -550,8 +704,15 @@ export function CanvasViewport({
             const fontFam = selectedNode.style?.fontFamily || "Inter";
             const fontW = selectedNode.style?.fontWeight || "bold";
             const currentText = (selectedNode as any).text || "";
-            const measuredW = measureTextWidth(currentText, newFontSize, fontW, fontFam);
-            const lineH = Math.ceil(newFontSize * (selectedNode.style?.lineHeight || 1.2));
+            const measuredW = measureTextWidth(
+              currentText,
+              newFontSize,
+              fontW,
+              fontFam,
+            );
+            const lineH = Math.ceil(
+              newFontSize * (selectedNode.style?.lineHeight || 1.2),
+            );
             selectedNode.width = measuredW;
             selectedNode.height = lineH;
           }
@@ -599,7 +760,12 @@ export function CanvasViewport({
           const ny = cb ? cb.y : n.y;
           const nw = cb ? cb.width : n.width;
           const nh = cb ? cb.height : n.height;
-          return nx >= minX && nx + nw <= minX + width && ny >= minY && ny + nh <= minY + height;
+          return (
+            nx >= minX &&
+            nx + nw <= minX + width &&
+            ny >= minY &&
+            ny + nh <= minY + height
+          );
         })
         .map((n) => n.id);
 
@@ -631,35 +797,97 @@ export function CanvasViewport({
             node.width = ns.width;
             node.height = ns.height;
 
-            if (finalX !== ns.x) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "x", value: finalX });
-            if (finalY !== ns.y) updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "y", value: finalY });
+            if (finalX !== ns.x)
+              updateCmds.push({
+                type: "UPDATE_NODE_PROPERTY",
+                nodeId: node.id,
+                path: "x",
+                value: finalX,
+              });
+            if (finalY !== ns.y)
+              updateCmds.push({
+                type: "UPDATE_NODE_PROPERTY",
+                nodeId: node.id,
+                path: "y",
+                value: finalY,
+              });
             if (finalW !== ns.width) {
-              updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "width", value: finalW });
+              updateCmds.push({
+                type: "UPDATE_NODE_PROPERTY",
+                nodeId: node.id,
+                path: "width",
+                value: finalW,
+              });
               if (node.layout?.constraints?.widthMode === "hug") {
-                updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "layout.constraints.widthMode", value: "fixed" });
+                updateCmds.push({
+                  type: "UPDATE_NODE_PROPERTY",
+                  nodeId: node.id,
+                  path: "layout.constraints.widthMode",
+                  value: "fixed",
+                });
               }
             }
             if (finalH !== ns.height) {
-              updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "height", value: finalH });
+              updateCmds.push({
+                type: "UPDATE_NODE_PROPERTY",
+                nodeId: node.id,
+                path: "height",
+                value: finalH,
+              });
               if (node.layout?.constraints?.heightMode === "hug") {
-                updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "layout.constraints.heightMode", value: "fixed" });
+                updateCmds.push({
+                  type: "UPDATE_NODE_PROPERTY",
+                  nodeId: node.id,
+                  path: "layout.constraints.heightMode",
+                  value: "fixed",
+                });
               }
             }
 
             if (node.type === "line" || (node as any).shapeKind === "line") {
               const finalStrokeW = Math.round(finalH);
-              updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "strokeWidth", value: finalStrokeW });
-              updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "style.strokeWidth", value: finalStrokeW });
-            } else if (node.type === "text" || node.type === "rich-text" || node.type === "metric") {
-              const currentFontSize = (node as any).fontSize || node.style?.fontSize;
+              updateCmds.push({
+                type: "UPDATE_NODE_PROPERTY",
+                nodeId: node.id,
+                path: "strokeWidth",
+                value: finalStrokeW,
+              });
+              updateCmds.push({
+                type: "UPDATE_NODE_PROPERTY",
+                nodeId: node.id,
+                path: "style.strokeWidth",
+                value: finalStrokeW,
+              });
+            } else if (
+              node.type === "text" ||
+              node.type === "rich-text" ||
+              node.type === "metric"
+            ) {
+              const currentFontSize =
+                (node as any).fontSize || node.style?.fontSize;
               if (currentFontSize && currentFontSize !== (ns as any).fontSize) {
-                updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "fontSize", value: currentFontSize });
-                updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "style.fontSize", value: currentFontSize });
+                updateCmds.push({
+                  type: "UPDATE_NODE_PROPERTY",
+                  nodeId: node.id,
+                  path: "fontSize",
+                  value: currentFontSize,
+                });
+                updateCmds.push({
+                  type: "UPDATE_NODE_PROPERTY",
+                  nodeId: node.id,
+                  path: "style.fontSize",
+                  value: currentFontSize,
+                });
               }
             } else if (node.type === "icon") {
               const currentSize = (node as any).size;
               if (currentSize && currentSize !== (ns as any).size) {
-                updateCmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: node.id, path: "size", value: currentSize });
+                updateCmds.push({
+                  type: "UPDATE_NODE_PROPERTY",
+                  nodeId: node.id,
+                  path: "size",
+                  value: currentSize,
+                });
               }
             }
           }
@@ -668,7 +896,11 @@ export function CanvasViewport({
         if (updateCmds.length > 0) {
           onExecuteCommand({ type: "BATCH_COMMANDS", commands: updateCmds });
         }
-      } else if (mode === "rotate" && selectedNode && dragStartRef.current.nodeStarts[0]) {
+      } else if (
+        mode === "rotate" &&
+        selectedNode &&
+        dragStartRef.current.nodeStarts[0]
+      ) {
         const startRot = dragStartRef.current.nodeStarts[0].rotation;
         const finalRot = selectedNode.rotation;
         if (finalRot !== startRot) {
@@ -677,7 +909,7 @@ export function CanvasViewport({
             type: "UPDATE_NODE_PROPERTY",
             nodeId: selectedNode.id,
             path: "rotation",
-            value: finalRot
+            value: finalRot,
           });
         }
       }
@@ -690,32 +922,81 @@ export function CanvasViewport({
   };
 
   // Alignment Helper Commands
-  const alignSelected = (alignment: "left" | "center" | "right" | "top" | "middle" | "bottom") => {
+  const alignSelected = (
+    alignment: "left" | "center" | "right" | "top" | "middle" | "bottom",
+  ) => {
     if (selectedNodes.length === 0) return;
     const cmds: DocumentCommand[] = [];
     const isSingle = selectedNodes.length === 1;
 
     if (alignment === "left") {
       const targetX = isSingle ? 0 : Math.min(...selectedNodes.map((n) => n.x));
-      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "x", value: targetX }));
+      selectedNodes.forEach((n) =>
+        cmds.push({
+          type: "UPDATE_NODE_PROPERTY",
+          nodeId: n.id,
+          path: "x",
+          value: targetX,
+        }),
+      );
     } else if (alignment === "center") {
       const centerX = isSingle ? doc.canvas.width / 2 : selMinX + selW / 2;
-      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "x", value: Math.round(centerX - n.width / 2) }));
+      selectedNodes.forEach((n) =>
+        cmds.push({
+          type: "UPDATE_NODE_PROPERTY",
+          nodeId: n.id,
+          path: "x",
+          value: Math.round(centerX - n.width / 2),
+        }),
+      );
     } else if (alignment === "right") {
-      const targetX = isSingle ? doc.canvas.width : Math.max(...selectedNodes.map((n) => n.x + n.width));
-      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "x", value: Math.round(targetX - n.width) }));
+      const targetX = isSingle
+        ? doc.canvas.width
+        : Math.max(...selectedNodes.map((n) => n.x + n.width));
+      selectedNodes.forEach((n) =>
+        cmds.push({
+          type: "UPDATE_NODE_PROPERTY",
+          nodeId: n.id,
+          path: "x",
+          value: Math.round(targetX - n.width),
+        }),
+      );
     } else if (alignment === "top") {
       const targetY = isSingle ? 0 : Math.min(...selectedNodes.map((n) => n.y));
-      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "y", value: targetY }));
+      selectedNodes.forEach((n) =>
+        cmds.push({
+          type: "UPDATE_NODE_PROPERTY",
+          nodeId: n.id,
+          path: "y",
+          value: targetY,
+        }),
+      );
     } else if (alignment === "middle") {
       const centerY = isSingle ? doc.canvas.height / 2 : selMinY + selH / 2;
-      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "y", value: Math.round(centerY - n.height / 2) }));
+      selectedNodes.forEach((n) =>
+        cmds.push({
+          type: "UPDATE_NODE_PROPERTY",
+          nodeId: n.id,
+          path: "y",
+          value: Math.round(centerY - n.height / 2),
+        }),
+      );
     } else if (alignment === "bottom") {
-      const targetY = isSingle ? doc.canvas.height : Math.max(...selectedNodes.map((n) => n.y + n.height));
-      selectedNodes.forEach((n) => cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "y", value: Math.round(targetY - n.height) }));
+      const targetY = isSingle
+        ? doc.canvas.height
+        : Math.max(...selectedNodes.map((n) => n.y + n.height));
+      selectedNodes.forEach((n) =>
+        cmds.push({
+          type: "UPDATE_NODE_PROPERTY",
+          nodeId: n.id,
+          path: "y",
+          value: Math.round(targetY - n.height),
+        }),
+      );
     }
 
-    if (cmds.length > 0) onExecuteCommand({ type: "BATCH_COMMANDS", commands: cmds });
+    if (cmds.length > 0)
+      onExecuteCommand({ type: "BATCH_COMMANDS", commands: cmds });
   };
 
   // Distribution Helper Commands
@@ -726,31 +1007,52 @@ export function CanvasViewport({
     if (axis === "horizontal") {
       const sorted = [...selectedNodes].sort((a, b) => a.x - b.x);
       const totalWidth = sorted.reduce((acc, n) => acc + n.width, 0);
-      const span = sorted[sorted.length - 1].x + sorted[sorted.length - 1].width - sorted[0].x;
+      const span =
+        sorted[sorted.length - 1].x +
+        sorted[sorted.length - 1].width -
+        sorted[0].x;
       const gap = (span - totalWidth) / (sorted.length - 1);
 
       let currentX = sorted[0].x;
       sorted.forEach((n) => {
-        cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "x", value: Math.round(currentX) });
+        cmds.push({
+          type: "UPDATE_NODE_PROPERTY",
+          nodeId: n.id,
+          path: "x",
+          value: Math.round(currentX),
+        });
         currentX += n.width + gap;
       });
     } else if (axis === "vertical") {
       const sorted = [...selectedNodes].sort((a, b) => a.y - b.y);
       const totalHeight = sorted.reduce((acc, n) => acc + n.height, 0);
-      const span = sorted[sorted.length - 1].y + sorted[sorted.length - 1].height - sorted[0].y;
+      const span =
+        sorted[sorted.length - 1].y +
+        sorted[sorted.length - 1].height -
+        sorted[0].y;
       const gap = (span - totalHeight) / (sorted.length - 1);
 
       let currentY = sorted[0].y;
       sorted.forEach((n) => {
-        cmds.push({ type: "UPDATE_NODE_PROPERTY", nodeId: n.id, path: "y", value: Math.round(currentY) });
+        cmds.push({
+          type: "UPDATE_NODE_PROPERTY",
+          nodeId: n.id,
+          path: "y",
+          value: Math.round(currentY),
+        });
         currentY += n.height + gap;
       });
     }
 
-    if (cmds.length > 0) onExecuteCommand({ type: "BATCH_COMMANDS", commands: cmds });
+    if (cmds.length > 0)
+      onExecuteCommand({ type: "BATCH_COMMANDS", commands: cmds });
   };
 
-  const findParentAndIndex = (nodes: SceneNode[], targetId: string, parentId?: string): { parentId?: string; list: SceneNode[]; index: number } | null => {
+  const findParentAndIndex = (
+    nodes: SceneNode[],
+    targetId: string,
+    parentId?: string,
+  ): { parentId?: string; list: SceneNode[]; index: number } | null => {
     const idx = nodes.findIndex((n) => n.id === targetId);
     if (idx !== -1) {
       return { parentId, list: nodes, index: idx };
@@ -771,12 +1073,18 @@ export function CanvasViewport({
     if (!match) return;
 
     const { parentId, list, index: sourceIndex } = match;
-    const destinationIndex = direction === "up"
-      ? Math.min(list.length - 1, sourceIndex + 1)
-      : Math.max(0, sourceIndex - 1);
+    const destinationIndex =
+      direction === "up"
+        ? Math.min(list.length - 1, sourceIndex + 1)
+        : Math.max(0, sourceIndex - 1);
 
     if (destinationIndex !== sourceIndex) {
-      onExecuteCommand({ type: "REORDER_NODES", sourceIndex, destinationIndex, parentId });
+      onExecuteCommand({
+        type: "REORDER_NODES",
+        sourceIndex,
+        destinationIndex,
+        parentId,
+      });
     }
   };
 
@@ -815,7 +1123,13 @@ export function CanvasViewport({
       onExecuteCommand({ type: "BATCH_COMMANDS", commands: cloneCmds });
       onSelectNodeIds(newIds);
     }
-  }, [selectedNodeIds, doc.nodes, onExecuteCommand, onSelectNodeIds, findNodeDeep]);
+  }, [
+    selectedNodeIds,
+    doc.nodes,
+    onExecuteCommand,
+    onSelectNodeIds,
+    findNodeDeep,
+  ]);
 
   // Keyboard Shortcuts (Cmd+K, Nudge, Delete, Duplicate, Deselect)
   useEffect(() => {
@@ -875,12 +1189,19 @@ export function CanvasViewport({
             const { parentId, list, index: srcIdx } = match;
             let destIdx = srcIdx;
             if (e.key === "]") {
-              destIdx = e.shiftKey ? list.length - 1 : Math.min(list.length - 1, srcIdx + 1);
+              destIdx = e.shiftKey
+                ? list.length - 1
+                : Math.min(list.length - 1, srcIdx + 1);
             } else if (e.key === "[") {
               destIdx = e.shiftKey ? 0 : Math.max(0, srcIdx - 1);
             }
             if (destIdx !== srcIdx) {
-              onExecuteCommand({ type: "REORDER_NODES", sourceIndex: srcIdx, destinationIndex: destIdx, parentId });
+              onExecuteCommand({
+                type: "REORDER_NODES",
+                sourceIndex: srcIdx,
+                destinationIndex: destIdx,
+                parentId,
+              });
             }
           }
         }
@@ -897,17 +1218,31 @@ export function CanvasViewport({
       let nudgeAxis: "x" | "y" | null = null;
       let nudgeDir = 0;
 
-      if (e.key === "ArrowLeft") { nudgeAxis = "x"; nudgeDir = -step; }
-      else if (e.key === "ArrowRight") { nudgeAxis = "x"; nudgeDir = step; }
-      else if (e.key === "ArrowUp") { nudgeAxis = "y"; nudgeDir = -step; }
-      else if (e.key === "ArrowDown") { nudgeAxis = "y"; nudgeDir = step; }
+      if (e.key === "ArrowLeft") {
+        nudgeAxis = "x";
+        nudgeDir = -step;
+      } else if (e.key === "ArrowRight") {
+        nudgeAxis = "x";
+        nudgeDir = step;
+      } else if (e.key === "ArrowUp") {
+        nudgeAxis = "y";
+        nudgeDir = -step;
+      } else if (e.key === "ArrowDown") {
+        nudgeAxis = "y";
+        nudgeDir = step;
+      }
 
       if (nudgeAxis) {
         e.preventDefault();
         const nudgeCmds: DocumentCommand[] = selectedNodeIds.map((id) => {
           const target = findNodeDeep(doc.nodes, id);
           const currentVal = target ? (target as any)[nudgeAxis!] : 0;
-          return { type: "UPDATE_NODE_PROPERTY", nodeId: id, path: nudgeAxis!, value: currentVal + nudgeDir };
+          return {
+            type: "UPDATE_NODE_PROPERTY",
+            nodeId: id,
+            path: nudgeAxis!,
+            value: currentVal + nudgeDir,
+          };
         });
         if (nudgeCmds.length === 1) {
           onExecuteCommand(nudgeCmds[0]);
@@ -919,52 +1254,149 @@ export function CanvasViewport({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedNodeIds, doc.nodes, onExecuteCommand, onSelectNodeIds, deleteSelected, duplicateSelected, findNodeDeep, isInsertPaletteOpen]);
+  }, [
+    selectedNodeIds,
+    doc.nodes,
+    onExecuteCommand,
+    onSelectNodeIds,
+    deleteSelected,
+    duplicateSelected,
+    findNodeDeep,
+    isInsertPaletteOpen,
+  ]);
 
   const scale = viewport.zoom / 100;
 
   return (
-    <div ref={containerRef} className="relative flex-1 flex flex-col overflow-hidden select-none">
+    <div
+      ref={containerRef}
+      className="relative flex-1 flex flex-col overflow-hidden select-none"
+    >
       {/* Main Canvas Viewport Area */}
       <div
         className="relative flex-1 flex items-center justify-center overflow-hidden p-4"
         style={{
-          background: "radial-gradient(ellipse at 50% 50%, #141420 0%, #080810 70%)",
+          background:
+            "radial-gradient(ellipse at 50% 50%, #141420 0%, #080810 70%)",
           backgroundImage:
             "radial-gradient(ellipse at 50% 50%, #141420 0%, #080810 70%), radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
-          backgroundSize: "100% 100%, 24px 24px"
+          backgroundSize: "100% 100%, 24px 24px",
         }}
       >
         {/* Floating Spatial Alignment & Distribution Toolbar */}
         {selectedNodes.length > 0 && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-xl border border-white/10 bg-black/80 backdrop-blur-md p-1.5 z-50 shadow-2xl">
-            <button type="button" onClick={() => alignSelected("left")} title="Align Left" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignLeft size={14} /></button>
-            <button type="button" onClick={() => alignSelected("center")} title="Align Center" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignCenter size={14} /></button>
-            <button type="button" onClick={() => alignSelected("right")} title="Align Right" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignRight size={14} /></button>
+            <button
+              type="button"
+              onClick={() => alignSelected("left")}
+              title="Align Left"
+              className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+            >
+              <AlignLeft size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => alignSelected("center")}
+              title="Align Center"
+              className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+            >
+              <AlignCenter size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => alignSelected("right")}
+              title="Align Right"
+              className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+            >
+              <AlignRight size={14} />
+            </button>
             <div className="w-px h-4 bg-white/10 mx-0.5" />
-            <button type="button" onClick={() => alignSelected("top")} title="Align Top" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignVerticalSpaceAround size={14} /></button>
-            <button type="button" onClick={() => alignSelected("middle")} title="Align Middle" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignHorizontalSpaceAround size={14} /></button>
-            <button type="button" onClick={() => alignSelected("bottom")} title="Align Bottom" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><AlignVerticalSpaceAround size={14} className="rotate-180" /></button>
+            <button
+              type="button"
+              onClick={() => alignSelected("top")}
+              title="Align Top"
+              className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+            >
+              <AlignVerticalSpaceAround size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => alignSelected("middle")}
+              title="Align Middle"
+              className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+            >
+              <AlignHorizontalSpaceAround size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => alignSelected("bottom")}
+              title="Align Bottom"
+              className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+            >
+              <AlignVerticalSpaceAround size={14} className="rotate-180" />
+            </button>
 
             {selectedNodes.length === 1 && (
               <>
                 <div className="w-px h-4 bg-white/10 mx-0.5" />
-                <button type="button" onClick={() => reorderSelected("up")} title="Bring Forward" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><ArrowUp size={14} /></button>
-                <button type="button" onClick={() => reorderSelected("down")} title="Send Backward" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><ArrowDown size={14} /></button>
+                <button
+                  type="button"
+                  onClick={() => reorderSelected("up")}
+                  title="Bring Forward"
+                  className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+                >
+                  <ArrowUp size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => reorderSelected("down")}
+                  title="Send Backward"
+                  className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+                >
+                  <ArrowDown size={14} />
+                </button>
               </>
             )}
 
             {selectedNodes.length >= 3 && (
               <>
                 <div className="w-px h-4 bg-white/10 mx-0.5" />
-                <button type="button" onClick={() => distributeSelected("horizontal")} title="Distribute Horizontally" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><MoveHorizontal size={14} /></button>
-                <button type="button" onClick={() => distributeSelected("vertical")} title="Distribute Vertically" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><MoveVertical size={14} /></button>
+                <button
+                  type="button"
+                  onClick={() => distributeSelected("horizontal")}
+                  title="Distribute Horizontally"
+                  className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+                >
+                  <MoveHorizontal size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => distributeSelected("vertical")}
+                  title="Distribute Vertically"
+                  className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+                >
+                  <MoveVertical size={14} />
+                </button>
               </>
             )}
 
             <div className="w-px h-4 bg-white/10 mx-0.5" />
-            <button type="button" onClick={duplicateSelected} title="Duplicate (Cmd+D)" className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"><Copy size={14} /></button>
-            <button type="button" onClick={deleteSelected} title="Delete (Del / Backspace)" className="p-1.5 rounded hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 cursor-pointer"><Trash2 size={14} /></button>
+            <button
+              type="button"
+              onClick={duplicateSelected}
+              title="Duplicate (Cmd+D)"
+              className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white cursor-pointer"
+            >
+              <Copy size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={deleteSelected}
+              title="Delete (Del / Backspace)"
+              className="p-1.5 rounded hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 cursor-pointer"
+            >
+              <Trash2 size={14} />
+            </button>
           </div>
         )}
 
@@ -972,12 +1404,16 @@ export function CanvasViewport({
         {selectedNodeIds.length > 0 && (
           <div className="absolute top-4 right-4 rounded-xl border border-violet-500/20 bg-violet-500/10 backdrop-blur-md px-3 py-2 font-mono text-[10px] text-violet-300 pointer-events-none select-none space-y-0.5 z-20">
             <p className="font-bold text-violet-200">
-              {selectedNodeIds.length === 1 ? (selectedNode?.name || selectedNode?.id) : `${selectedNodeIds.length} Nodes Selected`}
+              {selectedNodeIds.length === 1
+                ? selectedNode?.name || selectedNode?.id
+                : `${selectedNodeIds.length} Nodes Selected`}
             </p>
             {selectedNode && selectedNodeIds.length === 1 && (
               <p className="text-violet-400/70">
-                x:{Math.round(selectedNode.x)} y:{Math.round(selectedNode.y)} &nbsp;
-                {Math.round(selectedNode.width)}×{Math.round(selectedNode.height)}
+                x:{Math.round(selectedNode.x)} y:{Math.round(selectedNode.y)}{" "}
+                &nbsp;
+                {Math.round(selectedNode.width)}×
+                {Math.round(selectedNode.height)}
                 {selectedNode.rotation ? ` · ${selectedNode.rotation}°` : ""}
               </p>
             )}
@@ -988,7 +1424,7 @@ export function CanvasViewport({
         <div
           style={{
             width: Math.round(doc.canvas.width * scale),
-            height: Math.round(doc.canvas.height * scale)
+            height: Math.round(doc.canvas.height * scale),
           }}
           className="relative flex items-center justify-center shrink-0 transition-all duration-150"
         >
@@ -999,7 +1435,7 @@ export function CanvasViewport({
               height: doc.canvas.height,
               transform: `scale(${scale})`,
               transformOrigin: "center",
-              willChange: "transform"
+              willChange: "transform",
             }}
             className="relative shrink-0"
           >
@@ -1015,9 +1451,10 @@ export function CanvasViewport({
             <div
               className="absolute -inset-0.5 rounded-2xl transition-all duration-300 pointer-events-none z-10"
               style={{
-                boxShadow: selectedNodeIds.length > 0
-                  ? "0 0 0 2px rgba(124,111,255,0.5), 0 0 60px rgba(124,111,255,0.15)"
-                  : "0 0 0 1.5px rgba(255,255,255,0.08), 0 32px 80px rgba(0,0,0,0.8)"
+                boxShadow:
+                  selectedNodeIds.length > 0
+                    ? "0 0 0 2px rgba(124,111,255,0.5), 0 0 60px rgba(124,111,255,0.15)"
+                    : "0 0 0 1.5px rgba(255,255,255,0.08), 0 32px 80px rgba(0,0,0,0.8)",
               }}
             />
 
@@ -1033,18 +1470,24 @@ export function CanvasViewport({
               style={{
                 width: doc.canvas.width,
                 height: doc.canvas.height,
-                cursor: hoverCursor
+                cursor: hoverCursor,
               }}
             />
 
-            <div className={`absolute top-2 left-2 z-30 rounded border px-2 py-1 font-mono text-[9px] ${
-              nativeOverlayState === "native"
-                ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+            <div
+              className={`absolute top-2 left-2 z-30 rounded border px-2 py-1 font-mono text-[9px] ${
+                nativeOverlayState === "native"
+                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                  : nativeOverlayState === "probing"
+                    ? "border-blue-400/30 bg-blue-400/10 text-blue-300"
+                    : "border-amber-400/30 bg-amber-400/10 text-amber-300"
+              } pointer-events-none`}
+            >
+              {nativeOverlayState === "native"
+                ? "NATIVE_GPU"
                 : nativeOverlayState === "probing"
-                  ? "border-blue-400/30 bg-blue-400/10 text-blue-300"
-                  : "border-amber-400/30 bg-amber-400/10 text-amber-300"
-            } pointer-events-none`}>
-              {nativeOverlayState === "native" ? "NATIVE_GPU" : nativeOverlayState === "probing" ? "NATIVE_PROBE..." : "CANVAS_FALLBACK"}
+                  ? "NATIVE_PROBE..."
+                  : "CANVAS_FALLBACK"}
             </div>
 
             {/* Marquee Selection Box Overlay */}
@@ -1056,7 +1499,7 @@ export function CanvasViewport({
                   top: marqueeBox.y,
                   width: marqueeBox.width,
                   height: marqueeBox.height,
-                  boxShadow: "0 0 12px rgba(124,111,255,0.4)"
+                  boxShadow: "0 0 12px rgba(124,111,255,0.4)",
                 }}
               />
             )}
@@ -1070,15 +1513,21 @@ export function CanvasViewport({
                   guide.type === "vertical"
                     ? {
                         left: `${(guide.position / doc.canvas.width) * 100}%`,
-                        top: 0, bottom: 0, width: "1px",
-                        background: "linear-gradient(to bottom, transparent, #7C6FFF 20%, #7C6FFF 80%, transparent)",
-                        boxShadow: "0 0 6px 1px rgba(124,111,255,0.6)"
+                        top: 0,
+                        bottom: 0,
+                        width: "1px",
+                        background:
+                          "linear-gradient(to bottom, transparent, #7C6FFF 20%, #7C6FFF 80%, transparent)",
+                        boxShadow: "0 0 6px 1px rgba(124,111,255,0.6)",
                       }
                     : {
                         top: `${(guide.position / doc.canvas.height) * 100}%`,
-                        left: 0, right: 0, height: "1px",
-                        background: "linear-gradient(to right, transparent, #7C6FFF 20%, #7C6FFF 80%, transparent)",
-                        boxShadow: "0 0 6px 1px rgba(124,111,255,0.6)"
+                        left: 0,
+                        right: 0,
+                        height: "1px",
+                        background:
+                          "linear-gradient(to right, transparent, #7C6FFF 20%, #7C6FFF 80%, transparent)",
+                        boxShadow: "0 0 6px 1px rgba(124,111,255,0.6)",
                       }
                 }
               />
@@ -1094,15 +1543,27 @@ export function CanvasViewport({
           onChange={(e) => {
             const [w, h] = e.target.value.split("x").map(Number);
             if (w && h) {
-              onExecuteCommand({ type: "UPDATE_CANVAS_SIZE", width: w, height: h });
+              onExecuteCommand({
+                type: "UPDATE_CANVAS_SIZE",
+                width: w,
+                height: h,
+              });
             }
           }}
           className="bg-transparent text-violet-300 font-bold font-mono text-[10px] outline-none cursor-pointer hover:text-violet-200 transition-colors"
         >
-          <option value="1280x720" className="bg-[#0F0F14] text-white">16:9 (1280×720)</option>
-          <option value="1080x1920" className="bg-[#0F0F14] text-white">9:16 (1080×1920)</option>
-          <option value="1080x1080" className="bg-[#0F0F14] text-white">1:1 (1080×1080)</option>
-          <option value="1080x1350" className="bg-[#0F0F14] text-white">4:5 (1080×1350)</option>
+          <option value="1280x720" className="bg-[#0F0F14] text-white">
+            16:9 (1280×720)
+          </option>
+          <option value="1080x1920" className="bg-[#0F0F14] text-white">
+            9:16 (1080×1920)
+          </option>
+          <option value="1080x1080" className="bg-[#0F0F14] text-white">
+            1:1 (1080×1080)
+          </option>
+          <option value="1080x1350" className="bg-[#0F0F14] text-white">
+            4:5 (1080×1350)
+          </option>
         </select>
 
         <span className="text-gray-600 font-mono text-xs">·</span>
@@ -1116,7 +1577,9 @@ export function CanvasViewport({
           >
             -
           </button>
-          <span className="w-9 text-center font-bold text-gray-200">{viewport.zoom}%</span>
+          <span className="w-9 text-center font-bold text-gray-200">
+            {viewport.zoom}%
+          </span>
           <button
             type="button"
             onClick={() => onSetZoom?.(Math.min(300, viewport.zoom + 10))}
@@ -1156,10 +1619,15 @@ export function CanvasViewport({
             className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
               selectedNodeIds.length > 0
                 ? "bg-white/[0.07] hover:bg-white/[0.12] text-gray-200 hover:text-white border-white/[0.12] cursor-pointer shadow-sm"
-                : "bg-white/[0.02] text-gray-600 border-white/[0.04] opacity-40 cursor-not-allowed"
+                : "bg-white/2 text-gray-600 border-white/[0.04] opacity-40 cursor-not-allowed"
             }`}
           >
-            <Copy size={11} className={selectedNodeIds.length > 0 ? "text-gray-300" : "text-gray-600"} />
+            <Copy
+              size={11}
+              className={
+                selectedNodeIds.length > 0 ? "text-gray-300" : "text-gray-600"
+              }
+            />
             <span>Duplicate</span>
           </button>
 
@@ -1175,11 +1643,19 @@ export function CanvasViewport({
             className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${
               selectedNodeIds.length > 0
                 ? "bg-rose-500/20 hover:bg-rose-500/35 text-rose-300 hover:text-rose-200 border-rose-500/40 hover:border-rose-500/60 cursor-pointer shadow-sm shadow-rose-950/40"
-                : "bg-white/[0.02] text-gray-600 border-white/[0.04] opacity-40 cursor-not-allowed"
+                : "bg-white/2 text-gray-600 border-white/[0.04] opacity-40 cursor-not-allowed"
             }`}
           >
-            <Trash2 size={11} className={selectedNodeIds.length > 0 ? "text-rose-400" : "text-gray-600"} />
-            <span>Delete{selectedNodeIds.length > 1 ? ` (${selectedNodeIds.length})` : ""}</span>
+            <Trash2
+              size={11}
+              className={
+                selectedNodeIds.length > 0 ? "text-rose-400" : "text-gray-600"
+              }
+            />
+            <span>
+              Delete
+              {selectedNodeIds.length > 1 ? ` (${selectedNodeIds.length})` : ""}
+            </span>
           </button>
         </div>
       </div>
