@@ -57,7 +57,6 @@ import { ClypraColorPicker } from "@clypra/ui-color-picker";
 import { SUPPORTED_FONT_FAMILIES } from "@/constants/fonts";
 
 import {
-  TemplateRenderer,
   BUILTIN_CANVAS_TEMPLATES,
   TemplateCategory,
   TextTemplate,
@@ -88,6 +87,7 @@ import { ClypraLogo } from "../ClypraLogo";
 import { Link } from "react-router-dom";
 import {
   canonicalArtifactFromTemplate,
+  renderTextTemplatePreviewToCanvas,
   renderTextTemplateFrame,
   TextTemplatePreviewScheduler,
   warmTextTemplateRenderer,
@@ -230,14 +230,15 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     } catch {}
     return "";
   });
-  const [publishPlacement, setPublishPlacement] =
-    useState<(typeof PLACEMENTS)[number]>(() => {
-      try {
-        const saved = localStorage.getItem("clypra_publish_metadata_draft");
-        if (saved && saved.placement) return JSON.parse(saved).placement;
-      } catch {}
-      return "center";
-    });
+  const [publishPlacement, setPublishPlacement] = useState<
+    (typeof PLACEMENTS)[number]
+  >(() => {
+    try {
+      const saved = localStorage.getItem("clypra_publish_metadata_draft");
+      if (saved && saved.placement) return JSON.parse(saved).placement;
+    } catch {}
+    return "center";
+  });
   const [publishCreatorName, setPublishCreatorName] = useState(() => {
     try {
       const saved = localStorage.getItem("clypra_publish_metadata_draft");
@@ -819,32 +820,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     }
   };
 
-  const applyCustomizations = (renderer: TemplateRenderer) => {
-    if (!template) return;
-    for (const layer of template.layers) {
-      if (layer.visible === false) {
-        renderer.updateLayer(layer.id, {
-          opacity: 0,
-        });
-        continue;
-      }
-
-      const overrides: any = {};
-      const colorOverride = colorOverrides.get(layer.id);
-      if (colorOverride) {
-        if (layer.kind === "text") {
-          overrides.color = colorOverride;
-        } else if (layer.kind === "shape") {
-          overrides.fill = colorOverride;
-        }
-      }
-
-      if (Object.keys(overrides).length > 0) {
-        renderer.updateLayer(layer.id, overrides);
-      }
-    }
-  };
-
   // Auto-save template state to localstorage
   useEffect(() => {
     if (!template) return;
@@ -938,6 +913,18 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     const activeTemplate = templateRef.current;
     if (!activeTemplate || !canvasRef.current || !previewSchedulerRef.current)
       return;
+
+    if (isDirectPlayback) {
+      const artifact = canonicalArtifactFromTemplate(activeTemplate);
+      renderTextTemplatePreviewToCanvas(canvasRef.current, {
+        artifact,
+        time,
+        customization: {
+          layerColors: Object.fromEntries(colorOverridesRef.current),
+        },
+      });
+      return;
+    }
 
     let previewTime = time;
     if (
@@ -2254,8 +2241,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             errorMsg = errorData.message || errorData.error || errorMsg;
           } catch {
             if (response.status === 404) {
-              errorMsg = "API endpoint /text-templates/submissions is not deployed on the remote worker yet. Please deploy clypra-api via wrangler deploy.";
-            } else if (rawText && rawText.trim().length > 0 && rawText.length < 200) {
+              errorMsg =
+                "API endpoint /text-templates/submissions is not deployed on the remote worker yet. Please deploy clypra-api via wrangler deploy.";
+            } else if (
+              rawText &&
+              rawText.trim().length > 0 &&
+              rawText.length < 200
+            ) {
               errorMsg = `Server error (${response.status}): ${rawText.trim()}`;
             }
           }
@@ -2406,6 +2398,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         </div>
 
         <div className="flex items-center gap-3">
+          {saveStatus === "saving" && (
+            <span className="text-[11px] text-[#888899] flex items-center gap-1.5 font-medium">
+              <Loader2 size={12} className="animate-spin text-teal-400" />{" "}
+              Auto-saving...
+            </span>
+          )}
+
           {/* Professional Undo / Redo controls */}
           <div className="flex items-center bg-[#181824] border border-[#2A2A38] rounded-lg p-0.5">
             <button
@@ -2434,12 +2433,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             </button>
           </div>
 
-          {saveStatus === "saving" && (
-            <span className="text-[11px] text-[#888899] flex items-center gap-1.5 font-medium">
-              <Loader2 size={12} className="animate-spin text-teal-400" />{" "}
-              Auto-saving...
-            </span>
-          )}
           {template && (
             <>
               {/* File dropdown */}
@@ -2448,40 +2441,67 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                   onClick={() => setShowFileMenu((v) => !v)}
                   className="rounded-lg border border-[#2A2A38] px-3.5 py-1.5 text-xs font-semibold hover:bg-[#2A2A38] transition-all flex items-center gap-1.5"
                 >
-                  <Copy size={13} /> File <ChevronDown size={11} className={`transition-transform ${showFileMenu ? "rotate-180" : ""}`} />
+                  <Copy size={13} /> File{" "}
+                  <ChevronDown
+                    size={11}
+                    className={`transition-transform ${showFileMenu ? "rotate-180" : ""}`}
+                  />
                 </button>
                 {showFileMenu && (
                   <>
                     {/* click-outside overlay */}
-                    <div className="fixed inset-0 z-40" onClick={() => setShowFileMenu(false)} />
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowFileMenu(false)}
+                    />
                     <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[180px] rounded-xl border border-[#2A2A38] bg-[#121219] shadow-2xl overflow-hidden py-1">
                       <button
-                        onClick={() => { handleSaveTemplate(); setShowFileMenu(false); }}
+                        onClick={() => {
+                          handleSaveTemplate();
+                          setShowFileMenu(false);
+                        }}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-[#CCCCD6] hover:bg-[#2A2A38] hover:text-white transition-colors"
                       >
                         <Copy size={13} className="shrink-0" /> Save Template
                       </button>
                       <button
-                        onClick={() => { handleExportJson(); setShowFileMenu(false); }}
+                        onClick={() => {
+                          handleExportJson();
+                          setShowFileMenu(false);
+                        }}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-[#CCCCD6] hover:bg-[#2A2A38] hover:text-white transition-colors"
                       >
-                        <FileJson size={13} className="text-teal-400 shrink-0" /> Export JSON
+                        <FileJson
+                          size={13}
+                          className="text-teal-400 shrink-0"
+                        />{" "}
+                        Export JSON
                       </button>
                       <button
-                        onClick={() => { handleDownloadThumbnail(); setShowFileMenu(false); }}
+                        onClick={() => {
+                          handleDownloadThumbnail();
+                          setShowFileMenu(false);
+                        }}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-[#CCCCD6] hover:bg-[#2A2A38] hover:text-white transition-colors"
                       >
                         <Download size={13} className="shrink-0" /> Download PNG
                       </button>
                       <div className="my-1 border-t border-[#2A2A38]" />
                       <button
-                        onClick={() => { setShowSavedTemplates(true); setShowFileMenu(false); }}
+                        onClick={() => {
+                          setShowSavedTemplates(true);
+                          setShowFileMenu(false);
+                        }}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-[#CCCCD6] hover:bg-[#2A2A38] hover:text-white transition-colors"
                       >
-                        <FolderPlus size={13} className="shrink-0" /> Load ({savedTemplates.length})
+                        <FolderPlus size={13} className="shrink-0" /> Load (
+                        {savedTemplates.length})
                       </button>
                       <button
-                        onClick={() => { handleNewTemplate(); setShowFileMenu(false); }}
+                        onClick={() => {
+                          handleNewTemplate();
+                          setShowFileMenu(false);
+                        }}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-[#CCCCD6] hover:bg-[#2A2A38] hover:text-white transition-colors"
                       >
                         <Plus size={13} className="shrink-0" /> New Template
@@ -2516,7 +2536,6 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           )}
         </div>
       </header>
-
 
       {/* Saved Templates Modal */}
       {showSavedTemplates && (
@@ -3871,7 +3890,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899]">
                             Static Text Content (Multi-Line)
                           </label>
-                          <span className="text-[9px] text-[#666677]">Press Enter for new line</span>
+                          <span className="text-[9px] text-[#666677]">
+                            Press Enter for new line
+                          </span>
                         </div>
                         <textarea
                           rows={3}
@@ -3984,7 +4005,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                               Line Spacing
                             </label>
                             <span className="text-[9px] font-mono text-teal-300">
-                              {Number(selectedLayer.lineHeight ?? 1.25).toFixed(2)}x
+                              {Number(selectedLayer.lineHeight ?? 1.25).toFixed(
+                                2,
+                              )}
+                              x
                             </span>
                           </div>
                           <input
@@ -4089,9 +4113,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                           <option value="shrink">
                             Auto-Shrink Font Size (Fit in Single Line)
                           </option>
-                          <option value="clip">
-                            Clip at Boundaries
-                          </option>
+                          <option value="clip">Clip at Boundaries</option>
                         </select>
                       </div>
 
