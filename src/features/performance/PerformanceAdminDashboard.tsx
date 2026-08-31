@@ -46,7 +46,7 @@ export function PerformanceAdminDashboard() {
   const [resolutionFilter, setResolutionFilter] = useState("4k");
   const [codecFilter, setCodecFilter] = useState("hevc");
 
-  // Data states with immediate fallback defaults
+  // Data states are populated only by live API responses.
   const [osData, setOsData] = useState<OSComparisonData | null>(null);
   const [hwData, setHwData] = useState<HardwareComparisonData | null>(null);
   const [exportData, setExportData] = useState<ExportComparisonData | null>(null);
@@ -90,10 +90,13 @@ export function PerformanceAdminDashboard() {
           performanceClient.getBenchmarkSuites(),
         ]);
 
-      if (osRes) setOsData(osRes);
-      if (hwRes) setHwData(hwRes);
-      if (expRes) setExportData(expRes);
-      if (sessRes) setSessionRollupData(sessRes);
+      setOsData(osRes);
+      setHwData(hwRes);
+      setExportData(expRes);
+      setSessionRollupData(sessRes);
+      setAnomaliesData([]);
+      setFallbacksData(null);
+      setReleasesData(null);
       if (anomRes) {
         if (Array.isArray((anomRes as any).anomalies)) {
           setAnomaliesData((anomRes as any).anomalies);
@@ -101,11 +104,19 @@ export function PerformanceAdminDashboard() {
           setAnomaliesData(anomRes as any);
         }
       }
-      if (fbRes) setFallbacksData(fbRes);
-      if (relRes) setReleasesData(relRes);
+      setFallbacksData(fbRes);
+      setReleasesData(relRes);
       if (suitesRes?.suites) setSuitesData(suitesRes.suites);
     } catch {
-      // Fallback is pre-populated
+      // A failed API read is an empty live-data state, never synthetic data.
+      setOsData(null);
+      setHwData(null);
+      setExportData(null);
+      setSessionRollupData(null);
+      setAnomaliesData([]);
+      setFallbacksData(null);
+      setReleasesData(null);
+      setSuitesData([]);
     } finally {
       setRefreshing(false);
       setLoading(false);
