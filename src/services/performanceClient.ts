@@ -1,5 +1,11 @@
 import { getStudioApiBaseUrl } from "./apiConfig";
 
+function assertTestFixtureAccess(): void {
+  if (import.meta.env.MODE !== "test") {
+    throw new Error("Synthetic performance fixtures are test-only; use the live API client.");
+  }
+}
+
 export interface OSComparisonMetric {
   osFamily: string;
   sampleCount: number;
@@ -143,19 +149,39 @@ export interface PreviewComparisonCohort {
   view: "webview" | "native";
   surface: "dom-canvas" | "native-surface";
   runtimeEnvironment: "development" | "production";
+  scenario?: "playback" | "seek" | "scrub" | "paused-interaction" | "qualification";
+  qualificationRunId?: string;
+  measurementSource?: "frontend-span" | "native-sample" | "session-rollup";
   sampleCount: number;
+  measuredFrameCount: number;
+  confidence: "insufficient" | "preliminary" | "qualified";
   p50RenderTimeUs: number;
   p95RenderTimeUs: number;
   p99RenderTimeUs: number;
   droppedFrameRatioP95: number;
+  droppedFrameRatio: number;
+  p95DecodeUs: number;
+  p95DecoderMutexWaitUs: number;
+  p95ConversionUploadUs: number;
+  p95ComposeUs: number;
+  p95SurfaceAcquireUs: number;
+  p95GpuQueueWaitUs: number;
   p95ReadbackUs: number;
+  p95TransferUs: number;
+  p95CanvasPaintUs: number;
   p95PresentUs: number;
+  p95SchedulerWaitUs: number;
+  p95IpcWaitUs: number;
+  firstFrameVisibleMs?: number;
   jankEvents: number;
+  primaryBottleneck: "decode" | "decoderMutexWait" | "conversionUpload" | "compose" | "surfaceAcquire" | "gpuQueueWait" | "readback" | "transfer" | "canvasPaint" | "submitPresent" | "schedulerWait" | "ipcWait" | "none";
   meetsSLA: boolean;
 }
 
 export interface PreviewComparisonData {
   workloadMode: string;
+  scenario?: PreviewComparisonCohort["scenario"];
+  qualificationRunId?: string;
   totalSampleSize: number;
   cohorts: PreviewComparisonCohort[];
 }
@@ -296,10 +322,15 @@ export const performanceClient = {
     }
   },
 
-  async getPreviewComparison(workload = "playback"): Promise<PreviewComparisonData | null> {
+  async getPreviewComparison(
+    workload = "playback",
+    options: { scenario?: PreviewComparisonCohort["scenario"]; qualificationRunId?: string } = {},
+  ): Promise<PreviewComparisonData | null> {
     try {
       const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/preview`);
       url.searchParams.set("workload", workload);
+      if (options.scenario) url.searchParams.set("scenario", options.scenario);
+      if (options.qualificationRunId) url.searchParams.set("qualification_run_id", options.qualificationRunId);
       const res = await fetch(url.toString(), {
         headers: { Accept: "application/json" },
       });
@@ -307,6 +338,8 @@ export const performanceClient = {
       const json = await res.json();
       return {
         workloadMode: json.workloadMode || workload,
+        scenario: json.scenario,
+        qualificationRunId: json.qualificationRunId,
         totalSampleSize: json.totalSampleSize || 0,
         cohorts: json.cohorts || [],
       };
@@ -315,7 +348,9 @@ export const performanceClient = {
     }
   },
 
-  getLocalFallbackOSComparison(): OSComparisonData {
+  /** Test-only fixture; Admin pages must use the live API methods above. */
+  getTestFixtureOSComparison(): OSComparisonData {
+    assertTestFixtureAccess();
     const comparison: OSComparisonMetric[] = [
       {
         osFamily: "macos",
@@ -394,7 +429,8 @@ export const performanceClient = {
     };
   },
 
-  getLocalFallbackHardwareComparison(): HardwareComparisonData {
+  getTestFixtureHardwareComparison(): HardwareComparisonData {
+    assertTestFixtureAccess();
     return {
       workloadMode: "playback",
       gpuMatrix: [
@@ -462,7 +498,8 @@ export const performanceClient = {
     };
   },
 
-  getLocalFallbackAnomalies(): { totalAnomaliesDetected: number; anomalies: AnomalyItem[] } {
+  getTestFixtureAnomalies(): { totalAnomaliesDetected: number; anomalies: AnomalyItem[] } {
+    assertTestFixtureAccess();
     return {
       totalAnomaliesDetected: 2,
       anomalies: [
@@ -519,7 +556,8 @@ export const performanceClient = {
     };
   },
 
-  getLocalFallbackFallbacks(): FallbackData {
+  getTestFixtureFallbacks(): FallbackData {
+    assertTestFixtureAccess();
     return {
       totalFallbacks: 1420,
       fallbackBreakdown: [
@@ -551,7 +589,8 @@ export const performanceClient = {
     };
   },
 
-  getLocalFallbackReleaseRegression(): ReleaseRegressionData {
+  getTestFixtureReleaseRegression(): ReleaseRegressionData {
+    assertTestFixtureAccess();
     return {
       baseVersion: "1.4.3",
       targetVersion: "1.4.4",
@@ -592,7 +631,8 @@ export const performanceClient = {
     };
   },
 
-  getLocalFallbackExportComparison(): ExportComparisonData {
+  getTestFixtureExportComparison(): ExportComparisonData {
+    assertTestFixtureAccess();
     return {
       totalExports: 4200,
       globalAvgFps: 58.4,
@@ -650,7 +690,8 @@ export const performanceClient = {
     };
   },
 
-  getLocalFallbackSessionRollups(): SessionRollupData {
+  getTestFixtureSessionRollups(): SessionRollupData {
+    assertTestFixtureAccess();
     return {
       totalRollupSessions: 28400,
       totalAccumulatedFrames: 17040000,
