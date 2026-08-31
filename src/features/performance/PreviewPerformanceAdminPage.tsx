@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Eye, RefreshCw } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, Database, Eye, RefreshCw } from "lucide-react";
 import {
   performanceClient,
   type PreviewComparisonCohort,
@@ -10,6 +10,9 @@ import {
 export function PreviewPerformanceAdminPage() {
   const [workload, setWorkload] = useState("playback");
   const [scenario, setScenario] = useState<"all" | "playback" | "seek" | "scrub" | "paused-interaction" | "qualification">("all");
+  const [path, setPath] = useState<"all" | "native" | "webview">("all");
+  const [environment, setEnvironment] = useState<"all" | "development" | "production">("all");
+  const [source, setSource] = useState<"all" | "frontend-span" | "native-sample" | "session-rollup">("all");
   const [data, setData] = useState<PreviewComparisonData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -17,6 +20,9 @@ export function PreviewPerformanceAdminPage() {
     setRefreshing(true);
     const next = await performanceClient.getPreviewComparison(workload, {
       scenario: scenario === "all" ? undefined : scenario,
+      view: path === "all" ? undefined : path,
+      runtimeEnvironment: environment === "all" ? undefined : environment,
+      measurementSource: source === "all" ? undefined : source,
     });
     setData(next);
     setRefreshing(false);
@@ -26,11 +32,13 @@ export function PreviewPerformanceAdminPage() {
     void refresh();
     const interval = window.setInterval(() => void refresh(), 15000);
     return () => window.clearInterval(interval);
-  }, [workload, scenario]);
+  }, [workload, scenario, path, environment, source]);
+
+  const summary = data ? summarizeVisibleCohorts(data.cohorts) : null;
 
   return (
     <div
-      className="min-h-screen overflow-y-auto"
+      className="h-[100dvh] max-h-[100dvh] min-h-0 w-full overflow-x-hidden overflow-y-auto overscroll-contain"
       style={{ background: "var(--studio-bg)", color: "var(--studio-text)" }}
     >
       <header className="sticky top-0 z-30 border-b border-(--studio-border) bg-(--studio-panel)/80 px-6 py-3.5 backdrop-blur-md">
@@ -57,7 +65,7 @@ export function PreviewPerformanceAdminPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
             <select
               value={workload}
               onChange={(event) => setWorkload(event.target.value)}
@@ -66,6 +74,16 @@ export function PreviewPerformanceAdminPage() {
               <option value="playback">Playback</option>
               <option value="scrub">Scrub</option>
               <option value="frame-step">Frame step</option>
+            </select>
+            <select
+              value={path}
+              onChange={(event) => setPath(event.target.value as typeof path)}
+              className="rounded-lg border border-(--studio-border) bg-(--studio-control) px-2.5 py-1.5 text-[11px] font-medium text-white focus:border-(--studio-accent) focus:outline-none"
+              aria-label="Preview path"
+            >
+              <option value="all">Both paths</option>
+              <option value="native">Native surface</option>
+              <option value="webview">WebView canvas</option>
             </select>
             <select
               value={scenario}
@@ -79,6 +97,27 @@ export function PreviewPerformanceAdminPage() {
               <option value="seek">Seek</option>
               <option value="scrub">Scrub</option>
               <option value="paused-interaction">Paused interaction</option>
+            </select>
+            <select
+              value={environment}
+              onChange={(event) => setEnvironment(event.target.value as typeof environment)}
+              className="rounded-lg border border-(--studio-border) bg-(--studio-control) px-2.5 py-1.5 text-[11px] font-medium text-white focus:border-(--studio-accent) focus:outline-none"
+              aria-label="Runtime environment"
+            >
+              <option value="all">All environments</option>
+              <option value="development">Development</option>
+              <option value="production">Production</option>
+            </select>
+            <select
+              value={source}
+              onChange={(event) => setSource(event.target.value as typeof source)}
+              className="rounded-lg border border-(--studio-border) bg-(--studio-control) px-2.5 py-1.5 text-[11px] font-medium text-white focus:border-(--studio-accent) focus:outline-none"
+              aria-label="Measurement source"
+            >
+              <option value="all">All sources</option>
+              <option value="session-rollup">Session rollups</option>
+              <option value="frontend-span">Frontend samples</option>
+              <option value="native-sample">Native samples</option>
             </select>
             <button
               type="button"
@@ -106,18 +145,25 @@ export function PreviewPerformanceAdminPage() {
         ) : data.cohorts.length === 0 ? (
           <EmptyState message="No real tagged preview samples have reached the API yet. Run the same timeline through both paths, then refresh." />
         ) : (
-          <section className="overflow-hidden rounded-2xl border border-(--studio-border) bg-(--studio-panel) shadow-xl">
+          <>
+            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <MetricCard icon={<Activity size={15} />} label="Measured frames" value={summary!.measuredFrames.toLocaleString()} detail={`${summary!.apiSamples.toLocaleString()} API observations`} />
+              <MetricCard icon={<Database size={15} />} label="API observations" value={summary!.apiSamples.toLocaleString()} detail={`${summary!.sourceCounts.sessionRollup.toLocaleString()} rollups · ${summary!.sourceCounts.nativeSample.toLocaleString()} native · ${summary!.sourceCounts.frontendSpan.toLocaleString()} frontend · ${summary!.sourceCounts.legacy.toLocaleString()} legacy`} />
+              <MetricCard icon={<AlertTriangle size={15} />} label="Dropped frames" value={summary!.droppedFrames.toLocaleString()} detail={`${(summary!.droppedFrames / Math.max(1, summary!.measuredFrames) * 100).toFixed(2)}% of measured frames`} />
+              <MetricCard icon={<RefreshCw size={15} />} label="Last received" value={formatTimestamp(summary!.latestTimestampMs)} detail="Live API timestamp" />
+            </section>
+            <section className="overflow-hidden rounded-2xl border border-(--studio-border) bg-(--studio-panel) shadow-xl">
             <div className="flex items-center justify-between border-b border-(--studio-border) px-5 py-4">
               <div>
                 <h2 className="text-sm font-bold text-white">Preview Path Comparison</h2>
-                <p className="text-xs text-(--studio-muted)">{data.totalSampleSize.toLocaleString()} measured frames · refreshes every 15 seconds</p>
+                <p className="text-xs text-(--studio-muted)">{summary!.measuredFrames.toLocaleString()} measured frames from {summary!.apiSamples.toLocaleString()} API observations · refreshes every 15 seconds</p>
               </div>
               <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
                 Live
               </span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <div className="min-w-0 overflow-x-auto overscroll-x-contain">
+              <table className="min-w-[1450px] w-full text-left text-xs">
                 <thead className="border-b border-(--studio-border) bg-(--studio-control)/50 text-[10px] font-bold uppercase tracking-wider text-(--studio-muted)">
                   <tr>
                     <th className="px-5 py-3">Path</th>
@@ -145,12 +191,15 @@ export function PreviewPerformanceAdminPage() {
                       </td>
                       <td className="px-5 py-3.5 text-(--studio-muted)">
                         {row.measuredFrameCount.toLocaleString()}
-                        <div className="text-[10px]">{row.sampleCount.toLocaleString()} API samples</div>
+                        <div className="text-[10px]">{row.sampleCount.toLocaleString()} selected observations</div>
+                        <div className="text-[10px]">{row.totalFrames.toLocaleString()} frames · {row.durationMs > 0 ? `${(row.durationMs / 1000).toFixed(1)}s` : "duration n/a"}</div>
                       </td>
                       <td className="px-5 py-3.5 text-white">
                         {(row.p50RenderTimeUs / 1000).toFixed(1)} / {(row.p95RenderTimeUs / 1000).toFixed(1)} / {(row.p99RenderTimeUs / 1000).toFixed(1)} ms
                       </td>
-                      <td className="px-5 py-3.5 text-(--studio-muted)">{(row.droppedFrameRatio * 100).toFixed(2)}%</td>
+                      <td className="px-5 py-3.5 text-(--studio-muted)">{(row.droppedFrameRatio * 100).toFixed(2)}%
+                        <div className="text-[10px]">{row.droppedFrames} dropped · {row.staleFrames} stale · {row.cancelledFrames} cancelled</div>
+                      </td>
                       <td className="px-5 py-3.5 text-(--studio-muted)">
                         {row.primaryBottleneck === "none" ? "None" : `${stageLabel(row.primaryBottleneck)} ${(stageValue(row) / 1000).toFixed(1)} ms`}
                         <div className="whitespace-nowrap text-[10px]">Decode {(row.p95DecodeUs / 1000).toFixed(1)} · Compose {(row.p95ComposeUs / 1000).toFixed(1)} · GPU wait {(row.p95GpuQueueWaitUs / 1000).toFixed(1)} ms</div>
@@ -171,11 +220,63 @@ export function PreviewPerformanceAdminPage() {
                 </tbody>
               </table>
             </div>
-          </section>
+            </section>
+          </>
         )}
       </main>
     </div>
   );
+}
+
+function summarizeVisibleCohorts(cohorts: PreviewComparisonCohort[]) {
+  return cohorts.reduce(
+    (summary, cohort) => {
+      summary.measuredFrames += cohort.measuredFrameCount;
+      summary.droppedFrames += cohort.droppedFrames;
+      summary.apiSamples += Object.values(cohort.sourceCounts).reduce(
+        (total, count) => total + count,
+        0,
+      );
+      summary.sourceCounts.frontendSpan += cohort.sourceCounts.frontendSpan;
+      summary.sourceCounts.nativeSample += cohort.sourceCounts.nativeSample;
+      summary.sourceCounts.sessionRollup += cohort.sourceCounts.sessionRollup;
+      summary.sourceCounts.legacy += cohort.sourceCounts.legacy;
+      summary.latestTimestampMs = Math.max(
+        summary.latestTimestampMs,
+        cohort.latestTimestampMs ?? 0,
+      );
+      return summary;
+    },
+    {
+      measuredFrames: 0,
+      droppedFrames: 0,
+      apiSamples: 0,
+      latestTimestampMs: 0,
+      sourceCounts: {
+        frontendSpan: 0,
+        nativeSample: 0,
+        sessionRollup: 0,
+        legacy: 0,
+      },
+    },
+  );
+}
+
+function MetricCard({ icon, label, value, detail }: { icon: ReactNode; label: string; value: string; detail: string }) {
+  return (
+    <section className="rounded-2xl border border-(--studio-border) bg-(--studio-panel) px-4 py-3.5">
+      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-(--studio-muted)">
+        <span className="text-sky-400">{icon}</span>{label}
+      </div>
+      <p className="mt-2 text-xl font-bold text-white">{value}</p>
+      <p className="mt-1 text-[10px] text-(--studio-muted)">{detail}</p>
+    </section>
+  );
+}
+
+function formatTimestamp(timestamp?: number): string {
+  if (!timestamp) return "—";
+  return new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 function scenarioLabel(scenario?: PreviewComparisonCohort["scenario"]): string {
