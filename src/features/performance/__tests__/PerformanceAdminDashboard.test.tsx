@@ -32,6 +32,9 @@ describe("PerformanceAdminDashboard Studio Feature", () => {
     vi.spyOn(performanceClient, "getPreviewComparison").mockResolvedValue({
       workloadMode: "playback",
       totalSampleSize: 0,
+      totalApiSamples: 0,
+      totalMeasuredFrames: 0,
+      sourceCounts: { frontendSpan: 0, nativeSample: 0, sessionRollup: 0, legacy: 0 },
       cohorts: [],
     });
     vi.spyOn(performanceClient, "getBenchmarkSuites").mockResolvedValue({
