@@ -9,25 +9,25 @@ describe("PerformanceAdminDashboard Studio Feature", () => {
     vi.clearAllMocks();
 
     vi.spyOn(performanceClient, "getOSComparison").mockResolvedValue(
-      performanceClient.getLocalFallbackOSComparison(),
+      performanceClient.getTestFixtureOSComparison(),
     );
     vi.spyOn(performanceClient, "getHardwareComparison").mockResolvedValue(
-      performanceClient.getLocalFallbackHardwareComparison(),
+      performanceClient.getTestFixtureHardwareComparison(),
     );
     vi.spyOn(performanceClient, "getAnomalies").mockResolvedValue(
-      performanceClient.getLocalFallbackAnomalies(),
+      performanceClient.getTestFixtureAnomalies(),
     );
     vi.spyOn(performanceClient, "getFallbacks").mockResolvedValue(
-      performanceClient.getLocalFallbackFallbacks(),
+      performanceClient.getTestFixtureFallbacks(),
     );
     vi.spyOn(performanceClient, "getReleaseRegression").mockResolvedValue(
-      performanceClient.getLocalFallbackReleaseRegression(),
+      performanceClient.getTestFixtureReleaseRegression(),
     );
     vi.spyOn(performanceClient, "getExportComparison").mockResolvedValue(
-      performanceClient.getLocalFallbackExportComparison(),
+      performanceClient.getTestFixtureExportComparison(),
     );
     vi.spyOn(performanceClient, "getSessionRollups").mockResolvedValue(
-      performanceClient.getLocalFallbackSessionRollups(),
+      performanceClient.getTestFixtureSessionRollups(),
     );
     vi.spyOn(performanceClient, "getPreviewComparison").mockResolvedValue({
       workloadMode: "playback",
