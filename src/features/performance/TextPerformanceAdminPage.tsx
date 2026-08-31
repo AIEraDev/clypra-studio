@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Database, RefreshCw, Type, Volume2, Video } from "lucide-react";
+import { ArrowLeft, Check, Clipboard, Database, Download, RefreshCw, Type, Volume2, Video } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   performanceClient,
@@ -27,6 +27,7 @@ export function TextPerformanceAdminPage() {
     preview: PreviewComparisonData | null;
   }>({ audio: null, preview: null });
   const [refreshing, setRefreshing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -56,6 +57,55 @@ export function TextPerformanceAdminPage() {
     return () => window.clearInterval(timer);
   }, [kind, path, phase, operation, environment]);
 
+  const exportPayload = {
+    exportedAt: new Date().toISOString(),
+    source: "live-api",
+    filters: {
+      kind,
+      rendererPath: path,
+      phase,
+      operation,
+      environment,
+    },
+    text: data,
+    relatedPlaybackContext: related,
+  };
+
+  const exportJson = () => JSON.stringify(exportPayload, null, 2);
+
+  const downloadJson = () => {
+    const blob = new Blob([exportJson()], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `clypra-text-performance-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const copyJson = async () => {
+    const json = exportJson();
+    try {
+      await navigator.clipboard.writeText(json);
+    } catch {
+      // Clipboard permissions can be unavailable in a desktop webview. Keep
+      // Copy JSON useful with a short-lived, non-rendered textarea fallback.
+      const textarea = document.createElement("textarea");
+      textarea.value = json;
+      textarea.setAttribute("readonly", "true");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
   const cohorts = data?.cohorts ?? [];
   const renderCount = cohorts.reduce((sum, row) => sum + row.renderCount, 0);
   const latest = cohorts.reduce((value, row) => Math.max(value, row.latestTimestampMs || 0), 0);
@@ -74,6 +124,8 @@ export function TextPerformanceAdminPage() {
             <Select label="Phase" value={phase} onChange={(value) => setPhase(value as typeof phase)} options={[["all", "All phases"], ["session-prewarm", "Session prewarm"], ["text-prefetch", "Text prefetch"], ["visible-playback", "Visible playback"], ["interactive-preview", "Interactive preview"]]} />
             <Select label="Operation" value={operation} onChange={(value) => setOperation(value as typeof operation)} options={[["all", "All operations"], ["render", "Render"], ["prefetch", "Prefetch"], ["entrance", "Entrance"], ["animation", "Animation"], ["exit", "Exit"], ["content-edit", "Typing/content"], ["property-edit", "Style property"], ["transform", "Transform"], ["resize", "Resize"]]} />
             <Select label="Environment" value={environment} onChange={(value) => setEnvironment(value as typeof environment)} options={[["all", "All environments"], ["development", "Development"], ["production", "Production"]]} />
+            <button type="button" onClick={() => void copyJson()} disabled={!data || refreshing} className="flex items-center gap-1.5 rounded-lg border border-(--studio-border) bg-(--studio-control) px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" title="Copy the current filtered live API data as JSON">{copied ? <Check size={13} /> : <Clipboard size={13} />} {copied ? "Copied" : "Copy JSON"}</button>
+            <button type="button" onClick={downloadJson} disabled={!data || refreshing} className="flex items-center gap-1.5 rounded-lg border border-(--studio-border) bg-(--studio-control) px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" title="Download the current filtered live API data as JSON"><Download size={13} /> Download JSON</button>
             <button type="button" onClick={() => void refresh()} disabled={refreshing} className="flex items-center gap-1.5 rounded-lg border border-(--studio-border) bg-(--studio-control) px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"><RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> Refresh</button>
           </div>
         </div>
