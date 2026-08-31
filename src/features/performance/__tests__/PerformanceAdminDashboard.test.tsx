@@ -29,6 +29,11 @@ describe("PerformanceAdminDashboard Studio Feature", () => {
     vi.spyOn(performanceClient, "getSessionRollups").mockResolvedValue(
       performanceClient.getLocalFallbackSessionRollups(),
     );
+    vi.spyOn(performanceClient, "getPreviewComparison").mockResolvedValue({
+      workloadMode: "playback",
+      totalSampleSize: 0,
+      cohorts: [],
+    });
     vi.spyOn(performanceClient, "getBenchmarkSuites").mockResolvedValue({
       suites: [
         {
@@ -67,7 +72,7 @@ describe("PerformanceAdminDashboard Studio Feature", () => {
 
     expect(screen.getByText("Zero PII Policy")).toBeInTheDocument();
     expect(
-      screen.getByText(/exclusively in production environments/i),
+      screen.getByText(/in development and production environments/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/Zero video files, media content/i),
@@ -158,5 +163,14 @@ describe("PerformanceAdminDashboard Studio Feature", () => {
     expect(
       await screen.findByText(/Standard Synthetic Benchmark Manifests/i),
     ).toBeInTheDocument();
+  });
+
+  it("links to the dedicated Preview Paths API page", async () => {
+    renderDashboard();
+
+    expect(screen.getByRole("link", { name: /Preview Paths/i })).toHaveAttribute(
+      "href",
+      "/studio/admin/performance/preview",
+    );
   });
 });
