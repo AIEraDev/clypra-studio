@@ -1,23 +1,33 @@
 import { bodyMaskCache } from "./maskCache";
 import { getBodySegmentationConfig } from "./segmentationConfig";
-import type { BodySegmentationOptions, BodySegmentationRequest, BodySegmentationResponse } from "@clypra-studio/engine";
+import type {
+  BodySegmentationOptions,
+  BodySegmentationRequest,
+  BodySegmentationResponse,
+} from "@clypra-studio/engine";
 
 const REQUEST_TIMEOUT_MS = 900;
 const FRAME_PRECISION = 1 / 24;
 
 let requestId = 1;
 let worker: Worker | null = null;
-const pending = new Map<number, { resolve: (value: ImageData | null) => void; timeout: number }>();
+const pending = new Map<
+  number,
+  { resolve: (value: ImageData | null) => void; timeout: number }
+>();
 
 function getWorker(): Worker | null {
   if (worker || typeof Worker === "undefined") return worker;
 
   try {
-    worker = new Worker(new URL("./bodySegmentation.worker.ts", import.meta.url), { type: "module" });
+    worker = new Worker(
+      new URL("./bodySegmentation.worker.ts", import.meta.url),
+      { type: "module" },
+    );
     worker.onmessage = (event: MessageEvent<BodySegmentationResponse>) => {
       const response = event.data;
       const item = pending.get(response.requestId);
-      if (!item) return;
+      if (!item) return; // Guard Clause
       window.clearTimeout(item.timeout);
       pending.delete(response.requestId);
 
@@ -54,7 +64,8 @@ function flushPending(): void {
 }
 
 export function makeBodyMaskCacheKey(options: BodySegmentationOptions): string {
-  const frameTime = Math.round(options.time / FRAME_PRECISION) * FRAME_PRECISION;
+  const frameTime =
+    Math.round(options.time / FRAME_PRECISION) * FRAME_PRECISION;
   return [
     options.clipId || "composition",
     options.effectId,
@@ -66,20 +77,29 @@ export function makeBodyMaskCacheKey(options: BodySegmentationOptions): string {
   ].join(":");
 }
 
-export async function segmentBodyMask(source: CanvasImageSource, options: BodySegmentationOptions): Promise<ImageData | null> {
+export async function segmentBodyMask(
+  source: CanvasImageSource,
+  options: BodySegmentationOptions,
+): Promise<ImageData | null> {
   const cacheKey = makeBodyMaskCacheKey(options);
   const cached = bodyMaskCache.get(cacheKey);
   if (cached) return cached;
 
   const width = Math.max(1, Math.floor(options.width));
   const height = Math.max(1, Math.floor(options.height));
-  const canvas = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(width, height) : document.createElement("canvas");
+  const canvas =
+    typeof OffscreenCanvas !== "undefined"
+      ? new OffscreenCanvas(width, height)
+      : document.createElement("canvas");
   if (canvas instanceof HTMLCanvasElement) {
     canvas.width = width;
     canvas.height = height;
   }
 
-  const ctx = canvas.getContext("2d", { alpha: true }) as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
+  const ctx = canvas.getContext("2d", { alpha: true }) as
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null;
   if (!ctx) return null;
 
   try {
@@ -92,7 +112,11 @@ export async function segmentBodyMask(source: CanvasImageSource, options: BodySe
   }
 }
 
-async function requestWorkerMask(cacheKey: string, imageData: ImageData, options: BodySegmentationOptions): Promise<ImageData | null> {
+async function requestWorkerMask(
+  cacheKey: string,
+  imageData: ImageData,
+  options: BodySegmentationOptions,
+): Promise<ImageData | null> {
   const activeWorker = getWorker();
   if (!activeWorker) return Promise.resolve(null);
 
@@ -108,7 +132,10 @@ async function requestWorkerMask(cacheKey: string, imageData: ImageData, options
     wasmBaseUrl: config.wasmBaseUrl,
     minConfidence: options.minConfidence ?? config.minConfidence ?? 0.7,
   };
-  const requestTimeoutMs = Math.max(250, config.requestTimeoutMs ?? REQUEST_TIMEOUT_MS);
+  const requestTimeoutMs = Math.max(
+    250,
+    config.requestTimeoutMs ?? REQUEST_TIMEOUT_MS,
+  );
 
   return new Promise((resolve) => {
     const timeout = window.setTimeout(() => {
