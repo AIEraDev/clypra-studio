@@ -247,12 +247,21 @@ export interface TextPerformanceCohort {
   operation: "render" | "entrance" | "exit" | "animation" | "content-edit" | "property-edit" | "transform" | "resize" | "prefetch";
   property?: "content" | "color" | "fontFamily" | "fontSize" | "fontWeight" | "fontStyle" | "lineHeight" | "letterSpacing" | "alignment" | "effect" | "template" | "transform" | "resize";
   sampleCount: number;
+  renderSampleCount: number;
+  interactionSampleCount: number;
   renderCount: number;
+  interactionRenderCount: number;
   windowDurationMs: number;
   cacheHitRatio: number;
   p50RenderTimeUs: number;
   p95RenderTimeUs: number;
   p99RenderTimeUs: number;
+  interactionP50Us: number;
+  interactionP95Us: number;
+  interactionP99Us: number;
+  inputToPreviewP50Us: number;
+  inputToPreviewP95Us: number;
+  inputToPreviewP99Us: number;
   p95FontWaitUs: number;
   p95CompileUs: number;
   p95RasterUs: number;
@@ -260,9 +269,15 @@ export interface TextPerformanceCohort {
   p95TransferUs: number;
   p95PaintUs: number;
   bottleneck: string;
+  interactionBottleneck: string;
+  stageCoverage: "complete" | "partial" | "unattributed";
+  unattributedTimeUs: number;
   latestTimestampMs?: number;
   confidence: "insufficient" | "preliminary" | "qualified";
   meetsSLA: boolean;
+  renderMeetsSLA: boolean;
+  interactionMeetsSLA: boolean;
+  interactionConfidence: "insufficient" | "preliminary" | "qualified";
 }
 
 export interface TextComparisonData {
