@@ -622,7 +622,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [apiTemplates, setApiTemplates] = useState<any[]>([]);
   const [apiTemplatesLoading, setApiTemplatesLoading] = useState(false);
-  const [loadTab, setLoadTab] = useState<"local" | "api">("local");
+  const [loadTab, setLoadTab] = useState<"presets" | "local" | "api">("presets");
+  const [presetCategoryFilter, setPresetCategoryFilter] = useState<string>("all");
   const [isLoadingApiTemplate, setIsLoadingApiTemplate] = useState(false);
   const [publishingApiTemplateId, setPublishingApiTemplateId] = useState<
     string | null
@@ -1186,7 +1187,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   };
 
   // Preset Selection Trigger
-  const handleSelectPreset = (preset: TextTemplate) => {
+  const handleSelectPreset = (preset: TextTemplate, openPublish = false) => {
     const clone = JSON.parse(JSON.stringify(preset)) as TextTemplate;
     setTemplate(clone);
     setSelectedLayerId(clone.layers[0]?.id || null);
@@ -1197,6 +1198,12 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     setCurrentTime(
       maxIn > 0 ? Math.min(maxIn + 0.1, (clone.duration || 3) / 2) : 0,
     );
+    setShowSavedTemplates(false);
+    if (openPublish) {
+      setTimeout(() => {
+        handleOpenPublish();
+      }, 150);
+    }
   };
 
   // Create Blank Template Action
@@ -2984,6 +2991,17 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               </div>
 
               <button
+                onClick={() => {
+                  setLoadTab("presets");
+                  setShowSavedTemplates(true);
+                }}
+                className="rounded-lg border border-teal-500/40 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-bold text-teal-400 flex items-center gap-1.5 transition-colors"
+                title="Browse & publish builtin presets"
+              >
+                <Sparkles size={14} /> Presets ({BUILTIN_CANVAS_TEMPLATES.length})
+              </button>
+
+              <button
                 onClick={handleGeneratePreview}
                 disabled={isGeneratingPreview}
                 className="rounded-lg border border-purple-500 hover:bg-purple-500/10 px-4 py-1.5 text-xs font-bold text-purple-400 flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -3009,16 +3027,14 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         </div>
       </header>
 
-      {/* Saved Templates Modal */}
+      {/* Templates & Presets Library Modal */}
       {showSavedTemplates && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl border border-[#2A2A38] bg-[#121219] p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-3xl rounded-2xl border border-[#2A2A38] bg-[#121219] p-6 shadow-2xl flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between mb-4 shrink-0">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <FolderPlus size={16} className="text-teal-400" />
-                {isAdmin
-                  ? "Manage & Load Templates"
-                  : `Saved Templates (${savedTemplates.length})`}
+                <Sparkles size={16} className="text-teal-400" />
+                Templates & Presets Library
               </h3>
               <button
                 onClick={() => setShowSavedTemplates(false)}
@@ -3028,18 +3044,29 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
               </button>
             </div>
 
-            {isAdmin && (
-              <div className="flex border-b border-[#2A2A38] bg-[#15151C] mb-4 rounded-t-lg overflow-hidden">
-                <button
-                  onClick={() => setLoadTab("local")}
-                  className={`flex-1 py-2.5 text-center text-xs font-semibold transition-colors ${
-                    loadTab === "local"
-                      ? "text-teal-300 bg-[#0E0E14] border-b-2 border-teal-500"
-                      : "text-[#888899] hover:text-white"
-                  }`}
-                >
-                  Local Saved ({savedTemplates.length})
-                </button>
+            <div className="flex border-b border-[#2A2A38] bg-[#15151C] mb-4 rounded-t-lg overflow-hidden shrink-0">
+              <button
+                onClick={() => setLoadTab("presets")}
+                className={`flex-1 py-2.5 text-center text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                  loadTab === "presets"
+                    ? "text-teal-300 bg-[#0E0E14] border-b-2 border-teal-500"
+                    : "text-[#888899] hover:text-white"
+                }`}
+              >
+                <Sparkles size={13} />
+                Builtin Presets ({BUILTIN_CANVAS_TEMPLATES.length})
+              </button>
+              <button
+                onClick={() => setLoadTab("local")}
+                className={`flex-1 py-2.5 text-center text-xs font-semibold transition-colors ${
+                  loadTab === "local"
+                    ? "text-teal-300 bg-[#0E0E14] border-b-2 border-teal-500"
+                    : "text-[#888899] hover:text-white"
+                }`}
+              >
+                Local Saved ({savedTemplates.length})
+              </button>
+              {isAdmin && (
                 <button
                   onClick={() => setLoadTab("api")}
                   className={`flex-1 py-2.5 text-center text-xs font-semibold transition-colors ${
@@ -3050,10 +3077,83 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 >
                   API Templates ({apiTemplates.length})
                 </button>
-              </div>
-            )}
+              )}
+            </div>
 
-            {loadTab === "local" ? (
+            {loadTab === "presets" ? (
+              <div className="flex flex-col flex-1 min-h-0">
+                {/* Category filter tabs */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-3 mb-2 shrink-0 scrollbar-thin">
+                  <button
+                    onClick={() => setPresetCategoryFilter("all")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                      presetCategoryFilter === "all"
+                        ? "bg-teal-500 text-black shadow-sm"
+                        : "bg-[#171722] text-[#888899] hover:text-white hover:bg-[#1E1E2C]"
+                    }`}
+                  >
+                    All ({BUILTIN_CANVAS_TEMPLATES.length})
+                  </button>
+                  {CATEGORIES.map((cat) => {
+                    const count = BUILTIN_CANVAS_TEMPLATES.filter((p) => p.category === cat).length;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setPresetCategoryFilter(cat)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors capitalize ${
+                          presetCategoryFilter === cat
+                            ? "bg-teal-500 text-black shadow-sm"
+                            : "bg-[#171722] text-[#888899] hover:text-white hover:bg-[#1E1E2C]"
+                        }`}
+                      >
+                        {cat.replace("-", " ")} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Presets Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto pr-1">
+                  {BUILTIN_CANVAS_TEMPLATES.filter(
+                    (p) => presetCategoryFilter === "all" || p.category === presetCategoryFilter,
+                  ).map((preset) => (
+                    <div
+                      key={preset.id}
+                      className="flex flex-col justify-between p-4 rounded-xl border border-[#2A2A38] bg-[#0E0E14] hover:border-teal-500/40 transition-all group"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="text-xs font-bold text-white group-hover:text-teal-300 transition-colors">
+                            {preset.label}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-teal-500/10 text-teal-400 border border-teal-500/30 shrink-0">
+                            {preset.category}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#888899] font-mono mb-3">
+                          ID: {preset.id} · {preset.duration}s · {preset.layers.length} layers
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 pt-2 border-t border-[#1C1C28]">
+                        <button
+                          onClick={() => handleSelectPreset(preset, false)}
+                          className="flex-1 rounded-lg border border-teal-500 hover:bg-teal-500/10 py-1.5 text-xs font-semibold text-teal-400 transition-colors"
+                        >
+                          Load & Edit
+                        </button>
+                        <button
+                          onClick={() => handleSelectPreset(preset, true)}
+                          className="rounded-lg bg-teal-500 hover:bg-teal-400 px-3.5 py-1.5 text-xs font-bold text-black shadow-sm flex items-center gap-1 transition-colors"
+                          title="Load this preset and publish directly to API catalog"
+                        >
+                          <UploadCloud size={13} /> Publish
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : loadTab === "local" ? (
               savedTemplates.length === 0 ? (
                 <div className="py-12 text-center">
                   <p className="text-xs text-[#888899]">
@@ -3196,37 +3296,89 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       {/* Main Sandbox */}
       {!template ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#09090D] overflow-y-auto">
-          <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             {/* Builtin Preset selector */}
             <div className="rounded-2xl border border-[#2A2A38] bg-[#121219] p-6 space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="text-teal-400" size={18} />
-                <h2 className="text-sm font-bold text-white">
-                  Start with a Builtin Preset
-                </h2>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="text-teal-400" size={18} />
+                  <h2 className="text-sm font-bold text-white">
+                    Start with a Builtin Preset
+                  </h2>
+                </div>
+                <span className="text-xs font-semibold text-teal-400">
+                  {BUILTIN_CANVAS_TEMPLATES.length} Presets
+                </span>
               </div>
               <p className="text-xs text-[#9A9AAA] leading-relaxed">
                 Choose from pre-configured canvas animation templates covering
-                all standard launch categories.
+                all standard categories with balanced multi-textbox font sizing.
               </p>
 
-              <div className="grid grid-cols-2 gap-3 mt-4">
-                {BUILTIN_CANVAS_TEMPLATES.map((preset) => (
+              {/* Category filter pills in empty state */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
+                <button
+                  onClick={() => setPresetCategoryFilter("all")}
+                  className={`px-2 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors ${
+                    presetCategoryFilter === "all"
+                      ? "bg-teal-500 text-black shadow-sm"
+                      : "bg-[#171722] text-[#888899] hover:text-white"
+                  }`}
+                >
+                  All
+                </button>
+                {CATEGORIES.map((cat) => (
                   <button
-                    key={preset.id}
-                    onClick={() => handleSelectPreset(preset)}
-                    className="flex flex-col items-start p-4 rounded-xl border border-[#2A2A38] bg-[#171722] hover:border-teal-500/50 hover:bg-[#1C1C2A] text-left transition-all"
+                    key={cat}
+                    onClick={() => setPresetCategoryFilter(cat)}
+                    className={`px-2 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors capitalize ${
+                      presetCategoryFilter === cat
+                        ? "bg-teal-500 text-black shadow-sm"
+                        : "bg-[#171722] text-[#888899] hover:text-white"
+                    }`}
                   >
-                    <span className="text-xs font-bold text-white">
-                      {preset.label}
-                    </span>
-                    <span className="text-[10px] text-teal-400 font-semibold mt-1 uppercase tracking-wider">
-                      {preset.category}
-                    </span>
-                    <span className="text-[10px] text-[#888899] mt-2 font-mono">
-                      {preset.duration}s · {preset.layers.length} layers
-                    </span>
+                    {cat.replace("-", " ")}
                   </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 max-h-[420px] overflow-y-auto pr-1">
+                {BUILTIN_CANVAS_TEMPLATES.filter(
+                  (p) => presetCategoryFilter === "all" || p.category === presetCategoryFilter,
+                ).map((preset) => (
+                  <div
+                    key={preset.id}
+                    className="flex flex-col justify-between p-3.5 rounded-xl border border-[#2A2A38] bg-[#171722] hover:border-teal-500/50 hover:bg-[#1C1C2A] text-left transition-all group"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1.5 mb-1">
+                        <span className="text-xs font-bold text-white group-hover:text-teal-300 transition-colors truncate">
+                          {preset.label}
+                        </span>
+                        <span className="text-[9px] text-teal-400 font-bold uppercase tracking-wider bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20 shrink-0">
+                          {preset.category}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-[#888899] block font-mono mb-2.5">
+                        {preset.duration}s · {preset.layers.length} layers
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 pt-2 border-t border-[#262638]">
+                      <button
+                        onClick={() => handleSelectPreset(preset, false)}
+                        className="flex-1 py-1 rounded-lg border border-teal-500/50 hover:bg-teal-500/10 text-[11px] font-semibold text-teal-400 text-center transition-colors"
+                      >
+                        Load
+                      </button>
+                      <button
+                        onClick={() => handleSelectPreset(preset, true)}
+                        className="py-1 px-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 text-[11px] font-bold text-black text-center transition-colors flex items-center gap-1"
+                        title="Publish to API"
+                      >
+                        <UploadCloud size={11} /> Publish
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
