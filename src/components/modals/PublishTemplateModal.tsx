@@ -22,7 +22,15 @@ export type TemplateCategory =
   | "caption"
   | "callout"
   | "social"
-  | "countdown";
+  | "countdown"
+  | "kinetic-type"
+  | "cta"
+  | "credits"
+  | "quotes"
+  | "sports"
+  | "gaming"
+  | "news"
+  | "minimal";
 
 const CATEGORIES: TemplateCategory[] = [
   "lower-third",
@@ -31,6 +39,14 @@ const CATEGORIES: TemplateCategory[] = [
   "callout",
   "social",
   "countdown",
+  "kinetic-type",
+  "cta",
+  "credits",
+  "quotes",
+  "sports",
+  "gaming",
+  "news",
+  "minimal",
 ];
 
 const PLACEMENTS = ["lower-third", "center", "top", "full-frame"] as const;
