@@ -127,6 +127,11 @@ const CATEGORIES: TemplateCategory[] = [
   "kinetic-type",
   "cta",
   "credits",
+  "quotes",
+  "sports",
+  "gaming",
+  "news",
+  "minimal",
 ];
 const PLACEMENTS = ["lower-third", "center", "top", "full-frame"] as const;
 
@@ -1228,208 +1233,675 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
       hold: "full",
     };
 
-    let newLayer: TemplateLayer;
+    let newLayers: TemplateLayer[] = [];
 
     switch (type) {
-      case "text": {
-        const width = 600;
-        const height = 100;
-        newLayer = {
-          kind: "text",
-          id,
-          content: "Headline Text",
-          fontFamily: "Inter",
-          fontSize: 56,
-          fontWeight: 700,
-          color: "#ffffff",
-          align: "center",
-          verticalAlign: "middle",
-          x: centerX - width / 2,
-          y: centerY - height / 2,
-          width: "auto",
-          height: "auto",
-          animation: baseAnimation,
-        };
-        break;
-      }
-      case "text-box": {
-        newLayer = {
-          kind: "text",
-          id,
-          content: "Featured Badge",
-          fontFamily: "Inter",
-          fontSize: 38,
-          fontWeight: 600,
-          color: "#ffffff",
-          align: "center",
-          verticalAlign: "middle",
-          x: Math.round(centerX - 180),
-          y: Math.round(centerY - 40),
-          width: "auto",
-          height: "auto",
-          backgroundColor: "#12121c",
-          backgroundOpacity: 0.88,
-          paddingTop: 14,
-          paddingRight: 28,
-          paddingBottom: 14,
-          paddingLeft: 28,
-          backgroundRadius: 12,
-          backgroundBorderColor: "#2A2A3E",
-          backgroundBorderWidth: 1,
-          animation: {
-            in: "slide-up",
-            out: "fade",
-            inDuration: 0.5,
-            outDuration: 0.3,
-            hold: "full",
+      case "title-card": {
+        const titleId = `title-${Date.now().toString(36)}`;
+        const subId = `sub-${(Date.now() + 1).toString(36)}`;
+        const lineId = `line-${(Date.now() + 2).toString(36)}`;
+        newLayers = [
+          {
+            kind: "text",
+            id: titleId,
+            content: "CINEMATIC TITLE",
+            fontFamily: "Outfit",
+            fontSize: 96,
+            fontWeight: 800,
+            color: "#ffffff",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 500),
+            y: Math.round(centerY - 75),
+            width: 1000,
+            height: "auto",
+            role: "primary",
+            animation: {
+              in: "slide-down",
+              out: "fade",
+              inDuration: 0.6,
+              outDuration: 0.3,
+              hold: "full",
+            },
           },
-        };
+          {
+            kind: "shape",
+            id: lineId,
+            shape: "rect",
+            fill: "#6366f1",
+            x: Math.round(centerX - 80),
+            y: Math.round(centerY + 35),
+            width: 160,
+            height: 4,
+            animation: {
+              in: "scale-in",
+              out: "fade",
+              inDuration: 0.5,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+          {
+            kind: "text",
+            id: subId,
+            content: "A Visual Masterpiece",
+            fontFamily: "Inter",
+            fontSize: 32,
+            fontWeight: 400,
+            color: "#cbd5e1",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 400),
+            y: Math.round(centerY + 55),
+            width: 800,
+            height: "auto",
+            role: "secondary",
+            animation: {
+              in: "fade",
+              out: "fade",
+              inDuration: 0.8,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+        ];
         break;
       }
       case "lower-third": {
         const posX = Math.round(template.canvasWidth * 0.06);
         const posY = Math.round(template.canvasHeight * 0.78);
-        newLayer = {
-          kind: "text",
-          id,
-          content: "SPEAKER NAME | Title",
-          fontFamily: "Inter",
-          fontSize: 36,
-          fontWeight: 700,
-          color: "#ffffff",
-          align: "left",
-          verticalAlign: "middle",
-          x: posX,
-          y: posY,
-          width: "auto",
-          height: "auto",
-          backgroundColor: "#09090f",
-          backgroundOpacity: 0.94,
-          paddingTop: 16,
-          paddingRight: 36,
-          paddingBottom: 16,
-          paddingLeft: 36,
-          backgroundRadius: 6,
-          backgroundBorderColor: "#2dd4bf",
-          backgroundBorderWidth: 2,
-          animation: {
-            in: "slide-right",
-            out: "fade",
-            inDuration: 0.5,
-            outDuration: 0.3,
-            hold: "full",
+        const nameId = `name-${Date.now().toString(36)}`;
+        const roleId = `role-${(Date.now() + 1).toString(36)}`;
+        const barId = `bar-${(Date.now() + 2).toString(36)}`;
+        newLayers = [
+          {
+            kind: "shape",
+            id: barId,
+            shape: "rect",
+            fill: "rgba(9, 9, 15, 0.94)",
+            stroke: { color: "#2dd4bf", width: 2 },
+            x: posX,
+            y: posY,
+            width: 520,
+            height: 100,
+            animation: {
+              in: "slide-right",
+              out: "fade",
+              inDuration: 0.4,
+              outDuration: 0.3,
+              hold: "full",
+            },
           },
-        };
+          {
+            kind: "text",
+            id: nameId,
+            content: "SPEAKER NAME",
+            fontFamily: "Inter",
+            fontSize: 42,
+            fontWeight: 700,
+            color: "#ffffff",
+            align: "left",
+            verticalAlign: "middle",
+            x: posX + 24,
+            y: posY + 14,
+            width: "auto",
+            height: "auto",
+            role: "primary",
+            animation: {
+              in: "slide-right",
+              out: "fade",
+              inDuration: 0.5,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+          {
+            kind: "text",
+            id: roleId,
+            content: "Product Designer & Director",
+            fontFamily: "Inter",
+            fontSize: 24,
+            fontWeight: 400,
+            color: "#2dd4bf",
+            align: "left",
+            verticalAlign: "middle",
+            x: posX + 24,
+            y: posY + 60,
+            width: "auto",
+            height: "auto",
+            role: "secondary",
+            animation: {
+              in: "slide-right",
+              out: "fade",
+              inDuration: 0.6,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+        ];
+        break;
+      }
+      case "caption": {
+        const capY = Math.round(template.canvasHeight * 0.84);
+        newLayers = [
+          {
+            kind: "text",
+            id,
+            content: "Accurate styled caption for spoken dialogue.",
+            fontFamily: "Inter",
+            fontSize: 38,
+            fontWeight: 600,
+            color: "#ffffff",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 450),
+            y: capY,
+            width: 900,
+            height: "auto",
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            backgroundOpacity: 0.85,
+            paddingTop: 12,
+            paddingRight: 28,
+            paddingBottom: 12,
+            paddingLeft: 28,
+            backgroundRadius: 8,
+            role: "primary",
+            animation: {
+              in: "fade",
+              out: "fade",
+              inDuration: 0.2,
+              outDuration: 0.2,
+              hold: "full",
+            },
+          },
+        ];
+        break;
+      }
+      case "callout": {
+        const headerId = `head-${Date.now().toString(36)}`;
+        const detailId = `det-${(Date.now() + 1).toString(36)}`;
+        const dotId = `dot-${(Date.now() + 2).toString(36)}`;
+        newLayers = [
+          {
+            kind: "shape",
+            id: dotId,
+            shape: "circle",
+            fill: "#38bdf8",
+            x: Math.round(centerX - 240),
+            y: Math.round(centerY - 20),
+            width: 16,
+            height: 16,
+            animation: {
+              in: "scale-pop",
+              out: "scale-out",
+              inDuration: 0.4,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+          {
+            kind: "text",
+            id: headerId,
+            content: "KEY FEATURE",
+            fontFamily: "Inter",
+            fontSize: 34,
+            fontWeight: 700,
+            color: "#38bdf8",
+            align: "left",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 210),
+            y: Math.round(centerY - 32),
+            width: "auto",
+            height: "auto",
+            role: "primary",
+            animation: {
+              in: "slide-right",
+              out: "fade",
+              inDuration: 0.5,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+          {
+            kind: "text",
+            id: detailId,
+            content: "Next-generation real-time compositing",
+            fontFamily: "Inter",
+            fontSize: 22,
+            fontWeight: 400,
+            color: "#e2e8f0",
+            align: "left",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 210),
+            y: Math.round(centerY + 8),
+            width: "auto",
+            height: "auto",
+            role: "secondary",
+            animation: {
+              in: "slide-right",
+              out: "fade",
+              inDuration: 0.6,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+        ];
+        break;
+      }
+      case "social": {
+        const promptId = `prompt-${Date.now().toString(36)}`;
+        const handleId = `handle-${(Date.now() + 1).toString(36)}`;
+        newLayers = [
+          {
+            kind: "text",
+            id: promptId,
+            content: "FOLLOW FOR UPDATES",
+            fontFamily: "Inter",
+            fontSize: 22,
+            fontWeight: 600,
+            color: "#93c5fd",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 200),
+            y: Math.round(centerY - 45),
+            width: 400,
+            height: "auto",
+            role: "secondary",
+            animation: {
+              in: "fade",
+              out: "fade",
+              inDuration: 0.4,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+          {
+            kind: "text",
+            id: handleId,
+            content: "@clypra_official",
+            fontFamily: "Outfit",
+            fontSize: 40,
+            fontWeight: 800,
+            color: "#ffffff",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 200),
+            y: Math.round(centerY - 5),
+            width: 400,
+            height: "auto",
+            backgroundColor: "#1877f2",
+            backgroundOpacity: 0.95,
+            paddingTop: 10,
+            paddingRight: 32,
+            paddingBottom: 10,
+            paddingLeft: 32,
+            backgroundRadius: 999,
+            role: "primary",
+            animation: {
+              in: "scale-pop",
+              out: "scale-out",
+              inDuration: 0.5,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+        ];
+        break;
+      }
+      case "countdown": {
+        const countId = `count-${Date.now().toString(36)}`;
+        const labelId = `lbl-${(Date.now() + 1).toString(36)}`;
+        newLayers = [
+          {
+            kind: "text",
+            id: countId,
+            content: "10",
+            fontFamily: "Outfit",
+            fontSize: 120,
+            fontWeight: 900,
+            color: "#f59e0b",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 150),
+            y: Math.round(centerY - 80),
+            width: 300,
+            height: "auto",
+            role: "primary",
+            animation: {
+              in: "scale-pop",
+              out: "scale-out",
+              inDuration: 0.4,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+          {
+            kind: "text",
+            id: labelId,
+            content: "SECONDS REMAINING",
+            fontFamily: "Inter",
+            fontSize: 26,
+            fontWeight: 700,
+            color: "#ffffff",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 200),
+            y: Math.round(centerY + 55),
+            width: 400,
+            height: "auto",
+            role: "secondary",
+            animation: {
+              in: "fade",
+              out: "fade",
+              inDuration: 0.6,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+        ];
+        break;
+      }
+      case "quote": {
+        const quoteId = `quote-${Date.now().toString(36)}`;
+        const authorId = `auth-${(Date.now() + 1).toString(36)}`;
+        newLayers = [
+          {
+            kind: "text",
+            id: quoteId,
+            content: "“Design is not just what it looks like and feels like. Design is how it works.”",
+            fontFamily: "Playfair Display",
+            fontSize: 44,
+            fontWeight: 400,
+            fontStyle: "italic",
+            color: "#ffffff",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 480),
+            y: Math.round(centerY - 65),
+            width: 960,
+            height: "auto",
+            role: "primary",
+            animation: {
+              in: "fade",
+              out: "fade",
+              inDuration: 0.8,
+              outDuration: 0.4,
+              hold: "full",
+            },
+          },
+          {
+            kind: "text",
+            id: authorId,
+            content: "— STEVE JOBS",
+            fontFamily: "Inter",
+            fontSize: 24,
+            fontWeight: 600,
+            color: "#94a3b8",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 300),
+            y: Math.round(centerY + 65),
+            width: 600,
+            height: "auto",
+            role: "secondary",
+            animation: {
+              in: "slide-up",
+              out: "fade",
+              inDuration: 0.6,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+        ];
+        break;
+      }
+      case "news": {
+        const badgeId = `badge-${Date.now().toString(36)}`;
+        const headId = `newshead-${(Date.now() + 1).toString(36)}`;
+        const posX = Math.round(template.canvasWidth * 0.05);
+        const posY = Math.round(template.canvasHeight * 0.78);
+        newLayers = [
+          {
+            kind: "text",
+            id: badgeId,
+            content: "BREAKING NEWS",
+            fontFamily: "Inter",
+            fontSize: 24,
+            fontWeight: 800,
+            color: "#ffffff",
+            align: "left",
+            verticalAlign: "middle",
+            x: posX,
+            y: posY,
+            width: "auto",
+            height: "auto",
+            backgroundColor: "#dc2626",
+            backgroundOpacity: 0.95,
+            paddingTop: 8,
+            paddingRight: 20,
+            paddingBottom: 8,
+            paddingLeft: 20,
+            backgroundRadius: 4,
+            role: "accent",
+            animation: {
+              in: "scale-pop",
+              out: "fade",
+              inDuration: 0.3,
+              outDuration: 0.2,
+              hold: "full",
+            },
+          },
+          {
+            kind: "text",
+            id: headId,
+            content: "MAJOR DISCOVERY ANNOUNCED LIVE ON STAGE",
+            fontFamily: "Inter",
+            fontSize: 48,
+            fontWeight: 800,
+            color: "#ffffff",
+            align: "left",
+            verticalAlign: "middle",
+            x: posX,
+            y: posY + 45,
+            width: "auto",
+            height: "auto",
+            backgroundColor: "rgba(10, 10, 16, 0.95)",
+            backgroundOpacity: 0.95,
+            paddingTop: 12,
+            paddingRight: 32,
+            paddingBottom: 12,
+            paddingLeft: 32,
+            backgroundRadius: 4,
+            backgroundBorderColor: "#dc2626",
+            backgroundBorderWidth: 2,
+            role: "primary",
+            animation: {
+              in: "slide-right",
+              out: "fade",
+              inDuration: 0.5,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+        ];
+        break;
+      }
+      case "text": {
+        const width = 800;
+        newLayers = [
+          {
+            kind: "text",
+            id,
+            content: "HEADLINE TITLE",
+            fontFamily: "Outfit",
+            fontSize: 84,
+            fontWeight: 800,
+            color: "#ffffff",
+            align: "center",
+            verticalAlign: "middle",
+            x: centerX - width / 2,
+            y: centerY - 50,
+            width,
+            height: "auto",
+            animation: baseAnimation,
+          },
+        ];
+        break;
+      }
+      case "text-box": {
+        newLayers = [
+          {
+            kind: "text",
+            id,
+            content: "Featured Badge",
+            fontFamily: "Inter",
+            fontSize: 38,
+            fontWeight: 600,
+            color: "#ffffff",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 180),
+            y: Math.round(centerY - 40),
+            width: "auto",
+            height: "auto",
+            backgroundColor: "#12121c",
+            backgroundOpacity: 0.88,
+            paddingTop: 14,
+            paddingRight: 28,
+            paddingBottom: 14,
+            paddingLeft: 28,
+            backgroundRadius: 12,
+            backgroundBorderColor: "#2A2A3E",
+            backgroundBorderWidth: 1,
+            animation: {
+              in: "slide-up",
+              out: "fade",
+              inDuration: 0.5,
+              outDuration: 0.3,
+              hold: "full",
+            },
+          },
+        ];
         break;
       }
       case "pill": {
-        newLayer = {
-          kind: "text",
-          id,
-          content: "STATUS TAG",
-          fontFamily: "Inter",
-          fontSize: 26,
-          fontWeight: 700,
-          color: "#2dd4bf",
-          align: "center",
-          verticalAlign: "middle",
-          x: Math.round(centerX - 110),
-          y: Math.round(centerY - 25),
-          width: "auto",
-          height: "auto",
-          backgroundColor: "#052e2b",
-          backgroundOpacity: 0.92,
-          paddingTop: 8,
-          paddingRight: 22,
-          paddingBottom: 8,
-          paddingLeft: 22,
-          backgroundRadius: 999,
-          backgroundBorderColor: "#14b8a6",
-          backgroundBorderWidth: 1,
-          animation: {
-            in: "scale-pop",
-            out: "scale-out",
-            inDuration: 0.4,
-            outDuration: 0.3,
-            hold: "full",
+        newLayers = [
+          {
+            kind: "text",
+            id,
+            content: "STATUS TAG",
+            fontFamily: "Inter",
+            fontSize: 26,
+            fontWeight: 700,
+            color: "#2dd4bf",
+            align: "center",
+            verticalAlign: "middle",
+            x: Math.round(centerX - 110),
+            y: Math.round(centerY - 25),
+            width: "auto",
+            height: "auto",
+            backgroundColor: "#052e2b",
+            backgroundOpacity: 0.92,
+            paddingTop: 8,
+            paddingRight: 22,
+            paddingBottom: 8,
+            paddingLeft: 22,
+            backgroundRadius: 999,
+            backgroundBorderColor: "#14b8a6",
+            backgroundBorderWidth: 1,
+            animation: {
+              in: "scale-pop",
+              out: "scale-out",
+              inDuration: 0.4,
+              outDuration: 0.3,
+              hold: "full",
+            },
           },
-        };
+        ];
         break;
       }
       case "shape": {
         const width = 400;
         const height = 200;
-        newLayer = {
-          kind: "shape",
-          id,
-          shape: "rect",
-          fill: "#7c6fff",
-          x: centerX - width / 2,
-          y: centerY - height / 2,
-          width,
-          height,
-          animation: baseAnimation,
-        };
+        newLayers = [
+          {
+            kind: "shape",
+            id,
+            shape: "rect",
+            fill: "#7c6fff",
+            x: centerX - width / 2,
+            y: centerY - height / 2,
+            width,
+            height,
+            animation: baseAnimation,
+          },
+        ];
         break;
       }
       case "image": {
         const width = 400;
         const height = 300;
-        newLayer = {
-          kind: "image",
-          id,
-          url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
-          x: centerX - width / 2,
-          y: centerY - height / 2,
-          width,
-          height,
-          animation: baseAnimation,
-        };
+        newLayers = [
+          {
+            kind: "image",
+            id,
+            url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
+            x: centerX - width / 2,
+            y: centerY - height / 2,
+            width,
+            height,
+            animation: baseAnimation,
+          },
+        ];
         break;
       }
       case "container": {
-        newLayer = {
-          kind: "container",
-          id,
-          name: "Flex Container",
-          layout: {
-            type: "flex",
-            direction: "column",
-            gap: 16,
-            alignItems: "start",
-            justifyContent: "start",
-            paddingTop: 20,
-            paddingRight: 24,
-            paddingBottom: 20,
-            paddingLeft: 24,
+        newLayers = [
+          {
+            kind: "container",
+            id,
+            name: "Flex Container",
+            layout: {
+              type: "flex",
+              direction: "column",
+              gap: 16,
+              alignItems: "start",
+              justifyContent: "start",
+              paddingTop: 20,
+              paddingRight: 24,
+              paddingBottom: 20,
+              paddingLeft: 24,
+            },
+            x: Math.round(centerX - 300),
+            y: Math.round(centerY - 150),
+            width: "auto",
+            height: "auto",
+            backgroundColor: "#0d0d15",
+            backgroundOpacity: 0.92,
+            backgroundRadius: 14,
+            backgroundBorderColor: "#6366f1",
+            backgroundBorderWidth: 1.5,
+            animation: {
+              in: "fade",
+              out: "fade",
+              inDuration: 0.4,
+              outDuration: 0.3,
+              hold: "full",
+            },
           },
-          x: Math.round(centerX - 300),
-          y: Math.round(centerY - 150),
-          width: "auto",
-          height: "auto",
-          backgroundColor: "#0d0d15",
-          backgroundOpacity: 0.92,
-          backgroundRadius: 14,
-          backgroundBorderColor: "#6366f1",
-          backgroundBorderWidth: 1.5,
-          animation: {
-            in: "fade",
-            out: "fade",
-            inDuration: 0.4,
-            outDuration: 0.3,
-            hold: "full",
-          },
-        };
+        ];
         break;
       }
     }
 
+    if (newLayers.length === 0) return;
+
     pushHistorySnapshot(template);
     setTemplate({
       ...template,
-      layers: [...template.layers, newLayer],
+      layers: [...template.layers, ...newLayers],
     });
-    setSelectedLayerId(id);
+    setSelectedLayerId(newLayers[0].id);
     toast.success(`Added ${type.replace("-", " ")} layer`, { duration: 1200 });
   };
 
