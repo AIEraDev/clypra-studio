@@ -80,6 +80,7 @@ import {
   isKeyframed,
   evaluateAnimatable,
   getSupportedWebMMimeType,
+  builtInPresets,
 } from "@clypra-studio/engine";
 import { PublishTemplateModal } from "../PublishTemplateModal";
 import { getStudioApiBaseUrl } from "../../services/apiConfig";
@@ -141,6 +142,14 @@ function toKebabCase(str: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+function getAnimatableStaticValue<T>(val: AnimatableValue<T> | undefined, fallback: T): T {
+  if (val === undefined || val === null) return fallback;
+  if (typeof val === "object" && val !== null && "keyframes" in val && Array.isArray((val as any).keyframes)) {
+    return (val as any).keyframes[0]?.value ?? fallback;
+  }
+  return val as T;
 }
 
 function buildCanonicalTemplatePayload(template: TextTemplate): TextTemplate {
@@ -240,7 +249,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   >(() => {
     try {
       const saved = localStorage.getItem("clypra_publish_metadata_draft");
-      if (saved && saved.placement) return JSON.parse(saved).placement;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.placement) return parsed.placement;
+      }
     } catch {}
     return "center";
   });
@@ -4602,22 +4614,43 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                         </div>
                         <div>
                           <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
-                            Font Weight
+                            Font Weight & Style
                           </label>
-                          <input
-                            type="number"
-                            min={100}
-                            max={900}
-                            step={100}
-                            value={selectedLayer.fontWeight}
-                            onChange={(e) =>
-                              handleUpdateLayerProperty(
-                                "fontWeight",
-                                parseInt(e.target.value) || 400,
-                              )
-                            }
-                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
-                          />
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min={100}
+                              max={900}
+                              step={100}
+                              value={selectedLayer.fontWeight}
+                              onChange={(e) =>
+                                handleUpdateLayerProperty(
+                                  "fontWeight",
+                                  parseInt(e.target.value) || 400,
+                                )
+                              }
+                              className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleUpdateLayerProperty(
+                                  "fontStyle",
+                                  selectedLayer.fontStyle === "italic"
+                                    ? "normal"
+                                    : "italic",
+                                )
+                              }
+                              title="Toggle Italic"
+                              className={`px-3 py-1.5 rounded border text-xs font-serif font-bold italic transition-colors ${
+                                selectedLayer.fontStyle === "italic"
+                                  ? "border-teal-500 bg-teal-500/20 text-teal-300"
+                                  : "border-[#2A2A38] bg-[#09090D] text-[#888899] hover:text-white"
+                              }`}
+                            >
+                              I
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -4714,31 +4747,53 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                         </div>
                       </div>
 
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
-                          Text Overflow & Auto-Wrap Strategy
-                        </label>
-                        <select
-                          value={selectedLayer.overflow || "expand-panel"}
-                          onChange={(e) =>
-                            handleUpdateLayerProperty(
-                              "overflow",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
-                        >
-                          <option value="expand-panel">
-                            Auto-Expand Box (Hug Multi-Line Text)
-                          </option>
-                          <option value="wrap">
-                            Multi-Line Word Wrap (Wrap to Width / Container)
-                          </option>
-                          <option value="shrink">
-                            Auto-Shrink Font Size (Fit in Single Line)
-                          </option>
-                          <option value="clip">Clip at Boundaries</option>
-                        </select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                            Text Role / Slot
+                          </label>
+                          <select
+                            value={selectedLayer.role || "none"}
+                            onChange={(e) =>
+                              handleUpdateLayerProperty(
+                                "role",
+                                e.target.value === "none" ? undefined : e.target.value,
+                              )
+                            }
+                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                          >
+                            <option value="none">None (Static)</option>
+                            <option value="primary">Primary (Headline)</option>
+                            <option value="secondary">Secondary (Subtitle)</option>
+                            <option value="accent">Accent (Highlight)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
+                            Text Overflow
+                          </label>
+                          <select
+                            value={selectedLayer.overflow || "expand-panel"}
+                            onChange={(e) =>
+                              handleUpdateLayerProperty(
+                                "overflow",
+                                e.target.value,
+                              )
+                            }
+                            className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                          >
+                            <option value="expand-panel">
+                              Auto-Expand Box
+                            </option>
+                            <option value="wrap">
+                              Multi-Line Wrap
+                            </option>
+                            <option value="shrink">
+                              Auto-Shrink Font
+                            </option>
+                            <option value="clip">Clip Boundaries</option>
+                          </select>
+                        </div>
                       </div>
 
                       {/* Background Panel Properties */}
@@ -4992,6 +5047,286 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                             />
                           </div>
                         </div>
+                      </div>
+
+                      {/* Linked Text Effect */}
+                      <div className="border-t border-[#2A2A38]/50 pt-3 mt-2 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#888899]">
+                            Linked Text Effect
+                          </label>
+                          {selectedLayer.styleRef && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleUpdateLayerProperty("styleRef", undefined)
+                              }
+                              className="text-[10px] text-red-400 hover:text-red-300 underline"
+                            >
+                              Unlink
+                            </button>
+                          )}
+                        </div>
+                        <select
+                          value={selectedLayer.styleRef?.effectId || ""}
+                          onChange={(e) => {
+                            const effectId = e.target.value;
+                            if (!effectId) {
+                              handleUpdateLayerProperty("styleRef", undefined);
+                              return;
+                            }
+                            const preset = builtInPresets.find(
+                              (p) => p.id === effectId,
+                            );
+                            handleUpdateLayerProperty("styleRef", {
+                              effectId,
+                              revisionId: "v1",
+                              contentHash: `preset-${effectId}`,
+                              snapshot: preset?.scene,
+                            });
+                          }}
+                          className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
+                        >
+                          <option value="">No Text Effect Linked</option>
+                          {builtInPresets.map((preset) => (
+                            <option key={preset.id} value={preset.id}>
+                              {preset.name} ({preset.category || "Classic"})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Text Stroke */}
+                      <div className="border-t border-[#2A2A38]/50 pt-3 mt-2 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#888899]">
+                            Text Stroke
+                          </label>
+                          <input
+                            type="checkbox"
+                            checked={Boolean(
+                              selectedLayer.stroke &&
+                                (typeof selectedLayer.stroke.width === "number"
+                                  ? selectedLayer.stroke.width > 0
+                                  : true),
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handleUpdateLayerProperty("stroke", {
+                                  color: "#000000",
+                                  width: 2,
+                                });
+                              } else {
+                                handleUpdateLayerProperty("stroke", undefined);
+                              }
+                            }}
+                            className="accent-teal-500 rounded cursor-pointer"
+                          />
+                        </div>
+                        {selectedLayer.stroke && (
+                          <div className="grid grid-cols-2 gap-2 pt-1">
+                            <div>
+                              <label className="block text-[9px] text-[#888899] mb-0.5">
+                                Stroke Color
+                              </label>
+                              <div className="flex gap-1">
+                                <ClypraColorPicker
+                                  value={
+                                    (selectedLayer.stroke.color as string) ||
+                                    "#000000"
+                                  }
+                                  onChange={(val) =>
+                                    handleUpdateLayerProperty(
+                                      "stroke.color",
+                                      val,
+                                    )
+                                  }
+                                  onChangeComplete={(val) =>
+                                    handleUpdateLayerProperty(
+                                      "stroke.color",
+                                      val,
+                                    )
+                                  }
+                                  size="sm"
+                                  placement="bottom-start"
+                                  triggerClassName="clypra-swatch-trigger w-8 h-8 rounded border border-[#2A2A38]"
+                                />
+                                <input
+                                  type="text"
+                                  value={
+                                    (selectedLayer.stroke.color as string) ||
+                                    "#000000"
+                                  }
+                                  onChange={(e) =>
+                                    handleUpdateLayerProperty(
+                                      "stroke.color",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="text-[9px] text-[#888899]">
+                                  Width (px)
+                                </label>
+                                <span className="text-[9px] font-mono text-teal-300">
+                                  {Number(selectedLayer.stroke.width) || 0}px
+                                </span>
+                              </div>
+                              <input
+                                type="range"
+                                min="1"
+                                max="30"
+                                step="1"
+                                value={Number(selectedLayer.stroke.width) || 1}
+                                onChange={(e) =>
+                                  handleUpdateLayerProperty(
+                                    "stroke.width",
+                                    parseInt(e.target.value) || 1,
+                                  )
+                                }
+                                className="w-full accent-teal-400"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Drop Shadow */}
+                      <div className="border-t border-[#2A2A38]/50 pt-3 mt-2 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#888899]">
+                            Drop Shadow
+                          </label>
+                          <input
+                            type="checkbox"
+                            checked={Boolean(selectedLayer.shadow)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handleUpdateLayerProperty("shadow", {
+                                  color: "rgba(0, 0, 0, 0.75)",
+                                  blur: 4,
+                                  offsetX: 2,
+                                  offsetY: 2,
+                                });
+                              } else {
+                                handleUpdateLayerProperty("shadow", undefined);
+                              }
+                            }}
+                            className="accent-teal-500 rounded cursor-pointer"
+                          />
+                        </div>
+                        {selectedLayer.shadow && (
+                          <div className="space-y-2 pt-1">
+                            <div>
+                              <label className="block text-[9px] text-[#888899] mb-0.5">
+                                Shadow Color
+                              </label>
+                              <div className="flex gap-1">
+                                <ClypraColorPicker
+                                  value={
+                                    (selectedLayer.shadow.color as string) ||
+                                    "rgba(0, 0, 0, 0.75)"
+                                  }
+                                  onChange={(val) =>
+                                    handleUpdateLayerProperty(
+                                      "shadow.color",
+                                      val,
+                                    )
+                                  }
+                                  onChangeComplete={(val) =>
+                                    handleUpdateLayerProperty(
+                                      "shadow.color",
+                                      val,
+                                    )
+                                  }
+                                  size="sm"
+                                  placement="bottom-start"
+                                  triggerClassName="clypra-swatch-trigger w-8 h-8 rounded border border-[#2A2A38]"
+                                />
+                                <input
+                                  type="text"
+                                  value={
+                                    (selectedLayer.shadow.color as string) ||
+                                    "rgba(0, 0, 0, 0.75)"
+                                  }
+                                  onChange={(e) =>
+                                    handleUpdateLayerProperty(
+                                      "shadow.color",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-1 py-1.5 text-xs font-mono text-center text-white outline-none focus:border-teal-500"
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-[9px] text-[#888899] mb-0.5">
+                                  Blur
+                                </label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={
+                                    Number(selectedLayer.shadow.blur) || 0
+                                  }
+                                  onChange={(e) =>
+                                    handleUpdateLayerProperty(
+                                      "shadow.blur",
+                                      parseInt(e.target.value) || 0,
+                                    )
+                                  }
+                                  className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[9px] text-[#888899] mb-0.5">
+                                  Offset X
+                                </label>
+                                <input
+                                  type="number"
+                                  min="-100"
+                                  max="100"
+                                  value={
+                                    Number(selectedLayer.shadow.offsetX) || 0
+                                  }
+                                  onChange={(e) =>
+                                    handleUpdateLayerProperty(
+                                      "shadow.offsetX",
+                                      parseInt(e.target.value) || 0,
+                                    )
+                                  }
+                                  className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[9px] text-[#888899] mb-0.5">
+                                  Offset Y
+                                </label>
+                                <input
+                                  type="number"
+                                  min="-100"
+                                  max="100"
+                                  value={
+                                    Number(selectedLayer.shadow.offsetY) || 0
+                                  }
+                                  onChange={(e) =>
+                                    handleUpdateLayerProperty(
+                                      "shadow.offsetY",
+                                      parseInt(e.target.value) || 0,
+                                    )
+                                  }
+                                  className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2 py-1 text-xs text-white outline-none focus:border-teal-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -5299,9 +5634,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                 </label>
                                 <div className="flex gap-1">
                                   <ClypraColorPicker
-                                    value={
-                                      container.backgroundColor || "#0d0d15"
-                                    }
+                                    value={getAnimatableStaticValue(
+                                      container.backgroundColor,
+                                      "#0d0d15",
+                                    )}
                                     onChange={(val) =>
                                       handleUpdateLayerProperty(
                                         "backgroundColor",
@@ -5320,9 +5656,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                   />
                                   <input
                                     type="text"
-                                    value={
-                                      container.backgroundColor || "#0d0d15"
-                                    }
+                                    value={getAnimatableStaticValue(
+                                      container.backgroundColor,
+                                      "#0d0d15",
+                                    )}
                                     onChange={(e) =>
                                       handleUpdateLayerProperty(
                                         "backgroundColor",
@@ -5336,13 +5673,13 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                               <div>
                                 <label className="block text-[9px] text-[#888899] mb-1">
                                   Corner Radius:{" "}
-                                  {container.backgroundRadius ?? 14}px
+                                  {getAnimatableStaticValue(container.backgroundRadius, 14)}px
                                 </label>
                                 <input
                                   type="range"
                                   min="0"
                                   max="40"
-                                  value={container.backgroundRadius ?? 14}
+                                  value={getAnimatableStaticValue(container.backgroundRadius, 14)}
                                   onChange={(e) =>
                                     handleUpdateLayerProperty(
                                       "backgroundRadius",
@@ -5361,10 +5698,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                 </label>
                                 <div className="flex gap-1">
                                   <ClypraColorPicker
-                                    value={
-                                      container.backgroundBorderColor ||
-                                      "#6366f1"
-                                    }
+                                    value={getAnimatableStaticValue(
+                                      container.backgroundBorderColor,
+                                      "#6366f1",
+                                    )}
                                     onChange={(val) =>
                                       handleUpdateLayerProperty(
                                         "backgroundBorderColor",
@@ -5383,10 +5720,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                   />
                                   <input
                                     type="text"
-                                    value={
-                                      container.backgroundBorderColor ||
-                                      "#6366f1"
-                                    }
+                                    value={getAnimatableStaticValue(
+                                      container.backgroundBorderColor,
+                                      "#6366f1",
+                                    )}
                                     onChange={(e) =>
                                       handleUpdateLayerProperty(
                                         "backgroundBorderColor",
@@ -5400,14 +5737,14 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                               <div>
                                 <label className="block text-[9px] text-[#888899] mb-1">
                                   Border Width:{" "}
-                                  {container.backgroundBorderWidth ?? 1.5}px
+                                  {getAnimatableStaticValue(container.backgroundBorderWidth, 1.5)}px
                                 </label>
                                 <input
                                   type="range"
                                   min="0"
                                   max="10"
                                   step="0.5"
-                                  value={container.backgroundBorderWidth ?? 1.5}
+                                  value={getAnimatableStaticValue(container.backgroundBorderWidth, 1.5)}
                                   onChange={(e) =>
                                     handleUpdateLayerProperty(
                                       "backgroundBorderWidth",
@@ -5547,6 +5884,12 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                         padding: "Padding",
                         backgroundBorderColor: "Border Color",
                         backgroundBorderWidth: "Border Width",
+                        "stroke.color": "Stroke Color",
+                        "stroke.width": "Stroke Width",
+                        "shadow.color": "Shadow Color",
+                        "shadow.blur": "Shadow Blur",
+                        "shadow.offsetX": "Shadow Offset X",
+                        "shadow.offsetY": "Shadow Offset Y",
                         fill: "Fill Color",
                       };
                       const activeTracks = Object.entries(propLabelMap)
@@ -5657,6 +6000,50 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                                       ? `• (${getCount("backgroundBorderWidth")} kf)`
                                       : ""}
                                   </option>
+                                  {selectedLayer.stroke && (
+                                    <>
+                                      <option value="stroke.color">
+                                        Stroke Color{" "}
+                                        {getCount("stroke.color") > 0
+                                          ? `• (${getCount("stroke.color")} kf)`
+                                          : ""}
+                                      </option>
+                                      <option value="stroke.width">
+                                        Stroke Width{" "}
+                                        {getCount("stroke.width") > 0
+                                          ? `• (${getCount("stroke.width")} kf)`
+                                          : ""}
+                                      </option>
+                                    </>
+                                  )}
+                                  {selectedLayer.shadow && (
+                                    <>
+                                      <option value="shadow.color">
+                                        Shadow Color{" "}
+                                        {getCount("shadow.color") > 0
+                                          ? `• (${getCount("shadow.color")} kf)`
+                                          : ""}
+                                      </option>
+                                      <option value="shadow.blur">
+                                        Shadow Blur{" "}
+                                        {getCount("shadow.blur") > 0
+                                          ? `• (${getCount("shadow.blur")} kf)`
+                                          : ""}
+                                      </option>
+                                      <option value="shadow.offsetX">
+                                        Shadow Offset X{" "}
+                                        {getCount("shadow.offsetX") > 0
+                                          ? `• (${getCount("shadow.offsetX")} kf)`
+                                          : ""}
+                                      </option>
+                                      <option value="shadow.offsetY">
+                                        Shadow Offset Y{" "}
+                                        {getCount("shadow.offsetY") > 0
+                                          ? `• (${getCount("shadow.offsetY")} kf)`
+                                          : ""}
+                                      </option>
+                                    </>
+                                  )}
                                 </>
                               )}
                               {selectedLayer.kind === "shape" && (
@@ -6030,7 +6417,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 {/* Dynamic Variable Manager */}
                 <div className="border-t border-[#2A2A38]/50 pt-4">
                   <TemplateVariableManager
-                    variables={template.variables ?? []}
+                    variables={template.variables ?? {}}
                     onChange={(vars) =>
                       setTemplate((prev) =>
                         prev ? { ...prev, variables: vars } : null,
