@@ -2,21 +2,16 @@ import {
   compileTextTemplate,
   normalizeTextTemplateArtifact,
   renderTextTemplateToCanvas,
+  resolveTemplateControlValues,
   type CompiledTextTemplate,
   type TextTemplateArtifact,
+  type TemplateCustomization,
 } from "@clypra-studio/engine";
 import type { TextTemplate as TemplateDefinition } from "@clypra-studio/engine";
 import { getNativeRenderClient, isRendererReady, NATIVE_RENDER_CONTRACT_VERSION } from "./nativeRenderClient";
 import { recordStudioTextRender } from "./textPerformanceTelemetry";
 
-export interface TemplateCustomization {
-  primaryText?: string;
-  secondaryText?: string;
-  accentText?: string;
-  primaryColor?: string;
-  secondaryColor?: string;
-  layerColors?: Record<string, string>;
-}
+export type { TemplateCustomization };
 
 export interface NativeTemplateFrame {
   image: Blob;
@@ -237,22 +232,6 @@ export class TextTemplatePreviewScheduler {
   }
 }
 
-function controlValuesFromCustomization(artifact: TextTemplateArtifact, customization?: TemplateCustomization): Record<string, unknown> {
-  const values: Record<string, unknown> = {};
-  const textNodes = artifact.document.nodes.filter((node: any) => node.type === "text") as any[];
-  for (const control of artifact.controls) {
-    const node = artifact.document.nodes.find((candidate: any) => candidate.id === control.target.nodeId) as any;
-    const role = node?.role || "";
-    const index = textNodes.findIndex((candidate) => candidate.id === control.target.nodeId);
-    if (control.type === "text") {
-      values[control.id] = (role === "primary" || index === 0 ? customization?.primaryText : role === "secondary" || index === 1 ? customization?.secondaryText : customization?.accentText) ?? control.defaultValue;
-    } else if (control.type === "color") {
-      values[control.id] = customization?.layerColors?.[control.target.nodeId] ?? (role === "secondary" ? customization?.secondaryColor : customization?.primaryColor) ?? control.defaultValue;
-    }
-  }
-  return values;
-}
-
 async function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
@@ -320,10 +299,10 @@ async function renderTextTemplateFrameExclusive(options: {
         },
       }
     : artifact;
-  const controlValues = {
-    ...controlValuesFromCustomization(renderArtifact, options.customization),
-    ...(options.controlValues || {}),
-  };
+  const controlValues = resolveTemplateControlValues(renderArtifact, {
+    customization: options.customization,
+    templateControlValues: options.controlValues,
+  });
   const renderAtTime = (time: number) => renderTextTemplateToCanvas(context, {
     artifact: renderArtifact,
     context: { environment: "studio", time, width: outputWidth, height: outputHeight, controlValues },
@@ -406,10 +385,10 @@ export function renderTextTemplatePreviewToCanvas(
   if (!context) throw new Error("Unable to create template preview context");
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, width, height);
-  const controlValues = {
-    ...controlValuesFromCustomization(renderArtifact, options.customization),
-    ...(options.controlValues || {}),
-  };
+  const controlValues = resolveTemplateControlValues(renderArtifact, {
+    customization: options.customization,
+    templateControlValues: options.controlValues,
+  });
   const result = renderTextTemplateToCanvas(context, {
     artifact: renderArtifact,
     context: { environment: "studio", time: options.time, width, height, controlValues },
