@@ -9,14 +9,14 @@ importers:
   .:
     dependencies:
       '@clypra-studio/engine':
-        specifier: 1.5.0
-        version: 1.5.0
+        specifier: 1.6.0
+        version: 1.6.0
       '@clypra-studio/feature-providers':
         specifier: ^0.1.1
         version: 0.1.1
       '@clypra-studio/native-render-wasm':
-        specifier: ^0.1.2
-        version: 0.1.2
+        specifier: ^0.2.0
+        version: 0.2.0
       '@clypra-studio/runtime':
         specifier: ^0.2.2
         version: 0.2.2
@@ -201,17 +201,17 @@ packages:
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
 
-  '@clypra-studio/engine@1.4.0':
-    resolution: {integrity: sha512-NExoRdsRtqTZR4Uzb53M6daIENL99AQDSWu4aLdu0PumPpniS5i0ZwTuvgnfP0jsKxgHJG4ZJtT8wHOnSbeKbQ==}
-
   '@clypra-studio/engine@1.5.0':
     resolution: {integrity: sha512-mwLA9A+X9Vv/dk/xyUDiWQO9Uln0uE6CE8xXwHWKFJLtyMUMJTGKuXsBAmFY66siCYg2pb1IwjiPVx6MWgUiMw==}
+
+  '@clypra-studio/engine@1.6.0':
+    resolution: {integrity: sha512-pbxuQlVJfI5nCamEK6uiJniKINWzNi1R4w18PkgJZfNPtoEDSCZTYfMgIOojm9rOBjyI8suUptLX16i2e8Blsw==}
 
   '@clypra-studio/feature-providers@0.1.1':
     resolution: {integrity: sha512-YE6yIUPoB9ByaNSr9p9RcUvmhbl270w3OgciFV3j7ou81mo3kCv8uhr1mWzTfU90p+38N9bcnCx/zHErwog9ow==}
 
-  '@clypra-studio/native-render-wasm@0.1.2':
-    resolution: {integrity: sha512-e/xMYNEmlOfmt2iTanffZgV5SFVGy30k8H7IZTEboXOUejn/AF0Abor/v0fiKha36wBjJ5Frujb4Dr44kwWkqw==}
+  '@clypra-studio/native-render-wasm@0.2.0':
+    resolution: {integrity: sha512-+IGdLqTPEFaZ1fe9fL1rXhEFRDIVFwWhVJ5JPSb3e3f2FPffhzeXrgH3u2dXEcmFSK/fOIvVNsd0I6RLh5Lk3A==}
 
   '@clypra-studio/runtime@0.2.2':
     resolution: {integrity: sha512-YeCG3rg/kdFTeu0zyxvZ5AlQr8kkvIpd2UOMxOveFQKQJYBkH4jByV1wnrZow0kbT1UzfjTTCGmdppoqRIVIBw==}
@@ -1650,7 +1650,7 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@clypra-studio/engine@1.4.0':
+  '@clypra-studio/engine@1.5.0':
     dependencies:
       '@clypra-studio/shaders': 0.1.5
       '@clypra-studio/types': 0.5.0
@@ -1658,7 +1658,7 @@ snapshots:
       lottie-web: 5.13.0
       zod: 4.4.3
 
-  '@clypra-studio/engine@1.5.0':
+  '@clypra-studio/engine@1.6.0':
     dependencies:
       '@clypra-studio/shaders': 0.1.5
       '@clypra-studio/types': 0.5.0
@@ -1668,7 +1668,7 @@ snapshots:
 
   '@clypra-studio/feature-providers@0.1.1': {}
 
-  '@clypra-studio/native-render-wasm@0.1.2': {}
+  '@clypra-studio/native-render-wasm@0.2.0': {}
 
   '@clypra-studio/runtime@0.2.2':
     dependencies:
@@ -1682,7 +1682,7 @@ snapshots:
 
   '@clypra-studio/ui@0.3.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))':
     dependencies:
-      '@clypra-studio/engine': 1.4.0
+      '@clypra-studio/engine': 1.5.0
       '@clypra-studio/runtime': 0.2.2
       '@clypra-studio/types': 0.5.0
       '@clypra/ui-color-picker': 1.1.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
