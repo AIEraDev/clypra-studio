@@ -8,7 +8,7 @@ import {
   Sliders,
   Wand2,
 } from "lucide-react";
-import type { LayerAnimation } from "@clypra-studio/engine";
+import type { AnimationPreset, LayerAnimation } from "@clypra-studio/engine";
 
 export interface MotionStylePreset {
   id: string;
@@ -219,7 +219,7 @@ export const LayerAnimationTimeline: React.FC<LayerAnimationTimelineProps> = ({
               onChange={(e) =>
                 onChange({
                   ...animation,
-                  in: e.target.value,
+                  in: e.target.value as AnimationPreset,
                   inDuration: animation.inDuration || 0.5,
                 })
               }
@@ -278,7 +278,7 @@ export const LayerAnimationTimeline: React.FC<LayerAnimationTimelineProps> = ({
               onChange={(e) =>
                 onChange({
                   ...animation,
-                  out: e.target.value,
+                  out: e.target.value as AnimationPreset,
                   outDuration: animation.outDuration || 0.3,
                 })
               }
