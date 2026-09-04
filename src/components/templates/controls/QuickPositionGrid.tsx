@@ -4,8 +4,6 @@ import {
   AlignCenterVertical,
   AlignLeft,
   AlignRight,
-  AlignTop,
-  AlignBottom,
   Move,
 } from "lucide-react";
 
