@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   TextTemplatePreviewScheduler,
+  ensureTemplateFontsLoaded,
   type NativeTemplateFrame,
   type TextTemplatePreviewSchedulerRequest,
 } from "./textTemplateRenderService";
+import * as studioFontHydrator from "./studioFontHydrator";
+import type { TextTemplateArtifact } from "@clypra-studio/engine";
 
 const request = (time: number) => ({ time } as TextTemplatePreviewSchedulerRequest);
 
@@ -56,5 +59,31 @@ describe("TextTemplatePreviewScheduler", () => {
     expect(render.mock.calls[1]?.[0].time).toBe(0.75);
     expect(onFrame).toHaveBeenCalledTimes(1);
     expect(onFrame.mock.calls[0]?.[0]).toBe(frames[1]);
+  });
+
+  it("extracts and ensures all fonts are loaded from artifact dependencies and legacy layers", async () => {
+    const hydratorSpy = vi.spyOn(studioFontHydrator, "ensureStudioFontLoaded").mockResolvedValue(true);
+
+    const mockArtifact = {
+      dependencies: {
+        fonts: [
+          { family: "Bangers", weight: 800, style: "normal" },
+          { family: "Outfit", weight: 600, style: "normal" },
+        ],
+      },
+    } as unknown as TextTemplateArtifact;
+
+    const mockLegacy = {
+      layers: [
+        { kind: "text", fontFamily: "Pacifico", fontWeight: 400, fontStyle: "normal" },
+        { kind: "shape" },
+      ],
+    } as any;
+
+    await ensureTemplateFontsLoaded(mockArtifact, mockLegacy);
+
+    expect(hydratorSpy).toHaveBeenCalledWith("Bangers", 800, "normal");
+    expect(hydratorSpy).toHaveBeenCalledWith("Outfit", 600, "normal");
+    expect(hydratorSpy).toHaveBeenCalledWith("Pacifico", 400, "normal");
   });
 });

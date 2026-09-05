@@ -54,7 +54,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ClypraColorPicker } from "@clypra/ui-color-picker";
-import { SUPPORTED_FONT_FAMILIES } from "@/constants/fonts";
+import {
+  SUPPORTED_FONT_FAMILIES,
+  GOOGLE_FONTS,
+  normalizeSupportedFontFamily,
+} from "@/constants/fonts";
+import {
+  ensureStudioFontLoaded,
+  preloadStudioFontFamilies,
+} from "../../services/studioFontHydrator";
 
 import {
   BUILTIN_CANVAS_TEMPLATES,
@@ -453,6 +461,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
   const currentTimeRef = useRef(currentTime);
   const playbackSpeedRef = useRef(playbackSpeed);
   const templateRef = useRef(template);
+  templateRef.current = template;
   const previewSchedulerRef = useRef<TextTemplatePreviewScheduler | null>(null);
   const lastTimelineUiUpdateRef = useRef(0);
   const [isDraggingLayer, setIsDraggingLayer] = useState(false);
@@ -883,6 +892,8 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
         });
       }
     });
+    // Preload supported Google Fonts so font switching renders immediately without fallback
+    void preloadStudioFontFamilies(GOOGLE_FONTS);
   }, []);
 
   // Keep one bounded render pipeline for interactive preview. The scheduler
@@ -927,8 +938,12 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     };
   }, []);
 
-  const requestPreviewFrame = (time: number, isDirectPlayback = false) => {
-    const activeTemplate = templateRef.current;
+  const requestPreviewFrame = (
+    time: number,
+    isDirectPlayback = false,
+    targetTemplate?: TextTemplate,
+  ) => {
+    const activeTemplate = targetTemplate ?? templateRef.current ?? template;
     if (!activeTemplate || !canvasRef.current || !previewSchedulerRef.current)
       return;
 
@@ -1012,7 +1027,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     if (!isPlaying) {
       setPreviewState("rendering");
       setPreviewError(null);
-      requestPreviewFrame(currentTime, false);
+      requestPreviewFrame(currentTime, false, template);
     }
   }, [
     template,
@@ -1023,6 +1038,29 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     zoom,
     previewQuality,
   ]);
+
+  // Hydrate all fonts used in the active template and re-render preview once loaded
+  useEffect(() => {
+    if (!template) return;
+    const fontsInTemplate = (template.layers || [])
+      .filter((l: any) => l.kind === "text" && l.fontFamily)
+      .map((l: any) => ({
+        family: l.fontFamily,
+        weight: l.fontWeight ?? 400,
+        style: l.fontStyle ?? "normal",
+      }));
+    if (fontsInTemplate.length > 0) {
+      void Promise.allSettled(
+        fontsInTemplate.map((f) =>
+          ensureStudioFontLoaded(f.family, f.weight, f.style as any),
+        ),
+      ).then(() => {
+        if (!isPlayingRef.current && canvasRef.current) {
+          requestPreviewFrame(currentTimeRef.current, false, template);
+        }
+      });
+    }
+  }, [template]);
 
   // RequestAnimationFrame tick for playing previews
   const tick = (timestamp: number) => {
@@ -4547,13 +4585,23 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                             Font Family
                           </label>
                           <select
-                            value={selectedLayer.fontFamily}
-                            onChange={(e) =>
+                            value={normalizeSupportedFontFamily(
+                              selectedLayer.fontFamily,
+                              "Inter",
+                            )}
+                            onChange={async (e) => {
+                              const nextFamily = e.target.value;
                               handleUpdateLayerProperty(
                                 "fontFamily",
-                                e.target.value,
-                              )
-                            }
+                                nextFamily,
+                              );
+                              await ensureStudioFontLoaded(
+                                nextFamily,
+                                selectedLayer.fontWeight,
+                                selectedLayer.fontStyle,
+                              );
+                              requestPreviewFrame(currentTimeRef.current, false);
+                            }}
                             className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
                           >
                             {SUPPORTED_FONT_FAMILIES.map((fam) => (
@@ -4622,25 +4670,41 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                               min={100}
                               max={900}
                               step={100}
-                              value={selectedLayer.fontWeight}
-                              onChange={(e) =>
+                              value={selectedLayer.fontWeight ?? 400}
+                              onChange={async (e) => {
+                                const nextWeight =
+                                  parseInt(e.target.value) || 400;
                                 handleUpdateLayerProperty(
                                   "fontWeight",
-                                  parseInt(e.target.value) || 400,
-                                )
-                              }
+                                  nextWeight,
+                                );
+                                await ensureStudioFontLoaded(
+                                  selectedLayer.fontFamily,
+                                  nextWeight,
+                                  selectedLayer.fontStyle,
+                                );
+                                requestPreviewFrame(currentTimeRef.current, false);
+                              }}
                               className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
                             />
                             <button
                               type="button"
-                              onClick={() =>
-                                handleUpdateLayerProperty(
-                                  "fontStyle",
+                              onClick={async () => {
+                                const nextStyle =
                                   selectedLayer.fontStyle === "italic"
                                     ? "normal"
-                                    : "italic",
-                                )
-                              }
+                                    : "italic";
+                                handleUpdateLayerProperty(
+                                  "fontStyle",
+                                  nextStyle,
+                                );
+                                await ensureStudioFontLoaded(
+                                  selectedLayer.fontFamily,
+                                  selectedLayer.fontWeight,
+                                  nextStyle,
+                                );
+                                requestPreviewFrame(currentTimeRef.current, false);
+                              }}
                               title="Toggle Italic"
                               className={`px-3 py-1.5 rounded border text-xs font-serif font-bold italic transition-colors ${
                                 selectedLayer.fontStyle === "italic"

@@ -21,9 +21,41 @@ export async function ensureStudioFontLoaded(
   const descriptor = descriptorFor(family, weight, style);
   if (!descriptor) return false;
 
-  const result = await getFontLoader().ensureFont(descriptor);
+  const loader = getFontLoader();
+  const numWeight = typeof weight === "number" ? weight : parseInt(String(weight), 10) || 400;
+
+  // For non-400 weights, preload weight 400 first so FontLoader's fallback check
+  // (which accepts weight 400 when a font has only one weight on Google Fonts,
+  // e.g. Bangers, Pacifico, Permanent Marker, Anton, Bebas Neue, Press Start 2P)
+  // succeeds instead of throwing an error.
+  if (numWeight !== 400) {
+    try {
+      await loader.ensureFont({ family: descriptor.family, weight: 400, style: "normal" });
+    } catch {
+      // Ignore base weight error
+    }
+  }
+
+  let result = await loader.ensureFont(descriptor);
+  if (!result.loaded && numWeight !== 400) {
+    result = await loader.ensureFont({ family: descriptor.family, weight: 400, style });
+  }
   if (!result.loaded) return false;
-  await document.fonts.load(`${style} ${weight} 16px "${descriptor.family}"`);
+
+  try {
+    await document.fonts.load(`${style} ${numWeight} 16px "${descriptor.family}"`);
+  } catch {
+    // Ignore weight load error
+  }
+
+  if (numWeight !== 400) {
+    try {
+      await document.fonts.load(`${style} 400 16px "${descriptor.family}"`);
+    } catch {
+      // Ignore fallback load error
+    }
+  }
+
   return true;
 }
 

@@ -10,6 +10,7 @@ import {
 import type { TextTemplate as TemplateDefinition } from "@clypra-studio/engine";
 import { getNativeRenderClient, isRendererReady, NATIVE_RENDER_CONTRACT_VERSION } from "./nativeRenderClient";
 import { recordStudioTextRender } from "./textPerformanceTelemetry";
+import { ensureStudioFontLoaded } from "./studioFontHydrator";
 
 export type { TemplateCustomization };
 
@@ -241,6 +242,29 @@ async function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   });
 }
 
+export async function ensureTemplateFontsLoaded(
+  artifact: TextTemplateArtifact,
+  legacyTemplate?: TemplateDefinition,
+): Promise<void> {
+  const fontRequirements = [
+    ...(artifact.dependencies?.fonts || []),
+    ...(legacyTemplate?.layers || [])
+      .filter((l: any) => l.kind === "text" && l.fontFamily)
+      .map((l: any) => ({
+        family: l.fontFamily,
+        weight: l.fontWeight ?? 400,
+        style: l.fontStyle ?? "normal",
+      })),
+  ];
+  if (fontRequirements.length > 0) {
+    await Promise.allSettled(
+      fontRequirements.map((font) =>
+        ensureStudioFontLoaded(font.family, font.weight, font.style as any),
+      ),
+    );
+  }
+}
+
 async function renderTextTemplateFrameExclusive(options: {
   artifact: TextTemplateArtifact;
   legacyTemplate?: TemplateDefinition;
@@ -263,6 +287,10 @@ async function renderTextTemplateFrameExclusive(options: {
     outputScale: options.outputScale ?? 1,
     legacyLayers: options.legacyTemplate?.layers?.length ?? 0,
   });
+
+  // Guarantee all required fonts are loaded before compiling and rasterizing
+  await ensureTemplateFontsLoaded(artifact, options.legacyTemplate);
+
   const compileStartedAt = typeof performance !== "undefined" ? performance.now() : 0;
   const compiled = compileTextTemplate(artifact, { target: "studio", time: options.time, controlValues: options.controlValues });
   const compileTimeMs = typeof performance !== "undefined" ? performance.now() - compileStartedAt : null;
