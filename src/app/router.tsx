@@ -30,6 +30,7 @@ const FilterLabPage = lazy(() => import("../pages/labs/FilterLabPage"));
 const AudioLabPage = lazy(() => import("../pages/labs/AudioLabPage"));
 const StickerLabPage = lazy(() => import("../pages/labs/StickerLabPage"));
 const OverlayLabPage = lazy(() => import("../pages/labs/OverlayLabPage"));
+const MotionGraphicsLabPage = lazy(() => import("../pages/labs/MotionGraphicsLabPage"));
 
 const METADATA = {
   showcase: {
@@ -70,6 +71,12 @@ const METADATA = {
     description:
       "Professional text animation editor and template creator. Design, customize, and publish templates with advanced layer controls, keyframe animation, and GitHub integration.",
     title: "Clypra Text Templates - Animation Template Editor",
+  },
+  motionGraphics: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/motion-graphics",
+    description:
+      "Admin motion graphics authoring lab with intro-hold-outro phases, procedural VFX, and alpha compositing.",
+    title: "Clypra Studio - Motion Graphics Lab",
   },
   effects: {
     canonical: "https://clypra.abdulkabirmusa.com/studio/effects",
@@ -205,6 +212,14 @@ const routes: RouteObject[] = [
     element: (
       <DocumentRoute metadata={METADATA.textEffectsLab}>
         <AuthRoute label="the Text Effects Lab">{withSuspense(<TextEffectsLabPage />)}</AuthRoute>
+      </DocumentRoute>
+    ),
+  },
+  {
+    path: `${STUDIO_RAIL_ROUTES["motion-graphics"]}/*`,
+    element: (
+      <DocumentRoute metadata={METADATA.motionGraphics}>
+        <AdminRoute label="Motion Graphics Studio">{withSuspense(<MotionGraphicsLabPage />)}</AdminRoute>
       </DocumentRoute>
     ),
   },

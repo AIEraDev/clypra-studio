@@ -4,6 +4,7 @@ import {
   Beaker,
   FileCode,
   Eye,
+  Film,
   Layers,
   Music2,
   Palette,
@@ -135,6 +136,14 @@ const destinationGroups: StudioDestinationGroup[] = [
 ];
 
 const adminDestinations: StudioDestination[] = [
+  {
+    href: "/studio/motion-graphics",
+    label: "Motion Graphics Studio",
+    description: "Author multi-track motion graphics: intro-hold-outro phases, procedural VFX, and alpha compositing.",
+    icon: Film,
+    accent: "#f43f5e",
+    status: "Admin Lab",
+  },
   {
     href: "/studio/performance",
     label: "Performance Intelligence",
