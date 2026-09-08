@@ -179,6 +179,15 @@ export default function App() {
 
   // Custom localStorage presets
   const [customPresets, setCustomPresets] = useState<Preset[]>([]);
+  // Overrides for native starters modified in the local session
+  const [starterOverrides, setStarterOverrides] = useState<Record<string, Preset>>(() => {
+    try {
+      const saved = localStorage.getItem("clypra_starter_overrides");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
   const [activePresetId, setActivePresetId] = useState<string>("classic-ink");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [sortBy, setSortBy] = useState<"recency" | "name" | "category">(
@@ -565,9 +574,21 @@ export default function App() {
   };
 
   const displayPresets = useMemo(() => {
+    const effectiveBuiltIns = builtInPresets.map((p) => {
+      const override = starterOverrides[p.id];
+      if (override) {
+        return {
+          ...p,
+          ...override,
+          isEdited: true,
+        };
+      }
+      return p;
+    });
+
     let items = [
       ...customPresets.map((p) => ({ ...p, isCustom: true })),
-      ...builtInPresets,
+      ...effectiveBuiltIns,
     ];
 
     // Filter by Category
@@ -597,7 +618,7 @@ export default function App() {
     }
 
     return items;
-  }, [customPresets, builtInPresets, selectedCategory, sortBy]);
+  }, [customPresets, builtInPresets, starterOverrides, selectedCategory, sortBy]);
 
   // Register Keyboard Shortcuts
   useEffect(() => {
@@ -833,6 +854,90 @@ export default function App() {
     sortBy,
     effectApiCategory,
   ]);
+
+  // Keep the active local starter synchronized when edited in the workspace
+  useEffect(() => {
+    if (!isCreatorSessionLoaded) return;
+    if (
+      !activePresetId ||
+      activePresetId === "scratch" ||
+      activePresetId === "blended"
+    )
+      return;
+
+    // 1. Is it a custom preset?
+    const isCustom = customPresets.some((p) => p.id === activePresetId);
+    if (isCustom) {
+      setCustomPresets((prev) => {
+        const target = prev.find((p) => p.id === activePresetId);
+        if (!target) return prev;
+        const newName = config.effectName || target.name;
+        if (
+          target.name === newName &&
+          JSON.stringify(target.config) === JSON.stringify(config)
+        ) {
+          return prev;
+        }
+        const updated = prev.map((p) =>
+          p.id === activePresetId
+            ? {
+                ...p,
+                name: newName,
+                config: JSON.parse(JSON.stringify(config)),
+              }
+            : p,
+        );
+        localStorage.setItem("clypra_custom_presets", JSON.stringify(updated));
+        return updated;
+      });
+      return;
+    }
+
+    // 2. Is it a built-in native starter?
+    const builtIn = builtInPresets.find((p) => p.id === activePresetId);
+    if (builtIn) {
+      setStarterOverrides((prev) => {
+        const existing = prev[activePresetId];
+        const newName = config.effectName || builtIn.name;
+        const newConfig = JSON.parse(JSON.stringify(config));
+        if (
+          existing &&
+          existing.name === newName &&
+          JSON.stringify(existing.config) === JSON.stringify(newConfig)
+        ) {
+          return prev;
+        }
+        const updatedPreset: Preset = {
+          ...builtIn,
+          ...existing,
+          name: newName,
+          config: newConfig,
+        };
+        const updated = { ...prev, [activePresetId]: updatedPreset };
+        localStorage.setItem(
+          "clypra_starter_overrides",
+          JSON.stringify(updated),
+        );
+        return updated;
+      });
+    }
+  }, [config, activePresetId, isCreatorSessionLoaded, customPresets]);
+
+  // Reset an edited starter back to factory default
+  const handleResetStarter = (starterId: string) => {
+    setStarterOverrides((prev) => {
+      const copy = { ...prev };
+      delete copy[starterId];
+      localStorage.setItem("clypra_starter_overrides", JSON.stringify(copy));
+      return copy;
+    });
+    if (activePresetId === starterId) {
+      const factory = builtInPresets.find((p) => p.id === starterId);
+      if (factory) {
+        handleApplyPreset(factory);
+      }
+    }
+  };
 
   // Animation preview loop
   useEffect(() => {
@@ -1579,6 +1684,7 @@ export default function App() {
         onExport={handleOpenPublishModal}
         onApplyPreset={handleApplyPreset}
         onDeletePreset={handleDeletePreset}
+        onResetStarter={handleResetStarter}
         onStartFromScratch={handleStartFromScratch}
         onSavePreset={() => setShowSavePresetModal(true)}
         onSelectedCategoryChange={setSelectedCategory}

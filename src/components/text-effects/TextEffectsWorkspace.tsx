@@ -64,6 +64,7 @@ export interface TextEffectsWorkspaceProps {
   onExport: () => void;
   onApplyPreset: (preset: Preset) => void;
   onDeletePreset: (id: string, event: MouseEvent) => void;
+  onResetStarter?: (id: string, event: MouseEvent) => void;
   onStartFromScratch: () => void;
   onSavePreset: () => void;
   onSelectedCategoryChange: (category: string) => void;
@@ -118,6 +119,7 @@ export function TextEffectsWorkspace({
   onExport,
   onApplyPreset,
   onDeletePreset,
+  onResetStarter,
   onStartFromScratch,
   onSavePreset,
   onSelectedCategoryChange,
@@ -242,6 +244,7 @@ export function TextEffectsWorkspace({
                     onSortByChange={onSortByChange}
                     onApplyPreset={onApplyPreset}
                     onDeletePreset={onDeletePreset}
+                    onResetStarter={onResetStarter}
                     onStartFromScratch={onStartFromScratch}
                     onSavePreset={onSavePreset}
                   />

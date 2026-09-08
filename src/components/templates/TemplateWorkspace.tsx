@@ -732,6 +732,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
     category: string,
     id: string,
   ) => {
+    if (category === "caption" && !isAdmin) {
+      alert("Caption templates can only be published by administrators.");
+      return;
+    }
     if (
       !confirm(
         "Are you sure you want to approve and publish this template immediately?",
@@ -1238,6 +1242,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   // Preset Selection Trigger
   const handleSelectPreset = (preset: TextTemplate, openPublish = false) => {
+    if (preset.category === "caption" && !isAdmin) {
+      alert("Caption templates can only be designed and edited by administrators.");
+      return;
+    }
     const clone = JSON.parse(JSON.stringify(preset)) as TextTemplate;
     setTemplate(clone);
     setSelectedLayerId(clone.layers[0]?.id || null);
@@ -1258,22 +1266,54 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   // Create Blank Template Action
   const handleCreateBlank = () => {
+    if (newCategory === "caption" && !isAdmin) {
+      alert("Caption templates can only be designed by administrators.");
+      return;
+    }
+    const isCaption = newCategory === "caption";
     const blank: TextTemplate = {
       id: newTemplateId
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9-]/g, "-"),
-      label: newLabel.trim() || "My Custom Template",
+      label: newLabel.trim() || (isCaption ? "Custom Caption Template" : "My Custom Template"),
       category: newCategory,
       duration: newDuration,
       canvasWidth: newW,
       canvasHeight: newH,
-      layers: [],
+      layers: isCaption
+        ? [
+            {
+              id: "caption-subtitle-text",
+              name: "Subtitle Text",
+              type: "text",
+              text: "Sample Subtitle Caption",
+              fontFamily: "Inter Variable",
+              fontSize: 52,
+              fontWeight: 700,
+              color: "#ffffff",
+              align: "center",
+              transform: {
+                x: Math.round(newW / 2),
+                y: Math.round(newH * 0.84),
+                scaleX: 1,
+                scaleY: 1,
+                rotation: 0,
+                opacity: 1,
+              },
+              box: {
+                width: Math.round(newW * 0.9),
+                height: 120,
+              },
+            } as any,
+          ]
+        : [],
     };
     setTemplate(blank);
-    setSelectedLayerId(null);
+    setSelectedLayerId(isCaption ? "caption-subtitle-text" : null);
     setCurrentTime(0);
   };
+
 
   // Quick insert handler supporting text, text-box, lower-third, pill, shape, image
   const handleQuickInsert = (type: QuickInsertType) => {
@@ -2701,6 +2741,10 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
 
   const handlePublish = async () => {
     if (!template) return;
+    if (template.category === "caption" && !isAdmin) {
+      alert("Caption templates can only be designed and published by administrators.");
+      return;
+    }
     setPublishStatus("publishing");
     setPublishPrUrl(null);
     setPublishMessage("Preparing preview and files…");
@@ -3040,6 +3084,12 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 )}
               </div>
 
+              {template?.category === "caption" && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-bold">
+                  <span>★ Caption Template (Admin)</span>
+                </div>
+              )}
+
               <button
                 onClick={() => {
                   setLoadTab("presets");
@@ -3145,6 +3195,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     All ({BUILTIN_CANVAS_TEMPLATES.length})
                   </button>
                   {CATEGORIES.map((cat) => {
+                    if (cat === "caption" && !isAdmin) return null;
                     const count = BUILTIN_CANVAS_TEMPLATES.filter((p) => p.category === cat).length;
                     return (
                       <button
@@ -3156,7 +3207,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                             : "bg-[#171722] text-[#888899] hover:text-white hover:bg-[#1E1E2C]"
                         }`}
                       >
-                        {cat.replace("-", " ")} ({count})
+                        {cat === "caption" ? `★ ${cat}` : cat.replace("-", " ")} ({count})
                       </button>
                     );
                   })}
@@ -3165,7 +3216,9 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 {/* Presets Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto pr-1">
                   {BUILTIN_CANVAS_TEMPLATES.filter(
-                    (p) => presetCategoryFilter === "all" || p.category === presetCategoryFilter,
+                    (p) =>
+                      (presetCategoryFilter === "all" || p.category === presetCategoryFilter) &&
+                      (p.category !== "caption" || isAdmin),
                   ).map((preset) => (
                     <div
                       key={preset.id}
@@ -3477,17 +3530,26 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     </label>
                     <select
                       value={newCategory}
-                      onChange={(e) =>
-                        setNewCategory(e.target.value as TemplateCategory)
-                      }
+                      onChange={(e) => {
+                        const val = e.target.value as TemplateCategory;
+                        if (val === "caption" && !isAdmin) {
+                          alert("Caption templates can only be designed by administrators.");
+                          return;
+                        }
+                        setNewCategory(val);
+                      }}
                       className="w-full rounded-lg border border-[#2A2A38] bg-[#09090D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500"
                     >
-                      {CATEGORIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
+                      {CATEGORIES.map((c) => {
+                        const isCaption = c === "caption";
+                        return (
+                          <option key={c} value={c} disabled={isCaption && !isAdmin}>
+                            {c} {isCaption && !isAdmin ? "🔒 (Admin Only)" : isCaption ? "★ (Admin)" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
+
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
@@ -6379,7 +6441,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                       const val = e.target.value;
                       setTemplate((prev) =>
                         prev
-                          ? { ...prev, label: val, id: toKebabCase(val) }
+                          ? { ...prev, label: val, name: val }
                           : null,
                       );
                     }}
@@ -6394,18 +6456,26 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     value={template.category}
                     onChange={(e) => {
                       const val = e.target.value as TemplateCategory;
+                      if (val === "caption" && !isAdmin) {
+                        alert("Caption templates can only be designed by administrators.");
+                        return;
+                      }
                       setTemplate((prev) =>
                         prev ? { ...prev, category: val } : null,
                       );
                     }}
                     className="w-full rounded border border-[#2A2A38] bg-[#09090D] px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
                   >
-                    {CATEGORIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
+                    {CATEGORIES.map((c) => {
+                      const isCaption = c === "caption";
+                      return (
+                        <option key={c} value={c} disabled={isCaption && !isAdmin}>
+                          {c} {isCaption && !isAdmin ? "🔒 (Admin Only)" : isCaption ? "★ (Admin)" : ""}
+                        </option>
+                      );
+                    })}
                   </select>
+
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888899] mb-1">
@@ -6539,7 +6609,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           }
           onTemplateNameChange={(v) =>
             setTemplate((prev) =>
-              prev ? { ...prev, label: v, id: toKebabCase(v) } : null,
+              prev ? { ...prev, label: v, name: v } : null,
             )
           }
           onCategoryChange={(v) =>

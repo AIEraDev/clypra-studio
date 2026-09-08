@@ -6,6 +6,7 @@ import {
   Database,
   Loader2,
   RefreshCw,
+  RotateCcw,
   Search,
   Sparkles,
   Trash2,
@@ -49,6 +50,7 @@ interface TextEffectCatalogPanelProps {
   onSortByChange: (sort: CatalogSort) => void;
   onApplyPreset: (preset: Preset) => void;
   onDeletePreset: (id: string, event: MouseEvent) => void;
+  onResetStarter?: (id: string, event: MouseEvent) => void;
   onStartFromScratch: () => void;
   onSavePreset: () => void;
 }
@@ -253,18 +255,32 @@ function PreviewTile({
   name,
   thumbnail,
   accent,
+  config,
 }: {
   name: string;
   thumbnail?: string;
   accent: string;
+  config?: TextEffectConfig;
 }) {
+  const hasPill = !!config?.panelEnabled && !!config?.panelColor;
+  const textColor = config?.fillColor || (accent !== "#7c6fff" ? accent : "#FFFFFF");
+  const strokeColor = config?.strokeEnabled ? config?.strokeColor : undefined;
+  const strokeWidth = config?.strokeEnabled ? Math.min(config?.strokeWidth || 1, 2) : 0;
+  const hasShadow = !!config?.shadowEnabled;
+  const shadowColor = config?.shadowColor || "rgba(0,0,0,0.85)";
+  const fontFamily =
+    config?.fontFamily && config.fontFamily !== "sans-serif"
+      ? config.fontFamily
+      : undefined;
+  const fontWeight = config?.fontWeight || 700;
+
   return (
     <div
-      className="relative flex h-16 w-full items-center justify-center overflow-hidden rounded-lg border border-white/8 bg-[#09090D]"
+      className="relative flex h-16 w-full items-center justify-center overflow-hidden rounded-lg border border-white/8 bg-[#09090D] px-2 text-center"
       style={{
         backgroundImage: thumbnail
           ? undefined
-          : `linear-gradient(135deg, ${accent}20, #09090D 70%)`,
+          : `linear-gradient(135deg, ${accent}25 0%, #09090D 80%)`,
       }}
     >
       {thumbnail ? (
@@ -274,8 +290,41 @@ function PreviewTile({
           loading="lazy"
           className="h-full w-full object-cover"
         />
+      ) : hasPill ? (
+        <span
+          className="inline-block max-w-full truncate text-[11px] font-bold px-2.5 py-1 shadow-sm"
+          style={{
+            color: textColor,
+            backgroundColor: config?.panelColor || "rgba(0,0,0,0.8)",
+            borderRadius: config?.panelRadius
+              ? Math.min(config.panelRadius, 9999)
+              : 9999,
+            border: strokeColor
+              ? `${strokeWidth}px solid ${strokeColor}`
+              : undefined,
+            fontFamily,
+            fontWeight,
+          }}
+        >
+          {name.slice(0, 16)}
+        </span>
       ) : (
-        <span className="px-2 text-center text-[11px] font-black uppercase tracking-[0.12em] text-white/85">
+        <span
+          className="max-w-full truncate px-1 text-center text-[11px] font-black uppercase tracking-[0.08em]"
+          style={{
+            color: textColor,
+            WebkitTextStroke: strokeColor
+              ? `${strokeWidth}px ${strokeColor}`
+              : undefined,
+            textShadow: strokeColor
+              ? `0 0 6px ${strokeColor}40`
+              : hasShadow
+                ? `0 2px 4px ${shadowColor}`
+                : "0 1px 4px rgba(0,0,0,0.8)",
+            fontFamily,
+            fontWeight,
+          }}
+        >
           {name.slice(0, 16)}
         </span>
       )}
@@ -360,11 +409,13 @@ function LocalCard({
   active,
   onLoad,
   onDelete,
+  onReset,
 }: {
-  preset: Preset;
+  preset: Preset & { isEdited?: boolean };
   active: boolean;
   onLoad: () => void;
   onDelete: (event: MouseEvent) => void;
+  onReset?: (presetId: string, event: MouseEvent) => void;
 }) {
   const accent = preset.config.fillColor || "#7c6fff";
   return (
@@ -376,7 +427,11 @@ function LocalCard({
           : "border-(--studio-border) bg-(--studio-panel) hover:border-(--studio-accent)/50"
       }`}
     >
-      <PreviewTile name={preset.name} accent={accent} />
+      <PreviewTile
+        name={preset.name}
+        accent={accent}
+        config={preset.config}
+      />
       <div className="mt-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="truncate text-[11px] font-semibold text-white">
@@ -384,21 +439,40 @@ function LocalCard({
           </h3>
           <p className="mt-0.5 truncate text-[9px] uppercase tracking-wider text-(--studio-muted)">
             {preset.category || "Classic"} · Local native starter
+            {preset.isEdited && (
+              <span className="ml-1 font-bold text-(--studio-accent)">· Edited</span>
+            )}
           </p>
         </div>
-        {preset.isCustom && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(e);
-            }}
-            className="rounded p-1 text-(--studio-muted) opacity-0 transition-opacity hover:text-red-300 group-hover:opacity-100"
-            aria-label={`Delete ${preset.name}`}
-          >
-            <Trash2 size={11} />
-          </button>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {preset.isEdited && onReset && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onReset(preset.id, e);
+              }}
+              className="rounded p-1 text-(--studio-muted) opacity-0 transition-opacity hover:text-(--studio-accent) group-hover:opacity-100 cursor-pointer"
+              title="Reset to original starter"
+              aria-label={`Reset ${preset.name} to default`}
+            >
+              <RotateCcw size={11} />
+            </button>
+          )}
+          {preset.isCustom && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(e);
+              }}
+              className="rounded p-1 text-(--studio-muted) opacity-0 transition-opacity hover:text-red-300 group-hover:opacity-100 cursor-pointer"
+              aria-label={`Delete ${preset.name}`}
+            >
+              <Trash2 size={11} />
+            </button>
+          )}
+        </div>
       </div>
       <button
         type="button"
@@ -424,6 +498,7 @@ export function TextEffectCatalogPanel({
   onSortByChange,
   onApplyPreset,
   onDeletePreset,
+  onResetStarter,
   onStartFromScratch,
   onSavePreset,
 }: TextEffectCatalogPanelProps) {
@@ -654,6 +729,7 @@ export function TextEffectCatalogPanel({
               active={activePresetId === preset.id}
               onLoad={() => onApplyPreset(preset)}
               onDelete={(event) => onDeletePreset(preset.id, event)}
+              onReset={(id, event) => onResetStarter?.(id, event)}
             />
           ))}
         </div>
