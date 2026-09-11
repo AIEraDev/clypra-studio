@@ -572,6 +572,25 @@ export function PerformanceAdminDashboard() {
                   Isolates hardware decode, texture upload, shader composition,
                   and frame readback latencies
                 </p>
+                {/* ── Workload-scope footnote ──────────────────────────────────
+                    The GPU distribution shown here reflects only the events
+                    matching the currently selected workload filter. Fleet-share
+                    percentages (e.g. "45 % RX 580") are scoped to that workload
+                    bucket and must not be cited as overall Windows fleet
+                    composition until the cross-mode consistency check
+                    (GET /comparison/fleet-consistency) confirms the ratio holds
+                    across seek-cold / seek-warm / scrub / playback.
+                ─────────────────────────────────────────────────────────────── */}
+                <p className="mt-2 text-[10px] text-amber-400/80 font-medium">
+                  ⚠ Sample distribution is scoped to the{" "}
+                  <span className="font-bold">{workloadFilter}</span> workload
+                  only — not overall fleet composition. Run{" "}
+                  <code className="font-mono">
+                    /comparison/fleet-consistency
+                  </code>{" "}
+                  to verify GPU ratios hold across all workload modes before
+                  citing these percentages in sprint planning.
+                </p>
               </div>
 
               <div className="overflow-x-auto">
@@ -585,6 +604,7 @@ export function PerformanceAdminDashboard() {
                       <th className="px-5 py-3">Seek Latency (P95)</th>
                       <th className="px-5 py-3">Primary Bottleneck</th>
                       <th className="px-5 py-3">SLA Status</th>
+                      <th className="px-5 py-3">Confidence</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-(--studio-border)">
@@ -642,11 +662,47 @@ export function PerformanceAdminDashboard() {
                             </span>
                           )}
                         </td>
+                        {/* Low-confidence indicator — shown when sampleCount is
+                            below the reliable threshold. Metrics are present but
+                            should not be cited in planning until more samples
+                            accumulate. See MIN_RELIABLE_SAMPLE_COUNT in
+                            analyticsEngine.ts. */}
+                        <td className="px-5 py-3.5">
+                          {item.confidence === "low" ? (
+                            <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                              <AlertTriangle size={10} /> Low — n=
+                              {item.sampleCount}
+                            </span>
+                          ) : (
+                            <span className="text-emerald-400/60 text-[10px]">
+                              ✓ n={item.sampleCount}
+                            </span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              {/* ── Low-confidence footnote ──────────────────────────────────
+                  Entries marked "Low" have fewer than MIN_RELIABLE_SAMPLE_COUNT
+                  (10) samples in the selected workload bucket. They are shown
+                  for completeness but must not inform GPU-tier prioritisation
+                  decisions until sample counts grow. Single-session outliers
+                  (e.g. Intel UHD 710, n=1) may reflect cold-cache start, driver
+                  install artefacts, or any other one-time condition.
+              ─────────────────────────────────────────────────────────────── */}
+              {(hwData?.gpuMatrix || []).some(
+                (item) => item.confidence === "low",
+              ) && (
+                <p className="px-5 py-3 text-[10px] text-amber-400/70 border-t border-(--studio-border)">
+                  ⚠ One or more rows are marked <strong>Low confidence</strong>{" "}
+                  (n &lt; 10 samples in this workload). Metrics are shown for
+                  completeness — do not cite low-confidence GPU tiers in sprint
+                  prioritisation or engineering planning until their sample
+                  counts reach at least 10 distinct sessions.
+                </p>
+              )}
             </div>
           </section>
         )}
