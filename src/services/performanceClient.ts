@@ -2,7 +2,9 @@ import { getStudioApiBaseUrl } from "./apiConfig";
 
 function assertTestFixtureAccess(): void {
   if (import.meta.env.MODE !== "test") {
-    throw new Error("Synthetic performance fixtures are test-only; use the live API client.");
+    throw new Error(
+      "Synthetic performance fixtures are test-only; use the live API client.",
+    );
   }
 }
 
@@ -41,10 +43,17 @@ export interface GPUArchitectureMetric {
   fallbackRate: number;
   primaryBottleneck: "decode" | "compose" | "upload" | "readback" | "none";
   meetsSLA: boolean;
+  /**
+   * "low"        — sampleCount < minReliableSampleCount (currently 10).
+   *                Metrics present but unreliable; do not cite in planning.
+   * "sufficient" — sampleCount >= minReliableSampleCount.
+   */
+  confidence: "low" | "sufficient";
 }
 
 export interface HardwareComparisonData {
   workloadMode: string;
+  minReliableSampleCount: number;
   gpuMatrix: GPUArchitectureMetric[];
 }
 
@@ -149,7 +158,12 @@ export interface PreviewComparisonCohort {
   view: "webview" | "native";
   surface: "dom-canvas" | "native-surface";
   runtimeEnvironment: "development" | "production";
-  scenario?: "playback" | "seek" | "scrub" | "paused-interaction" | "qualification";
+  scenario?:
+    | "playback"
+    | "seek"
+    | "scrub"
+    | "paused-interaction"
+    | "qualification";
   qualificationRunId?: string;
   measurementSource?: "frontend-span" | "native-sample" | "session-rollup";
   sampleCount: number;
@@ -186,7 +200,20 @@ export interface PreviewComparisonCohort {
   p95IpcWaitUs: number;
   firstFrameVisibleMs?: number;
   jankEvents: number;
-  primaryBottleneck: "decode" | "decoderMutexWait" | "conversionUpload" | "compose" | "surfaceAcquire" | "gpuQueueWait" | "readback" | "transfer" | "canvasPaint" | "submitPresent" | "schedulerWait" | "ipcWait" | "none";
+  primaryBottleneck:
+    | "decode"
+    | "decoderMutexWait"
+    | "conversionUpload"
+    | "compose"
+    | "surfaceAcquire"
+    | "gpuQueueWait"
+    | "readback"
+    | "transfer"
+    | "canvasPaint"
+    | "submitPresent"
+    | "schedulerWait"
+    | "ipcWait"
+    | "none";
   meetsSLA: boolean;
 }
 
@@ -243,9 +270,35 @@ export interface TextPerformanceCohort {
   kind: "plain" | "effect" | "template";
   rendererPath: "native-raster" | "webview-canvas" | "studio-preview";
   runtimeEnvironment: "development" | "production";
-  phase: "session-prewarm" | "text-prefetch" | "visible-playback" | "interactive-preview";
-  operation: "render" | "entrance" | "exit" | "animation" | "content-edit" | "property-edit" | "transform" | "resize" | "prefetch";
-  property?: "content" | "color" | "fontFamily" | "fontSize" | "fontWeight" | "fontStyle" | "lineHeight" | "letterSpacing" | "alignment" | "effect" | "template" | "transform" | "resize";
+  phase:
+    | "session-prewarm"
+    | "text-prefetch"
+    | "visible-playback"
+    | "interactive-preview";
+  operation:
+    | "render"
+    | "entrance"
+    | "exit"
+    | "animation"
+    | "content-edit"
+    | "property-edit"
+    | "transform"
+    | "resize"
+    | "prefetch";
+  property?:
+    | "content"
+    | "color"
+    | "fontFamily"
+    | "fontSize"
+    | "fontWeight"
+    | "fontStyle"
+    | "lineHeight"
+    | "letterSpacing"
+    | "alignment"
+    | "effect"
+    | "template"
+    | "transform"
+    | "resize";
   sampleCount: number;
   renderSampleCount: number;
   interactionSampleCount: number;
@@ -288,15 +341,22 @@ export interface TextComparisonData {
 }
 
 export const performanceClient = {
-  async getAudioComparison(options: {
-    backend?: "native-cpal" | "web-audio";
-    environment?: "development" | "production";
-  } = {}): Promise<AudioComparisonData | null> {
+  async getAudioComparison(
+    options: {
+      backend?: "native-cpal" | "web-audio";
+      environment?: "development" | "production";
+    } = {},
+  ): Promise<AudioComparisonData | null> {
     try {
-      const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/audio`);
+      const url = new URL(
+        `${getStudioApiBaseUrl()}/performance/comparison/audio`,
+      );
       if (options.backend) url.searchParams.set("backend", options.backend);
-      if (options.environment) url.searchParams.set("environment", options.environment);
-      const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+      if (options.environment)
+        url.searchParams.set("environment", options.environment);
+      const res = await fetch(url.toString(), {
+        headers: { Accept: "application/json" },
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       return {
@@ -310,23 +370,32 @@ export const performanceClient = {
     }
   },
 
-  async getTextComparison(options: {
-    kind?: TextPerformanceCohort["kind"];
-    rendererPath?: TextPerformanceCohort["rendererPath"];
-    environment?: TextPerformanceCohort["runtimeEnvironment"];
-    phase?: TextPerformanceCohort["phase"];
-    operation?: TextPerformanceCohort["operation"];
-    property?: NonNullable<TextPerformanceCohort["property"]>;
-  } = {}): Promise<TextComparisonData | null> {
+  async getTextComparison(
+    options: {
+      kind?: TextPerformanceCohort["kind"];
+      rendererPath?: TextPerformanceCohort["rendererPath"];
+      environment?: TextPerformanceCohort["runtimeEnvironment"];
+      phase?: TextPerformanceCohort["phase"];
+      operation?: TextPerformanceCohort["operation"];
+      property?: NonNullable<TextPerformanceCohort["property"]>;
+    } = {},
+  ): Promise<TextComparisonData | null> {
     try {
-      const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/text`);
+      const url = new URL(
+        `${getStudioApiBaseUrl()}/performance/comparison/text`,
+      );
       if (options.kind) url.searchParams.set("kind", options.kind);
-      if (options.rendererPath) url.searchParams.set("renderer_path", options.rendererPath);
-      if (options.environment) url.searchParams.set("environment", options.environment);
+      if (options.rendererPath)
+        url.searchParams.set("renderer_path", options.rendererPath);
+      if (options.environment)
+        url.searchParams.set("environment", options.environment);
       if (options.phase) url.searchParams.set("phase", options.phase);
-      if (options.operation) url.searchParams.set("operation", options.operation);
+      if (options.operation)
+        url.searchParams.set("operation", options.operation);
       if (options.property) url.searchParams.set("property", options.property);
-      const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+      const res = await fetch(url.toString(), {
+        headers: { Accept: "application/json" },
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       return {
@@ -340,7 +409,11 @@ export const performanceClient = {
     }
   },
 
-  async getOSComparison(workload = "playback", resolution = "4k", codec = "hevc"): Promise<OSComparisonData | null> {
+  async getOSComparison(
+    workload = "playback",
+    resolution = "4k",
+    codec = "hevc",
+  ): Promise<OSComparisonData | null> {
     try {
       const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/os`);
       url.searchParams.set("workload", workload);
@@ -364,9 +437,13 @@ export const performanceClient = {
     }
   },
 
-  async getHardwareComparison(workload = "playback"): Promise<HardwareComparisonData | null> {
+  async getHardwareComparison(
+    workload = "playback",
+  ): Promise<HardwareComparisonData | null> {
     try {
-      const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/hardware`);
+      const url = new URL(
+        `${getStudioApiBaseUrl()}/performance/comparison/hardware`,
+      );
       url.searchParams.set("workload", workload);
 
       const res = await fetch(url.toString(), {
@@ -384,9 +461,14 @@ export const performanceClient = {
     }
   },
 
-  async getAnomalies(severity?: string): Promise<{ totalAnomaliesDetected: number; anomalies: AnomalyItem[] } | null> {
+  async getAnomalies(severity?: string): Promise<{
+    totalAnomaliesDetected: number;
+    anomalies: AnomalyItem[];
+  } | null> {
     try {
-      const url = new URL(`${getStudioApiBaseUrl()}/performance/edge-cases/anomalies`);
+      const url = new URL(
+        `${getStudioApiBaseUrl()}/performance/edge-cases/anomalies`,
+      );
       if (severity) url.searchParams.set("severity", severity);
 
       const res = await fetch(url.toString(), {
@@ -395,7 +477,8 @@ export const performanceClient = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       return {
-        totalAnomaliesDetected: json.totalAnomaliesDetected ?? (json.anomalies?.length || 0),
+        totalAnomaliesDetected:
+          json.totalAnomaliesDetected ?? (json.anomalies?.length || 0),
         anomalies: json.anomalies || [],
       };
     } catch {
@@ -405,9 +488,12 @@ export const performanceClient = {
 
   async getFallbacks(): Promise<FallbackData | null> {
     try {
-      const res = await fetch(`${getStudioApiBaseUrl()}/performance/edge-cases/fallbacks`, {
-        headers: { Accept: "application/json" },
-      });
+      const res = await fetch(
+        `${getStudioApiBaseUrl()}/performance/edge-cases/fallbacks`,
+        {
+          headers: { Accept: "application/json" },
+        },
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       return {
@@ -419,9 +505,14 @@ export const performanceClient = {
     }
   },
 
-  async getReleaseRegression(baseVersion = "1.4.3", targetVersion = "1.4.4"): Promise<ReleaseRegressionData | null> {
+  async getReleaseRegression(
+    baseVersion = "1.4.3",
+    targetVersion = "1.4.4",
+  ): Promise<ReleaseRegressionData | null> {
     try {
-      const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/releases`);
+      const url = new URL(
+        `${getStudioApiBaseUrl()}/performance/comparison/releases`,
+      );
       url.searchParams.set("base_version", baseVersion);
       url.searchParams.set("target_version", targetVersion);
 
@@ -437,9 +528,12 @@ export const performanceClient = {
 
   async getBenchmarkSuites(): Promise<{ suites: BenchmarkSuite[] } | null> {
     try {
-      const res = await fetch(`${getStudioApiBaseUrl()}/performance/benchmarks/suites`, {
-        headers: { Accept: "application/json" },
-      });
+      const res = await fetch(
+        `${getStudioApiBaseUrl()}/performance/benchmarks/suites`,
+        {
+          headers: { Accept: "application/json" },
+        },
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch {
@@ -449,9 +543,12 @@ export const performanceClient = {
 
   async getExportComparison(): Promise<ExportComparisonData | null> {
     try {
-      const res = await fetch(`${getStudioApiBaseUrl()}/performance/comparison/exports`, {
-        headers: { Accept: "application/json" },
-      });
+      const res = await fetch(
+        `${getStudioApiBaseUrl()}/performance/comparison/exports`,
+        {
+          headers: { Accept: "application/json" },
+        },
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       return {
@@ -465,9 +562,12 @@ export const performanceClient = {
 
   async getSessionRollups(): Promise<SessionRollupData | null> {
     try {
-      const res = await fetch(`${getStudioApiBaseUrl()}/performance/comparison/sessions`, {
-        headers: { Accept: "application/json" },
-      });
+      const res = await fetch(
+        `${getStudioApiBaseUrl()}/performance/comparison/sessions`,
+        {
+          headers: { Accept: "application/json" },
+        },
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch {
@@ -486,13 +586,21 @@ export const performanceClient = {
     } = {},
   ): Promise<PreviewComparisonData | null> {
     try {
-      const url = new URL(`${getStudioApiBaseUrl()}/performance/comparison/preview`);
+      const url = new URL(
+        `${getStudioApiBaseUrl()}/performance/comparison/preview`,
+      );
       url.searchParams.set("workload", workload);
       if (options.scenario) url.searchParams.set("scenario", options.scenario);
-      if (options.qualificationRunId) url.searchParams.set("qualification_run_id", options.qualificationRunId);
-      if (options.runtimeEnvironment) url.searchParams.set("environment", options.runtimeEnvironment);
+      if (options.qualificationRunId)
+        url.searchParams.set(
+          "qualification_run_id",
+          options.qualificationRunId,
+        );
+      if (options.runtimeEnvironment)
+        url.searchParams.set("environment", options.runtimeEnvironment);
       if (options.view) url.searchParams.set("view", options.view);
-      if (options.measurementSource) url.searchParams.set("measurement_source", options.measurementSource);
+      if (options.measurementSource)
+        url.searchParams.set("measurement_source", options.measurementSource);
       const res = await fetch(url.toString(), {
         headers: { Accept: "application/json" },
       });
@@ -504,9 +612,15 @@ export const performanceClient = {
         qualificationRunId: json.qualificationRunId,
         totalSampleSize: json.totalSampleSize || 0,
         totalApiSamples: json.totalApiSamples || 0,
-        totalMeasuredFrames: json.totalMeasuredFrames || json.totalSampleSize || 0,
+        totalMeasuredFrames:
+          json.totalMeasuredFrames || json.totalSampleSize || 0,
         latestTimestampMs: json.latestTimestampMs,
-        sourceCounts: json.sourceCounts || { frontendSpan: 0, nativeSample: 0, sessionRollup: 0, legacy: 0 },
+        sourceCounts: json.sourceCounts || {
+          frontendSpan: 0,
+          nativeSample: 0,
+          sessionRollup: 0,
+          legacy: 0,
+        },
         cohorts: json.cohorts || [],
       };
     } catch {
@@ -599,6 +713,7 @@ export const performanceClient = {
     assertTestFixtureAccess();
     return {
       workloadMode: "playback",
+      minReliableSampleCount: 10,
       gpuMatrix: [
         {
           gpuVendor: "apple",
@@ -611,6 +726,7 @@ export const performanceClient = {
           fallbackRate: 0.0,
           primaryBottleneck: "none",
           meetsSLA: true,
+          confidence: "sufficient",
         },
         {
           gpuVendor: "nvidia",
@@ -623,6 +739,7 @@ export const performanceClient = {
           fallbackRate: 0.0001,
           primaryBottleneck: "none",
           meetsSLA: true,
+          confidence: "sufficient",
         },
         {
           gpuVendor: "amd",
@@ -635,6 +752,7 @@ export const performanceClient = {
           fallbackRate: 0.001,
           primaryBottleneck: "none",
           meetsSLA: true,
+          confidence: "sufficient",
         },
         {
           gpuVendor: "intel",
@@ -647,6 +765,7 @@ export const performanceClient = {
           fallbackRate: 0.038,
           primaryBottleneck: "decode",
           meetsSLA: false,
+          confidence: "sufficient",
         },
         {
           gpuVendor: "arm",
@@ -659,12 +778,16 @@ export const performanceClient = {
           fallbackRate: 0.074,
           primaryBottleneck: "compose",
           meetsSLA: false,
+          confidence: "sufficient",
         },
       ],
     };
   },
 
-  getTestFixtureAnomalies(): { totalAnomaliesDetected: number; anomalies: AnomalyItem[] } {
+  getTestFixtureAnomalies(): {
+    totalAnomaliesDetected: number;
+    anomalies: AnomalyItem[];
+  } {
     assertTestFixtureAccess();
     return {
       totalAnomaliesDetected: 2,
@@ -672,7 +795,8 @@ export const performanceClient = {
         {
           anomalyId: "anom_win_intel_hevc_4k",
           severity: "critical" as const,
-          title: "Critical Frame Drop Regression on Windows / Intel Iris Xe with 4K HEVC 10-bit",
+          title:
+            "Critical Frame Drop Regression on Windows / Intel Iris Xe with 4K HEVC 10-bit",
           impactedCohort: {
             osFamily: "windows",
             gpuVendor: "intel",
@@ -690,14 +814,17 @@ export const performanceClient = {
             p95SeekLatencyMs: 142.0,
             primaryBottleneckStage: "decodeUs",
           },
-          rootCauseHypothesis: "Intel integrated Gen12 hardware HEVC 10-bit decoder DXVA context thrashing during concurrent RGBA texture composition.",
-          suggestedMitigation: "Force D3D11 shared texture path or downgrade to 8-bit proxy preview on Intel Gen12 graphics.",
+          rootCauseHypothesis:
+            "Intel integrated Gen12 hardware HEVC 10-bit decoder DXVA context thrashing during concurrent RGBA texture composition.",
+          suggestedMitigation:
+            "Force D3D11 shared texture path or downgrade to 8-bit proxy preview on Intel Gen12 graphics.",
           detectedAt: new Date().toISOString(),
         },
         {
           anomalyId: "anom_android_mali_webgpu_fallback",
           severity: "high" as const,
-          title: "WebGPU Device Lost Triggering WebGL Fallback on ARM Mali GPUs",
+          title:
+            "WebGPU Device Lost Triggering WebGL Fallback on ARM Mali GPUs",
           impactedCohort: {
             osFamily: "android",
             gpuVendor: "arm",
@@ -714,8 +841,10 @@ export const performanceClient = {
             p95SeekLatencyMs: 128.0,
             primaryBottleneckStage: "composeUs",
           },
-          rootCauseHypothesis: "ARM Mali-G78 GPU tile memory exhaustion when allocating high-resolution HDR texture render passes.",
-          suggestedMitigation: "Reduce maximum offscreen framebuffer depth to 8-bit and disable 4x MSAA on Mali mobile GPUs.",
+          rootCauseHypothesis:
+            "ARM Mali-G78 GPU tile memory exhaustion when allocating high-resolution HDR texture render passes.",
+          suggestedMitigation:
+            "Reduce maximum offscreen framebuffer depth to 8-bit and disable 4x MSAA on Mali mobile GPUs.",
           detectedAt: new Date().toISOString(),
         },
       ],

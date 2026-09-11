@@ -33,9 +33,15 @@ import {
   performDeepResearch,
 } from "./services/geminiService";
 import { getStudioApiBaseUrl } from "./services/apiConfig";
-import { getNativeRenderClient, NATIVE_RENDER_CONTRACT_VERSION } from "./services/nativeRenderClient";
+import {
+  getNativeRenderClient,
+  NATIVE_RENDER_CONTRACT_VERSION,
+} from "./services/nativeRenderClient";
 import { restoreCanonicalScene } from "./state/studioSceneState";
-import { ensureStudioFontLoaded, preloadStudioFontFamilies } from "./services/studioFontHydrator";
+import {
+  ensureStudioFontLoaded,
+  preloadStudioFontFamilies,
+} from "./services/studioFontHydrator";
 import { recordStudioTextRender } from "./services/textPerformanceTelemetry";
 
 import { PublishEffectModal } from "./components/PublishEffectModal";
@@ -180,7 +186,9 @@ export default function App() {
   // Custom localStorage presets
   const [customPresets, setCustomPresets] = useState<Preset[]>([]);
   // Overrides for native starters modified in the local session
-  const [starterOverrides, setStarterOverrides] = useState<Record<string, Preset>>(() => {
+  const [starterOverrides, setStarterOverrides] = useState<
+    Record<string, Preset>
+  >(() => {
     try {
       const saved = localStorage.getItem("clypra_starter_overrides");
       return saved ? JSON.parse(saved) : {};
@@ -618,7 +626,13 @@ export default function App() {
     }
 
     return items;
-  }, [customPresets, builtInPresets, starterOverrides, selectedCategory, sortBy]);
+  }, [
+    customPresets,
+    builtInPresets,
+    starterOverrides,
+    selectedCategory,
+    sortBy,
+  ]);
 
   // Register Keyboard Shortcuts
   useEffect(() => {
@@ -1052,7 +1066,18 @@ export default function App() {
         evaluateScene(scene, previewTime, ctx);
         ctx.restore();
         const totalTimeUs = Math.round((performance.now() - startedAt) * 1000);
-        recordStudioTextRender({ kind: scene.effectLayers.length > 0 ? "effect" : "plain", phase: "interactive-preview", compileUs: 0, rasterUs: totalTimeUs, readbackUs: 0, transferUs: 0, paintUs: 0, totalTimeUs, outputPixels: renderW * renderH, cacheHit: false });
+        recordStudioTextRender({
+          kind: scene.effectLayers.length > 0 ? "effect" : "plain",
+          phase: "interactive-preview",
+          compileUs: 0,
+          rasterUs: totalTimeUs,
+          readbackUs: 0,
+          transferUs: 0,
+          paintUs: 0,
+          totalTimeUs,
+          outputPixels: renderW * renderH,
+          cacheHit: false,
+        });
         setNativePreviewState("ready");
         return;
       }
@@ -1084,7 +1109,10 @@ export default function App() {
         const readbackStartedAt = performance.now();
         const pixels = offCtx.getImageData(0, 0, w, h);
         const readbackMs = performance.now() - readbackStartedAt;
-        const rasterMs = Math.max(0, performance.now() - startedAt - readbackMs);
+        const rasterMs = Math.max(
+          0,
+          performance.now() - startedAt - readbackMs,
+        );
         const transferStartedAt = performance.now();
         const result = await getNativeRenderClient().renderFrame(
           {
@@ -1156,7 +1184,18 @@ export default function App() {
         bitmap.close();
         const transferMs = performance.now() - transferStartedAt;
         const totalTimeUs = Math.round((performance.now() - startedAt) * 1000);
-        recordStudioTextRender({ kind: scene.effectLayers.length > 0 ? "effect" : "plain", phase: "interactive-preview", compileUs: 0, rasterUs: Math.round(rasterMs * 1000), readbackUs: Math.round(readbackMs * 1000), transferUs: Math.round(transferMs * 1000), paintUs: Math.round(paintMs * 1000), totalTimeUs, outputPixels: renderW * renderH, cacheHit: false });
+        recordStudioTextRender({
+          kind: scene.effectLayers.length > 0 ? "effect" : "plain",
+          phase: "interactive-preview",
+          compileUs: 0,
+          rasterUs: Math.round(rasterMs * 1000),
+          readbackUs: Math.round(readbackMs * 1000),
+          transferUs: Math.round(transferMs * 1000),
+          paintUs: Math.round(paintMs * 1000),
+          totalTimeUs,
+          outputPixels: renderW * renderH,
+          cacheHit: false,
+        });
         setNativePreviewState("ready");
       };
 
@@ -1165,7 +1204,11 @@ export default function App() {
       if (loadedFontsRef.current.has(cacheKey)) {
         void draw().catch(reportError);
       } else {
-        void ensureStudioFontLoaded(family, scene.text.fontWeight, scene.text.fontStyle)
+        void ensureStudioFontLoaded(
+          family,
+          scene.text.fontWeight,
+          scene.text.fontStyle,
+        )
           .then(() => {
             loadedFontsRef.current.add(cacheKey);
             return draw();
