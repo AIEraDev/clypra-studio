@@ -7,3 +7,4 @@ export * from "./PresetChip";
 export * from "./PreviewCanvas";
 export * from "./RailLabShell";
 export * from "./ToastNotification";
+export * from "./WebGPUGuard";
