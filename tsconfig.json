@@ -30,6 +30,18 @@
       ],
       "@clypra-studio/engine/*": [
         "../clypra-packages/packages/clypra-engine/src/*"
+      ],
+      "@clypra-studio/types": [
+        "../clypra-packages/packages/types/src/index.ts"
+      ],
+      "@clypra-studio/types/*": [
+        "../clypra-packages/packages/types/src/*"
+      ],
+      "@clypra-studio/shaders": [
+        "../clypra-packages/packages/shaders/src/index.ts"
+      ],
+      "@clypra-studio/shaders/*": [
+        "../clypra-packages/packages/shaders/src/*"
       ]
     },
     "allowImportingTsExtensions": true,
