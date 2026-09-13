@@ -2,7 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ClypraLogo } from "../../../components/ClypraLogo";
 
-export function TopNavBar() {
+export interface TopNavBarProps {
+  onExportManifest?: () => void;
+}
+
+export function TopNavBar({ onExportManifest }: TopNavBarProps) {
   return (
     <header className="bg-surface-container-lowest border-b border-outline-variant flex justify-between items-center h-[30px] px-3 w-full z-50">
       <div className="flex items-center gap-2">
@@ -16,6 +20,14 @@ export function TopNavBar() {
         </span>
       </div>
       <div className="flex items-center gap-2">
+        {onExportManifest && (
+          <button
+            onClick={onExportManifest}
+            className="flex items-center gap-1 px-2.5 py-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 text-[10px] font-bold transition-all cursor-pointer"
+          >
+            Export Manifest
+          </button>
+        )}
         <div className="flex items-center px-2 py-0.5 rounded bg-surface-container text-primary font-mono-data text-[10px] gap-1 border border-outline-variant">
           <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
           LNK_STABLE

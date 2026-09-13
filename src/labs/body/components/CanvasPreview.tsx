@@ -1,4 +1,5 @@
 import React from "react";
+import { WebGPUGuard } from "../../../components/common";
 
 interface CanvasPreviewProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -89,64 +90,68 @@ export function CanvasPreview({
           }}
         />
 
-        <div className="relative w-full h-full max-w-5xl border border-outline-variant bg-black shadow-inner flex items-center justify-center overflow-hidden">
-          <canvas ref={canvasRef} width={1280} height={720} className="w-full h-full object-contain" />
+        <div className="w-full h-full max-w-5xl flex items-center justify-center">
+          <WebGPUGuard>
+            <div className="relative w-full h-full max-w-5xl border border-outline-variant bg-black shadow-inner flex items-center justify-center overflow-hidden">
+              <canvas ref={canvasRef} width={1280} height={720} className="w-full h-full object-contain" />
 
-          {/* Target Crosshair */}
-          <div className="absolute inset-0 pointer-events-none border border-white/5 flex items-center justify-center">
-            <div className="w-8 h-px bg-white/20 absolute" />
-            <div className="h-8 w-px bg-white/20 absolute" />
-          </div>
+              {/* Target Crosshair */}
+              <div className="absolute inset-0 pointer-events-none border border-white/5 flex items-center justify-center">
+                <div className="w-8 h-px bg-white/20 absolute" />
+                <div className="h-8 w-px bg-white/20 absolute" />
+              </div>
 
-          {/* Sequential Action Overlay */}
-          <button
-            onClick={() => onSetPlaying(!playing)}
-            className={`z-10 absolute bg-black/40 hover:bg-black/60 text-primary border px-5 py-2 rounded-full flex items-center gap-2 backdrop-blur-sm transition-all scale-90 ${
-              playing ? "border-tertiary/40 text-tertiary" : "border-primary/40 text-primary"
-            }`}
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              {playing ? "pause" : "play_arrow"}
-            </span>
-            <span className="font-bold tracking-widest text-xs">
-              {playing ? "HALT_SEQ" : "INIT_SEQ"}
-            </span>
-          </button>
+              {/* Sequential Action Overlay */}
+              <button
+                onClick={() => onSetPlaying(!playing)}
+                className={`z-10 absolute bg-black/40 hover:bg-black/60 text-primary border px-5 py-2 rounded-full flex items-center gap-2 backdrop-blur-sm transition-all scale-90 ${
+                  playing ? "border-tertiary/40 text-tertiary" : "border-primary/40 text-primary"
+                }`}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  {playing ? "pause" : "play_arrow"}
+                </span>
+                <span className="font-bold tracking-widest text-xs">
+                  {playing ? "HALT_SEQ" : "INIT_SEQ"}
+                </span>
+              </button>
 
-          {/* Metadata Overlay */}
-          <div className="absolute top-2 left-2 flex gap-2 font-mono-data text-[9px] bg-black/80 p-1.5 border border-white/10 backdrop-blur select-none">
-            <div className="flex flex-col border-r border-white/20 pr-2">
-              <span className="text-primary uppercase opacity-70">Provider</span>
-              <span className="text-white">{activeProvider.toUpperCase()}</span>
+              {/* Metadata Overlay */}
+              <div className="absolute top-2 left-2 flex gap-2 font-mono-data text-[9px] bg-black/80 p-1.5 border border-white/10 backdrop-blur select-none">
+                <div className="flex flex-col border-r border-white/20 pr-2">
+                  <span className="text-primary uppercase opacity-70">Provider</span>
+                  <span className="text-white">{activeProvider.toUpperCase()}</span>
+                </div>
+                <div className="flex flex-col border-r border-white/20 pr-2">
+                  <span className="text-primary uppercase opacity-70">Feature</span>
+                  <span className="text-white">BODY_MASK</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-primary uppercase opacity-70">Latency</span>
+                  <span className="text-white">{(latency + 2.1).toFixed(1)} ms</span>
+                </div>
+              </div>
+
+              {/* Histogram */}
+              <div className="absolute bottom-2 right-2 w-24 h-12 bg-black/60 border border-white/10 p-1 flex items-end gap-px select-none">
+                <div
+                  className="bg-red-500/40 w-full"
+                  style={{ height: `${redHeight}%`, transition: "height 0.2s" }}
+                />
+                <div
+                  className="bg-green-500/40 w-full"
+                  style={{ height: `${greenHeight}%`, transition: "height 0.2s" }}
+                />
+                <div
+                  className="bg-blue-500/40 w-full"
+                  style={{ height: `${blueHeight}%`, transition: "height 0.2s" }}
+                />
+              </div>
             </div>
-            <div className="flex flex-col border-r border-white/20 pr-2">
-              <span className="text-primary uppercase opacity-70">Feature</span>
-              <span className="text-white">BODY_MASK</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-primary uppercase opacity-70">Latency</span>
-              <span className="text-white">{(latency + 2.1).toFixed(1)} ms</span>
-            </div>
-          </div>
-
-          {/* Histogram */}
-          <div className="absolute bottom-2 right-2 w-24 h-12 bg-black/60 border border-white/10 p-1 flex items-end gap-px select-none">
-            <div
-              className="bg-red-500/40 w-full"
-              style={{ height: `${redHeight}%`, transition: "height 0.2s" }}
-            />
-            <div
-              className="bg-green-500/40 w-full"
-              style={{ height: `${greenHeight}%`, transition: "height 0.2s" }}
-            />
-            <div
-              className="bg-blue-500/40 w-full"
-              style={{ height: `${blueHeight}%`, transition: "height 0.2s" }}
-            />
-          </div>
+          </WebGPUGuard>
         </div>
       </div>
 
