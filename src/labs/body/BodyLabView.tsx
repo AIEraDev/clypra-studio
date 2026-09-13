@@ -15,6 +15,7 @@ import { TopNavBar } from "./components/TopNavBar";
 import { SidebarLeft } from "./components/SidebarLeft";
 import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
+import { ManifestExportModal } from "./components/ManifestExportModal";
 
 interface Particle {
   x: number;
@@ -49,6 +50,7 @@ export function BodyLabView() {
   const [selectedEffect, setSelectedEffect] = useState<string>("neon-outline");
   const [fitMode, setFitMode] = useState<"stretch" | "fit" | "crop">("fit");
   const [activeTab, setActiveTab] = useState<"inspector" | "nodes" | "stats">("inspector");
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const [logs, setLogs] = useState<string[]>([
     "[INIT] Body segmentation console starting...",
@@ -601,7 +603,7 @@ export function BodyLabView() {
       `}</style>
 
       {/* Top Header */}
-      <TopNavBar />
+      <TopNavBar onExportManifest={() => setIsExportModalOpen(true)} />
 
       {/* Main Layout Workspace */}
       <main className="flex-1 flex overflow-hidden">
@@ -661,6 +663,13 @@ export function BodyLabView() {
           onResetContext={handleResetContext}
         />
       </main>
+
+      <ManifestExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        selectedEffect={selectedEffect}
+        parameters={parameters}
+      />
     </div>
   );
 }

@@ -111,6 +111,57 @@ export function SidebarLeft({
         </h3>
         <div className="flex-1 overflow-y-auto pr-1 space-y-1">
           <div
+            onClick={() => onSelectEffect("subject-cutout")}
+            className={`p-1.5 cursor-pointer border-l-2 ${
+              selectedEffect === "subject-cutout"
+                ? "bg-surface-container-high border-primary text-primary"
+                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+            } transition-all`}
+          >
+            <div className="flex justify-between items-start">
+              <span className="text-[11px] font-bold">SUBJECT_CUTOUT</span>
+              <span className="text-[9px] font-mono-data text-outline">v1.0</span>
+            </div>
+            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+              AlphaCutout layer synthesis (Text Behind Subject)
+            </p>
+          </div>
+
+          <div
+            onClick={() => onSelectEffect("cyber-glow")}
+            className={`p-1.5 cursor-pointer border-l-2 ${
+              selectedEffect === "cyber-glow"
+                ? "bg-surface-container-high border-primary text-primary"
+                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+            } transition-all`}
+          >
+            <div className="flex justify-between items-start">
+              <span className="text-[11px] font-bold">CYBER_NEON_GLOW</span>
+              <span className="text-[9px] font-mono-data text-outline">v1.0</span>
+            </div>
+            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+              Contour glow aura using MaskedGlow primitive
+            </p>
+          </div>
+
+          <div
+            onClick={() => onSelectEffect("angel-wings")}
+            className={`p-1.5 cursor-pointer border-l-2 ${
+              selectedEffect === "angel-wings"
+                ? "bg-surface-container-high border-primary text-primary"
+                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+            } transition-all`}
+          >
+            <div className="flex justify-between items-start">
+              <span className="text-[11px] font-bold">ANGEL_WINGS</span>
+              <span className="text-[9px] font-mono-data text-outline">v1.5</span>
+            </div>
+            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+              SkeletalSpriteAnchor with torso orientation
+            </p>
+          </div>
+
+          <div
             onClick={() => onSelectEffect("neon-outline")}
             className={`p-1.5 cursor-pointer border-l-2 ${
               selectedEffect === "neon-outline"
