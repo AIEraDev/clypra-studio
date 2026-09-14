@@ -106,144 +106,190 @@ export function SidebarLeft({
 
       {/* Effect Library */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <h3 className="text-[10px] font-bold text-outline-variant uppercase mb-1 px-1">
-          Body_Effects
-        </h3>
-        <div className="flex-1 overflow-y-auto pr-1 space-y-1">
-          <div
-            onClick={() => onSelectEffect("subject-cutout")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "subject-cutout"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">SUBJECT_CUTOUT</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.0</span>
+        <div className="flex items-center justify-between px-1 mb-1">
+          <h3 className="text-[10px] font-bold text-outline-variant uppercase">
+            Body_Library
+          </h3>
+          <span className="text-[8.5px] font-mono-data px-1 py-0.2 rounded bg-surface-container-highest text-primary">
+            9 EFFECTS
+          </span>
+        </div>
+        <div className="flex-1 overflow-y-auto pr-1 space-y-2.5">
+          {/* Section 1: Body VFX (True Anatomical Effects) */}
+          <div>
+            <div className="flex items-center justify-between px-1 py-0.5 mb-1 bg-surface-container-highest/60 rounded border border-outline-variant/30">
+              <span className="text-[9px] font-bold tracking-wider text-primary uppercase flex items-center gap-1">
+                <span className="material-symbols-outlined text-[11px]">flare</span>
+                Body VFX (Anatomical)
+              </span>
+              <span className="text-[8px] font-mono-data text-on-surface-variant font-semibold">6 VFX</span>
             </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              AlphaCutout layer synthesis (Text Behind Subject)
-            </p>
+            <div className="space-y-1">
+              <div
+                onClick={() => onSelectEffect("neon-outline")}
+                className={`p-1.5 cursor-pointer border-l-2 rounded-r ${
+                  selectedEffect === "neon-outline"
+                    ? "bg-surface-container-high border-primary text-primary"
+                    : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                } transition-all`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] font-bold">NEON_OUTLINE</span>
+                  <span className="text-[8.5px] font-mono-data text-outline">v1.0</span>
+                </div>
+                <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+                  Luminescent contour stroke hugging silhouette
+                </p>
+              </div>
+
+              <div
+                onClick={() => onSelectEffect("cyber-glow")}
+                className={`p-1.5 cursor-pointer border-l-2 rounded-r ${
+                  selectedEffect === "cyber-glow"
+                    ? "bg-surface-container-high border-primary text-primary"
+                    : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                } transition-all`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] font-bold">CYBER_NEON_GLOW</span>
+                  <span className="text-[8.5px] font-mono-data text-outline">v1.0</span>
+                </div>
+                <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+                  Radiant multi-pass contour aura with MaskedGlow
+                </p>
+              </div>
+
+              <div
+                onClick={() => onSelectEffect("electro-contour")}
+                className={`p-1.5 cursor-pointer border-l-2 rounded-r ${
+                  selectedEffect === "electro-contour"
+                    ? "bg-surface-container-high border-primary text-primary"
+                    : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                } transition-all`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] font-bold text-[#00E5FF]">ELECTRO_CONTOUR</span>
+                  <span className="text-[8.5px] font-mono-data text-primary">NEW</span>
+                </div>
+                <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+                  High-voltage lightning arcs hugging body contour
+                </p>
+              </div>
+
+              <div
+                onClick={() => onSelectEffect("angel-wings")}
+                className={`p-1.5 cursor-pointer border-l-2 rounded-r ${
+                  selectedEffect === "angel-wings"
+                    ? "bg-surface-container-high border-primary text-primary"
+                    : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                } transition-all`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] font-bold">ANGEL_WINGS</span>
+                  <span className="text-[8.5px] font-mono-data text-outline">v1.5</span>
+                </div>
+                <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+                  SkeletalSpriteAnchor with torso orientation
+                </p>
+              </div>
+
+              <div
+                onClick={() => onSelectEffect("particle-aura")}
+                className={`p-1.5 cursor-pointer border-l-2 rounded-r ${
+                  selectedEffect === "particle-aura"
+                    ? "bg-surface-container-high border-primary text-primary"
+                    : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                } transition-all`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] font-bold">PARTICLE_AURA</span>
+                  <span className="text-[8.5px] font-mono-data text-outline">v1.3</span>
+                </div>
+                <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+                  Procedural orbiting body particle swarms
+                </p>
+              </div>
+
+              <div
+                onClick={() => onSelectEffect("body-ghost")}
+                className={`p-1.5 cursor-pointer border-l-2 rounded-r ${
+                  selectedEffect === "body-ghost"
+                    ? "bg-surface-container-high border-primary text-primary"
+                    : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                } transition-all`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] font-bold text-[#FF66B2]">BODY_GHOST_CLONE</span>
+                  <span className="text-[8.5px] font-mono-data text-primary">NEW</span>
+                </div>
+                <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+                  Chromatic motion trailing clones lagging behind subject
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div
-            onClick={() => onSelectEffect("cyber-glow")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "cyber-glow"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">CYBER_NEON_GLOW</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.0</span>
+          {/* Section 2: Cutout & Depth Tools */}
+          <div>
+            <div className="flex items-center justify-between px-1 py-0.5 mb-1 bg-surface-container-highest/60 rounded border border-outline-variant/30">
+              <span className="text-[9px] font-bold tracking-wider text-secondary uppercase flex items-center gap-1">
+                <span className="material-symbols-outlined text-[11px]">layers</span>
+                Cutout & Depth Tools
+              </span>
+              <span className="text-[8px] font-mono-data text-on-surface-variant font-semibold">3 TOOLS</span>
             </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Contour glow aura using MaskedGlow primitive
-            </p>
-          </div>
+            <div className="space-y-1">
+              <div
+                onClick={() => onSelectEffect("subject-cutout")}
+                className={`p-1.5 cursor-pointer border-l-2 rounded-r ${
+                  selectedEffect === "subject-cutout"
+                    ? "bg-surface-container-high border-primary text-primary"
+                    : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                } transition-all`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] font-bold">SUBJECT_CUTOUT</span>
+                  <span className="text-[8.5px] font-mono-data text-outline">v1.0</span>
+                </div>
+                <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+                  AlphaCutout layer synthesis (Text Behind Subject)
+                </p>
+              </div>
 
-          <div
-            onClick={() => onSelectEffect("angel-wings")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "angel-wings"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">ANGEL_WINGS</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.5</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              SkeletalSpriteAnchor with torso orientation
-            </p>
-          </div>
+              <div
+                onClick={() => onSelectEffect("background-blur")}
+                className={`p-1.5 cursor-pointer border-l-2 rounded-r ${
+                  selectedEffect === "background-blur"
+                    ? "bg-surface-container-high border-primary text-primary"
+                    : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                } transition-all`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] font-bold">BACKGROUND_BLUR</span>
+                  <span className="text-[8.5px] font-mono-data text-outline">v2.0</span>
+                </div>
+                <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+                  Depth-of-field background portrait bokeh
+                </p>
+              </div>
 
-          <div
-            onClick={() => onSelectEffect("neon-outline")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "neon-outline"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">NEON_OUTLINE</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.0</span>
+              <div
+                onClick={() => onSelectEffect("color-isolation")}
+                className={`p-1.5 cursor-pointer border-l-2 rounded-r ${
+                  selectedEffect === "color-isolation"
+                    ? "bg-surface-container-high border-primary text-primary"
+                    : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                } transition-all`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[11px] font-bold">COLOR_ISOLATION</span>
+                  <span className="text-[8.5px] font-mono-data text-outline">v1.0</span>
+                </div>
+                <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
+                  Keep subjects colored, luma-desat BG
+                </p>
+              </div>
             </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Glow outline contour around subjects
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("background-blur")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "background-blur"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">BACKGROUND_BLUR</span>
-              <span className="text-[9px] font-mono-data text-outline">v2.0</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Depth-of-field background blur
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("spotlight")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "spotlight"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">SPOTLIGHT_FOCUS</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.1</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Vignetted radial lighting focus
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("particle-aura")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "particle-aura"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">PARTICLE_AURA</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.3</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Procedural orbiting particle swarms
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("color-isolation")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "color-isolation"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">COLOR_ISOLATION</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.0</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Keep subjects colored, luma-desat BG
-            </p>
           </div>
         </div>
       </div>

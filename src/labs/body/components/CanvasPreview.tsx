@@ -68,18 +68,6 @@ export function CanvasPreview({
 }: CanvasPreviewProps) {
   return (
     <section className="flex-1 flex flex-col bg-background relative overflow-hidden">
-      <video
-        ref={videoRef}
-        src={videoUrl}
-        onTimeUpdate={onTimeUpdate}
-        onLoadedMetadata={onLoadedMetadata}
-        style={{ position: "absolute", width: "1px", height: "1px", opacity: 0, pointerEvents: "none" }}
-        preload="auto"
-        loop
-        muted
-        playsInline
-      />
-
       {/* Preview Area */}
       <div className="flex-1 flex flex-col items-center justify-center p-2 bg-surface-container-lowest relative group border-b border-outline-variant">
         <div
@@ -93,7 +81,21 @@ export function CanvasPreview({
         <div className="w-full h-full max-w-5xl flex items-center justify-center">
           <WebGPUGuard>
             <div className="relative w-full h-full max-w-5xl border border-outline-variant bg-black shadow-inner flex items-center justify-center overflow-hidden">
-              <canvas ref={canvasRef} width={1280} height={720} className="w-full h-full object-contain" />
+              {/* Active in-viewport video element for hardware decoding */}
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                onTimeUpdate={onTimeUpdate}
+                onLoadedMetadata={onLoadedMetadata}
+                className="absolute inset-0 w-full h-full object-contain opacity-[0.001] pointer-events-none z-0"
+                preload="auto"
+                loop
+                muted
+                playsInline
+                crossOrigin={videoUrl?.startsWith("blob:") ? undefined : "anonymous"}
+              />
+
+              <canvas ref={canvasRef} width={1280} height={720} className="w-full h-full object-contain relative z-10" />
 
               {/* Target Crosshair */}
               <div className="absolute inset-0 pointer-events-none border border-white/5 flex items-center justify-center">

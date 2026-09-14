@@ -188,6 +188,64 @@ export function SidebarRight({
 
                 {(selectedEffect === "subject-cutout" || selectedEffect === "alpha-cutout") && (
                   <>
+                    <div className="text-outline">Cutout Text</div>
+                    <div className="text-on-surface">
+                      <input
+                        type="text"
+                        value={parameters.cutoutText ?? "CLYPRA"}
+                        onChange={(e) => onParamChange("cutoutText", e.target.value)}
+                        className="w-full bg-surface-container-highest border border-outline-variant/60 rounded px-1.5 py-0.5 text-[10px] text-on-surface focus:outline-none focus:border-primary font-bold tracking-wider"
+                        placeholder="e.g. CLYPRA"
+                      />
+                    </div>
+
+                    <div className="text-outline">Text Color</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <ClypraColorPicker
+                        value={parameters.textColor ?? "#FFFFFF"}
+                        onChange={(newColor) => onParamChange("textColor", newColor)}
+                        onChangeComplete={(newColor) => onParamChange("textColor", newColor)}
+                        size="sm"
+                        placement="left-start"
+                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
+                      />
+                      <span className="font-mono-data text-[9px] uppercase">
+                        {parameters.textColor ?? "#FFFFFF"}
+                      </span>
+                    </div>
+
+                    <div className="text-outline">Text Size</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="40"
+                        max="220"
+                        step="5"
+                        value={parameters.textSize ?? 120}
+                        onChange={(e) => onParamChange("textSize", parseInt(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                      <span className="font-mono-data text-[10px]">
+                        {parameters.textSize ?? 120}px
+                      </span>
+                    </div>
+
+                    <div className="text-outline">Position Y</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="-200"
+                        max="200"
+                        step="5"
+                        value={parameters.textOffsetY ?? 0}
+                        onChange={(e) => onParamChange("textOffsetY", parseInt(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                      <span className="font-mono-data text-[10px]">
+                        {parameters.textOffsetY ?? 0}px
+                      </span>
+                    </div>
+
                     <div className="text-outline">Edge Feather</div>
                     <div className="text-on-surface flex items-center gap-2">
                       <input
@@ -360,53 +418,165 @@ export function SidebarRight({
                   </>
                 )}
 
-                {selectedEffect === "spotlight" && (
+                {selectedEffect === "electro-contour" && (
                   <>
-                    <div className="text-outline">Darkness</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={parameters.darkness ?? 0.7}
-                        onChange={(e) => onParamChange("darkness", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.darkness ?? 0.7).toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Falloff</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0.2"
-                        max="2.0"
-                        step="0.1"
-                        value={parameters.falloff ?? 1.0}
-                        onChange={(e) => onParamChange("falloff", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.falloff ?? 1.0).toFixed(1)}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Shadow Tint</div>
+                    <div className="text-outline">Arc Color</div>
                     <div className="text-on-surface flex items-center gap-2">
                       <ClypraColorPicker
-                        value={parameters.tint ?? "#000000"}
-                        onChange={(newColor) => onParamChange("tint", newColor)}
-                        onChangeComplete={(newColor) => onParamChange("tint", newColor)}
+                        value={parameters.arcColor ?? "#00E5FF"}
+                        onChange={(newColor) => onParamChange("arcColor", newColor)}
+                        onChangeComplete={(newColor) => onParamChange("arcColor", newColor)}
                         size="sm"
                         placement="left-start"
                         triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
                       />
                       <span className="font-mono-data text-[9px] uppercase">
-                        {parameters.tint ?? "#000000"}
+                        {parameters.arcColor ?? "#00E5FF"}
                       </span>
+                    </div>
+
+                    <div className="text-outline">Arc Jitter</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="5"
+                        max="40"
+                        step="1"
+                        value={parameters.arcJitter ?? 15}
+                        onChange={(e) => onParamChange("arcJitter", parseInt(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                      <span className="font-mono-data text-[10px]">
+                        {parameters.arcJitter ?? 15}px
+                      </span>
+                    </div>
+
+                    <div className="text-outline">Branch Count</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="1"
+                        max="8"
+                        step="1"
+                        value={parameters.arcBranches ?? 4}
+                        onChange={(e) => onParamChange("arcBranches", parseInt(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                      <span className="font-mono-data text-[10px]">
+                        {parameters.arcBranches ?? 4}
+                      </span>
+                    </div>
+
+                    <div className="text-outline">Thickness</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="1"
+                        max="8"
+                        step="0.5"
+                        value={parameters.arcWidth ?? 2.5}
+                        onChange={(e) => onParamChange("arcWidth", parseFloat(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                      <span className="font-mono-data text-[10px]">
+                        {(parameters.arcWidth ?? 2.5).toFixed(1)}px
+                      </span>
+                    </div>
+
+                    <div className="text-outline">Glow Level</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="3.0"
+                        step="0.1"
+                        value={parameters.arcGlow ?? 1.8}
+                        onChange={(e) => onParamChange("arcGlow", parseFloat(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                      <span className="font-mono-data text-[10px]">
+                        {(parameters.arcGlow ?? 1.8).toFixed(1)}x
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {selectedEffect === "body-ghost" && (
+                  <>
+                    <div className="text-outline">Ghost Clones</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="1"
+                        max="6"
+                        step="1"
+                        value={parameters.ghostCount ?? 3}
+                        onChange={(e) => onParamChange("ghostCount", parseInt(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                      <span className="font-mono-data text-[10px]">
+                        {parameters.ghostCount ?? 3}
+                      </span>
+                    </div>
+
+                    <div className="text-outline">Trail Spacing</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="5"
+                        max="80"
+                        step="5"
+                        value={parameters.ghostOffset ?? 25}
+                        onChange={(e) => onParamChange("ghostOffset", parseInt(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                      <span className="font-mono-data text-[10px]">
+                        {parameters.ghostOffset ?? 25}px
+                      </span>
+                    </div>
+
+                    <div className="text-outline">Trail Opacity</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="1.0"
+                        step="0.05"
+                        value={parameters.ghostOpacity ?? 0.6}
+                        onChange={(e) => onParamChange("ghostOpacity", parseFloat(e.target.value))}
+                        className="w-full accent-primary"
+                      />
+                      <span className="font-mono-data text-[10px]">
+                        {(parameters.ghostOpacity ?? 0.6).toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="text-outline">Chromatic Tint</div>
+                    <div className="text-on-surface flex items-center gap-2">
+                      <ClypraColorPicker
+                        value={parameters.ghostColor ?? "#FF007F"}
+                        onChange={(newColor) => onParamChange("ghostColor", newColor)}
+                        onChangeComplete={(newColor) => onParamChange("ghostColor", newColor)}
+                        size="sm"
+                        placement="left-start"
+                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
+                      />
+                      <span className="font-mono-data text-[9px] uppercase">
+                        {parameters.ghostColor ?? "#FF007F"}
+                      </span>
+                    </div>
+
+                    <div className="text-outline">Blend Mode</div>
+                    <div className="text-on-surface">
+                      <select
+                        value={parameters.ghostBlendMode ?? "screen"}
+                        onChange={(e) => onParamChange("ghostBlendMode", e.target.value)}
+                        className="w-full bg-surface-container-highest border border-outline-variant/60 rounded px-1.5 py-0.5 text-[10px] text-on-surface focus:outline-none focus:border-primary"
+                      >
+                        <option value="screen">Screen (Additive Neon)</option>
+                        <option value="source-over">Normal (Solid Echoes)</option>
+                        <option value="lighter">Lighter (High Exposure)</option>
+                      </select>
                     </div>
                   </>
                 )}
