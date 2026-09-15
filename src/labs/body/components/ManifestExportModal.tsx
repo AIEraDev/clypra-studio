@@ -40,30 +40,14 @@ export function ManifestExportModal({
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ")
   );
-  const [category, setCategory] = useState<string>(() => {
-    if (selectedEffect.includes("glow") || selectedEffect.includes("aura")) return "Aura";
-    if (selectedEffect.includes("wing")) return "Wings";
-    if (selectedEffect.includes("outline") || selectedEffect.includes("motion")) return "Motion";
-    return "Trending";
-  });
+  const [category, setCategory] = useState<string>("Trending");
   const [description, setDescription] = useState(
     "High-performance body segmentation effect authored in Clypra Studio"
   );
-  const [primitive, setPrimitive] = useState<CompositingPrimitive>(() => {
-    if (selectedEffect.includes("glow")) return "MaskedGlow";
-    if (selectedEffect.includes("wing")) return "SkeletalSpriteAnchor";
-    if (selectedEffect.includes("outline")) return "MaskedStroke";
-    return "AlphaCutout";
-  });
-  const [layerZOrder, setLayerZOrder] = useState<LayerZOrder>(() =>
-    primitive === "MaskedStroke" ? "in-front" : "behind-subject"
-  );
-  const [captureType, setCaptureType] = useState<CaptureAssetType>(() =>
-    primitive === "SkeletalSpriteAnchor" ? "hybrid_body" : "silhouette_mask"
-  );
-  const [blendMode, setBlendMode] = useState<"normal" | "screen" | "multiply" | "overlay" | "add">(
-    () => (primitive === "MaskedGlow" || primitive === "SkeletalSpriteAnchor" ? "screen" : "normal")
-  );
+  const [primitive, setPrimitive] = useState<CompositingPrimitive>("AlphaCutout");
+  const [layerZOrder, setLayerZOrder] = useState<LayerZOrder>("behind-subject");
+  const [captureType, setCaptureType] = useState<CaptureAssetType>("silhouette_mask");
+  const [blendMode, setBlendMode] = useState<"normal" | "screen" | "multiply" | "overlay" | "add">("normal");
 
   // Generate canonical manifest object
   const manifest: BodyEffectManifest = useMemo(() => {

@@ -61,679 +61,95 @@ export function SidebarRight({
                 {selectedEffect.toUpperCase()}
               </h4>
               <div className="property-grid bg-surface-container border border-outline-variant rounded select-none">
-                {(selectedEffect === "angel-wings" || selectedEffect === "ANGEL_WINGS") && (
-                  <>
-                    <div className="text-outline">Anchor Point</div>
-                    <div className="text-on-surface">
-                      <select
-                        value={parameters.anchorKeypoint ?? "spineCenter"}
-                        onChange={(e) => onParamChange("anchorKeypoint", e.target.value)}
-                        className="w-full bg-surface-container-highest border border-outline-variant/60 rounded px-1.5 py-0.5 text-[10px] text-on-surface focus:outline-none focus:border-primary"
-                      >
-                        <option value="neck">Neck (Top)</option>
-                        <option value="spineCenter">Spine Center</option>
-                        <option value="leftShoulder">Left Shoulder</option>
-                        <option value="rightShoulder">Right Shoulder</option>
-                        <option value="hipCenter">Hip Center</option>
-                      </select>
-                    </div>
+                <div className="text-outline">Cutout Text</div>
+                <div className="text-on-surface">
+                  <input
+                    type="text"
+                    value={parameters.cutoutText ?? "CLYPRA"}
+                    onChange={(e) => onParamChange("cutoutText", e.target.value)}
+                    className="w-full bg-surface-container-highest border border-outline-variant/60 rounded px-1.5 py-0.5 text-[10px] text-on-surface focus:outline-none focus:border-primary font-bold tracking-wider"
+                    placeholder="e.g. CLYPRA"
+                  />
+                </div>
 
-                    <div className="text-outline">Depth Mode</div>
-                    <div className="text-on-surface">
-                      <select
-                        value={parameters.depthMode ?? "auto-yaw"}
-                        onChange={(e) => onParamChange("depthMode", e.target.value)}
-                        className="w-full bg-surface-container-highest border border-outline-variant/60 rounded px-1.5 py-0.5 text-[10px] text-on-surface focus:outline-none focus:border-primary"
-                      >
-                        <option value="auto-yaw">Auto 3D Yaw (Parallax)</option>
-                        <option value="behind-subject">Behind Subject (Cutout)</option>
-                        <option value="in-front">In Front (Foreground)</option>
-                      </select>
-                    </div>
+                <div className="text-outline">Text Color</div>
+                <div className="text-on-surface flex items-center gap-2">
+                  <ClypraColorPicker
+                    value={parameters.textColor ?? "#FFFFFF"}
+                    onChange={(newColor) => onParamChange("textColor", newColor)}
+                    onChangeComplete={(newColor) => onParamChange("textColor", newColor)}
+                    size="sm"
+                    placement="left-start"
+                    triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
+                  />
+                  <span className="font-mono-data text-[9px] uppercase">
+                    {parameters.textColor ?? "#FFFFFF"}
+                  </span>
+                </div>
 
-                    <div className="text-outline">Wing Span (X)</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0.5"
-                        max="3.0"
-                        step="0.1"
-                        value={parameters.scaleX ?? 1.5}
-                        onChange={(e) => onParamChange("scaleX", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.scaleX ?? 1.5).toFixed(1)}x
-                      </span>
-                    </div>
+                <div className="text-outline">Text Size</div>
+                <div className="text-on-surface flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="40"
+                    max="220"
+                    step="5"
+                    value={parameters.textSize ?? 120}
+                    onChange={(e) => onParamChange("textSize", parseInt(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                  <span className="font-mono-data text-[10px]">
+                    {parameters.textSize ?? 120}px
+                  </span>
+                </div>
 
-                    <div className="text-outline">Wing Height (Y)</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0.5"
-                        max="3.0"
-                        step="0.1"
-                        value={parameters.scaleY ?? 1.5}
-                        onChange={(e) => onParamChange("scaleY", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.scaleY ?? 1.5).toFixed(1)}x
-                      </span>
-                    </div>
+                <div className="text-outline">Position Y</div>
+                <div className="text-on-surface flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="-200"
+                    max="200"
+                    step="5"
+                    value={parameters.textOffsetY ?? 0}
+                    onChange={(e) => onParamChange("textOffsetY", parseInt(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                  <span className="font-mono-data text-[10px]">
+                    {parameters.textOffsetY ?? 0}px
+                  </span>
+                </div>
 
-                    <div className="text-outline">Offset X</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="-0.5"
-                        max="0.5"
-                        step="0.02"
-                        value={parameters.offsetX ?? 0.0}
-                        onChange={(e) => onParamChange("offsetX", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.offsetX ?? 0.0).toFixed(2)}
-                      </span>
-                    </div>
+                <div className="text-outline">Edge Feather</div>
+                <div className="text-on-surface flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    step="1"
+                    value={parameters.feather ?? 4}
+                    onChange={(e) => onParamChange("feather", parseInt(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                  <span className="font-mono-data text-[10px]">
+                    {parameters.feather ?? 4}px
+                  </span>
+                </div>
 
-                    <div className="text-outline">Offset Y</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="-0.5"
-                        max="0.5"
-                        step="0.02"
-                        value={parameters.offsetY ?? 0.0}
-                        onChange={(e) => onParamChange("offsetY", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.offsetY ?? 0.0).toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Rotation</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="-180"
-                        max="180"
-                        step="1"
-                        value={parameters.rotationDeg ?? 0}
-                        onChange={(e) => onParamChange("rotationDeg", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.rotationDeg ?? 0}°
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Torso Track</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={parameters.followTorsoOrientation ?? true}
-                          onChange={(e) => onParamChange("followTorsoOrientation", e.target.checked)}
-                          className="rounded accent-primary text-[10px]"
-                        />
-                        <span className="text-[10px] text-on-surface">Follow 3D Torso Yaw/Roll</span>
-                      </label>
-                    </div>
-                  </>
-                )}
-
-                {(selectedEffect === "subject-cutout" || selectedEffect === "alpha-cutout") && (
-                  <>
-                    <div className="text-outline">Cutout Text</div>
-                    <div className="text-on-surface">
-                      <input
-                        type="text"
-                        value={parameters.cutoutText ?? "CLYPRA"}
-                        onChange={(e) => onParamChange("cutoutText", e.target.value)}
-                        className="w-full bg-surface-container-highest border border-outline-variant/60 rounded px-1.5 py-0.5 text-[10px] text-on-surface focus:outline-none focus:border-primary font-bold tracking-wider"
-                        placeholder="e.g. CLYPRA"
-                      />
-                    </div>
-
-                    <div className="text-outline">Text Color</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <ClypraColorPicker
-                        value={parameters.textColor ?? "#FFFFFF"}
-                        onChange={(newColor) => onParamChange("textColor", newColor)}
-                        onChangeComplete={(newColor) => onParamChange("textColor", newColor)}
-                        size="sm"
-                        placement="left-start"
-                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
-                      />
-                      <span className="font-mono-data text-[9px] uppercase">
-                        {parameters.textColor ?? "#FFFFFF"}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Text Size</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="40"
-                        max="220"
-                        step="5"
-                        value={parameters.textSize ?? 120}
-                        onChange={(e) => onParamChange("textSize", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.textSize ?? 120}px
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Position Y</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="-200"
-                        max="200"
-                        step="5"
-                        value={parameters.textOffsetY ?? 0}
-                        onChange={(e) => onParamChange("textOffsetY", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.textOffsetY ?? 0}px
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Edge Feather</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="20"
-                        step="1"
-                        value={parameters.feather ?? 4}
-                        onChange={(e) => onParamChange("feather", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.feather ?? 4}px
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Choke Amount</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={parameters.choke ?? 0.2}
-                        onChange={(e) => onParamChange("choke", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.choke ?? 0.2).toFixed(2)}
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {selectedEffect === "cyber-glow" && (
-                  <>
-                    <div className="text-outline">Glow Color</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <ClypraColorPicker
-                        value={parameters.color ?? "#00FFCC"}
-                        onChange={(newColor) => onParamChange("color", newColor)}
-                        onChangeComplete={(newColor) => onParamChange("color", newColor)}
-                        size="sm"
-                        placement="left-start"
-                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
-                      />
-                      <span className="font-mono-data text-[9px] uppercase">
-                        {parameters.color ?? "#00FFCC"}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Glow Radius</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="2"
-                        max="40"
-                        step="1"
-                        value={parameters.radius ?? 15}
-                        onChange={(e) => onParamChange("radius", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.radius ?? 15}px
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Intensity</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="3.0"
-                        step="0.1"
-                        value={parameters.intensity ?? 1.5}
-                        onChange={(e) => onParamChange("intensity", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.intensity ?? 1.5).toFixed(1)}
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {selectedEffect === "neon-outline" && (
-                  <>
-                    <div className="text-outline">Glow Color</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <ClypraColorPicker
-                        value={parameters.color ?? "#00FFFF"}
-                        onChange={(newColor) => onParamChange("color", newColor)}
-                        onChangeComplete={(newColor) => onParamChange("color", newColor)}
-                        size="sm"
-                        placement="left-start"
-                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
-                      />
-                      <span className="font-mono-data text-[9px] uppercase">
-                        {parameters.color ?? "#00FFFF"}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Thickness</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="1"
-                        max="20"
-                        step="1"
-                        value={parameters.thickness ?? 4}
-                        onChange={(e) => onParamChange("thickness", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.thickness ?? 4}px
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Intensity</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="2.5"
-                        step="0.1"
-                        value={parameters.intensity ?? 1.0}
-                        onChange={(e) => onParamChange("intensity", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.intensity ?? 1.0).toFixed(1)}
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {selectedEffect === "background-blur" && (
-                  <>
-                    <div className="text-outline">Blur Amount</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="50"
-                        step="1"
-                        value={parameters.blurAmount ?? 20}
-                        onChange={(e) => onParamChange("blurAmount", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.blurAmount ?? 20}px
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Softness</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={parameters.edgeSoftness ?? 0.2}
-                        onChange={(e) => onParamChange("edgeSoftness", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.edgeSoftness ?? 0.2).toFixed(2)}
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {selectedEffect === "electro-contour" && (
-                  <>
-                    <div className="text-outline">Arc Color</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <ClypraColorPicker
-                        value={parameters.arcColor ?? "#00E5FF"}
-                        onChange={(newColor) => onParamChange("arcColor", newColor)}
-                        onChangeComplete={(newColor) => onParamChange("arcColor", newColor)}
-                        size="sm"
-                        placement="left-start"
-                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
-                      />
-                      <span className="font-mono-data text-[9px] uppercase">
-                        {parameters.arcColor ?? "#00E5FF"}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Arc Jitter</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="5"
-                        max="40"
-                        step="1"
-                        value={parameters.arcJitter ?? 15}
-                        onChange={(e) => onParamChange("arcJitter", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.arcJitter ?? 15}px
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Branch Count</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="1"
-                        max="8"
-                        step="1"
-                        value={parameters.arcBranches ?? 4}
-                        onChange={(e) => onParamChange("arcBranches", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.arcBranches ?? 4}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Thickness</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="1"
-                        max="8"
-                        step="0.5"
-                        value={parameters.arcWidth ?? 2.5}
-                        onChange={(e) => onParamChange("arcWidth", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.arcWidth ?? 2.5).toFixed(1)}px
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Glow Level</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0.5"
-                        max="3.0"
-                        step="0.1"
-                        value={parameters.arcGlow ?? 1.8}
-                        onChange={(e) => onParamChange("arcGlow", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.arcGlow ?? 1.8).toFixed(1)}x
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {selectedEffect === "body-ghost" && (
-                  <>
-                    <div className="text-outline">Ghost Clones</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="1"
-                        max="6"
-                        step="1"
-                        value={parameters.ghostCount ?? 3}
-                        onChange={(e) => onParamChange("ghostCount", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.ghostCount ?? 3}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Trail Spacing</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="5"
-                        max="80"
-                        step="5"
-                        value={parameters.ghostOffset ?? 25}
-                        onChange={(e) => onParamChange("ghostOffset", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.ghostOffset ?? 25}px
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Trail Opacity</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="1.0"
-                        step="0.05"
-                        value={parameters.ghostOpacity ?? 0.6}
-                        onChange={(e) => onParamChange("ghostOpacity", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.ghostOpacity ?? 0.6).toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Chromatic Tint</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <ClypraColorPicker
-                        value={parameters.ghostColor ?? "#FF007F"}
-                        onChange={(newColor) => onParamChange("ghostColor", newColor)}
-                        onChangeComplete={(newColor) => onParamChange("ghostColor", newColor)}
-                        size="sm"
-                        placement="left-start"
-                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
-                      />
-                      <span className="font-mono-data text-[9px] uppercase">
-                        {parameters.ghostColor ?? "#FF007F"}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Blend Mode</div>
-                    <div className="text-on-surface">
-                      <select
-                        value={parameters.ghostBlendMode ?? "screen"}
-                        onChange={(e) => onParamChange("ghostBlendMode", e.target.value)}
-                        className="w-full bg-surface-container-highest border border-outline-variant/60 rounded px-1.5 py-0.5 text-[10px] text-on-surface focus:outline-none focus:border-primary"
-                      >
-                        <option value="screen">Screen (Additive Neon)</option>
-                        <option value="source-over">Normal (Solid Echoes)</option>
-                        <option value="lighter">Lighter (High Exposure)</option>
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                {(selectedEffect === "particle-aura" || selectedEffect === "flame-trail") && (
-                  <>
-                    <div className="text-outline">Anchor Source</div>
-                    <div className="text-on-surface">
-                      <select
-                        value={parameters.anchorSource ?? "silhouette"}
-                        onChange={(e) => onParamChange("anchorSource", e.target.value)}
-                        className="w-full bg-surface-container-highest border border-outline-variant/60 rounded px-1.5 py-0.5 text-[10px] text-on-surface focus:outline-none focus:border-primary"
-                      >
-                        <option value="silhouette">Torso Silhouette</option>
-                        <option value="wrists">Wrists / Hands</option>
-                        <option value="spine">Spine Center</option>
-                        <option value="neck">Neck / Head</option>
-                      </select>
-                    </div>
-
-                    <div className="text-outline">Count</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="10"
-                        max="150"
-                        step="10"
-                        value={parameters.particleCount ?? 50}
-                        onChange={(e) => onParamChange("particleCount", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.particleCount ?? 50}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Start Color</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <ClypraColorPicker
-                        value={parameters.particleColor ?? parameters.colorStart ?? "#FFAA00"}
-                        onChange={(newColor) => {
-                          onParamChange("particleColor", newColor);
-                          onParamChange("colorStart", newColor);
-                        }}
-                        onChangeComplete={(newColor) => {
-                          onParamChange("particleColor", newColor);
-                          onParamChange("colorStart", newColor);
-                        }}
-                        size="sm"
-                        placement="left-start"
-                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
-                      />
-                      <span className="font-mono-data text-[9px] uppercase">
-                        {parameters.particleColor ?? parameters.colorStart ?? "#FFAA00"}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">End Color</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <ClypraColorPicker
-                        value={parameters.colorEnd ?? "#FF2200"}
-                        onChange={(newColor) => onParamChange("colorEnd", newColor)}
-                        onChangeComplete={(newColor) => onParamChange("colorEnd", newColor)}
-                        size="sm"
-                        placement="left-start"
-                        triggerClassName="clypra-swatch-trigger w-6 h-5 rounded border border-outline-variant/50 cursor-pointer"
-                      />
-                      <span className="font-mono-data text-[9px] uppercase">
-                        {parameters.colorEnd ?? "#FF2200"}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Speed / Drift</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="2.0"
-                        step="0.1"
-                        value={parameters.speed ?? 0.8}
-                        onChange={(e) => onParamChange("speed", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.speed ?? 0.8).toFixed(1)}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Turbulence</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="50"
-                        step="5"
-                        value={parameters.turbulence ?? 25}
-                        onChange={(e) => onParamChange("turbulence", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.turbulence ?? 25}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Buoyancy</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="-100"
-                        max="0"
-                        step="5"
-                        value={parameters.gravity ?? -50}
-                        onChange={(e) => onParamChange("gravity", parseInt(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {parameters.gravity ?? -50}
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {selectedEffect === "color-isolation" && (
-                  <>
-                    <div className="text-outline">Luma Desat</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={parameters.desaturation ?? 1.0}
-                        onChange={(e) => onParamChange("desaturation", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.desaturation ?? 1.0).toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div className="text-outline">Color Boost</div>
-                    <div className="text-on-surface flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="0.5"
-                        step="0.05"
-                        value={parameters.colorBoost ?? 0.0}
-                        onChange={(e) => onParamChange("colorBoost", parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                      />
-                      <span className="font-mono-data text-[10px]">
-                        {(parameters.colorBoost ?? 0.0).toFixed(2)}
-                      </span>
-                    </div>
-                  </>
-                )}
+                <div className="text-outline">Choke Amount</div>
+                <div className="text-on-surface flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={parameters.choke ?? 0.2}
+                    onChange={(e) => onParamChange("choke", parseFloat(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                  <span className="font-mono-data text-[10px]">
+                    {(parameters.choke ?? 0.2).toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
 
