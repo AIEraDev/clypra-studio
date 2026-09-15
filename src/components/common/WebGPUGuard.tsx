@@ -8,17 +8,9 @@
 
 import React, { useState, useEffect } from "react";
 import { AlertTriangle, Cpu } from "lucide-react";
+import { CLYPRA_CANONICAL_LIMITS } from "@clypra-studio/shaders/limits";
 
-export const CLYPRA_STUDIO_REQUIRED_LIMITS = {
-  maxBindGroups: 4,
-  maxTextureDimension2D: 4096,
-  maxSampledTexturesPerShaderStage: 16,
-  maxSamplersPerShaderStage: 8,
-  maxStorageBuffersPerShaderStage: 4,
-  maxStorageBufferBindingSize: 134217728,
-  maxUniformBuffersPerShaderStage: 8,
-  maxUniformBufferBindingSize: 65536,
-} as const;
+export const CLYPRA_STUDIO_REQUIRED_LIMITS = CLYPRA_CANONICAL_LIMITS;
 
 export interface WebGPUGuardProps {
   children: React.ReactNode;

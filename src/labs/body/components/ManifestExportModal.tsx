@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { X, Copy, Check, Download, Code, Sparkles, Layers, ShieldCheck } from "lucide-react";
+import { X, Copy, Check, Download, Code, Sparkles, Layers, ShieldCheck, CloudUpload, Loader2 } from "lucide-react";
 import type {
   BodyEffectManifest,
   CompositingPrimitive,
@@ -30,6 +30,7 @@ export function ManifestExportModal({
   parameters,
 }: ManifestExportModalProps) {
   const [copied, setCopied] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Form states initialized from active effect
   const [id, setId] = useState(() => selectedEffect.toLowerCase().replace(/[^a-z0-9_-]/g, "-"));
@@ -39,30 +40,14 @@ export function ManifestExportModal({
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ")
   );
-  const [category, setCategory] = useState<string>(() => {
-    if (selectedEffect.includes("glow") || selectedEffect.includes("aura")) return "Aura";
-    if (selectedEffect.includes("wing")) return "Wings";
-    if (selectedEffect.includes("outline") || selectedEffect.includes("motion")) return "Motion";
-    return "Trending";
-  });
+  const [category, setCategory] = useState<string>("Trending");
   const [description, setDescription] = useState(
     "High-performance body segmentation effect authored in Clypra Studio"
   );
-  const [primitive, setPrimitive] = useState<CompositingPrimitive>(() => {
-    if (selectedEffect.includes("glow")) return "MaskedGlow";
-    if (selectedEffect.includes("wing")) return "SkeletalSpriteAnchor";
-    if (selectedEffect.includes("outline")) return "MaskedStroke";
-    return "AlphaCutout";
-  });
-  const [layerZOrder, setLayerZOrder] = useState<LayerZOrder>(() =>
-    primitive === "MaskedStroke" ? "in-front" : "behind-subject"
-  );
-  const [captureType, setCaptureType] = useState<CaptureAssetType>(() =>
-    primitive === "SkeletalSpriteAnchor" ? "hybrid_body" : "silhouette_mask"
-  );
-  const [blendMode, setBlendMode] = useState<"normal" | "screen" | "multiply" | "overlay" | "add">(
-    () => (primitive === "MaskedGlow" || primitive === "SkeletalSpriteAnchor" ? "screen" : "normal")
-  );
+  const [primitive, setPrimitive] = useState<CompositingPrimitive>("AlphaCutout");
+  const [layerZOrder, setLayerZOrder] = useState<LayerZOrder>("behind-subject");
+  const [captureType, setCaptureType] = useState<CaptureAssetType>("silhouette_mask");
+  const [blendMode, setBlendMode] = useState<"normal" | "screen" | "multiply" | "overlay" | "add">("normal");
 
   // Generate canonical manifest object
   const manifest: BodyEffectManifest = useMemo(() => {
@@ -144,6 +129,34 @@ export function ManifestExportModal({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success(`Downloaded ${id}.json`);
+  };
+
+  const handlePublish = async () => {
+    setIsPublishing(true);
+    try {
+      const bundlePayload = {
+        bundleId: id,
+        version: manifest.version || "1.0.0",
+        manifest,
+        assets: [],
+      };
+      const apiBase = (import.meta as any).env?.VITE_API_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+      const res = await fetch(`${apiBase}/body-effects/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bundlePayload),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      toast.success(`Published to Catalog! Bundle hash: ${data.hash?.slice(0, 12)}...`);
+    } catch (err: any) {
+      toast.error(`Publishing failed: ${err.message}`);
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -344,10 +357,27 @@ export function ManifestExportModal({
             </button>
             <button
               onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1 rounded bg-primary hover:bg-primary/90 text-on-primary text-xs font-bold transition-all cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1 rounded bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface text-xs font-semibold transition-all cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download .json</span>
+            </button>
+            <button
+              onClick={handlePublish}
+              disabled={isPublishing}
+              className="flex items-center gap-1.5 px-3 py-1 rounded bg-primary hover:bg-primary/90 text-on-primary text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50"
+            >
+              {isPublishing ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Publishing...</span>
+                </>
+              ) : (
+                <>
+                  <CloudUpload className="w-3.5 h-3.5" />
+                  <span>Publish to R2 / Catalog</span>
+                </>
+              )}
             </button>
           </div>
         </div>

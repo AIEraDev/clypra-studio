@@ -27,6 +27,10 @@ export default defineConfig(() => {
           find: /^@clypra-studio\/engine(\/.*)?$/,
           replacement: `${packagesDir}/clypra-engine/src$1`,
         },
+        {
+          find: /^@clypra-studio\/shaders(\/.*)?$/,
+          replacement: `${packagesDir}/shaders/src$1`,
+        },
         // Non-source-aliased packages — keep simple string alias
         {
           find: "@clypra-studio/native-render-wasm",
