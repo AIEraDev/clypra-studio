@@ -506,14 +506,6 @@ export const WebShowcase: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center pt-8 md:pt-14">
             {/* Left Column: Editorial Headline & Actions */}
             <div className="lg:col-span-7 flex flex-col gap-6 text-left">
-              {/* Amber Pill Badge (Reference 1 & 2 inspired) */}
-              <div className="inline-flex self-start items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span className="text-[10px] font-bold font-mono tracking-widest uppercase">
-                  {release ? `${release.tag_name} Stable Release` : "Native Video Engine v1.3.0"}
-                </span>
-              </div>
-
               {/* Bold Editorial Heading */}
               <h1 className="font-editorial text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.06] text-white">
                 The native <br />
@@ -608,40 +600,48 @@ export const WebShowcase: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Front Main Card (Tilted -2.5deg) */}
-                <div className="tilted-card relative rounded-2xl overflow-hidden border border-white/30 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] bg-[#12081a] -rotate-2">
-                  {/* Window Bar */}
-                  <div className="bg-[#1e0e29] px-4 py-2.5 flex items-center justify-between border-b border-white/10">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    </div>
-                    <span className="text-[10px] font-mono text-purple-200/80 font-medium">
-                      clypra_preview_engine.rs
-                    </span>
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      60 FPS Native
-                    </span>
+                {/* Front Main Card (Tilted -2.5deg) with Corner Overflowing Version */}
+                <div className="tilted-card relative -rotate-2">
+                  {/* Corner Overflowing Version Badge */}
+                  <div className="absolute -top-3.5 -right-3 z-30 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-stone-950 font-mono font-extrabold text-xs shadow-2xl border border-amber-300/90 rotate-6 select-none pointer-events-none tracking-tight">
+                    <Sparkles className="w-3.5 h-3.5 fill-stone-950 text-stone-950" />
+                    <span>{release?.tag_name ?? "v1.5.8"}</span>
                   </div>
 
-                  {/* Editor Screen Preview */}
-                  <div className="relative aspect-16/10 w-full overflow-hidden bg-black">
-                    <img
-                      src="/home-screen.png"
-                      alt="Clypra Native Desktop Interface"
-                      className="w-full h-full object-cover object-top"
-                    />
-                    <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-
-                    {/* Floating HUD chips */}
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[10px] font-mono text-white">
-                      <div className="bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 flex items-center gap-1.5">
-                        <Zap className="w-3 h-3 text-amber-400" />
-                        <span>Metal / D3D11 / VAAPI</span>
+                  <div className="rounded-2xl overflow-hidden border border-white/30 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] bg-[#12081a]">
+                    {/* Window Bar */}
+                    <div className="bg-[#1e0e29] px-4 py-2.5 flex items-center justify-between border-b border-white/10">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                       </div>
-                      <div className="bg-emerald-500/90 text-stone-950 font-bold px-2.5 py-1 rounded-full">
-                        Zero Latency
+                      <span className="text-[10px] font-mono text-purple-200/80 font-medium">
+                        clypra_preview_engine.rs
+                      </span>
+                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        60 FPS Native
+                      </span>
+                    </div>
+
+                    {/* Editor Screen Preview */}
+                    <div className="relative aspect-16/10 w-full overflow-hidden bg-black">
+                      <img
+                        src="/home-screen.png"
+                        alt="Clypra Native Desktop Interface"
+                        className="w-full h-full object-cover object-top"
+                      />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+
+                      {/* Floating HUD chips */}
+                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[10px] font-mono text-white">
+                        <div className="bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 flex items-center gap-1.5">
+                          <Zap className="w-3 h-3 text-amber-400" />
+                          <span>Metal / D3D11 / VAAPI</span>
+                        </div>
+                        <div className="bg-emerald-500/90 text-stone-950 font-bold px-2.5 py-1 rounded-full">
+                          Zero Latency
+                        </div>
                       </div>
                     </div>
                   </div>
