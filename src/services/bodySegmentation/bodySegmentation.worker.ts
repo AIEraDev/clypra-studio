@@ -142,7 +142,7 @@ function runMediaPipeSegmentation(segmenter: any, imageData: ImageData): Promise
       if (settled) return;
       settled = true;
       reject(new Error("MediaPipe segmentation timed out"));
-    }, 2000);
+    }, 4000);
     const finish = (result: any) => {
       if (settled) return;
       settled = true;
@@ -166,19 +166,64 @@ function runMediaPipeSegmentation(segmenter: any, imageData: ImageData): Promise
 
 function mediaPipeResultToMask(result: any, width: number, height: number, minConfidence: number): ImageData | null {
   const confidenceMasks = Array.isArray(result.confidenceMasks) ? result.confidenceMasks : [];
-  const personConfidenceMask = confidenceMasks.length > 1 ? confidenceMasks[confidenceMasks.length - 1] : confidenceMasks[0];
 
-  if (personConfidenceMask) {
-    const confidenceData = getMaskFloatData(personConfidenceMask);
+  // The selfie_multiclass_256x256 model outputs one confidence mask per class:
+  //   index 0 = background
+  //   index 1 = hair
+  //   index 2 = body skin
+  //   index 3 = face skin
+  //   index 4 = clothes
+  //   index 5 = others
+  //
+  // For full-person coverage (hair + body + face + clothes) we take the MAX
+  // confidence value across ALL foreground classes (indices 1-N) per pixel.
+  // This ensures hair and body are covered, not just the face.
+  //
+  // For the legacy single-class selfie_segmenter the output is 1–2 masks where
+  // the last entry is "person confidence" — we keep that fallback below.
+  if (confidenceMasks.length >= 4) {
+    // Multiclass model: combine all foreground classes (skip index 0 = background)
+    const maskW = confidenceMasks[1]?.width || width;
+    const maskH = confidenceMasks[1]?.height || height;
+    const pixelCount = maskW * maskH;
+    const combinedConfidence = new Float32Array(pixelCount);
+
+    for (let classIdx = 1; classIdx < confidenceMasks.length; classIdx++) {
+      const classMask = confidenceMasks[classIdx];
+      if (!classMask) continue;
+      const classData = getMaskFloatData(classMask);
+      if (!classData) continue;
+      for (let i = 0; i < pixelCount; i++) {
+        const v = classData[i] ?? 0;
+        if (v > combinedConfidence[i]) combinedConfidence[i] = v;
+      }
+    }
+
+    const rawMask = confidenceDataToMask(combinedConfidence, maskW, maskH, minConfidence);
+    // Morphological closing: dilate(1)→erode(1) fills single-pixel hair gaps.
+    // radius=1 keeps boundary overshoot to ~3.5 display pixels when upscaled from
+    // 256×256 to display resolution. radius=3 was causing ~10px overshoot that
+    // ate adjacent text characters (like the "u" in "Musa").
+    return morphologicalClose(rawMask, 1);
+  }
+
+  // Legacy single-class fallback: last confidence mask = person
+  if (confidenceMasks.length > 0) {
+    const personMask = confidenceMasks[confidenceMasks.length - 1];
+    const confidenceData = getMaskFloatData(personMask);
     if (confidenceData) {
-      return confidenceDataToMask(confidenceData, width, height, minConfidence);
+      const maskW = personMask.width || width;
+      const maskH = personMask.height || height;
+      return confidenceDataToMask(confidenceData, maskW, maskH, minConfidence);
     }
   }
 
   if (result.categoryMask) {
     const categoryData = getMaskByteData(result.categoryMask);
     if (categoryData) {
-      return categoryDataToMask(categoryData, width, height);
+      const maskW = result.categoryMask.width || width;
+      const maskH = result.categoryMask.height || height;
+      return categoryDataToMask(categoryData, maskW, maskH);
     }
   }
 
@@ -198,20 +243,45 @@ function getMaskByteData(mask: any): Uint8Array | null {
   return null;
 }
 
-function confidenceDataToMask(confidenceData: Float32Array, width: number, height: number, minConfidence: number): ImageData {
+function confidenceDataToMask(
+  confidenceData: Float32Array,
+  width: number,
+  height: number,
+  minConfidence: number,
+): ImageData {
   const pixelCount = width * height;
   const mask = new ImageData(width, height);
 
+  // Smoothstep transition band around minConfidence:
+  // - Subject interior (confidence >= upperBound): 100% solid opaque (alpha = 255)
+  // - Background (confidence <= lowerBound): 0% transparent (alpha = 0)
+  // - Outer boundary: cubic Hermite smoothstep anti-aliasing
+  const edgeBand = 0.08;
+  const lowerBound = Math.max(0.01, minConfidence - edgeBand);
+  const upperBound = Math.min(0.99, minConfidence + edgeBand);
+  const bandRange = upperBound - lowerBound;
+
   for (let i = 0; i < pixelCount; i++) {
     const confidence = confidenceData[i] ?? 0;
+    let alpha: number;
+
+    if (confidence >= upperBound) {
+      alpha = 255;
+    } else if (confidence <= lowerBound) {
+      alpha = 0;
+    } else {
+      const t = (confidence - lowerBound) / bandRange;
+      alpha = Math.round(t * t * (3 - 2 * t) * 255);
+    }
+
     const dst = i * 4;
     mask.data[dst] = 255;
     mask.data[dst + 1] = 255;
     mask.data[dst + 2] = 255;
-    mask.data[dst + 3] = confidence >= minConfidence ? Math.min(255, Math.max(0, Math.floor(confidence * 255))) : 0;
+    mask.data[dst + 3] = alpha;
   }
 
-  return softenMask(mask);
+  return mask;
 }
 
 function categoryDataToMask(categoryData: Uint8Array, width: number, height: number): ImageData {
@@ -257,15 +327,35 @@ function imageDataToNchwFloatTensor(imageData: ImageData, ort: any): any {
   return new ort.Tensor("float32", input, [1, 3, height, width]);
 }
 
-function tensorOutputToMask(output: Float32Array | Uint8Array | number[], width: number, height: number, minConfidence: number): ImageData {
+function tensorOutputToMask(
+  output: Float32Array | Uint8Array | number[],
+  width: number,
+  height: number,
+  minConfidence: number,
+): ImageData {
   const outputLength = output.length;
   const pixelCount = width * height;
   const channelOffset = outputLength >= pixelCount * 2 ? pixelCount : 0;
   const mask = new ImageData(width, height);
 
+  const edgeBand = 0.08;
+  const lowerBound = Math.max(0.01, minConfidence - edgeBand);
+  const upperBound = Math.min(0.99, minConfidence + edgeBand);
+  const bandRange = upperBound - lowerBound;
+
   for (let i = 0; i < pixelCount; i++) {
     const confidence = Number(output[channelOffset + i] ?? output[i] ?? 0);
-    const alpha = confidence >= minConfidence ? Math.min(255, Math.max(0, confidence * 255)) : 0;
+    let alpha: number;
+
+    if (confidence >= upperBound) {
+      alpha = 255;
+    } else if (confidence <= lowerBound) {
+      alpha = 0;
+    } else {
+      const t = (confidence - lowerBound) / bandRange;
+      alpha = Math.round(t * t * (3 - 2 * t) * 255);
+    }
+
     const dst = i * 4;
     mask.data[dst] = 255;
     mask.data[dst + 1] = 255;
@@ -302,12 +392,12 @@ function segmentWithHeuristic(imageData: ImageData, minConfidence: number): Imag
     const currentLuma = luma(data[src], data[src + 1], data[src + 2]);
     const chroma = Math.max(data[src], data[src + 1], data[src + 2]) - Math.min(data[src], data[src + 1], data[src + 2]);
     const centerBias = 1 - Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2) / maxDistance;
-    const confidence = alpha > 8 && (currentLuma > threshold || chroma > 28) ? Math.max(minConfidence, centerBias) : 0;
+    const isSubject = alpha > 8 && (currentLuma > threshold || chroma > 28) && centerBias > (1 - minConfidence);
     const dst = i * 4;
     mask.data[dst] = 255;
     mask.data[dst + 1] = 255;
     mask.data[dst + 2] = 255;
-    mask.data[dst + 3] = confidence >= minConfidence ? Math.min(255, Math.floor(confidence * 255)) : 0;
+    mask.data[dst + 3] = isSubject ? 255 : 0;
   }
 
   return softenMask(mask);
@@ -339,6 +429,57 @@ function softenMask(mask: ImageData): ImageData {
   }
 
   return next;
+}
+
+/**
+ * Morphological closing: dilate(radius) → erode(radius).
+ * Fills small holes inside the mask (e.g. dark hair gaps) and smooths
+ * jagged hair edges without significantly expanding the true boundary.
+ */
+function morphologicalClose(mask: ImageData, radius: number): ImageData {
+  const { width, height } = mask;
+
+  // --- Dilate: each pixel takes the MAX alpha of its neighbourhood ---
+  const dilated = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let maxA = 0;
+      for (let oy = -radius; oy <= radius; oy++) {
+        for (let ox = -radius; ox <= radius; ox++) {
+          const nx = x + ox;
+          const ny = y + oy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          const a = mask.data[(ny * width + nx) * 4 + 3];
+          if (a > maxA) maxA = a;
+        }
+      }
+      dilated[y * width + x] = maxA;
+    }
+  }
+
+  // --- Erode: each pixel takes the MIN alpha of its neighbourhood ---
+  const result = new ImageData(width, height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let minA = 255;
+      for (let oy = -radius; oy <= radius; oy++) {
+        for (let ox = -radius; ox <= radius; ox++) {
+          const nx = x + ox;
+          const ny = y + oy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          const a = dilated[ny * width + nx];
+          if (a < minA) minA = a;
+        }
+      }
+      const dst = (y * width + x) * 4;
+      result.data[dst] = 255;
+      result.data[dst + 1] = 255;
+      result.data[dst + 2] = 255;
+      result.data[dst + 3] = minA;
+    }
+  }
+
+  return result;
 }
 
 function luma(r: number, g: number, b: number): number {

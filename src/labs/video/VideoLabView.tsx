@@ -47,15 +47,15 @@ const IDENTITY_EFFECT_ID = "__identity__";
 
 const CATEGORY_LABELS: Record<string, string> = {
   all: "All",
-  light: "Light",
+  essentials: "Essentials",
   glitch: "Glitch",
   retro: "Retro",
+  light: "Light",
   motion: "Motion",
   color: "Color",
   cinematic: "Cinematic",
   distortion: "Distortion",
   body: "Body",
-  essentials: "Essentials",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -143,114 +143,6 @@ function nativeColorGradeForEffect(
 
   if (id === IDENTITY_EFFECT_ID) return grade;
 
-  if (id === "color-adjustments") {
-    return {
-      exposure: numericParam(params, "exposure"),
-      brightness: numericParam(params, "brightness"),
-      contrast: 1 + numericParam(params, "contrast"),
-      saturation: 1 + numericParam(params, "saturation"),
-      temperature: numericParam(params, "temperature"),
-      tint: numericParam(params, "tint"),
-      sepia: numericParam(params, "sepia"),
-      grayscale: numericParam(params, "grayscale"),
-      hueRotate: numericParam(params, "hueRotate"),
-      vignette: numericParam(params, "vignette"),
-      invert: numericParam(params, "invert"),
-      blurStrength: numericParam(params, "blur") > 0 ? 1 : 0,
-      blurRadius: numericParam(params, "blur"),
-    };
-  }
-
-  if (id === "color-matrix" || id === "cinematic-lut") {
-    const brightness = numericParam(params, "brightness", 1);
-    const contrast = numericParam(params, "contrast", 1);
-    const saturation = numericParam(params, "saturation", 1);
-    return {
-      brightness: brightness - 1,
-      contrast,
-      saturation,
-      hueRotate:
-        id === "color-matrix"
-          ? (numericParam(params, "hue") * Math.PI) / 180
-          : 0,
-      lutIntensity: numericParam(params, "lutIntensity", 0.8),
-    };
-  }
-
-  if (id === "hsl-adjustment") {
-    return {
-      brightness: numericParam(params, "lightness"),
-      saturation: 1 + numericParam(params, "saturation"),
-      hueRotate: (numericParam(params, "hue") * Math.PI) / 180,
-    };
-  }
-
-  if (id === "grayscale") return { grayscale: 1 };
-  if (id === "vignette")
-    return { vignette: Math.max(0, 1 - numericParam(params, "radius", 0.7)) };
-  if (id === "pixelate")
-    return {
-      pixelateSize: Math.max(
-        numericParam(params, "sizeX", 10),
-        numericParam(params, "sizeY", 10),
-      ),
-    };
-  if (id === "gaussian-blur" || id === "kawase-blur") {
-    return { blurStrength: 1, blurRadius: numericParam(params, "blur", 8) };
-  }
-
-  if (id === "film-grain") {
-    return {
-      grainIntensity: numericParam(params, "intensity", 0.25),
-      grainSize: numericParam(params, "size", 2),
-    };
-  }
-  if (id === "static-noise")
-    return {
-      grainIntensity: numericParam(params, "noise", 0.15),
-      grainSize: 1,
-    };
-  if (id === "old-film") {
-    return {
-      sepia: numericParam(params, "sepia", 0.3),
-      grainIntensity: numericParam(params, "noise", 0.15),
-      grainSize: numericParam(params, "noiseSize", 1),
-      vignette: numericParam(params, "vignetting", 0.3),
-    };
-  }
-  if (id === "vhs" || id === "crt") {
-    return {
-      grainIntensity: numericParam(params, "noise", 0.1),
-      grainSize: 1,
-      scanlineCount: id === "vhs" ? 180 : 240,
-      scanlineIntensity:
-        id === "vhs"
-          ? numericParam(params, "lineAlpha", 0.25)
-          : numericParam(params, "lineContrast", 0.25),
-      rgbSplitX: id === "vhs" ? numericParam(params, "hShift") * 1280 : 0,
-      vignette: numericParam(params, "vignetting", 0.0),
-    };
-  }
-  if (id === "rgb-split") {
-    return {
-      rgbSplitX:
-        (numericParam(params, "redX", 4) - numericParam(params, "blueX", -4)) /
-        2,
-      rgbSplitY:
-        (numericParam(params, "redY") - numericParam(params, "blueY")) / 2,
-    };
-  }
-  if (id === "glitch-band" || id === "glitch_band") {
-    return {
-      glitchIntensity: Math.min(1, numericParam(params, "offset", 80) / 400),
-      glitchTime: time,
-      glitchSliceCount: numericParam(params, "slices", 15),
-      glitchColorShift: Math.abs(
-        numericParam(params, "redX", -3) - numericParam(params, "blueX", 3),
-      ),
-    };
-  }
-
   if (id === "shockwave") {
     return {
       distortionType: 2,
@@ -262,114 +154,6 @@ function nativeColorGradeForEffect(
       ),
     };
   }
-  if (id === "bulge-pinch" || id === "bulge_pinch") {
-    return {
-      distortionType: 3,
-      distortionStrength: numericParam(params, "strength", 0.5),
-      distortionTime: time * numericParam(params, "speed", 1.5),
-      distortionFrequency: Math.max(
-        1,
-        600 / Math.max(1, numericParam(params, "radius", 200)),
-      ),
-    };
-  }
-  if (id === "twist") {
-    return {
-      distortionType: 4,
-      distortionStrength: numericParam(params, "angle", 4) / 15,
-      distortionTime: time * numericParam(params, "speed", 1),
-      distortionFrequency: Math.max(
-        1,
-        800 / Math.max(1, numericParam(params, "radius", 300)),
-      ),
-    };
-  }
-
-  if (id === "fire") {
-    const c1 = colorParam(params.fireColor1, [1, 0.27, 0]);
-    const c2 = colorParam(params.fireColor2, [1, 0.65, 0]);
-    const c3 = colorParam(params.fireColor3, [1, 0.84, 0]);
-    return {
-      fireParams: [
-        numericParam(params, "fireHeight", 0.4),
-        numericParam(params, "particleCount", 50),
-        1,
-        time,
-      ],
-      fireColor1: [...c1, 0],
-      fireColor2: [...c2, 0],
-      fireColor3: [...c3, 0],
-    };
-  }
-  if (id === "particles" || id === "dust_particles") {
-    const color = colorParam(
-      params.particleColor,
-      id === "particles" ? [1, 1, 1] : [0.88, 0.88, 0.88],
-    );
-    return {
-      particleParams: [
-        numericParam(params, "particleCount", 60),
-        numericParam(params, "particleSize", 2),
-        numericParam(params, "driftSpeed", 1),
-        1,
-      ],
-      particleColor: [
-        ...color,
-        id === "particles" && params.fadeEffect === false ? 0 : 0.5,
-      ],
-      particleTime: time,
-    };
-  }
-
-  if (id === "glow" || id === "neon-glow" || id === "body-segmentation-glow") {
-    const color = colorParam(params.glowColor ?? params.color, [1, 1, 1]);
-    return {
-      glowColorR: color[0],
-      glowColorG: color[1],
-      glowColorB: color[2],
-      glowStrength: numericParam(
-        params,
-        "glowAmount",
-        numericParam(params, "outerStrength", 1),
-      ),
-      glowRadius: numericParam(
-        params,
-        "glowRadius",
-        numericParam(params, "distance", 10),
-      ),
-    };
-  }
-  if (id === "light_leak" || id === "light-leak" || id === "light_leak_2") {
-    const color = colorParam(params.color1 ?? params.color, [1, 0.4, 0.1]);
-    return {
-      lightLeakColorR: color[0],
-      lightLeakColorG: color[1],
-      lightLeakColorB: color[2],
-      lightLeakStrength: numericParam(
-        params,
-        "alpha",
-        numericParam(params, "gain", 0.6),
-      ),
-      lightLeakAngle: (numericParam(params, "angle", 30) * Math.PI) / 180,
-      lightLeakTime: time * numericParam(params, "speed", 1),
-    };
-  }
-  if (id === "flash") {
-    const color = colorParam(params.flashColor, [1, 1, 1]);
-    return {
-      flashColorR: color[0],
-      flashColorG: color[1],
-      flashColorB: color[2],
-      flashStrength: numericParam(params, "flashIntensity", 1),
-    };
-  }
-  if (id === "flicker")
-    return {
-      flickerStrength: 0.25,
-      strobeFrequency: 8,
-      strobeTime: time,
-      strobeStrength: 0.25,
-    };
 
   return null;
 }
@@ -508,11 +292,9 @@ export function VideoLabView() {
     };
   }, [addLog]);
 
-  // ── Computed: all unique categories from the registry ─────────────────────
+  // ── Standard video effect categories available for filtering ──────────────
   const availableCategories = useMemo(() => {
-    const cats = new Set<string>();
-    Object.values(EFFECTS_REGISTRY).forEach((e) => cats.add(e.category));
-    return ["all", ...Array.from(cats).sort()];
+    return Object.keys(CATEGORY_LABELS);
   }, []);
 
   // ── Computed: filtered effect list ───────────────────────────────────────

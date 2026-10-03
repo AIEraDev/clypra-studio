@@ -154,7 +154,9 @@ export function SidebarLeft({
         <div className="flex-1 overflow-y-auto pr-0.5 space-y-0.5 effect-list">
           {filteredEffects.length === 0 ? (
             <div className="text-center text-on-surface-variant text-[10px] py-4">
-              No effects match "{searchQuery}"
+              {searchQuery.trim()
+                ? `No effects match "${searchQuery}"`
+                : `No effects in ${categoryLabels[activeCategory] ?? activeCategory} yet`}
             </div>
           ) : (
             filteredEffects.map((effect) => (

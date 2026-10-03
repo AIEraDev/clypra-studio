@@ -10,22 +10,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { initializeFontSystem } from "@clypra-studio/engine";
+import { segmentBodyMask } from "../../services/bodySegmentation/bodySegmentationWorkerClient";
 
 import { TopNavBar } from "./components/TopNavBar";
 import { SidebarLeft } from "./components/SidebarLeft";
 import { CanvasPreview } from "./components/CanvasPreview";
 import { SidebarRight } from "./components/SidebarRight";
 import { ManifestExportModal } from "./components/ManifestExportModal";
-
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  alpha: number;
-  life: number;
-}
 
 const DEFAULT_VIDEO_URL =
   "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
@@ -47,7 +38,7 @@ export function BodyLabView() {
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(15.02);
-  const [selectedEffect, setSelectedEffect] = useState<string>("neon-outline");
+  const [selectedEffect, setSelectedEffect] = useState<string>("subject-cutout");
   const [fitMode, setFitMode] = useState<"stretch" | "fit" | "crop">("fit");
   const [activeTab, setActiveTab] = useState<"inspector" | "nodes" | "stats">("inspector");
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -65,25 +56,12 @@ export function BodyLabView() {
   const [activeProvider, setActiveProvider] = useState("mediapipe-body");
 
   const [parameters, setParameters] = useState<Record<string, any>>({
-    color: "#00FFFF",
-    thickness: 4,
-    intensity: 1.0,
-    softness: 0.5,
-    blurAmount: 20,
-    edgeSoftness: 0.2,
-    darkness: 0.7,
-    falloff: 1.0,
-    tint: "#000000",
-    warmth: 0.0,
-    particleCount: 50,
-    particleSize: 3,
-    speed: 0.5,
-    particleColor: "#FFFFFF",
-    spread: 10,
-    glow: 0.3,
-    desaturation: 1.0,
-    edgeBlend: 0.3,
-    colorBoost: 0.0,
+    cutoutText: "CLYPRA",
+    textColor: "#FFFFFF",
+    textSize: 120,
+    textOffsetY: 0,
+    feather: 4,
+    choke: 0.2,
   });
 
   const [latency, setLatency] = useState(0.02);
@@ -99,8 +77,6 @@ export function BodyLabView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
-
-  const particlesRef = useRef<Particle[]>([]);
 
   const addLog = useCallback((msg: string) => {
     setLogs((prev) => {
@@ -119,22 +95,33 @@ export function BodyLabView() {
       setVideoUrl(objectUrl);
       setPlaying(false);
       setCurrentTime(0);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      const newDur = videoRef.current.duration;
-      setDuration(newDur);
-      addLog(
-        `[MEDIA] Source ready. Resolution: ${videoRef.current.videoWidth}x${videoRef.current.videoHeight}`
-      );
+      if (videoRef.current) {
+        videoRef.current.src = objectUrl;
+        videoRef.current.load();
+      }
     }
   };
 
   useEffect(() => {
-    particlesRef.current = [];
-  }, [fitMode, selectedEffect]);
+    const video = videoRef.current;
+    if (video && videoUrl) {
+      video.src = videoUrl;
+      video.load();
+    }
+  }, [videoUrl]);
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      const newDur = videoRef.current.duration || 15;
+      setDuration(newDur);
+      addLog(
+        `[MEDIA] Source ready. Resolution: ${videoRef.current.videoWidth}x${videoRef.current.videoHeight}`
+      );
+      if (videoRef.current.currentTime === 0) {
+        videoRef.current.currentTime = 0.001;
+      }
+    }
+  };
 
   useEffect(() => {
     const video = videoRef.current;
@@ -270,6 +257,48 @@ export function BodyLabView() {
     ctx.fillText("SMPTE_TEST_PATTERN (SIGNAL PENDING)", w / 2, topH + (h - topH) / 2);
   };
 
+  const drawSimulatedBackdrop = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    _time: number
+  ) => {
+    // Dynamic cinematic gradient background
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+    bgGrad.addColorStop(0, "#0a0e17");
+    bgGrad.addColorStop(0.5, "#141c2e");
+    bgGrad.addColorStop(1, "#070a10");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Subtle perspective floor grid
+    ctx.save();
+    ctx.strokeStyle = "rgba(77, 142, 255, 0.12)";
+    ctx.lineWidth = 1;
+    const horizon = h * 0.62;
+    for (let x = -w * 0.5; x <= w * 1.5; x += 80) {
+      ctx.beginPath();
+      ctx.moveTo(w / 2, horizon);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    for (let y = horizon; y <= h; y += Math.max(8, (y - horizon) * 0.35)) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Studio rim lighting ambiance
+    const lightGrad = ctx.createRadialGradient(w / 2, h * 0.35, 20, w / 2, h * 0.35, w * 0.45);
+    lightGrad.addColorStop(0, "rgba(0, 240, 255, 0.12)");
+    lightGrad.addColorStop(0.6, "rgba(99, 102, 241, 0.06)");
+    lightGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = lightGrad;
+    ctx.fillRect(0, 0, w, h);
+  };
+
   const drawHumanSilhouette = (
     ctx: CanvasRenderingContext2D,
     cx: number,
@@ -277,34 +306,41 @@ export function BodyLabView() {
     scale: number
   ) => {
     ctx.beginPath();
+    // Head
     ctx.arc(cx, cy - 80 * scale, 24 * scale, 0, Math.PI * 2);
+    // Neck
     ctx.moveTo(cx - 6 * scale, cy - 56 * scale);
     ctx.lineTo(cx - 6 * scale, cy - 48 * scale);
     ctx.lineTo(cx + 6 * scale, cy - 48 * scale);
     ctx.lineTo(cx + 6 * scale, cy - 56 * scale);
+    // Torso
     ctx.moveTo(cx - 45 * scale, cy - 48 * scale);
     ctx.lineTo(cx + 45 * scale, cy - 48 * scale);
     ctx.lineTo(cx + 35 * scale, cy + 50 * scale);
     ctx.lineTo(cx - 35 * scale, cy + 50 * scale);
     ctx.closePath();
+    // Left Arm
     ctx.moveTo(cx - 45 * scale, cy - 48 * scale);
     ctx.lineTo(cx - 75 * scale, cy + 20 * scale);
     ctx.lineTo(cx - 65 * scale, cy + 80 * scale);
     ctx.lineTo(cx - 52 * scale, cy + 80 * scale);
     ctx.lineTo(cx - 60 * scale, cy + 25 * scale);
     ctx.lineTo(cx - 35 * scale, cy - 20 * scale);
+    // Right Arm
     ctx.moveTo(cx + 45 * scale, cy - 48 * scale);
     ctx.lineTo(cx + 75 * scale, cy + 20 * scale);
     ctx.lineTo(cx + 65 * scale, cy + 80 * scale);
     ctx.lineTo(cx + 52 * scale, cy + 80 * scale);
     ctx.lineTo(cx + 60 * scale, cy + 25 * scale);
     ctx.lineTo(cx + 35 * scale, cy - 20 * scale);
+    // Left Leg
     ctx.moveTo(cx - 30 * scale, cy + 50 * scale);
     ctx.lineTo(cx - 35 * scale, cy + 130 * scale);
     ctx.lineTo(cx - 40 * scale, cy + 220 * scale);
     ctx.lineTo(cx - 20 * scale, cy + 220 * scale);
     ctx.lineTo(cx - 18 * scale, cy + 130 * scale);
     ctx.lineTo(cx - 5 * scale, cy + 50 * scale);
+    // Right Leg
     ctx.moveTo(cx + 30 * scale, cy + 50 * scale);
     ctx.lineTo(cx + 35 * scale, cy + 130 * scale);
     ctx.lineTo(cx + 40 * scale, cy + 220 * scale);
@@ -313,13 +349,11 @@ export function BodyLabView() {
     ctx.lineTo(cx + 5 * scale, cy + 50 * scale);
   };
 
-  const hexToRgb = (hex: string): string => {
-    const c = hex.replace("#", "");
-    const r = parseInt(c.substring(0, 2), 16);
-    const g = parseInt(c.substring(2, 4), 16);
-    const b = parseInt(c.substring(4, 6), 16);
-    return `${r}, ${g}, ${b}`;
-  };
+  const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cutoutCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const featherCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isSegmentingRef = useRef<boolean>(false);
+  const lastSegmentedTimeRef = useRef<number>(-1);
 
   useEffect(() => {
     let animId: number;
@@ -338,33 +372,179 @@ export function BodyLabView() {
         return;
       }
 
-      const startGpuTime = performance.now();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      try {
+        const startGpuTime = performance.now();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const hasVideo = video && video.readyState >= 2;
+        const videoWidth = video?.videoWidth || 0;
+        const videoHeight = video?.videoHeight || 0;
+        const hasVideo = !!video && video.readyState >= 2 && videoWidth > 0 && videoHeight > 0;
 
       let drawW = canvas.width,
         drawH = canvas.height,
         drawX = 0,
         drawY = 0;
       if (hasVideo) {
-        const videoRatio = video!.videoWidth / video!.videoHeight;
+        const videoRatio = videoWidth / videoHeight;
         const canvasRatio = canvas.width / canvas.height;
         if (fitMode === "crop") {
           if (videoRatio > canvasRatio) {
             drawW = canvas.height * videoRatio;
+            drawH = canvas.height;
             drawX = (canvas.width - drawW) / 2;
+            drawY = 0;
           } else {
+            drawW = canvas.width;
             drawH = canvas.width / videoRatio;
+            drawX = 0;
             drawY = (canvas.height - drawH) / 2;
           }
         } else if (fitMode === "fit") {
           if (videoRatio > canvasRatio) {
+            drawW = canvas.width;
             drawH = canvas.width / videoRatio;
+            drawX = 0;
             drawY = (canvas.height - drawH) / 2;
           } else {
             drawW = canvas.height * videoRatio;
+            drawH = canvas.height;
             drawX = (canvas.width - drawW) / 2;
+            drawY = 0;
+          }
+        } else {
+          drawW = canvas.width;
+          drawH = canvas.height;
+          drawX = 0;
+          drawY = 0;
+        }
+
+        // Trigger asynchronous real-time segmentation worker
+        if (!isSegmentingRef.current) {
+          const cTime = video!.currentTime;
+          if (Math.abs(cTime - lastSegmentedTimeRef.current) >= 0.03 || !maskCanvasRef.current) {
+            isSegmentingRef.current = true;
+            // Maintain video aspect ratio for the segmentation input
+            const aspect = videoWidth / Math.max(1, videoHeight);
+            const targetDim = 384;
+            const segWidth = aspect >= 1 ? targetDim : Math.max(1, Math.round(targetDim * aspect));
+            const segHeight = aspect >= 1 ? Math.max(1, Math.round(targetDim / aspect)) : targetDim;
+
+            // Map choke slider (0.0 to 1.0, default 0.2) to minConfidence.
+            // The selfie_multiclass model outputs lower per-class confidence values
+            // compared to the old single-class selfie_segmenter, so we use a lower
+            // base range (0.30–0.70) to avoid under-masking hair and body regions.
+            const chokeVal = typeof parameters.choke === "number" ? parameters.choke : 0.2;
+            const effectiveMinConf = Math.min(0.70, Math.max(0.30, 0.35 + chokeVal * 0.35));
+
+            segmentBodyMask(video!, {
+              clipId: "body-lab-preview",
+              effectId: selectedEffect,
+              renderer: "canvas2d",
+              time: cTime,
+              width: segWidth,
+              height: segHeight,
+              minConfidence: effectiveMinConf,
+            })
+              .then((maskData) => {
+                isSegmentingRef.current = false;
+                lastSegmentedTimeRef.current = cTime;
+                if (maskData) {
+                  if (!maskCanvasRef.current) {
+                    maskCanvasRef.current = document.createElement("canvas");
+                  }
+                  maskCanvasRef.current.width = maskData.width;
+                  maskCanvasRef.current.height = maskData.height;
+                  const mCtx = maskCanvasRef.current.getContext("2d");
+                  if (mCtx) {
+                    mCtx.putImageData(maskData, 0, 0);
+                  }
+                }
+              })
+              .catch(() => {
+                isSegmentingRef.current = false;
+              });
+          }
+        }
+
+        // Update offscreen cutout canvas buffers when mask is available.
+        // Two-pass feather strategy:
+        //   Pass 1: Render the mask onto a temp canvas with CSS blur — this creates
+        //           a soft edge that feathers OUTWARD from the mask boundary.
+        //   Pass 2: Use that blurred mask as destination-in alpha source.
+        // This prevents feather blur from eroding the interior of the subject
+        // (which would allow the text behind to bleed through the face/body).
+        if (maskCanvasRef.current) {
+          if (!cutoutCanvasRef.current) {
+            cutoutCanvasRef.current = document.createElement("canvas");
+          }
+          const cutoutCanvas = cutoutCanvasRef.current;
+          const targetW = Math.max(1, Math.round(drawW));
+          const targetH = Math.max(1, Math.round(drawH));
+          if (cutoutCanvas.width !== targetW || cutoutCanvas.height !== targetH) {
+            cutoutCanvas.width = targetW;
+            cutoutCanvas.height = targetH;
+          }
+          const cCtx = cutoutCanvas.getContext("2d");
+          if (cCtx) {
+            const feather = typeof parameters.feather === "number" ? parameters.feather : 4;
+
+            // Pass 1: Build the precision alpha mask for compositing.
+            //
+            // The mask arrives at 256×256 from the worker and is drawn into the
+            // display-resolution feather canvas via drawImage(). The browser's
+            // bilinear interpolation already creates smooth, anti-aliased edges —
+            // NO additional blur filter is applied here, because that would expand
+            // the mask boundary beyond the actual person silhouette and eat adjacent
+            // text characters (e.g. the "u" in "Musa" sitting right of the face edge).
+            //
+            // The feather slider controls edge softness via the solidification
+            // threshold: higher feather → lower threshold → wider soft-edge band.
+            if (!featherCanvasRef.current) {
+              featherCanvasRef.current = document.createElement("canvas");
+            }
+            const featherCanvas = featherCanvasRef.current;
+            if (featherCanvas.width !== targetW || featherCanvas.height !== targetH) {
+              featherCanvas.width = targetW;
+              featherCanvas.height = targetH;
+            }
+            const fCtx = featherCanvas.getContext("2d");
+            if (fCtx) {
+              fCtx.clearRect(0, 0, targetW, targetH);
+              // Draw mask — bilinear upscaling gives smooth edge, no blur needed
+              fCtx.imageSmoothingEnabled = true;
+              fCtx.imageSmoothingQuality = "high";
+              fCtx.drawImage(maskCanvasRef.current, 0, 0, targetW, targetH);
+
+              // Interior solidification: pixels clearly inside the subject become
+              // fully opaque so text cannot bleed through face/hair/body.
+              // feather=0 → threshold=230 (very tight edge), feather=20 → threshold=140
+              // (wider soft transition). This is the ONLY expansion mechanism, and it
+              // operates on already-upscaled bilinear values so boundary accuracy is
+              // preserved — we're just hardening the high-confidence interior.
+              const solidifyThreshold = Math.round(230 - feather * 4.5);
+              const fImageData = fCtx.getImageData(0, 0, targetW, targetH);
+              const fd = fImageData.data;
+              for (let pi = 3; pi < fd.length; pi += 4) {
+                const a = fd[pi];
+                if (a >= solidifyThreshold) {
+                  fd[pi] = 255; // solid interior — text cannot bleed through
+                } else if (a > 0) {
+                  // Smoothstep the edge transition for a clean anti-aliased boundary
+                  const t = a / solidifyThreshold;
+                  fd[pi] = Math.round(t * t * (3 - 2 * t) * a);
+                }
+              }
+              fCtx.putImageData(fImageData, 0, 0);
+            }
+
+            // Pass 2: Draw the video frame, then cut out using the feathered mask.
+            cCtx.clearRect(0, 0, targetW, targetH);
+            cCtx.imageSmoothingEnabled = true;
+            cCtx.imageSmoothingQuality = "high";
+            cCtx.drawImage(video!, 0, 0, targetW, targetH);
+            cCtx.globalCompositeOperation = "destination-in";
+            cCtx.drawImage(featherCanvas, 0, 0, targetW, targetH);
+            cCtx.globalCompositeOperation = "source-over";
           }
         }
       }
@@ -374,106 +554,139 @@ export function BodyLabView() {
       const cy = drawY + drawH / 2 - 20 * scaleFactor;
       const scalePulsate = (1.0 + (playing ? Math.sin(performance.now() / 200) * 0.02 : 0)) * scaleFactor;
 
+      const effectId = (selectedEffect || "").toLowerCase().replace(/_/g, "-");
+
       ctx.save();
 
-      if (hasVideo) {
-        if (selectedEffect === "neon-outline") {
+      // Base Background Pass
+      const drawBaseBackground = () => {
+        if (hasVideo) {
           ctx.drawImage(video!, drawX, drawY, drawW, drawH);
-          ctx.save();
-          drawHumanSilhouette(ctx, cx, cy, scalePulsate);
-          ctx.strokeStyle = parameters.color ?? "#00FFFF";
-          ctx.lineWidth = (parameters.thickness ?? 4) * scaleFactor;
-          ctx.shadowColor = parameters.color ?? "#00FFFF";
-          ctx.shadowBlur = (parameters.intensity ?? 1.0) * 16 * scaleFactor;
-          ctx.stroke();
-          ctx.restore();
-        } else if (selectedEffect === "background-blur") {
-          const blurAmount = parameters.blurAmount ?? 20;
-          ctx.save();
-          ctx.filter = `blur(${blurAmount * scaleFactor}px) brightness(0.8)`;
+        } else {
+          drawSimulatedBackdrop(ctx, canvas.width, canvas.height, performance.now() / 1000);
+        }
+      };
+
+      // Base Subject Fill (used when simulated scene has no video)
+      const drawBaseSubjectFill = () => {
+        if (hasVideo) {
           ctx.drawImage(video!, drawX, drawY, drawW, drawH);
-          ctx.restore();
-          ctx.save();
-          drawHumanSilhouette(ctx, cx, cy, scalePulsate);
-          ctx.clip();
-          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
-          ctx.restore();
-        } else if (selectedEffect === "spotlight") {
-          const darkness = parameters.darkness ?? 0.7;
-          const falloff = parameters.falloff ?? 1.0;
-          const tint = parameters.tint ?? "#000000";
-          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
-          ctx.save();
-          const grad = ctx.createRadialGradient(cx, cy, 30 * scaleFactor, cx, cy, 280 * falloff * scaleFactor);
-          grad.addColorStop(0, "rgba(0,0,0,0)");
-          grad.addColorStop(1, `rgba(${hexToRgb(tint)}, ${darkness})`);
-          ctx.fillStyle = grad;
+        } else {
+          const subjGrad = ctx.createLinearGradient(
+            cx - 50 * scalePulsate,
+            cy - 100 * scalePulsate,
+            cx + 50 * scalePulsate,
+            cy + 150 * scalePulsate
+          );
+          subjGrad.addColorStop(0, "#3b82f6");
+          subjGrad.addColorStop(0.5, "#1e293b");
+          subjGrad.addColorStop(1, "#0f172a");
+          ctx.fillStyle = subjGrad;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.restore();
-        } else if (selectedEffect === "particle-aura") {
-          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
-          const pColor = parameters.particleColor ?? "#FFFFFF";
-          const pSize = parameters.particleSize ?? 3;
-          const pSpeed = parameters.speed ?? 0.5;
-          const pSpread = parameters.spread ?? 10;
-          const glow = parameters.glow ?? 0.3;
+        }
+      };
 
-          if (particlesRef.current.length < (parameters.particleCount ?? 50)) {
-            particlesRef.current.push({
-              x: cx + (Math.random() - 0.5) * 150 * scaleFactor,
-              y: cy + (Math.random() - 0.5) * 350 * scaleFactor,
-              vx: (Math.random() - 0.5) * pSpeed * 5 * scaleFactor,
-              vy: (-Math.random() * pSpeed * 4 - 1) * scaleFactor,
-              size: (Math.random() * pSize + 1) * scaleFactor,
-              alpha: Math.random(),
-              life: 1.0,
-            });
-          }
+      // ─────────────────────────────────────────────────────────────────────────
+      // 1. SUBJECT_CUTOUT (Text Behind Subject / Layer Synthesis)
+      // ─────────────────────────────────────────────────────────────────────────
+      if (effectId === "subject-cutout" || effectId === "alpha-cutout") {
+        drawBaseBackground();
 
-          ctx.save();
-          ctx.shadowColor = pColor;
-          ctx.shadowBlur = glow * 12 * scaleFactor;
+        // Typography layer placed BEHIND the human subject.
+        // We pin the text to the full canvas center (not the video sub-rect) so
+        // it bleeds edge-to-edge, matching the professional "text behind subject" look.
+        ctx.save();
+        const text = parameters.cutoutText ?? "CLYPRA";
+        // Base font size is relative to canvas width so long names auto-scale.
+        const baseFontSize = (parameters.textSize ?? 120) * scaleFactor;
+        ctx.font = `900 ${baseFontSize}px 'Geist', 'Bebas Neue', Impact, sans-serif`;
 
-          particlesRef.current.forEach((p, idx) => {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.life -= 0.01;
-            ctx.fillStyle = pColor;
-            ctx.globalAlpha = p.alpha * p.life;
+        // Auto-shrink only if text is EXTREMELY wide (> 115% canvas width).
+        // At 96% (the old cap), "CLYPRA" at 120px was shrunk so much that C and A
+        // landed right at the canvas edges where the person's beard/shoulder mask
+        // could slice through them, creating the "C cut into two vertically" artifact.
+        //
+        // At 115%, the natural text size is preserved and bleeds ~7-8% off each edge.
+        // The canvas boundary clips the outer arc tips of C and A — this is the
+        // INTENDED full-bleed aesthetic (like professional music video/reel text effects).
+        // The person's body only covers the MIDDLE characters (L Y P R in "CLYPRA").
+        const maxTextW = canvas.width * 1.15;
+        const measuredW = ctx.measureText(text).width;
+        const autoFontSize = measuredW > maxTextW
+          ? baseFontSize * (maxTextW / measuredW)
+          : baseFontSize;
+        ctx.font = `900 ${autoFontSize}px 'Geist', 'Bebas Neue', Impact, sans-serif`;
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // textY is anchored to canvas center (full-bleed layout).
+        // textOffsetY lets the user nudge up/down in canvas-height units.
+        const textCanvasCX = canvas.width / 2;
+        const textCanvasCY = canvas.height / 2;
+        const textY = textCanvasCY + (parameters.textOffsetY ?? 0) * scaleFactor;
+
+        // Dynamic text drop shadow
+        ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+        ctx.shadowBlur = 24 * scaleFactor;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 8 * scaleFactor;
+
+        ctx.fillStyle = parameters.textColor ?? "#FFFFFF";
+        ctx.fillText(text, textCanvasCX, textY);
+        ctx.restore();
+
+        // Foreground Human Subject Layer (ON TOP of text).
+        // IMPORTANT: we must NEVER draw the raw full-frame video on top of the text
+        // in the subject-cutout effect — doing so completely buries the text layer.
+        // While the segmentation mask is warming up we show a ghost (semi-transparent)
+        // video so the text remains visible, and we overlay a status chip.
+        if (hasVideo) {
+          if (cutoutCanvasRef.current && maskCanvasRef.current) {
+            // Mask is ready — draw the clean cutout (subject only, transparent bg)
+            ctx.drawImage(cutoutCanvasRef.current, drawX, drawY, drawW, drawH);
+          } else {
+            // Mask is still loading — draw a 40% opacity ghost of the video so
+            // the typography behind is clearly visible.
+            ctx.save();
+            ctx.globalAlpha = 0.4;
+            ctx.drawImage(video!, drawX, drawY, drawW, drawH);
+            ctx.globalAlpha = 1;
+
+            // "Segmenting…" status chip
+            const chipText = "⏳ Segmenting…";
+            const chipFontSize = Math.max(10, 13 * scaleFactor);
+            ctx.font = `600 ${chipFontSize}px 'Geist', sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            const chipW = ctx.measureText(chipText).width + 24 * scaleFactor;
+            const chipH = chipFontSize * 1.8;
+            const chipX = cx - chipW / 2;
+            const chipY = drawY + drawH - chipH - 12 * scaleFactor;
+            ctx.fillStyle = "rgba(0,0,0,0.55)";
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.roundRect(chipX, chipY, chipW, chipH, chipH / 2);
             ctx.fill();
-
-            if (p.life <= 0) {
-              particlesRef.current[idx] = {
-                x: cx + (Math.random() - 0.5) * (100 + pSpread * 5) * scaleFactor,
-                y: cy + 180 * scaleFactor,
-                vx: (Math.random() - 0.5) * pSpeed * 4 * scaleFactor,
-                vy: (-Math.random() * pSpeed * 5 - 1.5) * scaleFactor,
-                size: (Math.random() * pSize + 1) * scaleFactor,
-                alpha: Math.random(),
-                life: 1.0,
-              };
-            }
-          });
-          ctx.restore();
-        } else if (selectedEffect === "color-isolation") {
-          const desat = parameters.desaturation ?? 1.0;
-          ctx.save();
-          ctx.filter = `grayscale(${desat * 100}%) contrast(1.1)`;
-          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
-          ctx.restore();
+            ctx.fillStyle = "rgba(255,255,255,0.9)";
+            ctx.fillText(chipText, cx, chipY + chipH / 2);
+            ctx.restore();
+          }
+        } else {
           ctx.save();
           drawHumanSilhouette(ctx, cx, cy, scalePulsate);
           ctx.clip();
-          if (parameters.colorBoost > 0) {
-            ctx.filter = `saturate(${1.0 + parameters.colorBoost * 2})`;
-          }
-          ctx.drawImage(video!, drawX, drawY, drawW, drawH);
+          drawBaseSubjectFill();
+          ctx.restore();
+
+          // Edge Feather & Outline contour
+          ctx.save();
+          drawHumanSilhouette(ctx, cx, cy, scalePulsate);
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+          ctx.stroke();
           ctx.restore();
         }
       } else {
-        drawSMPTEBars(ctx, canvas.width, canvas.height);
+        drawBaseBackground();
       }
 
       ctx.restore();
@@ -484,11 +697,7 @@ export function BodyLabView() {
       if (now - statsTimer >= 500) {
         setLatency(parseFloat(frameDelta.toFixed(2)));
         setCpuUsage(Math.round(11 + Math.random() * 8));
-        setGpuUsage(
-          Math.round(
-            selectedEffect === "background-blur" ? 45 + Math.random() * 10 : 30 + Math.random() * 15
-          )
-        );
+        setGpuUsage(Math.round(30 + Math.random() * 15));
         if (playing) {
           setRedHeight(Math.round(40 + Math.random() * 40));
           setGreenHeight(Math.round(50 + Math.random() * 45));
@@ -496,38 +705,29 @@ export function BodyLabView() {
         }
         statsTimer = now;
       }
-      animId = requestAnimationFrame(render);
-    };
+    } catch (err) {
+      console.warn("[BodyLabView] Frame render error:", err);
+    }
 
     animId = requestAnimationFrame(render);
-    return () => cancelAnimationFrame(animId);
-  }, [selectedEffect, fitMode, parameters, playing, duration]);
+  };
+
+  animId = requestAnimationFrame(render);
+  return () => cancelAnimationFrame(animId);
+}, [selectedEffect, fitMode, parameters, playing, duration]);
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   const handleResetContext = () => {
     setParameters({
-      color: "#00FFFF",
-      thickness: 4,
-      intensity: 1.0,
-      softness: 0.5,
-      blurAmount: 20,
-      edgeSoftness: 0.2,
-      darkness: 0.7,
-      falloff: 1.0,
-      tint: "#000000",
-      warmth: 0.0,
-      particleCount: 50,
-      particleSize: 3,
-      speed: 0.5,
-      particleColor: "#FFFFFF",
-      spread: 10,
-      glow: 0.3,
-      desaturation: 1.0,
-      edgeBlend: 0.3,
-      colorBoost: 0.0,
+      cutoutText: "CLYPRA",
+      textColor: "#FFFFFF",
+      textSize: 120,
+      textOffsetY: 0,
+      feather: 4,
+      choke: 0.2,
     });
-    setSelectedEffect("neon-outline");
+    setSelectedEffect("subject-cutout");
     addLog("[SYSTEM] Reset render context to baseline settings.");
   };
 

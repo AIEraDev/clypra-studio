@@ -32,6 +32,9 @@ function getWorker(): Worker | null {
       pending.delete(response.requestId);
 
       if (response.mask) {
+        if (response.runtimeUsed === "fallback" || response.runtimeUsed === "heuristic") {
+          console.warn(`[BodySegmentation] Runtime fallback active: ${response.runtimeUsed}${response.error ? ` (${response.error})` : ""}`);
+        }
         bodyMaskCache.set(response.cacheKey, response.mask);
         item.resolve(response.mask);
       } else {

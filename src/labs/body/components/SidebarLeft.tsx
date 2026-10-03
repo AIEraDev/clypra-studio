@@ -1,10 +1,45 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 
-interface ProviderItem {
+export interface ProviderItem {
   id: string;
   name: string;
   status: string;
 }
+
+export interface CategoryFilterItem {
+  id: string;
+  label: string;
+}
+
+export const BODY_EFFECT_CATEGORIES: CategoryFilterItem[] = [
+  { id: "all", label: "All" },
+  { id: "trending", label: "Trending" },
+  { id: "motion", label: "Motion" },
+  { id: "aura", label: "Aura" },
+  { id: "wings", label: "Wings" },
+  { id: "energy", label: "Energy" },
+  { id: "fun", label: "Fun" },
+];
+
+export interface BodyEffectLibraryItem {
+  id: string;
+  name: string;
+  category: "Trending" | "Motion" | "Aura" | "Wings" | "Energy" | "Fun" | string;
+  description: string;
+  primitive: string;
+  status: "ACTIVE" | "STABLE" | "DRAFT";
+}
+
+export const REGISTERED_BODY_EFFECTS: BodyEffectLibraryItem[] = [
+  {
+    id: "subject-cutout",
+    name: "SUBJECT_CUTOUT",
+    category: "Trending",
+    description: "AlphaCutout layer synthesis (Text Behind Subject)",
+    primitive: "AlphaCutout",
+    status: "ACTIVE",
+  },
+];
 
 interface SidebarLeftProps {
   videoFile: File | null;
@@ -12,10 +47,12 @@ interface SidebarLeftProps {
   selectedEffect: string;
   providers: ProviderItem[];
   activeProvider: string;
+  activeCategory?: string;
   onVideoImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSetFitMode: (mode: "stretch" | "fit" | "crop") => void;
   onSetActiveProvider: (id: string) => void;
   onSelectEffect: (effect: string) => void;
+  onActiveCategoryChange?: (category: string) => void;
 }
 
 export function SidebarLeft({
@@ -24,11 +61,47 @@ export function SidebarLeft({
   selectedEffect,
   providers,
   activeProvider,
+  activeCategory: propCategory,
   onVideoImport,
   onSetFitMode,
   onSetActiveProvider,
   onSelectEffect,
+  onActiveCategoryChange,
 }: SidebarLeftProps) {
+  const [internalCategory, setInternalCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const activeCategory = propCategory ?? internalCategory;
+
+  const handleCategorySelect = (categoryId: string) => {
+    setInternalCategory(categoryId);
+    onActiveCategoryChange?.(categoryId);
+  };
+
+  const filteredEffects = useMemo(() => {
+    let list = REGISTERED_BODY_EFFECTS;
+
+    if (activeCategory !== "all") {
+      list = list.filter(
+        (effect) => effect.category.toLowerCase() === activeCategory.toLowerCase()
+      );
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (effect) =>
+          effect.name.toLowerCase().includes(q) ||
+          effect.id.toLowerCase().includes(q) ||
+          effect.description.toLowerCase().includes(q) ||
+          effect.category.toLowerCase().includes(q) ||
+          effect.primitive.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [activeCategory, searchQuery]);
+
   return (
     <aside className="flex flex-col h-full w-[280px] min-w-[280px] bg-surface-container-low border-r border-outline-variant p-1 gap-1 overflow-hidden select-none">
       <div className="flex items-center gap-2 p-1 border-b border-outline-variant pb-2 mb-1">
@@ -104,147 +177,120 @@ export function SidebarLeft({
         </div>
       </div>
 
-      {/* Effect Library */}
+      {/* Effect Library with Category Filtering */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <h3 className="text-[10px] font-bold text-outline-variant uppercase mb-1 px-1">
-          Body_Effects
-        </h3>
+        <div className="flex items-center justify-between px-1 mb-1">
+          <h3 className="text-[10px] font-bold text-outline-variant uppercase">
+            Body_Effects
+          </h3>
+          <span className="text-[8.5px] font-mono-data px-1 py-0.2 rounded bg-surface-container-highest text-primary">
+            {filteredEffects.length} of {REGISTERED_BODY_EFFECTS.length} EFFECT{REGISTERED_BODY_EFFECTS.length === 1 ? "" : "S"}
+          </span>
+        </div>
+
+        {/* Search input */}
+        <div className="relative mb-1 px-0.5">
+          <span
+            className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[12px]"
+          >
+            search
+          </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Filter body effects..."
+            className="w-full bg-surface-container border border-outline-variant rounded text-[9.5px] text-on-surface pl-6 pr-2 py-1 outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+          />
+        </div>
+
+        {/* Category filter pills */}
+        <div className="flex flex-wrap gap-1 mb-1.5 px-0.5">
+          {BODY_EFFECT_CATEGORIES.map((cat) => {
+            const count =
+              cat.id === "all"
+                ? REGISTERED_BODY_EFFECTS.length
+                : REGISTERED_BODY_EFFECTS.filter(
+                    (e) => e.category.toLowerCase() === cat.id.toLowerCase()
+                  ).length;
+            const isSelected = activeCategory.toLowerCase() === cat.id.toLowerCase();
+
+            return (
+              <button
+                key={cat.id}
+                onClick={() => handleCategorySelect(cat.id)}
+                className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase transition-all border flex items-center gap-1 cursor-pointer ${
+                  isSelected
+                    ? "bg-primary/20 text-primary border-primary/40 shadow-2xs"
+                    : "bg-surface-container text-on-surface-variant border-transparent hover:border-outline-variant hover:text-on-surface"
+                }`}
+              >
+                <span>{cat.label}</span>
+                <span
+                  className={`text-[7px] font-mono-data px-1 rounded-full ${
+                    isSelected
+                      ? "bg-primary/30 text-primary font-bold"
+                      : "bg-surface-container-highest text-on-surface-variant/70"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Effects List or Empty State */}
         <div className="flex-1 overflow-y-auto pr-1 space-y-1">
-          <div
-            onClick={() => onSelectEffect("subject-cutout")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "subject-cutout"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">SUBJECT_CUTOUT</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.0</span>
+          {filteredEffects.length > 0 ? (
+            filteredEffects.map((effect) => {
+              const isSelected = selectedEffect === effect.id;
+              return (
+                <div
+                  key={effect.id}
+                  onClick={() => onSelectEffect(effect.id)}
+                  className={`p-2 cursor-pointer border-l-2 rounded-r transition-all ${
+                    isSelected
+                      ? "bg-surface-container-high border-primary text-primary"
+                      : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold">{effect.name}</span>
+                      <span className="text-[7.5px] font-mono-data px-1 rounded bg-surface-container-highest text-on-surface-variant uppercase">
+                        {effect.category}
+                      </span>
+                    </div>
+                    <span className="text-[8.5px] font-mono-data text-primary">
+                      {isSelected ? "ACTIVE" : effect.status}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-on-surface-variant leading-tight mt-1">
+                    {effect.description}
+                  </p>
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-3 text-center rounded bg-surface-container/60 border border-outline-variant/40 my-2">
+              <span className="material-symbols-outlined text-outline text-lg mb-1 block">
+                category
+              </span>
+              <p className="text-[10.5px] font-bold text-on-surface">
+                No effects in {activeCategory.toUpperCase()} yet
+              </p>
+              <p className="text-[9px] text-on-surface-variant mt-1 leading-snug">
+                For now, only Subject Cutout is available in Trending. More effects will appear here as categories are published.
+              </p>
+              <button
+                onClick={() => handleCategorySelect("trending")}
+                className="mt-2 px-2.5 py-1 text-[9px] font-bold rounded bg-primary/20 text-primary hover:bg-primary/30 transition-all border border-primary/30 cursor-pointer"
+              >
+                View Trending Effects (1)
+              </button>
             </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              AlphaCutout layer synthesis (Text Behind Subject)
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("cyber-glow")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "cyber-glow"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">CYBER_NEON_GLOW</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.0</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Contour glow aura using MaskedGlow primitive
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("angel-wings")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "angel-wings"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">ANGEL_WINGS</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.5</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              SkeletalSpriteAnchor with torso orientation
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("neon-outline")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "neon-outline"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">NEON_OUTLINE</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.0</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Glow outline contour around subjects
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("background-blur")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "background-blur"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">BACKGROUND_BLUR</span>
-              <span className="text-[9px] font-mono-data text-outline">v2.0</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Depth-of-field background blur
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("spotlight")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "spotlight"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">SPOTLIGHT_FOCUS</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.1</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Vignetted radial lighting focus
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("particle-aura")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "particle-aura"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">PARTICLE_AURA</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.3</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Procedural orbiting particle swarms
-            </p>
-          </div>
-
-          <div
-            onClick={() => onSelectEffect("color-isolation")}
-            className={`p-1.5 cursor-pointer border-l-2 ${
-              selectedEffect === "color-isolation"
-                ? "bg-surface-container-high border-primary text-primary"
-                : "bg-surface-container border-transparent hover:bg-surface-container-high text-on-surface"
-            } transition-all`}
-          >
-            <div className="flex justify-between items-start">
-              <span className="text-[11px] font-bold">COLOR_ISOLATION</span>
-              <span className="text-[9px] font-mono-data text-outline">v1.0</span>
-            </div>
-            <p className="text-[10px] text-on-surface-variant leading-tight mt-0.5">
-              Keep subjects colored, luma-desat BG
-            </p>
-          </div>
+          )}
         </div>
       </div>
     </aside>

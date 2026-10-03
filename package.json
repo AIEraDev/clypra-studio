@@ -13,12 +13,12 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@clypra-studio/engine": "1.8.0",
+    "@clypra-studio/engine": "1.8.1",
     "@clypra-studio/feature-providers": "^0.1.1",
-    "@clypra-studio/native-render-wasm": "^0.3.0",
-    "@clypra-studio/runtime": "^0.2.2",
-    "@clypra-studio/types": "^0.5.0",
-    "@clypra-studio/ui": "^0.3.0",
+    "@clypra-studio/native-render-wasm": "^0.3.1",
+    "@clypra-studio/runtime": "^0.2.3",
+    "@clypra-studio/types": "^0.6.0",
+    "@clypra-studio/ui": "^0.3.1",
     "@clypra/ui-color-picker": "^0.2.1",
     "@floating-ui/react": "^0.27.20",
     "@lottiefiles/react-lottie-player": "^3.6.0",
