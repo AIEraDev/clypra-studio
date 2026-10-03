@@ -123,7 +123,7 @@ export function RouteShell({
 }
 
 export function RouteLoading({
-  label = "Loading Clypra Studio...",
+  label = "Initializing Clypra Studio...",
 }: {
   label?: string;
 }) {
@@ -149,34 +149,116 @@ export function RouteLoading({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-colors duration-300 ${
-        isDark ? "bg-[#120d1a] text-stone-100" : "bg-[#fbf9f6] text-stone-900"
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-colors duration-500 overflow-hidden select-none ${
+        isDark ? "bg-[#0f0a17] text-stone-100" : "bg-[#faf8f5] text-stone-900"
       }`}
       style={{
         backgroundImage:
-          'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' opacity=\'0.055\'/%3E%3C/svg%3E")',
+          'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' opacity=\'0.06\'/%3E%3C/svg%3E")',
       }}
     >
-      <div className="flex flex-col items-center gap-4 p-8 text-center animate-fade-in">
-        <div className="relative flex items-center justify-center">
-          <div className="w-16 h-16 rounded-full border-2 border-dashed border-amber-400/40 animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <ClypraLogo size={32} className="animate-pulse" />
+      {/* Ambient Radial Aura */}
+      <div
+        className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${
+          isDark ? "opacity-60" : "opacity-35"
+        }`}
+        style={{
+          background: isDark
+            ? "radial-gradient(circle 500px at 50% 45%, rgba(168, 85, 247, 0.18), rgba(245, 158, 11, 0.08), transparent 70%)"
+            : "radial-gradient(circle 500px at 50% 45%, rgba(168, 85, 247, 0.12), rgba(245, 158, 11, 0.06), transparent 70%)",
+        }}
+      />
+
+      <div className="relative z-10 flex flex-col items-center gap-7 px-8 py-10 max-w-sm text-center">
+        {/* Orbital Emblem */}
+        <div className="relative w-24 h-24 flex items-center justify-center">
+          {/* Subtle Outer Glow Halo */}
+          <div
+            className={`absolute inset-0 rounded-full blur-xl transition-colors ${
+              isDark ? "bg-purple-600/25" : "bg-purple-400/20"
+            } animate-pulse`}
+          />
+
+          {/* Outer Dashed Orbit Ring */}
+          <div className="absolute inset-0 rounded-full border-2 border-dashed border-purple-500/30 animate-[spin_8s_linear_infinite]" />
+
+          {/* Counter Orbit Gradient Ring */}
+          <div className="absolute inset-2 rounded-full border border-t-amber-400 border-r-purple-400 border-b-transparent border-l-transparent animate-[spin_2s_linear_infinite]" />
+
+          {/* Inner Frosted Disc with Clypra Logo */}
+          <div
+            className={`relative w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md shadow-xl transition-all ${
+              isDark
+                ? "bg-[#1e1329]/90 border border-purple-500/30 shadow-purple-950/60"
+                : "bg-white/95 border border-stone-200/90 shadow-stone-300/40"
+            }`}
+          >
+            <ClypraLogo size={30} className="animate-pulse" />
           </div>
         </div>
-        <div className="flex flex-col items-center gap-1">
-          <span className="font-bold text-sm tracking-tight">
-            Clypra Studio
-          </span>
+
+        {/* Brand & Loading Label */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-lg font-bold tracking-tight ${
+                isDark ? "text-stone-100" : "text-stone-900"
+              }`}
+              style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}
+            >
+              Clypra
+            </span>
+            <span
+              className={`text-[9px] font-mono uppercase tracking-widest font-semibold px-2 py-0.5 rounded-full ${
+                isDark
+                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                  : "bg-purple-100 text-purple-800 border border-purple-200"
+              }`}
+            >
+              Studio
+            </span>
+          </div>
+
           <p
             className={`text-xs font-mono tracking-wide ${
-              isDark ? "text-stone-400" : "text-stone-500"
+              isDark ? "text-stone-400" : "text-stone-600"
             }`}
           >
             {label}
           </p>
         </div>
+
+        {/* Sleek Indeterminate Progress Shimmer */}
+        <div className="w-48 flex flex-col items-center gap-2.5">
+          <div
+            className={`w-full h-1 rounded-full overflow-hidden relative ${
+              isDark ? "bg-white/10" : "bg-stone-200"
+            }`}
+          >
+            <div
+              className="absolute inset-y-0 w-2/5 rounded-full bg-gradient-to-r from-amber-400 via-purple-500 to-amber-400"
+              style={{
+                animation: "shimmerSlide 1.8s ease-in-out infinite",
+              }}
+            />
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] font-mono text-stone-500">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+            <span>Native 60 FPS Engine</span>
+          </div>
+        </div>
       </div>
+
+      <style>{`
+        @keyframes shimmerSlide {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(250%); }
+          100% { transform: translateX(-100%); }
+        }
+      `}</style>
     </div>
   );
 }
