@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Download,
@@ -20,6 +20,9 @@ import {
   Youtube,
   Mail,
   Loader2,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
 } from "lucide-react";
 import { ClypraLogo } from "../ClypraLogo";
 
@@ -37,45 +40,179 @@ interface GithubRelease {
   assets: GithubAsset[];
 }
 
+export interface ArchitectureDownload {
+  label: string;
+  arch: string;
+  ext: string;
+  url: string;
+  size?: string;
+  filename: string;
+  isAvailable: boolean;
+}
+
+export interface PlatformDownloads {
+  mac: {
+    arm64: ArchitectureDownload;
+    intel: ArchitectureDownload;
+  };
+  win: {
+    x64: ArchitectureDownload;
+    arm64: ArchitectureDownload;
+  };
+  linux: {
+    x64: ArchitectureDownload;
+    arm64: ArchitectureDownload;
+  };
+}
+
 // ── OS detection helper ───────────────────────────────────────────────────────
 type OS = "mac" | "win" | "linux";
 
 function detectOS(): OS {
-  const p = window.navigator.platform.toLowerCase();
-  const ua = window.navigator.userAgent.toLowerCase();
+  if (typeof window === "undefined") return "mac";
+  const p = window.navigator.platform?.toLowerCase() || "";
+  const ua = window.navigator.userAgent?.toLowerCase() || "";
   if (p.includes("win") || ua.includes("windows")) return "win";
   if (p.includes("linux") || ua.includes("linux")) return "linux";
   return "mac";
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
+  return `${(bytes / 1_000).toFixed(0)} KB`;
+}
+
+function getPlatformDownloads(release: GithubRelease | null): PlatformDownloads {
+  const assets = release?.assets ?? [];
+  const base = "https://github.com/AIEraDev/Clypra/releases/latest/download";
+
+  // macOS Apple Silicon (arm64 / aarch64)
+  const macArmAsset = assets.find(
+    (a) => (a.name.includes("aarch64") || a.name.includes("arm64")) && a.name.endsWith(".dmg"),
+  ) ?? assets.find((a) => a.name.endsWith(".dmg") && !a.name.includes("x64") && !a.name.includes("x86_64"));
+
+  // macOS Intel (x64 / x86_64)
+  const macIntelAsset = assets.find(
+    (a) => (a.name.includes("x64") || a.name.includes("x86_64") || a.name.includes("intel")) && a.name.endsWith(".dmg"),
+  );
+
+  // Windows x64 (.exe / .msi)
+  const winX64Asset = assets.find(
+    (a) => (a.name.includes("x64") || a.name.includes("x86_64") || a.name.includes("amd64")) &&
+      (a.name.endsWith("-setup.exe") || a.name.endsWith(".exe")),
+  ) ?? assets.find((a) => a.name.endsWith(".msi") && (a.name.includes("x64") || a.name.includes("amd64")))
+    ?? assets.find((a) => (a.name.endsWith("-setup.exe") || a.name.endsWith(".exe")) && !a.name.includes("arm64"));
+
+  // Windows ARM64 (.exe)
+  const winArmAsset = assets.find(
+    (a) => (a.name.includes("arm64") || a.name.includes("aarch64")) &&
+      (a.name.endsWith("-setup.exe") || a.name.endsWith(".exe")),
+  );
+
+  // Linux x64 (.tar.gz, .AppImage, .deb)
+  const linuxX64Tar = assets.find(
+    (a) => (a.name.includes("amd64") || a.name.includes("x86_64") || a.name.includes("x64")) && a.name.endsWith(".tar.gz"),
+  );
+  const linuxX64AppImage = assets.find(
+    (a) => (a.name.includes("amd64") || a.name.includes("x86_64") || a.name.includes("x64")) && a.name.endsWith(".AppImage"),
+  );
+  const linuxX64Asset = linuxX64Tar ?? linuxX64AppImage ?? assets.find((a) => a.name.endsWith(".AppImage"));
+
+  // Linux ARM64 (.tar.gz, .AppImage, .deb)
+  const linuxArmTar = assets.find(
+    (a) => (a.name.includes("arm64") || a.name.includes("aarch64")) && a.name.endsWith(".tar.gz"),
+  );
+  const linuxArmAppImage = assets.find(
+    (a) => (a.name.includes("arm64") || a.name.includes("aarch64")) && a.name.endsWith(".AppImage"),
+  );
+  const linuxArmAsset = linuxArmTar ?? linuxArmAppImage;
+
+  return {
+    mac: {
+      arm64: {
+        label: "macOS Apple Silicon (.dmg)",
+        arch: "Apple Silicon (M1/M2/M3/M4)",
+        ext: ".dmg",
+        url: macArmAsset?.browser_download_url ?? `${base}/Clypra_aarch64.dmg`,
+        size: macArmAsset ? formatBytes(macArmAsset.size) : undefined,
+        filename: macArmAsset?.name ?? "Clypra_aarch64.dmg",
+        isAvailable: Boolean(macArmAsset) || !release,
+      },
+      intel: {
+        label: "macOS Intel (.dmg)",
+        arch: "Intel (x86_64)",
+        ext: ".dmg",
+        url: macIntelAsset?.browser_download_url ?? `${base}/Clypra_x64.dmg`,
+        size: macIntelAsset ? formatBytes(macIntelAsset.size) : undefined,
+        filename: macIntelAsset?.name ?? "Clypra_x64.dmg",
+        isAvailable: Boolean(macIntelAsset) || !release,
+      },
+    },
+    win: {
+      x64: {
+        label: "Windows x64 (.exe)",
+        arch: "Intel / AMD (x64)",
+        ext: ".exe",
+        url: winX64Asset?.browser_download_url ?? `${base}/Clypra_x64-setup.exe`,
+        size: winX64Asset ? formatBytes(winX64Asset.size) : undefined,
+        filename: winX64Asset?.name ?? "Clypra_x64-setup.exe",
+        isAvailable: Boolean(winX64Asset) || !release,
+      },
+      arm64: {
+        label: "Windows ARM64 (.exe)",
+        arch: "Snapdragon / ARM64",
+        ext: ".exe",
+        url: winArmAsset?.browser_download_url ?? `${base}/Clypra_arm64-setup.exe`,
+        size: winArmAsset ? formatBytes(winArmAsset.size) : undefined,
+        filename: winArmAsset?.name ?? "Clypra_arm64-setup.exe",
+        isAvailable: Boolean(winArmAsset) || !release,
+      },
+    },
+    linux: {
+      x64: {
+        label: "Linux x64 (.tar.gz)",
+        arch: "x86_64 (.tar.gz / .AppImage)",
+        ext: ".tar.gz",
+        url: linuxX64Asset?.browser_download_url ?? `${base}/Clypra_amd64.AppImage`,
+        size: linuxX64Asset ? formatBytes(linuxX64Asset.size) : undefined,
+        filename: linuxX64Asset?.name ?? "Clypra_amd64.AppImage",
+        isAvailable: Boolean(linuxX64Asset) || !release,
+      },
+      arm64: {
+        label: "Linux ARM64 (.tar.gz)",
+        arch: "AArch64 (.tar.gz / .AppImage)",
+        ext: ".tar.gz",
+        url: linuxArmAsset?.browser_download_url ?? `${base}/Clypra_arm64.AppImage`,
+        size: linuxArmAsset ? formatBytes(linuxArmAsset.size) : undefined,
+        filename: linuxArmAsset?.name ?? "Clypra_arm64.AppImage",
+        isAvailable: Boolean(linuxArmAsset) || !release,
+      },
+    },
+  };
+}
+
 // ── Pick best asset for the detected OS ──────────────────────────────────────
 function pickAsset(assets: GithubAsset[], os: OS): GithubAsset | undefined {
   if (os === "mac") {
-    // Prefer DMG, fall back to app.tar.gz
     return (
+      assets.find((a) => (a.name.includes("aarch64") || a.name.includes("arm64")) && a.name.endsWith(".dmg")) ??
       assets.find((a) => a.name.endsWith(".dmg")) ??
       assets.find((a) => a.name.endsWith(".app.tar.gz"))
     );
   }
   if (os === "win") {
-    // Prefer MSI over NSIS exe
     return (
-      assets.find(
-        (a) => a.name.endsWith(".msi") && !a.name.includes("setup"),
-      ) ?? assets.find((a) => a.name.endsWith("-setup.exe"))
+      assets.find((a) => a.name.includes("x64") && a.name.endsWith("-setup.exe")) ??
+      assets.find((a) => a.name.endsWith("-setup.exe")) ??
+      assets.find((a) => a.name.endsWith(".msi") && !a.name.includes("setup"))
     );
   }
-  // Linux: prefer AppImage
   return (
+    assets.find((a) => (a.name.includes("amd64") || a.name.includes("x86_64")) && a.name.endsWith(".AppImage")) ??
     assets.find((a) => a.name.endsWith(".AppImage")) ??
     assets.find((a) => a.name.endsWith(".deb")) ??
     assets.find((a) => a.name.endsWith(".rpm"))
   );
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(0)} MB`;
-  return `${(bytes / 1_000).toFixed(0)} KB`;
 }
 
 export const WebShowcase: React.FC = () => {
@@ -96,6 +233,10 @@ export const WebShowcase: React.FC = () => {
   const [downloadSize, setDownloadSize] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadStarted, setDownloadStarted] = useState(false);
+  const [isReleaseTableOpen, setIsReleaseTableOpen] = useState(true);
+
+  // Architecture and platform build maps
+  const platformDownloads = useMemo(() => getPlatformDownloads(release), [release]);
 
   // Fetch latest release from GitHub API
   useEffect(() => {
@@ -678,7 +819,7 @@ export const WebShowcase: React.FC = () => {
                 <div>
                   <h4 className="font-bold text-white text-xl">macOS</h4>
                   <p className="text-[10px] text-[#8b84ff] font-mono tracking-wider uppercase mt-0.5">
-                    Universal DMG (.dmg)
+                    Apple Silicon & Intel (.dmg)
                   </p>
                 </div>
                 <div className="w-11 h-11 rounded-xl bg-white/3 border border-white/6 flex items-center justify-center text-white text-lg font-semibold group-hover:scale-110 transition-transform duration-300">
@@ -690,36 +831,48 @@ export const WebShowcase: React.FC = () => {
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-[#8b84ff] shrink-0 mt-0.5" />
                   <span>
-                    Supports both Apple Silicon & Intel processors natively.
+                    Native builds for Apple Silicon (M1–M4) and Intel x86_64.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-[#8b84ff] shrink-0 mt-0.5" />
-                  <span>Bypasses Gatekeeper controls securely via Cask.</span>
+                  <span>Metal GPU preview engine and hardware VideoToolbox acceleration.</span>
                 </li>
               </ul>
 
-              <div className="mt-auto pt-5 border-t border-white/4 flex flex-col gap-3 z-10">
+              <div className="mt-auto pt-5 border-t border-white/4 flex flex-col gap-2.5 z-10">
                 <a
-                  href={
-                    release
-                      ? pickAsset(release.assets, "mac")
-                          ?.browser_download_url ??
-                        "https://github.com/AIEraDev/Clypra/releases/latest"
-                      : "https://github.com/AIEraDev/Clypra/releases/latest"
-                  }
+                  href={platformDownloads.mac.arm64.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full h-12 rounded-xl bg-[#6c63ff]/80 hover:bg-[#6c63ff] border border-[#8b84ff]/30 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_4px_20px_rgba(108,99,255,0.25)] hover:shadow-[0_4px_25px_rgba(108,99,255,0.4)]"
+                  className="w-full h-11 rounded-xl bg-[#6c63ff]/80 hover:bg-[#6c63ff] border border-[#8b84ff]/30 text-xs font-semibold text-white flex items-center justify-between px-4 transition-all duration-300 shadow-[0_4px_20px_rgba(108,99,255,0.25)] hover:shadow-[0_4px_25px_rgba(108,99,255,0.4)]"
                 >
-                  <Download className="w-4 h-4" />
-                  {releaseLoading
-                    ? "Loading…"
-                    : `Download DMG${release ? ` · ${release.tag_name}` : ""}`}
+                  <span className="flex items-center gap-2">
+                    <Download className="w-4 h-4" />
+                    <span>Apple Silicon (.dmg)</span>
+                  </span>
+                  {platformDownloads.mac.arm64.size && (
+                    <span className="text-[10px] font-mono opacity-80">{platformDownloads.mac.arm64.size}</span>
+                  )}
+                </a>
+
+                <a
+                  href={platformDownloads.mac.intel.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-10 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/15 text-xs font-medium text-neutral-300 hover:text-white flex items-center justify-between px-4 transition-all duration-300"
+                >
+                  <span className="flex items-center gap-2">
+                    <Download className="w-3.5 h-3.5 text-neutral-400" />
+                    <span>Intel x86_64 (.dmg)</span>
+                  </span>
+                  {platformDownloads.mac.intel.size && (
+                    <span className="text-[10px] font-mono text-neutral-400">{platformDownloads.mac.intel.size}</span>
+                  )}
                 </a>
 
                 {/* Homebrew Box */}
-                <div className="p-3 rounded-xl bg-[#09090b]/80 border border-white/3 flex flex-col gap-1.5 text-[11px] text-left transition-colors group-hover:border-white/6">
+                <div className="p-3 rounded-xl bg-[#09090b]/80 border border-white/3 flex flex-col gap-1.5 text-[11px] text-left transition-colors group-hover:border-white/6 mt-1">
                   <span className="font-mono text-neutral-400 font-medium flex items-center justify-between">
                     <span>Or run brew command:</span>
                     <button
@@ -745,7 +898,7 @@ export const WebShowcase: React.FC = () => {
               </div>
             </div>
 
-            {/* Windows MSI Card */}
+            {/* Windows Card */}
             <div className="glass-panel win-card rounded-2xl p-7 flex flex-col gap-6 transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-bl-full filter blur-xl transition-all duration-500 group-hover:bg-cyan-500/10" />
 
@@ -753,7 +906,7 @@ export const WebShowcase: React.FC = () => {
                 <div>
                   <h4 className="font-bold text-white text-xl">Windows</h4>
                   <p className="text-[10px] text-cyan-400 font-mono tracking-wider uppercase mt-0.5">
-                    x64 MSI Installer (.msi)
+                    x64 & ARM64 (.exe)
                   </p>
                 </div>
                 <div className="w-11 h-11 rounded-xl bg-white/3 border border-white/6 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform duration-300">
@@ -764,36 +917,50 @@ export const WebShowcase: React.FC = () => {
               <ul className="text-xs text-[#a1a1aa] flex flex-col gap-3 list-none p-0 my-2 grow">
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>Hardware-accelerated rendering and video scaling.</span>
+                  <span>Hardware-accelerated DirectX 12 & Vulkan rendering pipeline.</span>
                 </li>
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                   <span>
-                    Packaged with pre-compiled high performance libraries.
+                    Native standalone executables for 64-bit Intel/AMD and Snapdragon ARM64.
                   </span>
                 </li>
               </ul>
 
-              <div className="mt-auto pt-5 border-t border-white/4 z-10">
+              <div className="mt-auto pt-5 border-t border-white/4 flex flex-col gap-2.5 z-10">
                 <a
-                  href={
-                    release
-                      ? pickAsset(release.assets, "win")
-                          ?.browser_download_url ??
-                        "https://github.com/AIEraDev/clypra/releases/latest"
-                      : "https://github.com/AIEraDev/clypra/releases/latest"
-                  }
+                  href={platformDownloads.win.x64.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full h-12 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/12 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_4px_25px_rgba(6,182,212,0.15)]"
+                  className="w-full h-11 rounded-xl bg-cyan-500/80 hover:bg-cyan-500 border border-cyan-400/30 text-xs font-semibold text-white flex items-center justify-between px-4 transition-all duration-300 shadow-[0_4px_20px_rgba(6,182,212,0.25)] hover:shadow-[0_4px_25px_rgba(6,182,212,0.4)]"
                 >
-                  <Download className="w-4 h-4" />
-                  {releaseLoading
-                    ? "Loading…"
-                    : `Download for Windows${
-                        release ? ` · ${release.tag_name}` : ""
-                      }`}
+                  <span className="flex items-center gap-2">
+                    <Download className="w-4 h-4" />
+                    <span>Windows x64 (.exe)</span>
+                  </span>
+                  {platformDownloads.win.x64.size && (
+                    <span className="text-[10px] font-mono opacity-80">{platformDownloads.win.x64.size}</span>
+                  )}
                 </a>
+
+                <a
+                  href={platformDownloads.win.arm64.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-10 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/15 text-xs font-medium text-neutral-300 hover:text-white flex items-center justify-between px-4 transition-all duration-300"
+                >
+                  <span className="flex items-center gap-2">
+                    <Download className="w-3.5 h-3.5 text-neutral-400" />
+                    <span>Windows ARM64 (.exe)</span>
+                  </span>
+                  {platformDownloads.win.arm64.size && (
+                    <span className="text-[10px] font-mono text-neutral-400">{platformDownloads.win.arm64.size}</span>
+                  )}
+                </a>
+
+                <div className="text-[11px] text-[#666] font-mono text-center pt-1">
+                  Supports Windows 10 & 11 (64-bit & ARM64)
+                </div>
               </div>
             </div>
 
@@ -805,7 +972,7 @@ export const WebShowcase: React.FC = () => {
                 <div>
                   <h4 className="font-bold text-white text-xl">Linux</h4>
                   <p className="text-[10px] text-emerald-400 font-mono tracking-wider uppercase mt-0.5">
-                    x64 AppImage (.AppImage)
+                    x64 & ARM64 (.tar.gz / .AppImage)
                   </p>
                 </div>
                 <div className="w-11 h-11 rounded-xl bg-white/3 border border-white/6 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform duration-300">
@@ -817,38 +984,250 @@ export const WebShowcase: React.FC = () => {
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>
-                    Sandbox-compatible executable with no installation needed.
+                    Self-contained AppImage & portable archives with zero installation needed.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>
-                    Lightweight distribution compatible with major distros.
+                    Native binaries for both x86_64 and AArch64 (ARM64) distributions.
                   </span>
                 </li>
               </ul>
 
-              <div className="mt-auto pt-5 border-t border-white/4 z-10">
+              <div className="mt-auto pt-5 border-t border-white/4 flex flex-col gap-2.5 z-10">
                 <a
-                  href={
-                    release
-                      ? pickAsset(release.assets, "linux")
-                          ?.browser_download_url ??
-                        "https://github.com/AIEraDev/clypra/releases/latest"
-                      : "https://github.com/AIEraDev/clypra/releases/latest"
-                  }
+                  href={platformDownloads.linux.x64.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full h-12 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/12 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_4px_25px_rgba(16,185,129,0.15)]"
+                  className="w-full h-11 rounded-xl bg-emerald-500/80 hover:bg-emerald-500 border border-emerald-400/30 text-xs font-semibold text-white flex items-center justify-between px-4 transition-all duration-300 shadow-[0_4px_20px_rgba(16,185,129,0.25)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.4)]"
                 >
-                  <Download className="w-4 h-4" />
-                  {releaseLoading
-                    ? "Loading…"
-                    : `Download for Linux${
-                        release ? ` · ${release.tag_name}` : ""
-                      }`}
+                  <span className="flex items-center gap-2">
+                    <Download className="w-4 h-4" />
+                    <span>Linux x64 (.AppImage / .tar.gz)</span>
+                  </span>
+                  {platformDownloads.linux.x64.size && (
+                    <span className="text-[10px] font-mono opacity-80">{platformDownloads.linux.x64.size}</span>
+                  )}
                 </a>
+
+                <a
+                  href={platformDownloads.linux.arm64.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-10 rounded-xl bg-white/3 hover:bg-white/[0.07] border border-white/6 hover:border-white/15 text-xs font-medium text-neutral-300 hover:text-white flex items-center justify-between px-4 transition-all duration-300"
+                >
+                  <span className="flex items-center gap-2">
+                    <Download className="w-3.5 h-3.5 text-neutral-400" />
+                    <span>Linux ARM64 (.AppImage / .tar.gz)</span>
+                  </span>
+                  {platformDownloads.linux.arm64.size && (
+                    <span className="text-[10px] font-mono text-neutral-400">{platformDownloads.linux.arm64.size}</span>
+                  )}
+                </a>
+
+                <div className="text-[11px] text-[#666] font-mono text-center pt-1">
+                  Compatible with Ubuntu, Debian, Fedora & Arch
+                </div>
               </div>
+            </div>
+
+            {/* ── Architecture & Platform Builds Table (Matches Distribution Specs) ── */}
+            <div className="col-span-1 md:col-span-3 glass-panel rounded-2xl border border-white/8 bg-[#09090b]/80 backdrop-blur-xl transition-all duration-300 overflow-hidden shadow-2xl">
+              <div 
+                onClick={() => setIsReleaseTableOpen(!isReleaseTableOpen)}
+                className="p-5 sm:p-6 flex items-center justify-between cursor-pointer border-b border-white/4 select-none hover:bg-white/[0.02] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#6c63ff]/10 border border-[#8b84ff]/20 flex items-center justify-center text-[#8b84ff]">
+                    <Download className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                      All Architecture & Platform Builds
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#6c63ff]/15 border border-[#8b84ff]/30 text-[#8b84ff] font-mono">
+                        {release?.tag_name ?? "v1.5.8"}
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-[#a1a1aa]">
+                      Official multi-platform releases with native hardware acceleration
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-neutral-400 font-mono hidden sm:inline-block">
+                    {isReleaseTableOpen ? "Hide options" : "Show all options"}
+                  </span>
+                  <button 
+                    type="button"
+                    aria-label="Toggle architecture downloads table"
+                    className="w-8 h-8 rounded-lg bg-white/3 border border-white/6 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+                  >
+                    {isReleaseTableOpen ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {isReleaseTableOpen && (
+                <div className="p-5 sm:p-7 overflow-x-auto">
+                  <div className="min-w-[650px] grid grid-cols-12 gap-6 items-start">
+                    {/* Version Column */}
+                    <div className="col-span-2 flex flex-col gap-1 border-r border-white/6 pr-4">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 font-semibold">
+                        Version
+                      </span>
+                      <span className="text-base font-bold text-white font-mono">
+                        {release?.tag_name ? release.tag_name.replace(/^v/, "") : "1.5.8"}
+                      </span>
+                      <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1 mt-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Release
+                      </span>
+                    </div>
+
+                    {/* macOS Column */}
+                    <div className="col-span-3 flex flex-col gap-3">
+                      <div className="flex items-center gap-2 text-white font-semibold text-xs sm:text-sm">
+                        <span className="text-base"></span>
+                        <span>macOS</span>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <a
+                          href={platformDownloads.mac.arm64.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-2 rounded-lg bg-white/[0.02] hover:bg-[#6c63ff]/10 border border-white/4 hover:border-[#8b84ff]/30 text-xs text-neutral-300 hover:text-white transition-all"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Download className="w-3.5 h-3.5 text-[#8b84ff] group-hover:translate-y-0.5 transition-transform" />
+                            <span>macOS Apple Silicon (.dmg)</span>
+                          </span>
+                          {platformDownloads.mac.arm64.size && (
+                            <span className="text-[10px] font-mono text-neutral-400 ml-2">
+                              {platformDownloads.mac.arm64.size}
+                            </span>
+                          )}
+                        </a>
+                        <a
+                          href={platformDownloads.mac.intel.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-2 rounded-lg bg-white/[0.02] hover:bg-[#6c63ff]/10 border border-white/4 hover:border-[#8b84ff]/30 text-xs text-neutral-300 hover:text-white transition-all"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Download className="w-3.5 h-3.5 text-[#8b84ff] group-hover:translate-y-0.5 transition-transform" />
+                            <span>macOS Intel (.dmg)</span>
+                          </span>
+                          {platformDownloads.mac.intel.size && (
+                            <span className="text-[10px] font-mono text-neutral-400 ml-2">
+                              {platformDownloads.mac.intel.size}
+                            </span>
+                          )}
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Windows Column */}
+                    <div className="col-span-3 flex flex-col gap-3">
+                      <div className="flex items-center gap-2 text-white font-semibold text-xs sm:text-sm">
+                        <Monitor className="w-4 h-4 text-cyan-400" />
+                        <span>Windows</span>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <a
+                          href={platformDownloads.win.x64.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-2 rounded-lg bg-white/[0.02] hover:bg-cyan-500/10 border border-white/4 hover:border-cyan-400/30 text-xs text-neutral-300 hover:text-white transition-all"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Download className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-y-0.5 transition-transform" />
+                            <span>Windows x64 (.exe)</span>
+                          </span>
+                          {platformDownloads.win.x64.size && (
+                            <span className="text-[10px] font-mono text-neutral-400 ml-2">
+                              {platformDownloads.win.x64.size}
+                            </span>
+                          )}
+                        </a>
+                        <a
+                          href={platformDownloads.win.arm64.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-2 rounded-lg bg-white/[0.02] hover:bg-cyan-500/10 border border-white/4 hover:border-cyan-400/30 text-xs text-neutral-300 hover:text-white transition-all"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Download className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-y-0.5 transition-transform" />
+                            <span>Windows ARM64 (.exe)</span>
+                          </span>
+                          {platformDownloads.win.arm64.size && (
+                            <span className="text-[10px] font-mono text-neutral-400 ml-2">
+                              {platformDownloads.win.arm64.size}
+                            </span>
+                          )}
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Linux Column */}
+                    <div className="col-span-4 flex flex-col gap-3">
+                      <div className="flex items-center gap-2 text-white font-semibold text-xs sm:text-sm">
+                        <Terminal className="w-4 h-4 text-emerald-400" />
+                        <span>Linux</span>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <a
+                          href={platformDownloads.linux.x64.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-2 rounded-lg bg-white/[0.02] hover:bg-emerald-500/10 border border-white/4 hover:border-emerald-400/30 text-xs text-neutral-300 hover:text-white transition-all"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Download className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-y-0.5 transition-transform" />
+                            <span>Linux x64 (.tar.gz)</span>
+                          </span>
+                          {platformDownloads.linux.x64.size && (
+                            <span className="text-[10px] font-mono text-neutral-400 ml-2">
+                              {platformDownloads.linux.x64.size}
+                            </span>
+                          )}
+                        </a>
+                        <a
+                          href={platformDownloads.linux.arm64.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between p-2 rounded-lg bg-white/[0.02] hover:bg-emerald-500/10 border border-white/4 hover:border-emerald-400/30 text-xs text-neutral-300 hover:text-white transition-all"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Download className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-y-0.5 transition-transform" />
+                            <span>Linux ARM64 (.tar.gz)</span>
+                          </span>
+                          {platformDownloads.linux.arm64.size && (
+                            <span className="text-[10px] font-mono text-neutral-400 ml-2">
+                              {platformDownloads.linux.arm64.size}
+                            </span>
+                          )}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-5 pt-4 border-t border-white/4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-neutral-400">
+                    <span>Automated multi-platform release artifacts built with GitHub Actions.</span>
+                    <a
+                      href="https://github.com/AIEraDev/Clypra/releases"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#8b84ff] hover:text-white flex items-center gap-1 transition-colors"
+                    >
+                      View all releases & checksums <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Clypra Mobile Teaser Banner */}
