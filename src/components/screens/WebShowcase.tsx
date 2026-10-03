@@ -256,6 +256,15 @@ export const WebShowcase: React.FC = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadStarted, setDownloadStarted] = useState(false);
   const [isReleaseTableOpen, setIsReleaseTableOpen] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Platform downloads lookup
   const platformDownloads = useMemo(() => getPlatformDownloads(release), [release]);
@@ -363,37 +372,59 @@ export const WebShowcase: React.FC = () => {
           background: ${isDark ? "#382346" : "#c4b5a5"};
           border-radius: 4px;
         }
+
+        /* Continuous animation for sticky version pill */
+        @keyframes stickyVersionPulse {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0), 0 0 8px rgba(245, 158, 11, 0.15);
+            transform: scale(1);
+          }
+          50% {
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25), 0 0 16px rgba(245, 158, 11, 0.4);
+            transform: scale(1.03);
+          }
+        }
+        .animate-sticky-version {
+          animation: stickyVersionPulse 2.4s ease-in-out infinite;
+        }
       `}</style>
 
-      {/* ── Floating Pill Navbar (Reference 2 Inspired) ─────────── */}
-      <div className="sticky top-4 z-50 max-w-6xl mx-auto px-6">
-        <header
-          className={`w-full rounded-full px-5 py-3 transition-all duration-300 flex items-center justify-between shadow-2xl backdrop-blur-xl ${
-            isDark
-              ? "bg-[#181023]/85 border border-purple-500/20 text-stone-100 shadow-purple-950/40"
-              : "bg-white/90 border border-stone-200/80 text-stone-900 shadow-stone-300/50"
-          }`}
-        >
-          {/* Logo & Brand */}
-          <a href="#overview" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center relative">
-              <ClypraLogo size={32} className="relative z-10 transition-transform duration-300 group-hover:scale-105" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-editorial text-lg font-bold tracking-tight">
-                Clypra
-              </span>
-              <span
-                className={`text-[9px] font-mono uppercase tracking-widest font-semibold px-2 py-0.5 rounded-full ${
-                  isDark
-                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                    : "bg-purple-100 text-purple-800 border border-purple-200"
-                }`}
-              >
-                Studio
-              </span>
-            </div>
-          </a>
+      {/* ── Sticky Top Navbar ─────────── */}
+      <div className="sticky top-0 z-50 w-full transition-all duration-300 pt-3 pb-2 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6">
+          <header
+            className={`w-full rounded-full px-5 py-2.5 transition-all duration-300 flex items-center justify-between backdrop-blur-xl ${
+              isDark
+                ? "bg-[#181023]/90 border border-purple-500/20 text-stone-100 shadow-purple-950/40"
+                : "bg-white/95 border border-stone-200/80 text-stone-900 shadow-stone-300/50"
+            } ${isScrolled ? "shadow-2xl border-opacity-40" : "shadow-lg"}`}
+          >
+            {/* Logo & Brand & Version Display */}
+            <a href="#overview" className="flex items-center gap-3 group">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center relative">
+                <ClypraLogo size={32} className="relative z-10 transition-transform duration-300 group-hover:scale-105" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-editorial text-lg font-bold tracking-tight">
+                  Clypra
+                </span>
+                {/* Version display instead of Studio, doing continuous animation while sticky scrolling */}
+                <div
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold transition-all duration-300 border ${
+                    isDark
+                      ? "bg-amber-400/10 text-amber-300 border-amber-400/35"
+                      : "bg-amber-100/90 text-amber-900 border-amber-300"
+                  } animate-sticky-version`}
+                  title="Latest Release"
+                >
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                  </span>
+                  <span>{release?.tag_name ?? "v1.5.8"}</span>
+                </div>
+              </div>
+            </a>
 
           {/* Nav Links */}
           <nav className="hidden md:flex items-center gap-7 text-xs font-medium">
@@ -484,6 +515,7 @@ export const WebShowcase: React.FC = () => {
             </Link>
           </div>
         </header>
+        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
@@ -644,7 +676,10 @@ export const WebShowcase: React.FC = () => {
                 <div className="tilted-card relative -rotate-2">
                   {/* Corner Overflowing Version Badge */}
                   <div className="absolute -top-3.5 -right-3 z-30 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-stone-950 font-mono font-extrabold text-xs shadow-2xl border border-amber-300/90 rotate-6 select-none pointer-events-none tracking-tight">
-                    <Sparkles className="w-3.5 h-3.5 fill-stone-950 text-stone-950" />
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-stone-900 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-stone-950"></span>
+                    </span>
                     <span>{release?.tag_name ?? "v1.5.8"}</span>
                   </div>
 

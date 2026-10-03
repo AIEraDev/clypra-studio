@@ -112,54 +112,209 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #120d1a;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.055'/%3E%3C/svg%3E");
+        background-color: #0f0a17;
+        background-image:
+          radial-gradient(circle 500px at 50% 45%, rgba(168, 85, 247, 0.18), rgba(245, 158, 11, 0.08), transparent 70%),
+          url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.06'/%3E%3C/svg%3E");
         color: #f4f4f5;
         z-index: 9999;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        user-select: none;
       }
 
       html.light-theme #app-loading {
-        background-color: #fbf9f6;
+        background-color: #faf8f5;
+        background-image:
+          radial-gradient(circle 500px at 50% 45%, rgba(168, 85, 247, 0.12), rgba(245, 158, 11, 0.06), transparent 70%),
+          url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.06'/%3E%3C/svg%3E");
         color: #1c1917;
       }
 
       #app-loading .loading-content {
+        position: relative;
+        z-index: 10;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 16px;
+        gap: 28px;
+        padding: 40px 32px;
+        max-width: 384px;
+        text-align: center;
       }
 
       #app-loading .logo-wrapper {
         position: relative;
-        width: 64px;
-        height: 64px;
+        width: 96px;
+        height: 96px;
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
-      #app-loading .spinner-ring {
+      #app-loading .halo-glow {
         position: absolute;
         inset: 0;
-        border: 2px dashed #f59e0b;
-        opacity: 0.6;
         border-radius: 50%;
-        animation: spin 1.4s linear infinite;
+        background-color: rgba(147, 51, 234, 0.25);
+        filter: blur(16px);
+      }
+
+      #app-loading .outer-orbit {
+        position: absolute;
+        inset: 0;
+        border: 2px dashed rgba(168, 85, 247, 0.3);
+        border-radius: 50%;
+        animation: spin 8s linear infinite;
+      }
+
+      #app-loading .inner-orbit {
+        position: absolute;
+        inset: 8px;
+        border: 1.5px solid transparent;
+        border-top-color: #fbbf24;
+        border-right-color: #c084fc;
+        border-radius: 50%;
+        animation: spin 2s linear infinite reverse;
+      }
+
+      #app-loading .frosted-disc {
+        position: relative;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(30, 19, 41, 0.9);
+        border: 1px solid rgba(168, 85, 247, 0.3);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      }
+
+      html.light-theme #app-loading .frosted-disc {
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(231, 229, 228, 0.9);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
       }
 
       #app-loading .loading-logo {
-        width: 32px;
-        height: 32px;
+        width: 30px;
+        height: 30px;
         user-select: none;
       }
 
-      #app-loading .loading-text {
-        font-size: 11px;
+      #app-loading .brand-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #app-loading .brand-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #app-loading .brand-name {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+      }
+
+      #app-loading .brand-pill {
+        font-size: 9px;
         font-family: ui-monospace, SFMono-Regular, monospace;
-        letter-spacing: 0.05em;
-        opacity: 0.6;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        background: rgba(168, 85, 247, 0.2);
+        color: #d8b4fe;
+        border: 1px solid rgba(168, 85, 247, 0.3);
+      }
+
+      html.light-theme #app-loading .brand-pill {
+        background: #f3e8ff;
+        color: #6b21a8;
+        border: 1px solid #e9d5ff;
+      }
+
+      #app-loading .loading-label {
+        font-size: 12px;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        letter-spacing: 0.02em;
+        color: #a8a29e;
+      }
+
+      html.light-theme #app-loading .loading-label {
+        color: #57534e;
+      }
+
+      #app-loading .shimmer-bar-wrapper {
+        width: 192px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      #app-loading .shimmer-bar {
+        width: 100%;
+        height: 4px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+        position: relative;
+      }
+
+      html.light-theme #app-loading .shimmer-bar {
+        background: #e7e5e4;
+      }
+
+      #app-loading .shimmer-glow {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 40%;
+        border-radius: 9999px;
+        background: linear-gradient(90deg, #fbbf24, #a855f7, #fbbf24);
+        animation: shimmerSlide 1.8s ease-in-out infinite;
+      }
+
+      #app-loading .engine-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 10px;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        color: #78716c;
+      }
+
+      #app-loading .pulse-dot {
+        position: relative;
+        display: flex;
+        width: 6px;
+        height: 6px;
+      }
+
+      #app-loading .pulse-ping {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background-color: #34d399;
+        opacity: 0.75;
+        animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
+
+      #app-loading .pulse-solid {
+        position: relative;
+        display: inline-flex;
+        border-radius: 50%;
+        width: 6px;
+        height: 6px;
+        background-color: #10b981;
       }
 
       #root:not(:empty) ~ #app-loading {
@@ -167,7 +322,10 @@
       }
 
       @media (prefers-reduced-motion: reduce) {
-        #app-loading .spinner-ring {
+        #app-loading .outer-orbit,
+        #app-loading .inner-orbit,
+        #app-loading .shimmer-glow,
+        #app-loading .pulse-ping {
           animation: none;
         }
       }
@@ -177,6 +335,19 @@
           transform: rotate(360deg);
         }
       }
+
+      @keyframes shimmerSlide {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(250%); }
+        100% { transform: translateX(-100%); }
+      }
+
+      @keyframes ping {
+        75%, 100% {
+          transform: scale(2);
+          opacity: 0;
+        }
+      }
     </style>
   </head>
   <body>
@@ -184,10 +355,32 @@
     <div id="app-loading" aria-label="Loading Clypra Studio">
       <div class="loading-content">
         <div class="logo-wrapper">
-          <div class="spinner-ring"></div>
-          <img src="/clypra.svg" alt="Clypra" class="loading-logo" />
+          <div class="halo-glow"></div>
+          <div class="outer-orbit"></div>
+          <div class="inner-orbit"></div>
+          <div class="frosted-disc">
+            <img src="/clypra.svg" alt="Clypra" class="loading-logo" />
+          </div>
         </div>
-        <span class="loading-text">Loading Clypra Studio…</span>
+        <div class="brand-box">
+          <div class="brand-title">
+            <span class="brand-name">Clypra</span>
+            <span class="brand-pill">Studio</span>
+          </div>
+          <span class="loading-label">Initializing Clypra Studio…</span>
+        </div>
+        <div class="shimmer-bar-wrapper">
+          <div class="shimmer-bar">
+            <div class="shimmer-glow"></div>
+          </div>
+          <div class="engine-badge">
+            <span class="pulse-dot">
+              <span class="pulse-ping"></span>
+              <span class="pulse-solid"></span>
+            </span>
+            <span>Native 60 FPS Engine</span>
+          </div>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
