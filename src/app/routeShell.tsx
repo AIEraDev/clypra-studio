@@ -123,15 +123,59 @@ export function RouteShell({
 }
 
 export function RouteLoading({
-  label = "Loading Studio...",
+  label = "Loading Clypra Studio...",
 }: {
   label?: string;
 }) {
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("clypra_theme");
+      if (saved === "light") return false;
+      if (saved === "dark") return true;
+      return !window.matchMedia("(prefers-color-scheme: light)").matches;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === "clypra_theme") {
+        setIsDark(e.newValue !== "light");
+      }
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
   return (
-    <div className="flex h-screen items-center justify-center bg-[#090D16] text-white">
-      <div className="text-center">
-        <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-[#7C6FFF]" />
-        <p className="text-sm text-gray-400">{label}</p>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-colors duration-300 ${
+        isDark ? "bg-[#120d1a] text-stone-100" : "bg-[#fbf9f6] text-stone-900"
+      }`}
+      style={{
+        backgroundImage:
+          'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' opacity=\'0.055\'/%3E%3C/svg%3E")',
+      }}
+    >
+      <div className="flex flex-col items-center gap-4 p-8 text-center animate-fade-in">
+        <div className="relative flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full border-2 border-dashed border-amber-400/40 animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <ClypraLogo size={32} className="animate-pulse" />
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <span className="font-bold text-sm tracking-tight">
+            Clypra Studio
+          </span>
+          <p
+            className={`text-xs font-mono tracking-wide ${
+              isDark ? "text-stone-400" : "text-stone-500"
+            }`}
+          >
+            {label}
+          </p>
+        </div>
       </div>
     </div>
   );
