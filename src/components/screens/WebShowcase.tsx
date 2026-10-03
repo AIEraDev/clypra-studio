@@ -366,7 +366,7 @@ export const WebShowcase: React.FC = () => {
       `}</style>
 
       {/* ── Floating Pill Navbar (Reference 2 Inspired) ─────────── */}
-      <div className="sticky top-4 z-50 max-w-6xl mx-auto px-4">
+      <div className="sticky top-4 z-50 max-w-6xl mx-auto px-6">
         <header
           className={`w-full rounded-full px-5 py-3 transition-all duration-300 flex items-center justify-between shadow-2xl backdrop-blur-xl ${
             isDark
@@ -487,33 +487,43 @@ export const WebShowcase: React.FC = () => {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-          SECTION 1: HERO (Rich Aubergine/Plum Textured Section)
-          Directly matches media_1791061115692.png with tilted cards
-          bursting downwards across the section horizon!
+      {/* ══════════════════════════════════════════════════════════════
+          SECTION 1: HERO (Textured Editorial Section)
+          Tilted cards bursting downwards across the section horizon!
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="overview"
         className={`relative overflow-visible texture-grain pt-8 pb-32 md:pb-44 transition-colors duration-500 border-b ${
           isDark
             ? "bg-[#220d2a] text-white border-purple-900/30"
-            : "bg-[#3d1945] text-white border-[#4d2356]"
+            : "bg-[#fbf9f6] text-stone-900 border-stone-200/80"
         }`}
       >
         {/* Subtle Ambient Vignette / Spotlight */}
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.08),transparent_50%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.08),transparent_40%)]" />
+        <div
+          className={`absolute inset-0 pointer-events-none ${
+            isDark
+              ? "bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.08),transparent_50%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.08),transparent_40%)]"
+              : "bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.05),transparent_50%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.05),transparent_40%)]"
+          }`}
+        />
 
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center pt-8 md:pt-14">
             {/* Left Column: Editorial Headline & Actions */}
             <div className="lg:col-span-7 flex flex-col gap-6 text-left">
               {/* Bold Editorial Heading */}
-              <h1 className="font-editorial text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.06] text-white">
-                The native <br />
-                <span className="text-amber-300">video editor.</span>
+              <h1 className="font-editorial text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.06]">
+                <span className={isDark ? "text-white" : "text-[#240e2b]"}>The native</span> <br />
+                <span className={isDark ? "text-amber-300" : "text-purple-700"}>video editor.</span>
               </h1>
 
               {/* Editorial Copy */}
-              <p className="text-base sm:text-lg text-purple-100/80 leading-relaxed max-w-xl font-normal">
+              <p
+                className={`text-base sm:text-lg leading-relaxed max-w-xl font-normal ${
+                  isDark ? "text-purple-100/80" : "text-stone-600"
+                }`}
+              >
                 Build locally on a high-performance desktop NLE with a native Rust
                 render surface, hardware-accelerated playback, and an integrated
                 Web Studio for authoring shaders, transitions, and text effects.
@@ -521,20 +531,20 @@ export const WebShowcase: React.FC = () => {
 
               {/* Hero Call to Action Buttons */}
               <div className="flex flex-wrap items-center gap-4 pt-2">
-                {/* Emerald Green Pill CTA (From Reference 2) */}
+                {/* Emerald Green Pill CTA */}
                 <button
                   onClick={handleDownload}
                   disabled={releaseLoading || isDownloading || !downloadUrl}
-                  className="rounded-full bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold px-7 py-3.5 text-sm flex items-center gap-2.5 shadow-xl shadow-emerald-950/30 transition-all hover:scale-[1.02] active:scale-98 cursor-pointer disabled:opacity-50"
+                  className="rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-7 py-3.5 text-sm flex items-center gap-2.5 shadow-xl shadow-emerald-700/20 transition-all hover:scale-[1.02] active:scale-98 cursor-pointer disabled:opacity-50"
                 >
                   {downloadStarted ? (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-stone-950" />
+                      <CheckCircle2 className="w-4 h-4 text-white" />
                       <span>Download Started!</span>
                     </>
                   ) : isDownloading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-stone-950" />
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
                       <span>Starting Download…</span>
                     </>
                   ) : (
@@ -551,33 +561,57 @@ export const WebShowcase: React.FC = () => {
                 {/* Secondary Pill Button */}
                 <Link
                   to="/studio"
-                  className="rounded-full border border-white/20 bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3.5 text-sm flex items-center gap-2 backdrop-blur-sm transition-all hover:scale-[1.02]"
+                  className={`rounded-full px-6 py-3.5 text-sm font-semibold flex items-center gap-2 transition-all hover:scale-[1.02] ${
+                    isDark
+                      ? "border border-white/20 bg-white/10 hover:bg-white/15 text-white backdrop-blur-sm"
+                      : "border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 shadow-sm"
+                  }`}
                 >
-                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <Play className={`w-3.5 h-3.5 ${isDark ? "fill-white text-white" : "fill-stone-800 text-stone-800"}`} />
                   <span>Launch Web Studio</span>
                 </Link>
               </div>
 
               {/* Architecture Quick Pills */}
-              <div className="flex flex-wrap items-center gap-2 pt-2 text-[11px] font-mono text-purple-200/70">
-                <span className="text-purple-300 font-semibold uppercase tracking-wider text-[10px] mr-1">
+              <div
+                className={`flex flex-wrap items-center gap-2 pt-2 text-[11px] font-mono ${
+                  isDark ? "text-purple-200/70" : "text-stone-500"
+                }`}
+              >
+                <span
+                  className={`font-semibold uppercase tracking-wider text-[10px] mr-1 ${
+                    isDark ? "text-purple-300" : "text-purple-900"
+                  }`}
+                >
                   Target Architectures:
                 </span>
                 <a
                   href="#download"
-                  className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white transition-colors"
+                  className={`px-2.5 py-1 rounded-full border transition-colors ${
+                    isDark
+                      ? "bg-white/5 hover:bg-white/15 border-white/10 text-white"
+                      : "bg-white hover:bg-stone-100 border-stone-200 text-stone-800 shadow-xs"
+                  }`}
                 >
                   macOS (Apple Silicon & Intel)
                 </a>
                 <a
                   href="#download"
-                  className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white transition-colors"
+                  className={`px-2.5 py-1 rounded-full border transition-colors ${
+                    isDark
+                      ? "bg-white/5 hover:bg-white/15 border-white/10 text-white"
+                      : "bg-white hover:bg-stone-100 border-stone-200 text-stone-800 shadow-xs"
+                  }`}
                 >
                   Windows (x64 & ARM64)
                 </a>
                 <a
                   href="#download"
-                  className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white transition-colors"
+                  className={`px-2.5 py-1 rounded-full border transition-colors ${
+                    isDark
+                      ? "bg-white/5 hover:bg-white/15 border-white/10 text-white"
+                      : "bg-white hover:bg-stone-100 border-stone-200 text-stone-800 shadow-xs"
+                  }`}
                 >
                   Linux (x64 & ARM64)
                 </a>
@@ -588,7 +622,13 @@ export const WebShowcase: React.FC = () => {
             <div className="lg:col-span-5 relative flex justify-center lg:justify-end">
               <div className="relative w-full max-w-md lg:translate-y-24 z-20">
                 {/* Back Card (Tilted 4deg) */}
-                <div className="tilted-card absolute inset-0 -top-6 -right-6 rounded-2xl overflow-hidden border border-white/20 shadow-2xl bg-stone-900/90 rotate-4 pointer-events-none opacity-85">
+                <div
+                  className={`tilted-card absolute inset-0 -top-6 -right-6 rounded-2xl overflow-hidden border shadow-2xl rotate-4 pointer-events-none ${
+                    isDark
+                      ? "border-white/20 bg-stone-900/90 opacity-85"
+                      : "border-stone-200 bg-stone-100 opacity-90"
+                  }`}
+                >
                   <img
                     src="/clypra-1200x630.png"
                     alt="Clypra Timeline Preview"
@@ -608,18 +648,32 @@ export const WebShowcase: React.FC = () => {
                     <span>{release?.tag_name ?? "v1.5.8"}</span>
                   </div>
 
-                  <div className="rounded-2xl overflow-hidden border border-white/30 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] bg-[#12081a]">
+                  <div
+                    className={`rounded-2xl overflow-hidden border ${
+                      isDark
+                        ? "border-white/30 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] bg-[#12081a]"
+                        : "border-stone-300/80 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.12)] bg-white"
+                    }`}
+                  >
                     {/* Window Bar */}
-                    <div className="bg-[#1e0e29] px-4 py-2.5 flex items-center justify-between border-b border-white/10">
+                    <div
+                      className={`px-4 py-2.5 flex items-center justify-between border-b ${
+                        isDark ? "bg-[#1e0e29] border-white/10" : "bg-stone-100 border-stone-200"
+                      }`}
+                    >
                       <div className="flex items-center gap-1.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
                         <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                       </div>
-                      <span className="text-[10px] font-mono text-purple-200/80 font-medium">
+                      <span
+                        className={`text-[10px] font-mono font-medium ${
+                          isDark ? "text-purple-200/80" : "text-stone-600"
+                        }`}
+                      >
                         clypra_preview_engine.rs
                       </span>
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                         60 FPS Native
                       </span>
                     </div>
