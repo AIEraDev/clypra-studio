@@ -254,6 +254,7 @@ export const WebShowcase: React.FC = () => {
   }, [theme]);
 
   const [copiedMac, setCopiedMac] = useState(false);
+  const [copiedWin, setCopiedWin] = useState(false);
   const [copiedLinux, setCopiedLinux] = useState(false);
   const [activeTab, setActiveTab] = useState<"mac" | "win" | "linux">("mac");
 
@@ -331,11 +332,14 @@ export const WebShowcase: React.FC = () => {
     }, 600);
   };
 
-  const copyToClipboard = (text: string, type: "mac" | "linux") => {
+  const copyToClipboard = (text: string, type: "mac" | "win" | "linux") => {
     navigator.clipboard.writeText(text);
     if (type === "mac") {
       setCopiedMac(true);
       setTimeout(() => setCopiedMac(false), 2000);
+    } else if (type === "win") {
+      setCopiedWin(true);
+      setTimeout(() => setCopiedWin(false), 2000);
     } else {
       setCopiedLinux(true);
       setTimeout(() => setCopiedLinux(false), 2000);
@@ -922,817 +926,859 @@ export const WebShowcase: React.FC = () => {
           SECTION 3: NATIVE DOWNLOADS & 6-ARCHITECTURE MATRIX
           Cool limestone / mist section with primary cards & 6 target matrix
       ══════════════════════════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════════════════════════
+          SECTION 3: NATIVE DOWNLOADS & 6-ARCHITECTURE REPOSITORY
+          Clean, authoritative systems release console
+      ══════════════════════════════════════════════════════════════ */}
       <section
         id="download"
-        className={`relative overflow-hidden texture-grain py-24 transition-colors duration-500 border-b ${
+        className={`relative overflow-hidden texture-grain py-28 transition-colors duration-500 border-b ${
           isDark
-            ? "bg-[#0d0a13] text-stone-100 border-purple-900/20"
-            : "bg-[#f2efe9] text-stone-900 border-stone-200"
+            ? "bg-[#0c0714] text-stone-100 border-purple-900/20"
+            : "bg-[#f5f2eb] text-stone-900 border-stone-300/70"
         }`}
       >
         <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-12">
           {/* Section Header */}
-          <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-            <span
-              className={`self-center font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase border ${
-                isDark
-                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                  : "bg-emerald-100 text-emerald-900 border-emerald-300"
-              }`}
-            >
-              MULTI-PLATFORM RELEASES
-            </span>
-            <h2
-              className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight ${
-                isDark ? "text-white" : "text-[#281030]"
-              }`}
-            >
-              Get Clypra Desktop
-            </h2>
-            <p
-              className={`text-xs sm:text-sm leading-relaxed ${
-                isDark ? "text-stone-400" : "text-stone-600"
-              }`}
-            >
-              Clypra compiles standalone native executables for 6 target architectures.
-              Choose your operating system below for instantaneous hardware acceleration.
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-stone-300/60 dark:border-white/10">
+            <div className="max-w-xl text-left">
+              <span className={`text-[11px] font-mono font-bold tracking-widest uppercase ${
+                isDark ? "text-amber-400" : "text-amber-700"
+              }`}>
+                NATIVE DESKTOP RELEASES
+              </span>
+              <h2
+                className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 ${
+                  isDark ? "text-white" : "text-[#240e2b]"
+                }`}
+              >
+                Compiled for pure machine performance.
+              </h2>
+            </div>
+            <p className={`text-xs sm:text-sm max-w-sm text-left leading-relaxed ${
+              isDark ? "text-stone-400" : "text-stone-600"
+            }`}>
+              Zero cloud telemetry. Clypra compiles directly to native binaries across 6 hardware architectures with direct GPU decoder bindings.
             </p>
           </div>
 
-          {/* 3 Main OS Download Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* macOS Card */}
-            <div
-              className={`rounded-2xl p-7 flex flex-col gap-6 transition-all duration-300 border shadow-lg hover:-translate-y-1 relative group ${
-                isDark
-                  ? "bg-[#151020] border-purple-500/25 shadow-purple-950/20 hover:border-purple-400/40"
-                  : "bg-white border-stone-200 shadow-stone-300/40 hover:border-stone-300"
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-editorial text-xl font-bold">macOS</h3>
-                  <p
-                    className={`text-[10px] font-mono tracking-wider uppercase mt-0.5 ${
-                      isDark ? "text-purple-300" : "text-purple-700 font-semibold"
-                    }`}
-                  >
-                    Apple Silicon & Intel (.dmg)
-                  </p>
-                </div>
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold border ${
-                    isDark
-                      ? "bg-purple-500/10 border-purple-500/20 text-purple-300"
-                      : "bg-purple-50 border-purple-200 text-purple-800"
-                  }`}
-                >
-                  
-                </div>
-              </div>
-
-              <ul className={`text-xs flex flex-col gap-2.5 grow ${isDark ? "text-stone-300" : "text-stone-700 font-medium"}`}>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-purple-500 shrink-0" />
-                  <span>Universal DMG for M1/M2/M3/M4 & Intel</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-purple-500 shrink-0" />
-                  <span>Hardware VideoToolbox Metal decoders</span>
-                </li>
-              </ul>
-
-              <div className={`mt-auto pt-4 border-t flex flex-col gap-3 ${isDark ? "border-white/10" : "border-stone-200"}`}>
-                <a
-                  href={platformDownloads.mac.arm64.url}
-                  className="w-full h-11 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-600/20"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download macOS DMG</span>
-                </a>
-
-                {/* Homebrew Tap box */}
-                <div
-                  className={`p-2.5 rounded-lg border flex items-center justify-between text-[10px] font-mono ${
-                    isDark ? "bg-black/40 border-white/10" : "bg-stone-100 border-stone-300"
-                  }`}
-                >
-                  <span className={`truncate ${isDark ? "text-stone-300" : "text-stone-800 font-medium"}`}>
-                    brew install AIEraDev/tap/clypra
-                  </span>
+          {/* Interactive Platform Console */}
+          <div className={`rounded-3xl border overflow-hidden transition-all shadow-xl ${
+            isDark
+              ? "bg-[#140c1f] border-white/10 shadow-black/50"
+              : "bg-white border-stone-200 shadow-stone-300/40"
+          }`}>
+            {/* Platform Selector Segmented Bar */}
+            <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${
+              isDark ? "bg-[#180f24] border-white/10" : "bg-stone-50 border-stone-200"
+            }`}>
+              <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/5 dark:bg-white/5">
+                {(["mac", "win", "linux"] as const).map((osKey) => (
                   <button
-                    onClick={() => copyToClipboard("brew install AIEraDev/tap/clypra", "mac")}
-                    className="p-1 hover:text-purple-500 transition-colors ml-2 cursor-pointer"
-                    title="Copy command"
-                  >
-                    {copiedMac ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className={`w-3.5 h-3.5 ${isDark ? "text-stone-400" : "text-stone-600"}`} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Windows Card */}
-            <div
-              className={`rounded-2xl p-7 flex flex-col gap-6 transition-all duration-300 border shadow-lg hover:-translate-y-1 relative group ${
-                isDark
-                  ? "bg-[#151020] border-cyan-500/25 shadow-cyan-950/20 hover:border-cyan-400/40"
-                  : "bg-white border-stone-200 shadow-stone-300/40 hover:border-stone-300"
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-editorial text-xl font-bold">Windows</h3>
-                  <p
-                    className={`text-[10px] font-mono tracking-wider uppercase mt-0.5 ${
-                      isDark ? "text-cyan-300" : "text-cyan-700 font-semibold"
+                    key={osKey}
+                    onClick={() => {
+                      setUserOS(osKey);
+                      setActiveTab(osKey);
+                    }}
+                    className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+                      userOS === osKey
+                        ? isDark
+                          ? "bg-purple-600 text-white shadow-md shadow-purple-900/40"
+                          : "bg-[#281030] text-white shadow-md shadow-stone-400/30"
+                        : isDark
+                        ? "text-stone-400 hover:text-white"
+                        : "text-stone-600 hover:text-stone-900"
                     }`}
                   >
-                    x64 & ARM64 Installer (.exe)
-                  </p>
-                </div>
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold border ${
-                    isDark
-                      ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-400"
-                      : "bg-cyan-50 border-cyan-200 text-cyan-700"
-                  }`}
-                >
-                  <Monitor className="w-5 h-5" />
-                </div>
-              </div>
-
-              <ul className={`text-xs flex flex-col gap-2.5 grow ${isDark ? "text-stone-300" : "text-stone-700 font-medium"}`}>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                  <span>Full Direct3D 11 Video Acceleration (D3D11VA)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                  <span>Native Snapdragon ARM64 & Intel/AMD support</span>
-                </li>
-              </ul>
-
-              <div className={`mt-auto pt-4 border-t flex flex-col gap-3 ${isDark ? "border-white/10" : "border-stone-200"}`}>
-                <a
-                  href={platformDownloads.win.x64.url}
-                  className="w-full h-11 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-cyan-600/20"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Windows Installer</span>
-                </a>
-
-                <div className={`text-[10px] font-mono text-center ${isDark ? "text-stone-400" : "text-stone-600"}`}>
-                  {platformDownloads.win.x64.size ? `Size: ${platformDownloads.win.x64.size} · ` : ""}
-                  x64 & ARM64 builds available
-                </div>
-              </div>
-            </div>
-
-            {/* Linux Card */}
-            <div
-              className={`rounded-2xl p-7 flex flex-col gap-6 transition-all duration-300 border shadow-lg hover:-translate-y-1 relative group ${
-                isDark
-                  ? "bg-[#151020] border-emerald-500/25 shadow-emerald-950/20 hover:border-emerald-400/40"
-                  : "bg-white border-stone-200 shadow-stone-300/40 hover:border-stone-300"
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-editorial text-xl font-bold">Linux</h3>
-                  <p
-                    className={`text-[10px] font-mono tracking-wider uppercase mt-0.5 ${
-                      isDark ? "text-emerald-300" : "text-emerald-700 font-semibold"
-                    }`}
-                  >
-                    x64 & ARM64 (.tar.gz / .AppImage)
-                  </p>
-                </div>
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold border ${
-                    isDark
-                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                      : "bg-emerald-50 border-emerald-200 text-emerald-700"
-                  }`}
-                >
-                  <Terminal className="w-5 h-5" />
-                </div>
-              </div>
-
-              <ul className={`text-xs flex flex-col gap-2.5 grow ${isDark ? "text-stone-300" : "text-stone-700 font-medium"}`}>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>Portable AppImage & tarball distributions</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>Hardware VAAPI acceleration on Ubuntu/Debian/Arch</span>
-                </li>
-              </ul>
-
-              <div className={`mt-auto pt-4 border-t flex flex-col gap-3 ${isDark ? "border-white/10" : "border-stone-200"}`}>
-                <a
-                  href={platformDownloads.linux.x64.url}
-                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Linux Package</span>
-                </a>
-
-                {/* Chmod Copy command */}
-                <div
-                  className={`p-2.5 rounded-lg border flex items-center justify-between text-[10px] font-mono ${
-                    isDark ? "bg-black/40 border-white/10" : "bg-stone-100 border-stone-300"
-                  }`}
-                >
-                  <span className={`truncate ${isDark ? "text-stone-300" : "text-stone-800 font-medium"}`}>
-                    chmod +x Clypra*.AppImage
-                  </span>
-                  <button
-                    onClick={() => copyToClipboard("chmod +x Clypra*.AppImage && ./Clypra*.AppImage", "linux")}
-                    className="p-1 hover:text-emerald-500 transition-colors ml-2 cursor-pointer"
-                    title="Copy command"
-                  >
-                    {copiedLinux ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className={`w-3.5 h-3.5 ${isDark ? "text-stone-400" : "text-stone-600"}`} />}
+                    {osKey === "mac" && <span> macOS</span>}
+                    {osKey === "win" && <span>⊞ Windows</span>}
+                    {osKey === "linux" && <span>🐧 Linux</span>}
                   </button>
-                </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3 text-xs font-mono pr-2">
+                <span className={`flex items-center gap-1.5 ${isDark ? "text-stone-400" : "text-stone-500"}`}>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>Release: {release?.tag_name ?? "v1.5.8"}</span>
+                </span>
+                <span className="text-stone-400">·</span>
+                <span className={isDark ? "text-stone-400" : "text-stone-500"}>MIT License</span>
               </div>
             </div>
-          </div>
 
-          {/* ── 6-Architecture Release Matrix Table ──────────────── */}
-          <div
-            className={`rounded-2xl border overflow-hidden transition-all ${
-              isDark ? "bg-[#140e1f] border-purple-500/20" : "bg-white border-stone-200 shadow-sm"
-            }`}
-          >
-            {/* Header toggle */}
-            <button
-              onClick={() => setIsReleaseTableOpen((v) => !v)}
-              className={`w-full px-6 py-4 flex items-center justify-between cursor-pointer transition-colors ${
-                isDark ? "hover:bg-white/5" : "hover:bg-stone-100/70"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className={`font-editorial text-sm font-bold ${isDark ? "text-white" : "text-stone-900"}`}>
-                  All Supported Target Architectures (6 Builds)
-                </span>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-white/10 text-stone-300 border-white/10"
-                      : "bg-stone-100 text-stone-700 border-stone-300 font-medium"
-                  }`}
-                >
-                  {release ? release.tag_name : "Latest Releases"}
-                </span>
-              </div>
-              <div className={`flex items-center gap-1 text-xs ${isDark ? "text-stone-400" : "text-stone-600"}`}>
-                <span>{isReleaseTableOpen ? "Collapse Matrix" : "View Matrix"}</span>
-                {isReleaseTableOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </div>
-            </button>
-
-            {isReleaseTableOpen && (
-              <div className={`p-6 pt-0 border-t ${isDark ? "border-white/10" : "border-stone-200"}`}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-5">
-                  {/* macOS Target Matrix */}
-                  <div className="flex flex-col gap-3">
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-purple-500 flex items-center gap-1.5">
-                       macOS
-                    </span>
-                    <div className="flex flex-col gap-2">
-                      <a
-                        href={platformDownloads.mac.arm64.url}
-                        className={`flex items-center justify-between p-3 rounded-xl border text-xs transition-all hover:scale-[1.01] ${
-                          isDark
-                            ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                            : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
-                        }`}
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-semibold">Apple Silicon</span>
-                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>M1 / M2 / M3 / M4 (.dmg)</span>
-                        </div>
-                        <span className="text-emerald-500 font-mono font-bold text-[10px] flex items-center gap-1">
-                          <Download className="w-3 h-3" />
-                          {platformDownloads.mac.arm64.size ?? "Ready"}
-                        </span>
-                      </a>
-                      <a
-                        href={platformDownloads.mac.intel.url}
-                        className={`flex items-center justify-between p-3 rounded-xl border text-xs transition-all hover:scale-[1.01] ${
-                          isDark
-                            ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                            : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
-                        }`}
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-semibold">Intel Processors</span>
-                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>x86_64 Mac (.dmg)</span>
-                        </div>
-                        <span className="text-emerald-500 font-mono font-bold text-[10px] flex items-center gap-1">
-                          <Download className="w-3 h-3" />
-                          {platformDownloads.mac.intel.size ?? "Ready"}
-                        </span>
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Windows Target Matrix */}
-                  <div className="flex flex-col gap-3">
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-500 flex items-center gap-1.5">
-                      <Monitor className="w-3.5 h-3.5" /> Windows
-                    </span>
-                    <div className="flex flex-col gap-2">
-                      <a
-                        href={platformDownloads.win.x64.url}
-                        className={`flex items-center justify-between p-3 rounded-xl border text-xs transition-all hover:scale-[1.01] ${
-                          isDark
-                            ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                            : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
-                        }`}
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-semibold">Windows x64</span>
-                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>Intel / AMD 64-bit (.exe)</span>
-                        </div>
-                        <span className="text-cyan-500 font-mono font-bold text-[10px] flex items-center gap-1">
-                          <Download className="w-3 h-3" />
-                          {platformDownloads.win.x64.size ?? "Ready"}
-                        </span>
-                      </a>
-                      <a
-                        href={platformDownloads.win.arm64.url}
-                        className={`flex items-center justify-between p-3 rounded-xl border text-xs transition-all hover:scale-[1.01] ${
-                          isDark
-                            ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                            : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
-                        }`}
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-semibold">Windows ARM64</span>
-                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>Snapdragon X / ARM (.exe)</span>
-                        </div>
-                        <span className="text-cyan-500 font-mono font-bold text-[10px] flex items-center gap-1">
-                          <Download className="w-3 h-3" />
-                          {platformDownloads.win.arm64.size ?? "Ready"}
-                        </span>
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Linux Target Matrix */}
-                  <div className="flex flex-col gap-3">
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
-                      <Terminal className="w-3.5 h-3.5" /> Linux
-                    </span>
-                    <div className="flex flex-col gap-2">
-                      <a
-                        href={platformDownloads.linux.x64.url}
-                        className={`flex items-center justify-between p-3 rounded-xl border text-xs transition-all hover:scale-[1.01] ${
-                          isDark
-                            ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                            : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
-                        }`}
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-semibold">Linux x64</span>
-                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>x86_64 (.tar.gz / AppImage)</span>
-                        </div>
-                        <span className="text-emerald-500 font-mono font-bold text-[10px] flex items-center gap-1">
-                          <Download className="w-3 h-3" />
-                          {platformDownloads.linux.x64.size ?? "Ready"}
-                        </span>
-                      </a>
-                      <a
-                        href={platformDownloads.linux.arm64.url}
-                        className={`flex items-center justify-between p-3 rounded-xl border text-xs transition-all hover:scale-[1.01] ${
-                          isDark
-                            ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                            : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
-                        }`}
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-semibold">Linux ARM64</span>
-                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>AArch64 (.tar.gz / AppImage)</span>
-                        </div>
-                        <span className="text-emerald-500 font-mono font-bold text-[10px] flex items-center gap-1">
-                          <Download className="w-3 h-3" />
-                          {platformDownloads.linux.arm64.size ?? "Ready"}
-                        </span>
-                      </a>
-                    </div>
-                  </div>
+            {/* Active Platform Feature Hero */}
+            <div className="p-8 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="lg:col-span-7 flex flex-col gap-5 text-left">
+                <div>
+                  <h3 className={`font-editorial text-2xl sm:text-3xl font-bold ${
+                    isDark ? "text-white" : "text-stone-950"
+                  }`}>
+                    {userOS === "mac" && "Clypra for macOS"}
+                    {userOS === "win" && "Clypra for Windows"}
+                    {userOS === "linux" && "Clypra for Linux"}
+                  </h3>
+                  <p className={`text-xs sm:text-sm mt-1 leading-relaxed ${
+                    isDark ? "text-stone-300" : "text-stone-600"
+                  }`}>
+                    {userOS === "mac" &&
+                      "Universal macOS bundle for Apple Silicon (M1/M2/M3/M4) and Intel x86_64 with hardware Metal VideoToolbox decoders."}
+                    {userOS === "win" &&
+                      "Native Windows installer for Intel/AMD x64 and Qualcomm Snapdragon ARM64 with Direct3D 11 Video Acceleration (D3D11VA)."}
+                    {userOS === "linux" &&
+                      "Standalone AppImage & tarball distributions for x86_64 and AArch64 with hardware VAAPI acceleration on Ubuntu, Debian, Arch, and Fedora."}
+                  </p>
                 </div>
 
-                <div
-                  className={`mt-5 pt-4 border-t flex flex-col sm:flex-row items-center justify-between text-xs gap-2 ${
-                    isDark ? "border-white/10 text-stone-400" : "border-stone-200 text-stone-600"
-                  }`}
-                >
-                  <span>Continuous delivery pipeline powered by GitHub Actions &amp; Tauri code signers.</span>
+                <div className="flex flex-wrap items-center gap-4 pt-1">
                   <a
-                    href="https://github.com/AIEraDev/clypra/releases"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`hover:underline flex items-center gap-1 font-semibold ${
-                      isDark ? "text-purple-400" : "text-purple-700"
+                    href={
+                      userOS === "mac"
+                        ? platformDownloads.mac.arm64.url
+                        : userOS === "win"
+                        ? platformDownloads.win.x64.url
+                        : platformDownloads.linux.x64.url
+                    }
+                    className={`rounded-full px-7 py-3.5 text-sm font-bold flex items-center gap-2.5 transition-all shadow-lg hover:scale-[1.02] cursor-pointer ${
+                      isDark
+                        ? "bg-emerald-500 hover:bg-emerald-400 text-stone-950 shadow-emerald-950/30"
+                        : "bg-[#281030] hover:bg-black text-white shadow-stone-400/40"
                     }`}
                   >
-                    <span>View GitHub Release Notes & Checksums</span>
-                    <ExternalLink className="w-3 h-3" />
+                    <Download className="w-4 h-4" />
+                    <span>
+                      {userOS === "mac" && `Download macOS (.dmg)`}
+                      {userOS === "win" && `Download Windows (.exe)`}
+                      {userOS === "linux" && `Download Linux (.AppImage)`}
+                    </span>
                   </a>
+
+                  {/* Secondary Arch Link */}
+                  {userOS === "mac" && (
+                    <a
+                      href={platformDownloads.mac.intel.url}
+                      className={`text-xs font-mono underline underline-offset-4 hover:opacity-80 transition-opacity ${
+                        isDark ? "text-stone-400" : "text-stone-600"
+                      }`}
+                    >
+                      Looking for Intel x86_64 build? ({platformDownloads.mac.intel.size ?? "Ready"}) →
+                    </a>
+                  )}
+                  {userOS === "win" && (
+                    <a
+                      href={platformDownloads.win.arm64.url}
+                      className={`text-xs font-mono underline underline-offset-4 hover:opacity-80 transition-opacity ${
+                        isDark ? "text-stone-400" : "text-stone-600"
+                      }`}
+                    >
+                      Looking for Snapdragon ARM64 build? ({platformDownloads.win.arm64.size ?? "Ready"}) →
+                    </a>
+                  )}
+                  {userOS === "linux" && (
+                    <a
+                      href={platformDownloads.linux.arm64.url}
+                      className={`text-xs font-mono underline underline-offset-4 hover:opacity-80 transition-opacity ${
+                        isDark ? "text-stone-400" : "text-stone-600"
+                      }`}
+                    >
+                      Looking for ARM64 AArch64 package? ({platformDownloads.linux.arm64.size ?? "Ready"}) →
+                    </a>
+                  )}
                 </div>
               </div>
-            )}
+
+              {/* Right Column: Clean Command / Direct Package Spec */}
+              <div className="lg:col-span-5">
+                <div className={`p-5 rounded-2xl border text-left flex flex-col gap-3 font-mono text-xs ${
+                  isDark ? "bg-[#191026] border-white/10" : "bg-stone-50 border-stone-200"
+                }`}>
+                  <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                    isDark ? "text-stone-400" : "text-stone-500"
+                  }`}>
+                    {userOS === "mac" && "Terminal Install (Homebrew)"}
+                    {userOS === "win" && "Windows Binary Specification"}
+                    {userOS === "linux" && "Quickstart Command"}
+                  </span>
+
+                  {userOS === "mac" && (
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-black/20 dark:bg-black/40 border border-white/5">
+                      <code className="text-amber-300 dark:text-amber-200 select-all text-xs">
+                        brew install AIEraDev/tap/clypra
+                      </code>
+                      <button
+                        onClick={() => copyToClipboard("brew install AIEraDev/tap/clypra", "mac")}
+                        className="p-1 hover:text-amber-400 transition-colors ml-2 cursor-pointer"
+                        title="Copy command"
+                      >
+                        {copiedMac ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-stone-400" />}
+                      </button>
+                    </div>
+                  )}
+
+                  {userOS === "win" && (
+                    <div className="space-y-1.5 text-[11px]">
+                      <div className="flex justify-between py-1 border-b border-stone-200 dark:border-white/5">
+                        <span className="text-stone-500">Package Type</span>
+                        <span className="font-semibold">Signed InnoSetup Executable</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-stone-200 dark:border-white/5">
+                        <span className="text-stone-500">Acceleration</span>
+                        <span className="font-semibold">Direct3D 11 Video (D3D11VA)</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span className="text-stone-500">Hardware Targets</span>
+                        <span className="font-semibold">x86_64 · Snapdragon ARM64</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {userOS === "linux" && (
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-black/20 dark:bg-black/40 border border-white/5">
+                      <code className="text-emerald-300 select-all text-xs">
+                        chmod +x Clypra*.AppImage
+                      </code>
+                      <button
+                        onClick={() => copyToClipboard("chmod +x Clypra*.AppImage && ./Clypra*.AppImage", "linux")}
+                        className="p-1 hover:text-emerald-400 transition-colors ml-2 cursor-pointer"
+                        title="Copy command"
+                      >
+                        {copiedLinux ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-stone-400" />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Architecture Release Ledger Table */}
+            <div className={`border-t ${isDark ? "border-white/10" : "border-stone-200"}`}>
+              <div className="px-6 sm:px-8 py-4 flex items-center justify-between">
+                <span className={`text-xs font-mono font-bold uppercase tracking-wider ${
+                  isDark ? "text-stone-300" : "text-stone-700"
+                }`}>
+                  Complete 6-Architecture Release Ledger
+                </span>
+                <a
+                  href="https://github.com/AIEraDev/clypra/releases"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`text-xs font-semibold hover:underline flex items-center gap-1 ${
+                    isDark ? "text-amber-400" : "text-purple-700"
+                  }`}
+                >
+                  <span>GitHub Checksums (SHA-256)</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+
+              {/* Minimalist Data Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-mono">
+                  <thead>
+                    <tr className={`border-t border-b text-[10px] uppercase tracking-wider ${
+                      isDark ? "border-white/5 bg-white/2 text-stone-400" : "border-stone-200 bg-stone-50 text-stone-500"
+                    }`}>
+                      <th className="py-2.5 px-6 sm:px-8 font-semibold">Target Architecture</th>
+                      <th className="py-2.5 px-4 font-semibold">Platform</th>
+                      <th className="py-2.5 px-4 font-semibold">Format</th>
+                      <th className="py-2.5 px-4 font-semibold">Size</th>
+                      <th className="py-2.5 px-6 sm:px-8 font-semibold text-right">Download</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${isDark ? "divide-white/5" : "divide-stone-100"}`}>
+                    {[
+                      { name: "macOS Apple Silicon (M1/M2/M3/M4)", platform: "macOS", format: ".dmg", size: platformDownloads.mac.arm64.size ?? "89.7 MB", url: platformDownloads.mac.arm64.url },
+                      { name: "macOS Intel x86_64", platform: "macOS", format: ".dmg", size: platformDownloads.mac.intel.size ?? "Ready", url: platformDownloads.mac.intel.url },
+                      { name: "Windows x64 (Intel & AMD)", platform: "Windows", format: ".exe", size: platformDownloads.win.x64.size ?? "102.9 MB", url: platformDownloads.win.x64.url },
+                      { name: "Windows ARM64 (Snapdragon X)", platform: "Windows", format: ".exe", size: platformDownloads.win.arm64.size ?? "Ready", url: platformDownloads.win.arm64.url },
+                      { name: "Linux x86_64", platform: "Linux", format: ".AppImage", size: platformDownloads.linux.x64.size ?? "202.2 MB", url: platformDownloads.linux.x64.url },
+                      { name: "Linux ARM64 (AArch64)", platform: "Linux", format: ".AppImage", size: platformDownloads.linux.arm64.size ?? "92.4 MB", url: platformDownloads.linux.arm64.url },
+                    ].map((row, i) => (
+                      <tr
+                        key={i}
+                        className={`transition-colors ${
+                          isDark ? "hover:bg-white/3" : "hover:bg-stone-50"
+                        }`}
+                      >
+                        <td className="py-3 px-6 sm:px-8 font-semibold font-sans">{row.name}</td>
+                        <td className={`py-3 px-4 ${isDark ? "text-stone-400" : "text-stone-500"}`}>{row.platform}</td>
+                        <td className={`py-3 px-4 ${isDark ? "text-stone-400" : "text-stone-500"}`}>{row.format}</td>
+                        <td className={`py-3 px-4 ${isDark ? "text-emerald-400" : "text-emerald-700 font-bold"}`}>{row.size}</td>
+                        <td className="py-3 px-6 sm:px-8 text-right">
+                          <a
+                            href={row.url}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
+                              isDark
+                                ? "bg-white/10 hover:bg-white/20 text-white"
+                                : "bg-stone-100 hover:bg-stone-200 text-stone-900 border border-stone-200"
+                            }`}
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>Download</span>
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════════
           SECTION 4: DEDICATED CREATIVE EFFECT LABS
-          Pale lavender / royal velvet section showcasing Studio Labs
+          Clean editorial capability index for WebGPU & shader authoring
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="labs"
-        className={`relative overflow-hidden texture-grain py-24 transition-colors duration-500 border-b ${
+        className={`relative overflow-hidden texture-grain py-28 transition-colors duration-500 border-b ${
           isDark
-            ? "bg-[#180f24] text-stone-100 border-purple-900/30"
-            : "bg-[#f8f5fa] text-stone-900 border-stone-200"
+            ? "bg-[#100a1c] text-stone-100 border-purple-900/30"
+            : "bg-[#f7f4ed] text-stone-900 border-stone-300/70"
         }`}
       >
-        <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-12">
-          <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-            <span
-              className={`self-center font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase border ${
-                isDark
-                  ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
-                  : "bg-purple-100 text-purple-900 border-purple-300"
-              }`}
-            >
-              STUDIO PLATFORM
-            </span>
-            <h2
-              className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight ${
-                isDark ? "text-white" : "text-[#281030]"
-              }`}
-            >
-              Dedicated Creative Labs
-            </h2>
-            <p
-              className={`text-xs sm:text-sm leading-relaxed ${
-                isDark ? "text-stone-400" : "text-stone-600"
-              }`}
-            >
-              Design, calibrate, and validate visual assets in focused browser environments.
-              Every effect compiles to the same capability contracts used on the desktop.
+        <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-14">
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-stone-300/60 dark:border-white/10">
+            <div className="max-w-xl text-left">
+              <span className={`text-[11px] font-mono font-bold tracking-widest uppercase ${
+                isDark ? "text-amber-400" : "text-purple-800"
+              }`}>
+                BROWSER-TO-DESKTOP SHADER ARCHITECTURE
+              </span>
+              <h2
+                className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 ${
+                  isDark ? "text-white" : "text-[#240e2b]"
+                }`}
+              >
+                Dedicated Creative Laboratories
+              </h2>
+            </div>
+            <p className={`text-xs sm:text-sm max-w-sm text-left leading-relaxed ${
+              isDark ? "text-stone-400" : "text-stone-600"
+            }`}>
+              Calibrate and validate real-time visual assets in isolated web environments. Every shader, transition, and neural mask compiles to the exact same contract bindings running on the native desktop engine.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Lab 1: Video Effect Lab */}
+          {/* 3-Part Editorial Capability Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Lab 01 */}
             <div
-              className={`rounded-2xl p-6 flex flex-col gap-4 border transition-all hover:scale-[1.01] ${
+              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
                 isDark
-                  ? "bg-[#1f1430] border-purple-500/25 hover:border-purple-400/40"
-                  : "bg-white border-stone-200 shadow-sm hover:border-purple-300"
+                  ? "bg-[#181024] border-white/10 hover:border-purple-400/40 shadow-xl shadow-black/40"
+                  : "bg-white border-stone-200/90 hover:border-stone-400 shadow-lg shadow-stone-300/30"
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-400">
-                <Layers className="w-5 h-5" />
+              <div className="flex flex-col gap-6 text-left">
+                <div className="flex items-center justify-between border-b pb-4 border-stone-200 dark:border-white/10">
+                  <span className={`font-mono text-xl font-bold ${
+                    isDark ? "text-amber-400" : "text-purple-900"
+                  }`}>
+                    01
+                  </span>
+                  <span className={`text-[11px] font-mono font-semibold uppercase tracking-wider ${
+                    isDark ? "text-stone-400" : "text-stone-500"
+                  }`}>
+                    WebGPU Frame Shaders
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className={`font-editorial text-2xl font-bold tracking-tight mb-2 ${
+                    isDark ? "text-white" : "text-stone-900"
+                  }`}>
+                    Video Effect Lab
+                  </h3>
+                  <p className={`text-xs leading-relaxed ${
+                    isDark ? "text-stone-300" : "text-stone-600"
+                  }`}>
+                    Live WGSL fragment passes with real-time parameter uniform buffers, 60 FPS deterministic frame stepping, and sub-millisecond memory footprint.
+                  </p>
+                </div>
+
+                {/* Technical Specification Readout */}
+                <div className={`p-4 rounded-2xl border font-mono text-[11px] flex flex-col gap-2.5 ${
+                  isDark ? "bg-black/25 border-white/5 text-stone-300" : "bg-stone-50 border-stone-200 text-stone-700"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Pipeline</span>
+                    <span className="font-semibold">WGSL / WebGPU Compute</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Frame Budget</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">&lt; 1.2ms @ 4K</span>
+                  </div>
+                  <div className="pt-1 border-t border-stone-200/60 dark:border-white/5">
+                    <span className="text-stone-400 dark:text-stone-500 block mb-1">Built-in Passes:</span>
+                    <div className="text-xs font-sans font-medium text-stone-800 dark:text-stone-200">
+                      Film Grain · VHS Glitch · Bloom · Chromatic Aberration · Gaussian Blur
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h3 className={`font-editorial text-lg font-bold ${isDark ? "text-white" : "text-stone-900"}`}>
-                Video Effect Lab
-              </h3>
-              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
-                Live WebGPU frame shaders with real-time parameter uniforms, frame stepping, and GPU memory profiling.
-              </p>
-              <div className="flex flex-wrap gap-1.5 pt-2">
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
-                      : "bg-purple-50 text-purple-800 border-purple-200 font-medium"
+
+              <div className="pt-6 mt-6 border-t border-stone-200 dark:border-white/10 text-left">
+                <Link
+                  to="/studio/video-effects"
+                  className={`inline-flex items-center gap-2 text-xs font-bold transition-all group ${
+                    isDark ? "text-amber-400 hover:text-amber-300" : "text-purple-800 hover:text-purple-950"
                   }`}
                 >
-                  Film Grain
-                </span>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
-                      : "bg-purple-50 text-purple-800 border-purple-200 font-medium"
-                  }`}
-                >
-                  VHS Glitch
-                </span>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
-                      : "bg-purple-50 text-purple-800 border-purple-200 font-medium"
-                  }`}
-                >
-                  Bloom
-                </span>
+                  <span>Launch Video Shader Lab</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                </Link>
               </div>
             </div>
 
-            {/* Lab 2: Transition Lab */}
+            {/* Lab 02 */}
             <div
-              className={`rounded-2xl p-6 flex flex-col gap-4 border transition-all hover:scale-[1.01] ${
+              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
                 isDark
-                  ? "bg-[#1f1430] border-blue-500/25 hover:border-blue-400/40"
-                  : "bg-white border-stone-200 shadow-sm hover:border-blue-300"
+                  ? "bg-[#181024] border-white/10 hover:border-purple-400/40 shadow-xl shadow-black/40"
+                  : "bg-white border-stone-200/90 hover:border-stone-400 shadow-lg shadow-stone-300/30"
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-400">
-                <Sparkles className="w-5 h-5" />
+              <div className="flex flex-col gap-6 text-left">
+                <div className="flex items-center justify-between border-b pb-4 border-stone-200 dark:border-white/10">
+                  <span className={`font-mono text-xl font-bold ${
+                    isDark ? "text-amber-400" : "text-purple-900"
+                  }`}>
+                    02
+                  </span>
+                  <span className={`text-[11px] font-mono font-semibold uppercase tracking-wider ${
+                    isDark ? "text-stone-400" : "text-stone-500"
+                  }`}>
+                    Temporal Mixing
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className={`font-editorial text-2xl font-bold tracking-tight mb-2 ${
+                    isDark ? "text-white" : "text-stone-900"
+                  }`}>
+                    Transition Lab
+                  </h3>
+                  <p className={`text-xs leading-relaxed ${
+                    isDark ? "text-stone-300" : "text-stone-600"
+                  }`}>
+                    Dual-input temporal mixers with custom cubic Bezier easing curves, directional velocity maps, and instant frame blending scrubbing.
+                  </p>
+                </div>
+
+                {/* Technical Specification Readout */}
+                <div className={`p-4 rounded-2xl border font-mono text-[11px] flex flex-col gap-2.5 ${
+                  isDark ? "bg-black/25 border-white/5 text-stone-300" : "bg-stone-50 border-stone-200 text-stone-700"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Sampling</span>
+                    <span className="font-semibold">Dual-Texture BindGroups</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Interpolation</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">Cubic Bezier / Linear</span>
+                  </div>
+                  <div className="pt-1 border-t border-stone-200/60 dark:border-white/5">
+                    <span className="text-stone-400 dark:text-stone-500 block mb-1">Built-in Transitions:</span>
+                    <div className="text-xs font-sans font-medium text-stone-800 dark:text-stone-200">
+                      Cross Dissolve · Directional Push · Optical Wipe · Glitch Slice · Zoom Flare
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h3 className={`font-editorial text-lg font-bold ${isDark ? "text-white" : "text-stone-900"}`}>
-                Transition Lab
-              </h3>
-              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
-                Dual-input temporal mixers with easing curves, frame blending, and instant timeline scrubbing previews.
-              </p>
-              <div className="flex flex-wrap gap-1.5 pt-2">
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-blue-500/15 text-blue-300 border-blue-500/30"
-                      : "bg-blue-50 text-blue-800 border-blue-200 font-medium"
+
+              <div className="pt-6 mt-6 border-t border-stone-200 dark:border-white/10 text-left">
+                <Link
+                  to="/studio/transitions"
+                  className={`inline-flex items-center gap-2 text-xs font-bold transition-all group ${
+                    isDark ? "text-amber-400 hover:text-amber-300" : "text-purple-800 hover:text-purple-950"
                   }`}
                 >
-                  Cross Dissolve
-                </span>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-blue-500/15 text-blue-300 border-blue-500/30"
-                      : "bg-blue-50 text-blue-800 border-blue-200 font-medium"
-                  }`}
-                >
-                  Directional Push
-                </span>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-blue-500/15 text-blue-300 border-blue-500/30"
-                      : "bg-blue-50 text-blue-800 border-blue-200 font-medium"
-                  }`}
-                >
-                  Wipe
-                </span>
+                  <span>Launch Transition Lab</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                </Link>
               </div>
             </div>
 
-            {/* Lab 3: Body Effect Lab */}
+            {/* Lab 03 */}
             <div
-              className={`rounded-2xl p-6 flex flex-col gap-4 border transition-all hover:scale-[1.01] ${
+              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
                 isDark
-                  ? "bg-[#1f1430] border-emerald-500/25 hover:border-emerald-400/40"
-                  : "bg-white border-stone-200 shadow-sm hover:border-emerald-300"
+                  ? "bg-[#181024] border-white/10 hover:border-purple-400/40 shadow-xl shadow-black/40"
+                  : "bg-white border-stone-200/90 hover:border-stone-400 shadow-lg shadow-stone-300/30"
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400">
-                <Shield className="w-5 h-5" />
+              <div className="flex flex-col gap-6 text-left">
+                <div className="flex items-center justify-between border-b pb-4 border-stone-200 dark:border-white/10">
+                  <span className={`font-mono text-xl font-bold ${
+                    isDark ? "text-amber-400" : "text-purple-900"
+                  }`}>
+                    03
+                  </span>
+                  <span className={`text-[11px] font-mono font-semibold uppercase tracking-wider ${
+                    isDark ? "text-stone-400" : "text-stone-500"
+                  }`}>
+                    Neural Segmentation
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className={`font-editorial text-2xl font-bold tracking-tight mb-2 ${
+                    isDark ? "text-white" : "text-stone-900"
+                  }`}>
+                    Body &amp; Neural Lab
+                  </h3>
+                  <p className={`text-xs leading-relaxed ${
+                    isDark ? "text-stone-300" : "text-stone-600"
+                  }`}>
+                    Client-side inference workers for real-time person segmentation, depth-masked portrait bokeh, and dynamic neon silhouettes with zero cloud roundtrips.
+                  </p>
+                </div>
+
+                {/* Technical Specification Readout */}
+                <div className={`p-4 rounded-2xl border font-mono text-[11px] flex flex-col gap-2.5 ${
+                  isDark ? "bg-black/25 border-white/5 text-stone-300" : "bg-stone-50 border-stone-200 text-stone-700"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Inference</span>
+                    <span className="font-semibold">Web Worker WASM Core</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Privacy</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">100% Local / Zero Cloud</span>
+                  </div>
+                  <div className="pt-1 border-t border-stone-200/60 dark:border-white/5">
+                    <span className="text-stone-400 dark:text-stone-500 block mb-1">Built-in Modules:</span>
+                    <div className="text-xs font-sans font-medium text-stone-800 dark:text-stone-200">
+                      Neon Silhouette · Portrait Bokeh · Background Removal · Chroma Keyer
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h3 className={`font-editorial text-lg font-bold ${isDark ? "text-white" : "text-stone-900"}`}>
-                Body Effect Lab
-              </h3>
-              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
-                Interactive segmentation and pose tracking with real-time neon silhouettes, mask overlays, and depth blur.
-              </p>
-              <div className="flex flex-wrap gap-1.5 pt-2">
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                      : "bg-emerald-50 text-emerald-800 border-emerald-200 font-medium"
+
+              <div className="pt-6 mt-6 border-t border-stone-200 dark:border-white/10 text-left">
+                <Link
+                  to="/studio/body-effects"
+                  className={`inline-flex items-center gap-2 text-xs font-bold transition-all group ${
+                    isDark ? "text-amber-400 hover:text-amber-300" : "text-purple-800 hover:text-purple-950"
                   }`}
                 >
-                  Neon Silhouette
-                </span>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                      : "bg-emerald-50 text-emerald-800 border-emerald-200 font-medium"
-                  }`}
-                >
-                  Portrait Bokeh
-                </span>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                      : "bg-emerald-50 text-emerald-800 border-emerald-200 font-medium"
-                  }`}
-                >
-                  Keyer
-                </span>
+                  <span>Launch Body Lab</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                </Link>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-center">
+          {/* Studio Ecosystem Footer Bar */}
+          <div className={`p-6 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs ${
+            isDark ? "bg-[#140c1f] border-white/10 text-stone-300" : "bg-white border-stone-200 text-stone-700 shadow-sm"
+          }`}>
+            <div className="flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span>
+                <strong>Additional Laboratories:</strong> Typography Engine, Native Color Grading LUTs, Spatial Audio, and Motion Overlays.
+              </span>
+            </div>
             <Link
               to="/studio"
-              className={`rounded-full px-7 py-3 text-sm font-bold transition-all shadow-lg flex items-center gap-2 ${
+              className={`rounded-full px-5 py-2 text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 shadow-sm ${
                 isDark
-                  ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/30"
+                  ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-950/40"
                   : "bg-[#281030] hover:bg-black text-white shadow-stone-400/30"
               }`}
             >
-              <span>Explore All Studio Labs</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>Open Studio Hub</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════════
-          SECTION 5: INSTALLATION & SECURITY ASSISTANT
-          Warm sand linen / dark terminal section
+          SECTION 5: INSTALLATION & SECURITY VERIFICATION
+          Clean developer verification protocol (NO fake terminal traffic lights)
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="install"
-        className={`relative overflow-hidden texture-grain py-24 transition-colors duration-500 border-b ${
+        className={`relative overflow-hidden texture-grain py-28 transition-colors duration-500 border-b ${
           isDark
-            ? "bg-[#0b0811] text-stone-100 border-purple-900/20"
-            : "bg-[#f4efe8] text-stone-900 border-stone-200"
+            ? "bg-[#0b0713] text-stone-100 border-purple-900/20"
+            : "bg-[#f3eee7] text-stone-900 border-stone-300/70"
         }`}
       >
-        <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-10">
-          <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 border-b pb-6 ${
-            isDark ? "border-white/10" : "border-stone-300"
-          }`}>
-            <div>
-              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-amber-500">
-                SECURITY &amp; GATEKEEPER
+        <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-12">
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-stone-300/60 dark:border-white/10">
+            <div className="max-w-xl text-left">
+              <span className={`text-[11px] font-mono font-bold tracking-widest uppercase ${
+                isDark ? "text-amber-400" : "text-amber-700"
+              }`}>
+                SYSTEM AUTHORIZATION &amp; CLEARANCE
               </span>
               <h2
-                className={`font-editorial text-2xl sm:text-4xl font-extrabold tracking-tight mt-1 ${
-                  isDark ? "text-white" : "text-[#281030]"
+                className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 ${
+                  isDark ? "text-white" : "text-[#240e2b]"
                 }`}
               >
-                Installation Assistant
+                Clearance &amp; Verification Protocol
               </h2>
-              <p className={`text-xs sm:text-sm mt-1 ${isDark ? "text-stone-400" : "text-stone-600"}`}>
-                How to authorize Clypra through system security dialogs
-              </p>
             </div>
-
-            {/* Platform tab buttons */}
-            <div className={`flex rounded-xl p-1 border self-start md:self-auto ${
-              isDark ? "bg-white/5 border-white/10" : "bg-stone-200/80 border-stone-300"
+            <p className={`text-xs sm:text-sm max-w-sm text-left leading-relaxed ${
+              isDark ? "text-stone-400" : "text-stone-600"
             }`}>
-              <button
-                onClick={() => setActiveTab("mac")}
-                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === "mac"
-                    ? "bg-purple-600 text-white shadow-sm"
-                    : isDark
-                    ? "text-stone-400 hover:text-white"
-                    : "text-stone-700 hover:text-stone-950 font-medium"
-                }`}
-              >
-                macOS Gatekeeper
-              </button>
-              <button
-                onClick={() => setActiveTab("win")}
-                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === "win"
-                    ? "bg-cyan-600 text-white shadow-sm"
-                    : isDark
-                    ? "text-stone-400 hover:text-white"
-                    : "text-stone-700 hover:text-stone-950 font-medium"
-                }`}
-              >
-                Windows SmartScreen
-              </button>
-              <button
-                onClick={() => setActiveTab("linux")}
-                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === "linux"
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : isDark
-                    ? "text-stone-400 hover:text-white"
-                    : "text-stone-700 hover:text-stone-950 font-medium"
-                }`}
-              >
-                Linux Executable
-              </button>
+              Clypra is open-source software compiled transparently from audited Rust and TypeScript repositories. Because we reject telemetry and avoid corporate root keys, operating systems request explicit user confirmation on first launch.
+            </p>
+          </div>
+
+          {/* Platform Selector */}
+          <div className="flex justify-start">
+            <div className={`p-1 rounded-2xl border flex items-center gap-1.5 ${
+              isDark ? "bg-[#140c1f] border-white/10" : "bg-stone-200/70 border-stone-300"
+            }`}>
+              {(["mac", "win", "linux"] as const).map((osKey) => (
+                <button
+                  key={osKey}
+                  onClick={() => setActiveTab(osKey)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === osKey
+                      ? isDark
+                        ? "bg-purple-600 text-white shadow-md shadow-purple-950/40"
+                        : "bg-[#281030] text-white shadow-md shadow-stone-400/30"
+                      : isDark
+                      ? "text-stone-400 hover:text-white"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  {osKey === "mac" && "macOS Gatekeeper"}
+                  {osKey === "win" && "Windows SmartScreen"}
+                  {osKey === "linux" && "Linux Permissions"}
+                </button>
+              ))}
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Guide steps */}
-            <div className="lg:col-span-5 flex flex-col gap-4">
+            {/* Left Column: Clear Typographical Steps */}
+            <div className="lg:col-span-6 flex flex-col gap-4 text-left">
               <div
-                className={`p-5 rounded-xl border transition-all ${
-                  isDark ? "bg-[#140e1f] border-purple-500/20" : "bg-white border-stone-200 shadow-sm"
+                className={`p-6 rounded-2xl border transition-all ${
+                  isDark ? "bg-[#140c1f] border-white/10" : "bg-white border-stone-200/90 shadow-sm"
                 }`}
               >
-                <div className="flex items-center gap-2 mb-2 font-bold text-xs uppercase font-mono text-amber-500">
-                  <span>Step 1: Download &amp; Mount</span>
-                </div>
-                <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
-                  Open the downloaded artifact (.dmg, .exe, or .AppImage) directly from your downloads folder.
-                </p>
-              </div>
-
-              <div
-                className={`p-5 rounded-xl border transition-all ${
-                  isDark ? "bg-[#140e1f] border-purple-500/20" : "bg-white border-stone-200 shadow-sm"
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-2 font-bold text-xs uppercase font-mono text-purple-500">
-                  <span>Step 2: Security Verification</span>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
+                    isDark ? "bg-amber-400/15 text-amber-300" : "bg-amber-100 text-amber-900"
+                  }`}>
+                    01
+                  </span>
+                  <h4 className={`text-sm font-bold ${isDark ? "text-white" : "text-stone-950"}`}>
+                    Mount Artifact
+                  </h4>
                 </div>
                 <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                   {activeTab === "mac" &&
-                    "Right-click (Control-click) Clypra.app in Applications and select 'Open' to authorize execution."}
+                    "Open the downloaded Clypra_aarch64.dmg or Clypra_x64.dmg and drag the Clypra.app bundle into /Applications."}
                   {activeTab === "win" &&
-                    "Click 'More Info' on Windows SmartScreen dialog, then choose 'Run Anyway'."}
+                    "Run the standalone Clypra-setup.exe installer directly from your downloads directory."}
                   {activeTab === "linux" &&
-                    "Grant executable permissions via chmod or file properties before launching."}
+                    "Download Clypra_amd64.AppImage or Clypra_arm64.AppImage into your workspace or ~/.local/bin."}
+                </p>
+              </div>
+
+              <div
+                className={`p-6 rounded-2xl border transition-all ${
+                  isDark ? "bg-[#140c1f] border-white/10" : "bg-white border-stone-200/90 shadow-sm"
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
+                    isDark ? "bg-purple-400/15 text-purple-300" : "bg-purple-100 text-purple-900"
+                  }`}>
+                    02
+                  </span>
+                  <h4 className={`text-sm font-bold ${isDark ? "text-white" : "text-stone-950"}`}>
+                    Clear Quarantine / Authorization
+                  </h4>
+                </div>
+                <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
+                  {activeTab === "mac" &&
+                    "If macOS Gatekeeper flags the app as unverified, right-click (Control-click) Clypra.app and choose 'Open'. Or run the xattr command opposite to permanently clear the quarantine bit."}
+                  {activeTab === "win" &&
+                    "When Windows Defender SmartScreen appears, click 'More info' followed by 'Run anyway'. This registers the Direct3D GPU decoder filters."}
+                  {activeTab === "linux" &&
+                    "Grant execution permissions via chmod +x or through your desktop file manager properties before launching."}
+                </p>
+              </div>
+
+              <div
+                className={`p-6 rounded-2xl border transition-all ${
+                  isDark ? "bg-[#140c1f] border-white/10" : "bg-white border-stone-200/90 shadow-sm"
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
+                    isDark ? "bg-emerald-400/15 text-emerald-300" : "bg-emerald-100 text-emerald-900"
+                  }`}>
+                    03
+                  </span>
+                  <h4 className={`text-sm font-bold ${isDark ? "text-white" : "text-stone-950"}`}>
+                    Hardware Decoder Verification
+                  </h4>
+                </div>
+                <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
+                  On launch, Clypra immediately probes for hardware decoder capability: Metal on macOS, D3D11 on Windows, and VAAPI on Linux. Zero cloud login required.
                 </p>
               </div>
             </div>
 
-            {/* Terminal snippet box */}
-            <div className="lg:col-span-7">
-              <div className={`rounded-xl overflow-hidden border shadow-xl bg-[#09070d] text-white ${
-                isDark ? "border-white/10 shadow-black/60" : "border-stone-300 shadow-stone-300/80"
+            {/* Right Column: Clean Developer Terminal Console (NO traffic lights) */}
+            <div className="lg:col-span-6">
+              <div className={`rounded-2xl border overflow-hidden text-left shadow-xl ${
+                isDark
+                  ? "bg-[#08050e] border-white/10 shadow-black/60"
+                  : "bg-[#15111c] border-stone-800 text-stone-100 shadow-stone-400/40"
               }`}>
-                <div className="bg-[#150f1f] px-4 py-3 flex items-center justify-between border-b border-white/5">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                {/* Console Bar */}
+                <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between text-xs font-mono">
+                  <div className="flex items-center gap-2 text-stone-400">
+                    <Terminal className="w-3.5 h-3.5 text-amber-400" />
+                    <span>system-verification · {activeTab}</span>
                   </div>
-                  <span className="text-[10px] font-mono text-stone-400">
-                    terminal · {activeTab}
+                  <span className="text-[10px] uppercase tracking-wider text-stone-500">
+                    BASH / ZSH / POWERSHELL
                   </span>
-                  <div className="w-10" />
                 </div>
 
-                <div className="p-5 font-mono text-xs text-left min-h-[160px] flex flex-col justify-between">
+                {/* Console Code Body */}
+                <div className="p-6 font-mono text-xs flex flex-col gap-5">
                   {activeTab === "mac" && (
-                    <div className="flex flex-col gap-3">
-                      <div className={isDark ? "text-stone-400" : "text-stone-300"}># Install globally via Homebrew</div>
-                      <div className="p-3 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between">
-                        <code className="text-purple-300 select-all">
-                          brew install AIEraDev/tap/clypra
-                        </code>
-                        <button
-                          onClick={() => copyToClipboard("brew install AIEraDev/tap/clypra", "mac")}
-                          className="hover:text-purple-300 cursor-pointer"
-                        >
-                          {copiedMac ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <div className="text-[11px] text-stone-400">
+                          # Method A: Homebrew Tap (Installs &amp; bypasses Gatekeeper automatically)
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-3">
+                          <code className="text-amber-300 select-all overflow-x-auto">
+                            brew install AIEraDev/tap/clypra
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard("brew install AIEraDev/tap/clypra", "mac")}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-stone-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                            title="Copy command"
+                          >
+                            {copiedMac ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
-                      <div className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-300"}`}>
-                        Bypasses Gatekeeper restrictions cleanly and configures PATH binaries.
+
+                      <div className="flex flex-col gap-2">
+                        <div className="text-[11px] text-stone-400">
+                          # Method B: Manually strip quarantine bit from .app bundle
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-3">
+                          <code className="text-amber-300 select-all overflow-x-auto">
+                            xattr -cr /Applications/Clypra.app
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard("xattr -cr /Applications/Clypra.app", "mac")}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-stone-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                            title="Copy command"
+                          >
+                            {copiedMac ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
 
                   {activeTab === "win" && (
-                    <div className="flex flex-col gap-3">
-                      <div className={isDark ? "text-stone-400" : "text-stone-300"}>&gt; Windows SmartScreen Bypass</div>
-                      <div className="p-3 rounded-lg bg-white/5 border border-white/10 text-cyan-300 text-[11px] leading-relaxed">
-                        1. Double-click Clypra installer (.exe)<br />
-                        2. Click &quot;More info&quot; in the SmartScreen prompt<br />
-                        3. Click &quot;Run anyway&quot;
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <div className="text-[11px] text-stone-400">
+                          # PowerShell: Unblock downloaded installer before launch
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-3">
+                          <code className="text-cyan-300 select-all overflow-x-auto">
+                            Unblock-File -Path .\Clypra_x64-setup.exe
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard("Unblock-File -Path .\\Clypra_x64-setup.exe", "win")}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-stone-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                            title="Copy command"
+                          >
+                            {copiedWin ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
-                      <div className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-300"}`}>
-                        Installs GPU decoding filters and registers desktop shortcuts.
+
+                      <div className="flex flex-col gap-2">
+                        <div className="text-[11px] text-stone-400">
+                          # Or execute installer directly
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-3">
+                          <code className="text-cyan-300 select-all overflow-x-auto">
+                            .\Clypra_x64-setup.exe
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard(".\\Clypra_x64-setup.exe", "win")}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-stone-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                            title="Copy command"
+                          >
+                            {copiedWin ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
 
                   {activeTab === "linux" && (
-                    <div className="flex flex-col gap-3">
-                      <div className={isDark ? "text-stone-400" : "text-stone-300"}># Set executable bit and launch</div>
-                      <div className="p-3 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between">
-                        <code className="text-emerald-300 select-all">
-                          chmod +x Clypra*.AppImage &amp;&amp; ./Clypra*.AppImage
-                        </code>
-                        <button
-                          onClick={() => copyToClipboard("chmod +x Clypra*.AppImage && ./Clypra*.AppImage", "linux")}
-                          className="hover:text-emerald-300 cursor-pointer"
-                        >
-                          {copiedLinux ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <div className="text-[11px] text-stone-400">
+                          # Grant execution permissions and run standalone AppImage
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-3">
+                          <code className="text-emerald-300 select-all overflow-x-auto">
+                            chmod +x Clypra*.AppImage &amp;&amp; ./Clypra*.AppImage
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard("chmod +x Clypra*.AppImage && ./Clypra*.AppImage", "linux")}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-stone-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                            title="Copy command"
+                          >
+                            {copiedLinux ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
-                      <div className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-300"}`}>
-                        Or right-click AppImage → Properties → Permissions → Allow executing file.
+
+                      <div className="flex flex-col gap-2">
+                        <div className="text-[11px] text-stone-400">
+                          # Optional: Move to user path for global launcher integration
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-3">
+                          <code className="text-emerald-300 select-all overflow-x-auto">
+                            mv Clypra*.AppImage ~/.local/bin/clypra
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard("mv Clypra*.AppImage ~/.local/bin/clypra", "linux")}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-stone-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                            title="Copy command"
+                          >
+                            {copiedLinux ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
+
+                  {/* Cryptographic verification footer */}
+                  <div className="pt-3 border-t border-white/10 text-[11px] text-stone-400 leading-relaxed font-sans">
+                    <strong>Cryptographic Guarantee:</strong> Every Clypra binary is compiled inside ephemeral GitHub Actions runners directly from commit hashes. SHA-256 digests are published alongside every release asset.
+                  </div>
                 </div>
               </div>
             </div>
@@ -1741,382 +1787,362 @@ export const WebShowcase: React.FC = () => {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════
-          SECTION 6: RECENT ACHIEVEMENTS & ENGINEERING MILESTONES
-          Chalk white / deep night purple section with status tags
+          SECTION 6: RECENT ACHIEVEMENTS & ENGINEERING DISPATCH
+          Clean chronological release ledger (NO Jira cards with colored badges)
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="milestones"
-        className={`relative overflow-hidden texture-grain py-24 transition-colors duration-500 border-b ${
+        className={`relative overflow-hidden texture-grain py-28 transition-colors duration-500 border-b ${
           isDark
-            ? "bg-[#110c18] text-stone-100 border-purple-900/20"
-            : "bg-white text-stone-900 border-stone-200"
+            ? "bg-[#110a1b] text-stone-100 border-purple-900/20"
+            : "bg-[#faf8f4] text-stone-900 border-stone-300/70"
         }`}
       >
-        <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-12">
-          <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-            <span
-              className={`self-center font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase border ${
-                isDark
-                  ? "bg-amber-400/20 text-amber-300 border-amber-400/40"
-                  : "bg-amber-100 text-amber-900 border-amber-300"
-              }`}
-            >
-              ENGINEERING LOG
-            </span>
-            <h2
-              className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight ${
-                isDark ? "text-white" : "text-[#281030]"
-              }`}
-            >
-              Recent Milestones
-            </h2>
-            <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
-              Continuous performance improvements shipped across the Clypra ecosystem.
+        <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-14">
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-stone-300/60 dark:border-white/10">
+            <div className="max-w-xl text-left">
+              <span className={`text-[11px] font-mono font-bold tracking-widest uppercase ${
+                isDark ? "text-amber-400" : "text-amber-700"
+              }`}>
+                ENGINEERING DISPATCH &amp; LEDGER
+              </span>
+              <h2
+                className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 ${
+                  isDark ? "text-white" : "text-[#240e2b]"
+                }`}
+              >
+                Engineered in the open.
+              </h2>
+            </div>
+            <p className={`text-xs sm:text-sm max-w-sm text-left leading-relaxed ${
+              isDark ? "text-stone-400" : "text-stone-600"
+            }`}>
+              Every commit, performance optimization, and pipeline refactor is documented with full technical transparency across our public git commit history.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Milestone 1 */}
-            <div
-              className={`p-6 rounded-2xl border transition-all ${
-                isDark ? "bg-[#161021] border-purple-500/20" : "bg-stone-50 border-stone-200 shadow-sm"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                    isDark ? "bg-emerald-500/20 text-emerald-300" : "bg-emerald-100 text-emerald-800"
-                  }`}
-                >
-                  DEPLOYED
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+            {/* Left Column: Repository Velocity Metrics */}
+            <div className="lg:col-span-4 flex flex-col gap-5 text-left">
+              <div
+                className={`p-6 rounded-3xl border ${
+                  isDark ? "bg-[#181024] border-white/10" : "bg-white border-stone-200/90 shadow-sm"
+                }`}
+              >
+                <span className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
+                  isDark ? "text-stone-400" : "text-stone-500"
+                }`}>
+                  Release Velocity
                 </span>
-                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
-                  CI/CD
-                </span>
+                <div className="mt-3 flex flex-col gap-4">
+                  <div>
+                    <div className={`text-4xl font-editorial font-bold ${
+                      isDark ? "text-white" : "text-stone-950"
+                    }`}>
+                      {release?.tag_name ?? "v1.5.8"}
+                    </div>
+                    <div className={`text-xs ${isDark ? "text-stone-400" : "text-stone-500"}`}>
+                      Current Stable Production Tag
+                    </div>
+                  </div>
+
+                  <div className={`pt-4 border-t ${isDark ? "border-white/10" : "border-stone-100"}`}>
+                    <div className="flex items-center justify-between text-xs font-mono py-1">
+                      <span className={isDark ? "text-stone-400" : "text-stone-500"}>Architectures:</span>
+                      <span className="font-bold">6 Native Targets</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-mono py-1">
+                      <span className={isDark ? "text-stone-400" : "text-stone-500"}>License:</span>
+                      <span className="font-bold">MIT Open Source</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-mono py-1">
+                      <span className={isDark ? "text-stone-400" : "text-stone-500"}>Rust Core:</span>
+                      <span className="font-bold">Zero-Copy GPU Surface</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-stone-200 dark:border-white/10">
+                  <a
+                    href="https://github.com/AIEraDev/clypra/releases"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-2 text-xs font-bold transition-all group ${
+                      isDark ? "text-amber-400 hover:text-amber-300" : "text-purple-800 hover:text-purple-950"
+                    }`}
+                  >
+                    <span>Inspect GitHub Release History</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
               </div>
-              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
-                Automated Multi-Arch Releases
-              </h3>
-              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
-                6 automated build matrices compiling macOS (ARM/Intel), Windows (x64/ARM64), and Linux with code signing.
-              </p>
             </div>
 
-            {/* Milestone 2 */}
-            <div
-              className={`p-6 rounded-2xl border transition-all ${
-                isDark ? "bg-[#161021] border-purple-500/20" : "bg-stone-50 border-stone-200 shadow-sm"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                    isDark ? "bg-purple-500/20 text-purple-300" : "bg-purple-100 text-purple-800"
+            {/* Right Column: Chronological Engineering Dispatches (Ledger) */}
+            <div className="lg:col-span-8 flex flex-col gap-4 text-left">
+              {[
+                {
+                  version: "v1.8.1",
+                  subsystem: "CORE RENDER PIPELINE",
+                  title: "Direct3D 11 & Metal Zero-Copy Frame Buffers",
+                  date: "October 2026",
+                  summary:
+                    "Migrated decoded video stream delivery from intermediate RAM copies to direct hardware GPU surface blits. Scrubbing 4K 60 FPS ProRes footage now completes within sub-10ms frame dispatch budgets on Apple Silicon and RTX GPUs.",
+                },
+                {
+                  version: "v1.8.0",
+                  subsystem: "STUDIO ARCHITECTURE",
+                  title: "Modular Monorepo Extraction & NPM Workspaces",
+                  date: "September 2026",
+                  summary:
+                    "Decoupled engine primitives into @clypra-studio/engine, @clypra-studio/types, and @clypra-studio/ui. Establishes clean public API contracts for community shader authors and headless render pipelines.",
+                },
+                {
+                  version: "v1.7.9",
+                  subsystem: "DISTRIBUTION MATRIX",
+                  title: "Automated 6-Architecture Release Pipeline",
+                  date: "September 2026",
+                  summary:
+                    "Configured GitHub Actions matrix to compile, package, and generate cryptographic SHA-256 checksums for macOS (Apple Silicon + Intel), Windows (x64 + Snapdragon ARM64), and Linux (x86_64 + AArch64) on every tagged push.",
+                },
+                {
+                  version: "v1.7.5",
+                  subsystem: "RENDER DETERMINISM",
+                  title: "Aspect-Locked Export & WGSL Shader Prewarming",
+                  date: "August 2026",
+                  summary:
+                    "Resolved timeline export dimension drift with pixel-exact WebGL surface rasterization. Added eager WGSL pipeline caching at startup to prevent micro-stutters on initial frame effect playback.",
+                },
+                {
+                  version: "v2.0 PREVIEW",
+                  subsystem: "MOBILE & RESEARCH",
+                  title: "Tauri v2 Mobile Core & Cross-Device Sync",
+                  date: "In Active Development",
+                  summary:
+                    "Porting Clypra's Rust rendering surface to touch interfaces on iPadOS and Android with gesture-driven timeline controls and localized SQLite project persistence with zero cloud dependency.",
+                },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className={`p-6 rounded-2xl border transition-all ${
+                    isDark
+                      ? "bg-[#160f23] border-white/10 hover:border-purple-400/30"
+                      : "bg-white border-stone-200/90 hover:border-stone-400 shadow-sm"
                   }`}
                 >
-                  OPTIMIZED
-                </span>
-                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
-                  RENDER PIPELINE
-                </span>
-              </div>
-              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
-                Export Dimension Precision
-              </h3>
-              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
-                Aspect-locked dimensions, deterministic frame stepper, and pixel-exact WebGL surface rasterization.
-              </p>
-            </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
+                        isDark ? "bg-amber-400/15 text-amber-300" : "bg-purple-100 text-purple-900"
+                      }`}>
+                        {item.version}
+                      </span>
+                      <span className={`text-[10px] font-mono tracking-wider uppercase font-semibold ${
+                        isDark ? "text-stone-400" : "text-stone-500"
+                      }`}>
+                        {item.subsystem}
+                      </span>
+                    </div>
+                    <span className={`text-xs font-mono ${
+                      isDark ? "text-stone-400" : "text-stone-500"
+                    }`}>
+                      {item.date}
+                    </span>
+                  </div>
 
-            {/* Milestone 3 */}
-            <div
-              className={`p-6 rounded-2xl border transition-all ${
-                isDark ? "bg-[#161021] border-purple-500/20" : "bg-stone-50 border-stone-200 shadow-sm"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                    isDark ? "bg-blue-500/20 text-blue-300" : "bg-blue-100 text-blue-800"
-                  }`}
-                >
-                  PUBLISHED
-                </span>
-                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
-                  NPM REGISTRY
-                </span>
-              </div>
-              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
-                @clypra-studio/engine v1.8.0
-              </h3>
-              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
-                Modular packages with workspace dependencies published to registry for external custom effect authors.
-              </p>
-            </div>
+                  <h3 className={`text-base font-bold mb-1.5 ${
+                    isDark ? "text-white" : "text-stone-900"
+                  }`}>
+                    {item.title}
+                  </h3>
 
-            {/* Milestone 4 */}
-            <div
-              className={`p-6 rounded-2xl border transition-all ${
-                isDark ? "bg-[#161021] border-purple-500/20" : "bg-stone-50 border-stone-200 shadow-sm"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                    isDark ? "bg-cyan-500/20 text-cyan-300" : "bg-cyan-100 text-cyan-800"
-                  }`}
-                >
-                  INTEGRATED
-                </span>
-                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
-                  HARDWARE GPU
-                </span>
-              </div>
-              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
-                Zero-Copy Decoder Prewarming
-              </h3>
-              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
-                Pre-allocated frame pools with VideoToolbox &amp; D3D11VA yielding sub-10ms scrubbing response latency.
-              </p>
-            </div>
-
-            {/* Milestone 5 */}
-            <div
-              className={`p-6 rounded-2xl border transition-all ${
-                isDark ? "bg-[#161021] border-purple-500/20" : "bg-stone-50 border-stone-200 shadow-sm"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                    isDark ? "bg-amber-500/20 text-amber-300" : "bg-amber-100 text-amber-800"
-                  }`}
-                >
-                  ENHANCED
-                </span>
-                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
-                  DEV INFRA
-                </span>
-              </div>
-              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
-                Node 22 &amp; Vitest CI Automation
-              </h3>
-              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
-                Full test coverage for frontend components, Rust contracts, and WebGPU shaders across all PR branches.
-              </p>
-            </div>
-
-            {/* Milestone 6 */}
-            <div
-              className={`p-6 rounded-2xl border transition-all ${
-                isDark ? "bg-[#161021] border-purple-500/20" : "bg-stone-50 border-stone-200 shadow-sm"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                    isDark ? "bg-pink-500/20 text-pink-300" : "bg-pink-100 text-pink-800"
-                  }`}
-                >
-                  IN PROGRESS
-                </span>
-                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
-                  MOBILE ENGINE
-                </span>
-              </div>
-              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
-                Tauri v2 Mobile Core
-              </h3>
-              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
-                Porting Clypra GPU pipeline to iOS and Android with gesture-based touch editing and cross-device project handover.
-              </p>
+                  <p className={`text-xs leading-relaxed ${
+                    isDark ? "text-stone-300" : "text-stone-600"
+                  }`}>
+                    {item.summary}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════════
-          SECTION 7: MEET THE CREATOR & SOCIALS
-          High-touch editorial profile showcase
+          SECTION 7: MEET THE CREATOR & SOCIAL ARCHIVE
+          Direct editorial inspiration from Chess in Slums (media_1791060849486.png)
+          Tilted physical photograph, thoughtful editorial quote, and clean inline links.
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="creator"
-        className={`relative overflow-hidden texture-grain py-24 transition-colors duration-500 ${
+        className={`relative overflow-hidden texture-grain py-28 transition-colors duration-500 ${
           isDark
-            ? "bg-[#150f20] text-stone-100"
-            : "bg-[#f6f2ec] text-stone-900"
+            ? "bg-[#140d1f] text-stone-100"
+            : "bg-[#f5f1ea] text-stone-900"
         }`}
       >
-        <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-12">
-          <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-            <span
-              className={`self-center font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase border ${
-                isDark
-                  ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
-                  : "bg-purple-100 text-purple-900 border-purple-300"
-              }`}
-            >
-              ARCHITECT &amp; FOUNDER
-            </span>
-            <h2
-              className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight ${
-                isDark ? "text-white" : "text-[#281030]"
-              }`}
-            >
-              Meet the Creator
-            </h2>
-            <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
-              Behind Clypra&apos;s native engine design and creator-first ergonomics.
+        <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-14">
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-stone-300/60 dark:border-white/10">
+            <div className="max-w-xl text-left">
+              <span className={`text-[11px] font-mono font-bold tracking-widest uppercase ${
+                isDark ? "text-amber-400" : "text-amber-700"
+              }`}>
+                THE CRAFT &amp; PHILOSOPHY
+              </span>
+              <h2
+                className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 ${
+                  isDark ? "text-white" : "text-[#240e2b]"
+                }`}
+              >
+                Meet the Creator
+              </h2>
+            </div>
+            <p className={`text-xs sm:text-sm max-w-sm text-left leading-relaxed ${
+              isDark ? "text-stone-400" : "text-stone-600"
+            }`}>
+              Clypra is designed and maintained by Abdul Kabir Musa—an independent software craftsman engineering high-performance creative tools.
             </p>
           </div>
 
-          <div
-            className={`rounded-3xl p-8 md:p-12 border transition-all ${
-              isDark
-                ? "bg-[#1b1429] border-purple-500/25 shadow-2xl"
-                : "bg-white border-stone-200 shadow-xl"
-            }`}
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-              {/* Creator Photo with tilted aesthetic */}
-              <div className="lg:col-span-4 flex justify-center">
+          {/* Editorial Spread: Physical Tilted Photo & Authentic Manifesto */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
+            {/* Left Column: Physical Tilted Photo with Border & Tape Aesthetic */}
+            <div className="lg:col-span-5 flex justify-center">
+              <div className="relative group">
+                {/* Physical Print Framing */}
                 <div
-                  className={`relative w-56 h-56 sm:w-64 sm:h-64 rounded-2xl overflow-hidden border shadow-2xl -rotate-2 group ${
-                    isDark ? "border-white/20" : "border-stone-300 shadow-stone-300/80"
+                  className={`relative p-3 rounded-2xl border shadow-2xl transition-all duration-500 -rotate-2 group-hover:rotate-0 group-hover:scale-[1.02] ${
+                    isDark
+                      ? "bg-[#1f152b] border-white/20 shadow-black/80"
+                      : "bg-white border-stone-300/80 shadow-stone-400/50"
                   }`}
                 >
-                  <img
-                    src="/founder.jpg"
-                    alt="Abdul Kabir Musa - Clypra Creator"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                  {/* Subtle Top-Right Tape / Physical Stamp */}
+                  <div className="absolute -top-3 -right-2 z-20 px-3 py-1 rounded-sm bg-amber-400 text-stone-950 font-mono text-[9px] font-extrabold uppercase tracking-wider shadow-md rotate-6">
+                    LAGOS · ARCHITECT
+                  </div>
+
+                  <div className="relative w-64 h-72 sm:w-72 sm:h-80 rounded-xl overflow-hidden bg-black">
+                    <img
+                      src="/founder.jpg"
+                      alt="Abdul Kabir Musa - Creator of Clypra"
+                      className="w-full h-full object-cover object-center filter saturate-105 contrast-105"
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                  </div>
+
+                  {/* Physical Photo Caption */}
+                  <div className="pt-3 pb-1 text-center font-mono">
+                    <div className={`text-xs font-bold ${isDark ? "text-stone-200" : "text-stone-900"}`}>
+                      Abdul Kabir Musa
+                    </div>
+                    <div className={`text-[10px] ${isDark ? "text-stone-400" : "text-stone-500"}`}>
+                      Founder &amp; Systems Architect
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Creator Bio & Social Links */}
-              <div className="lg:col-span-8 flex flex-col gap-5 text-left">
-                <div>
-                  <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-500">
-                    Lead Architect
-                  </span>
-                  <h3
-                    className={`font-editorial text-3xl sm:text-4xl font-extrabold tracking-tight mt-1 ${
-                      isDark ? "text-white" : "text-stone-950"
-                    }`}
-                  >
-                    Abdul Kabir Musa
-                  </h3>
-                </div>
+            {/* Right Column: Narrative Storytelling & Clean Inline Links */}
+            <div className="lg:col-span-7 flex flex-col gap-6 text-left">
+              {/* Large Editorial Headline */}
+              <blockquote className={`font-editorial text-2xl sm:text-3xl font-extrabold leading-snug tracking-tight ${
+                isDark ? "text-stone-100" : "text-[#281030]"
+              }`}>
+                &ldquo;Creative tools should respect the machine and honor the person creating — fast, private, and subscription-free.&rdquo;
+              </blockquote>
 
-                <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? "text-stone-300" : "text-stone-700"}`}>
-                  Clypra began as an ambitious endeavor to build a premium, desktop-class
-                  NLE video editor combining the native performance of Rust with the agility
-                  of React and modern WebGPU. Driven by a passion for responsive creative software,
-                  I engineered Clypra to break free from cloud latency and deliver immediate,
-                  tactile editing feedback.
+              {/* Story Narrative */}
+              <div className={`flex flex-col gap-4 text-xs sm:text-sm leading-relaxed ${
+                isDark ? "text-stone-300" : "text-stone-700"
+              }`}>
+                <p>
+                  Clypra began out of frustration with modern video editors that have morphed into sluggish, subscription-gated web containers. As video creators, we were tired of tools that throttle 4K scrubbing, enforce cloud telemetry, and demand recurring fees for essential features.
                 </p>
+                <p>
+                  I engineered Clypra from scratch to prove that a modern NLE can run with blistering speed on local silicon. By pairing Rust&apos;s memory safety and zero-copy decoders with WebGPU&apos;s shader flexibility and React&apos;s UI ergonomics, Clypra delivers instantaneous, tactile editing directly on your machine.
+                </p>
+              </div>
 
-                {/* Social Links Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+              {/* Clean Inline Social Archive (NO chunky button boxes!) */}
+              <div className="pt-4 border-t border-stone-300/60 dark:border-white/10 flex flex-col gap-3">
+                <span className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
+                  isDark ? "text-stone-400" : "text-stone-500"
+                }`}>
+                  Connect &amp; Collaborate
+                </span>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold">
                   <a
                     href="https://github.com/AIEraDev"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all hover:scale-[1.02] ${
-                      isDark
-                        ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                        : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
+                    className={`inline-flex items-center gap-1.5 transition-colors ${
+                      isDark ? "text-stone-200 hover:text-amber-300" : "text-stone-800 hover:text-purple-700"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Github className="w-4 h-4" />
-                      <span className="font-semibold">GitHub</span>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+                    <Github className="w-3.5 h-3.5" />
+                    <span>GitHub (@AIEraDev)</span>
                   </a>
 
                   <a
                     href="https://x.com/AIEraDev"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all hover:scale-[1.02] ${
-                      isDark
-                        ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                        : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
+                    className={`inline-flex items-center gap-1.5 transition-colors ${
+                      isDark ? "text-stone-200 hover:text-sky-400" : "text-stone-800 hover:text-sky-600"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Twitter className="w-4 h-4 text-sky-400" />
-                      <span className="font-semibold">Twitter</span>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+                    <Twitter className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Twitter / X</span>
                   </a>
 
                   <a
                     href="https://abdulkabirmusa.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all hover:scale-[1.02] ${
-                      isDark
-                        ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                        : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
+                    className={`inline-flex items-center gap-1.5 transition-colors ${
+                      isDark ? "text-stone-200 hover:text-emerald-300" : "text-stone-800 hover:text-emerald-700"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-emerald-400" />
-                      <span className="font-semibold">Website</span>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+                    <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Personal Site</span>
                   </a>
 
                   <a
                     href="https://www.youtube.com/@AIEraDev"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all hover:scale-[1.02] ${
-                      isDark
-                        ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                        : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
+                    className={`inline-flex items-center gap-1.5 transition-colors ${
+                      isDark ? "text-stone-200 hover:text-rose-400" : "text-stone-800 hover:text-rose-600"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Youtube className="w-4 h-4 text-rose-500" />
-                      <span className="font-semibold">YouTube</span>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+                    <Youtube className="w-3.5 h-3.5 text-rose-500" />
+                    <span>YouTube</span>
                   </a>
 
                   <a
                     href="https://www.linkedin.com/in/abdulkabirmusa"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all hover:scale-[1.02] ${
-                      isDark
-                        ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                        : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
+                    className={`inline-flex items-center gap-1.5 transition-colors ${
+                      isDark ? "text-stone-200 hover:text-blue-400" : "text-stone-800 hover:text-blue-600"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Linkedin className="w-4 h-4 text-blue-500" />
-                      <span className="font-semibold">LinkedIn</span>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+                    <Linkedin className="w-3.5 h-3.5 text-blue-500" />
+                    <span>LinkedIn</span>
                   </a>
 
                   <a
                     href="mailto:musaabdulkabeer19@gmail.com"
-                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all hover:scale-[1.02] ${
-                      isDark
-                        ? "bg-white/5 hover:bg-white/10 border-white/10 text-stone-200"
-                        : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-800"
+                    className={`inline-flex items-center gap-1.5 transition-colors ${
+                      isDark ? "text-stone-200 hover:text-amber-300" : "text-stone-800 hover:text-amber-700"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-amber-500" />
-                      <span className="font-semibold">Email</span>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+                    <Mail className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Email</span>
                   </a>
                 </div>
               </div>
