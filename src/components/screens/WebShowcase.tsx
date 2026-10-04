@@ -352,12 +352,19 @@ export const WebShowcase: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen w-full font-sans transition-colors duration-500 relative selection:bg-amber-400 selection:text-black ${
+      className={`min-h-screen w-full overflow-x-clip font-sans transition-colors duration-500 relative selection:bg-amber-400 selection:text-black ${
         isDark ? "bg-[#0b0811] text-stone-100" : "bg-[#fbf9f6] text-stone-900"
       }`}
     >
       {/* ── Global CSS & Grain Overlay ──────────────────────────── */}
       <style>{`
+        /* Prevent horizontal overflow on mobile viewports */
+        html, body {
+          overflow-x: hidden;
+          overflow-x: clip;
+          max-width: 100vw;
+        }
+
         /* Grain / Paper Noise Texture Overlay */
         .texture-grain {
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.055'/%3E%3C/svg%3E");
@@ -511,13 +518,14 @@ export const WebShowcase: React.FC = () => {
             {/* Primary Pill Launch Button */}
             <Link
               to="/studio"
-              className={`rounded-full px-5 py-2 text-xs font-bold transition-all shadow-md flex items-center gap-1.5 ${
+              className={`rounded-full px-3.5 sm:px-5 py-2 text-xs font-bold transition-all shadow-md flex items-center gap-1.5 ${
                 isDark
                   ? "bg-emerald-500 hover:bg-emerald-400 text-stone-950 shadow-emerald-500/20"
                   : "bg-[#281030] hover:bg-black text-white shadow-stone-400/40"
               }`}
             >
-              <span>Launch Studio</span>
+              <span className="hidden sm:inline">Launch </span>
+              <span>Studio</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -526,13 +534,12 @@ export const WebShowcase: React.FC = () => {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-      {/* ══════════════════════════════════════════════════════════════
           SECTION 1: HERO (Textured Editorial Section)
           Tilted cards bursting downwards across the section horizon!
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="overview"
-        className={`relative overflow-visible texture-grain pt-24 md:pt-32 pb-32 md:pb-44 transition-colors duration-500 border-b ${
+        className={`relative overflow-x-clip texture-grain pt-24 md:pt-32 pb-32 md:pb-44 transition-colors duration-500 border-b ${
           isDark
             ? "bg-[#220d2a] text-white border-purple-900/30"
             : "bg-[#fbf9f6] text-stone-900 border-stone-200/80"
@@ -658,11 +665,11 @@ export const WebShowcase: React.FC = () => {
             </div>
 
             {/* Right Column: TILTED STACKED CARDS (Breaking Section Boundary!) */}
-            <div className="lg:col-span-5 relative flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-md lg:translate-y-24 z-20">
-                {/* Back Card (Tilted 4deg) */}
+            <div className="lg:col-span-5 relative flex justify-center lg:justify-end px-3 sm:px-0">
+              <div className="relative w-full max-w-[340px] sm:max-w-md lg:translate-y-24 z-20">
+                {/* Back Card (Tilted) */}
                 <div
-                  className={`tilted-card absolute inset-0 -top-6 -right-6 rounded-2xl overflow-hidden border shadow-2xl rotate-4 pointer-events-none ${
+                  className={`tilted-card absolute inset-0 -top-3 sm:-top-6 -right-2 sm:-right-6 rounded-2xl overflow-hidden border shadow-2xl rotate-2 sm:rotate-4 pointer-events-none ${
                     isDark
                       ? "border-white/20 bg-stone-900/90 opacity-85"
                       : "border-stone-200 bg-stone-100 opacity-90"
@@ -679,10 +686,10 @@ export const WebShowcase: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Front Main Card (Tilted -2.5deg) with Corner Overflowing Version */}
-                <div className="tilted-card relative -rotate-2">
+                {/* Front Main Card with Corner Overflowing Version */}
+                <div className="tilted-card relative -rotate-1 sm:-rotate-2">
                   {/* Corner Overflowing Version Badge */}
-                  <div className="absolute -top-3.5 -right-3 z-30 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-stone-950 font-mono font-extrabold text-xs shadow-2xl border border-amber-300/90 rotate-6 select-none pointer-events-none tracking-tight">
+                  <div className="absolute -top-3 sm:-top-3.5 -right-1.5 sm:-right-3 z-30 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-stone-950 font-mono font-extrabold text-xs shadow-2xl border border-amber-300/90 rotate-3 sm:rotate-6 select-none pointer-events-none tracking-tight">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-stone-900 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-stone-950"></span>
@@ -761,7 +768,7 @@ export const WebShowcase: React.FC = () => {
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="architecture"
-        className={`relative overflow-hidden texture-grain pt-28 pb-24 transition-colors duration-500 border-b ${
+        className={`relative overflow-x-clip texture-grain pt-28 pb-24 transition-colors duration-500 border-b ${
           isDark
             ? "bg-[#130f1b] text-stone-200 border-purple-900/20"
             : "bg-[#faf7f2] text-stone-900 border-stone-200"
@@ -770,11 +777,11 @@ export const WebShowcase: React.FC = () => {
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
             {/* Left Column: Tilted Visual Cards (As seen in Reference 1) */}
-            <div className="lg:col-span-5 relative flex justify-center">
-              <div className="relative w-full max-w-md">
+            <div className="lg:col-span-5 relative flex justify-center px-3 sm:px-0">
+              <div className="relative w-full max-w-[340px] sm:max-w-md">
                 {/* Background tilted card */}
                 <div
-                  className={`tilted-card absolute inset-0 -top-5 -left-4 rounded-2xl p-5 border shadow-xl rotate-3 pointer-events-none ${
+                  className={`tilted-card absolute inset-0 -top-3 sm:-top-5 -left-2 sm:-left-4 rounded-2xl p-5 border shadow-xl rotate-1.5 sm:rotate-3 pointer-events-none ${
                     isDark
                       ? "bg-[#1c1627] border-purple-500/20 text-stone-300"
                       : "bg-white border-stone-200 text-stone-700"
@@ -793,7 +800,7 @@ export const WebShowcase: React.FC = () => {
 
                 {/* Foreground tilted card */}
                 <div
-                  className={`tilted-card relative rounded-2xl overflow-hidden border shadow-2xl -rotate-2 ${
+                  className={`tilted-card relative rounded-2xl overflow-hidden border shadow-2xl -rotate-1 sm:-rotate-2 ${
                     isDark
                       ? "bg-[#191224] border-purple-500/30 shadow-black/60"
                       : "bg-white border-stone-300 shadow-stone-300/80"
@@ -923,16 +930,12 @@ export const WebShowcase: React.FC = () => {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════
-          SECTION 3: NATIVE DOWNLOADS & 6-ARCHITECTURE MATRIX
-          Cool limestone / mist section with primary cards & 6 target matrix
-      ══════════════════════════════════════════════════════════════ */}
-      {/* ══════════════════════════════════════════════════════════════
           SECTION 3: NATIVE DOWNLOADS & 6-ARCHITECTURE REPOSITORY
           Clean, authoritative systems release console
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="download"
-        className={`relative overflow-hidden texture-grain py-28 transition-colors duration-500 border-b ${
+        className={`relative overflow-x-clip texture-grain py-28 transition-colors duration-500 border-b ${
           isDark
             ? "bg-[#0c0714] text-stone-100 border-purple-900/20"
             : "bg-[#f5f2eb] text-stone-900 border-stone-300/70"
@@ -972,7 +975,7 @@ export const WebShowcase: React.FC = () => {
             <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${
               isDark ? "bg-[#180f24] border-white/10" : "bg-stone-50 border-stone-200"
             }`}>
-              <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/5 dark:bg-white/5">
+              <div className="flex items-center gap-1 p-1 rounded-2xl bg-black/5 dark:bg-white/5 w-full sm:w-auto overflow-x-auto max-w-full">
                 {(["mac", "win", "linux"] as const).map((osKey) => (
                   <button
                     key={osKey}
@@ -980,7 +983,7 @@ export const WebShowcase: React.FC = () => {
                       setUserOS(osKey);
                       setActiveTab(osKey);
                     }}
-                    className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+                    className={`px-3 sm:px-5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 flex-1 sm:flex-initial ${
                       userOS === osKey
                         ? isDark
                           ? "bg-purple-600 text-white shadow-md shadow-purple-900/40"
@@ -1008,7 +1011,7 @@ export const WebShowcase: React.FC = () => {
             </div>
 
             {/* Active Platform Feature Hero */}
-            <div className="p-8 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="p-5 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-7 flex flex-col gap-5 text-left">
                 <div>
                   <h3 className={`font-editorial text-2xl sm:text-3xl font-bold ${
@@ -1233,7 +1236,7 @@ export const WebShowcase: React.FC = () => {
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="labs"
-        className={`relative overflow-hidden texture-grain py-28 transition-colors duration-500 border-b ${
+        className={`relative overflow-x-clip texture-grain py-28 transition-colors duration-500 border-b ${
           isDark
             ? "bg-[#100a1c] text-stone-100 border-purple-900/30"
             : "bg-[#f7f4ed] text-stone-900 border-stone-300/70"
@@ -1267,7 +1270,7 @@ export const WebShowcase: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Lab 01 */}
             <div
-              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
+              className={`p-6 sm:p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
                 isDark
                   ? "bg-[#181024] border-white/10 hover:border-purple-400/40 shadow-xl shadow-black/40"
                   : "bg-white border-stone-200/90 hover:border-stone-400 shadow-lg shadow-stone-300/30"
@@ -1336,7 +1339,7 @@ export const WebShowcase: React.FC = () => {
 
             {/* Lab 02 */}
             <div
-              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
+              className={`p-6 sm:p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
                 isDark
                   ? "bg-[#181024] border-white/10 hover:border-purple-400/40 shadow-xl shadow-black/40"
                   : "bg-white border-stone-200/90 hover:border-stone-400 shadow-lg shadow-stone-300/30"
@@ -1405,7 +1408,7 @@ export const WebShowcase: React.FC = () => {
 
             {/* Lab 03 */}
             <div
-              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
+              className={`p-6 sm:p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
                 isDark
                   ? "bg-[#181024] border-white/10 hover:border-purple-400/40 shadow-xl shadow-black/40"
                   : "bg-white border-stone-200/90 hover:border-stone-400 shadow-lg shadow-stone-300/30"
@@ -1504,7 +1507,7 @@ export const WebShowcase: React.FC = () => {
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="install"
-        className={`relative overflow-hidden texture-grain py-28 transition-colors duration-500 border-b ${
+        className={`relative overflow-x-clip texture-grain py-28 transition-colors duration-500 border-b ${
           isDark
             ? "bg-[#0b0713] text-stone-100 border-purple-900/20"
             : "bg-[#f3eee7] text-stone-900 border-stone-300/70"
@@ -1535,15 +1538,15 @@ export const WebShowcase: React.FC = () => {
           </div>
 
           {/* Platform Selector */}
-          <div className="flex justify-start">
-            <div className={`p-1 rounded-2xl border flex items-center gap-1.5 ${
+          <div className="flex justify-start w-full overflow-x-auto pb-1 max-w-full">
+            <div className={`p-1 rounded-2xl border flex items-center gap-1.5 shrink-0 ${
               isDark ? "bg-[#140c1f] border-white/10" : "bg-stone-200/70 border-stone-300"
             }`}>
               {(["mac", "win", "linux"] as const).map((osKey) => (
                 <button
                   key={osKey}
                   onClick={() => setActiveTab(osKey)}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
                     activeTab === osKey
                       ? isDark
                         ? "bg-purple-600 text-white shadow-md shadow-purple-950/40"
@@ -1553,9 +1556,24 @@ export const WebShowcase: React.FC = () => {
                       : "text-stone-600 hover:text-stone-900"
                   }`}
                 >
-                  {osKey === "mac" && "macOS Gatekeeper"}
-                  {osKey === "win" && "Windows SmartScreen"}
-                  {osKey === "linux" && "Linux Permissions"}
+                  {osKey === "mac" && (
+                    <>
+                      <span className="sm:hidden">macOS</span>
+                      <span className="hidden sm:inline">macOS Gatekeeper</span>
+                    </>
+                  )}
+                  {osKey === "win" && (
+                    <>
+                      <span className="sm:hidden">Windows</span>
+                      <span className="hidden sm:inline">Windows SmartScreen</span>
+                    </>
+                  )}
+                  {osKey === "linux" && (
+                    <>
+                      <span className="sm:hidden">Linux</span>
+                      <span className="hidden sm:inline">Linux Permissions</span>
+                    </>
+                  )}
                 </button>
               ))}
             </div>
@@ -1643,18 +1661,18 @@ export const WebShowcase: React.FC = () => {
                   : "bg-[#15111c] border-stone-800 text-stone-100 shadow-stone-400/40"
               }`}>
                 {/* Console Bar */}
-                <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between text-xs font-mono">
+                <div className="px-4 sm:px-5 py-3 sm:py-3.5 border-b border-white/10 flex items-center justify-between text-xs font-mono">
                   <div className="flex items-center gap-2 text-stone-400">
                     <Terminal className="w-3.5 h-3.5 text-amber-400" />
                     <span>system-verification · {activeTab}</span>
                   </div>
-                  <span className="text-[10px] uppercase tracking-wider text-stone-500">
+                  <span className="hidden sm:inline text-[10px] uppercase tracking-wider text-stone-500">
                     BASH / ZSH / POWERSHELL
                   </span>
                 </div>
 
                 {/* Console Code Body */}
-                <div className="p-6 font-mono text-xs flex flex-col gap-5">
+                <div className="p-4 sm:p-6 font-mono text-xs flex flex-col gap-5">
                   {activeTab === "mac" && (
                     <>
                       <div className="flex flex-col gap-2">
@@ -1792,7 +1810,7 @@ export const WebShowcase: React.FC = () => {
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="milestones"
-        className={`relative overflow-hidden texture-grain py-28 transition-colors duration-500 border-b ${
+        className={`relative overflow-x-clip texture-grain py-28 transition-colors duration-500 border-b ${
           isDark
             ? "bg-[#110a1b] text-stone-100 border-purple-900/20"
             : "bg-[#faf8f4] text-stone-900 border-stone-300/70"
@@ -1826,7 +1844,7 @@ export const WebShowcase: React.FC = () => {
             {/* Left Column: Repository Velocity Metrics */}
             <div className="lg:col-span-4 flex flex-col gap-5 text-left">
               <div
-                className={`p-6 rounded-3xl border ${
+                className={`p-5 sm:p-6 rounded-3xl border ${
                   isDark ? "bg-[#181024] border-white/10" : "bg-white border-stone-200/90 shadow-sm"
                 }`}
               >
@@ -1925,7 +1943,7 @@ export const WebShowcase: React.FC = () => {
               ].map((item, i) => (
                 <div
                   key={i}
-                  className={`p-6 rounded-2xl border transition-all ${
+                  className={`p-5 sm:p-6 rounded-2xl border transition-all ${
                     isDark
                       ? "bg-[#160f23] border-white/10 hover:border-purple-400/30"
                       : "bg-white border-stone-200/90 hover:border-stone-400 shadow-sm"
@@ -1976,7 +1994,7 @@ export const WebShowcase: React.FC = () => {
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="creator"
-        className={`relative overflow-hidden texture-grain py-28 transition-colors duration-500 ${
+        className={`relative overflow-x-clip texture-grain py-28 transition-colors duration-500 ${
           isDark
             ? "bg-[#140d1f] text-stone-100"
             : "bg-[#f5f1ea] text-stone-900"
@@ -2009,22 +2027,22 @@ export const WebShowcase: React.FC = () => {
           {/* Editorial Spread: Physical Tilted Photo & Authentic Manifesto */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
             {/* Left Column: Physical Tilted Photo with Border & Tape Aesthetic */}
-            <div className="lg:col-span-5 flex justify-center">
-              <div className="relative group">
+            <div className="lg:col-span-5 flex justify-center px-2 sm:px-0 max-w-full">
+              <div className="relative group max-w-full">
                 {/* Physical Print Framing */}
                 <div
-                  className={`relative p-3 rounded-2xl border shadow-2xl transition-all duration-500 -rotate-2 group-hover:rotate-0 group-hover:scale-[1.02] ${
+                  className={`relative p-3 rounded-2xl border shadow-2xl transition-all duration-500 -rotate-1 sm:-rotate-2 group-hover:rotate-0 group-hover:scale-[1.02] max-w-full ${
                     isDark
                       ? "bg-[#1f152b] border-white/20 shadow-black/80"
                       : "bg-white border-stone-300/80 shadow-stone-400/50"
                   }`}
                 >
                   {/* Subtle Top-Right Tape / Physical Stamp */}
-                  <div className="absolute -top-3 -right-2 z-20 px-3 py-1 rounded-sm bg-amber-400 text-stone-950 font-mono text-[9px] font-extrabold uppercase tracking-wider shadow-md rotate-6">
+                  <div className="absolute -top-2.5 sm:-top-3 -right-1 sm:-right-2 z-20 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-sm bg-amber-400 text-stone-950 font-mono text-[9px] font-extrabold uppercase tracking-wider shadow-md rotate-3 sm:rotate-6">
                     LAGOS · ARCHITECT
                   </div>
 
-                  <div className="relative w-64 h-72 sm:w-72 sm:h-80 rounded-xl overflow-hidden bg-black">
+                  <div className="relative w-56 h-64 sm:w-72 sm:h-80 rounded-xl overflow-hidden bg-black max-w-full">
                     <img
                       src="/founder.jpg"
                       alt="Abdul Kabir Musa - Creator of Clypra"
@@ -2152,13 +2170,13 @@ export const WebShowcase: React.FC = () => {
       </section>
 
       {/* ── Floating Controls at Bottom Right: Version Pill & Scroll-to-Top Button ── */}
-      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 sm:gap-2.5 max-w-[calc(100vw-2rem)]">
         {/* Floating Version Badge with continuous animation */}
         <a
           href="https://github.com/AIEraDev/clypra/releases"
           target="_blank"
           rel="noopener noreferrer"
-          className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-full font-mono text-xs font-bold transition-all duration-300 shadow-xl border backdrop-blur-md hover:scale-105 cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-full font-mono text-xs font-bold transition-all duration-300 shadow-xl border backdrop-blur-md hover:scale-105 cursor-pointer ${
             isDark
               ? "bg-[#181023]/95 text-amber-300 border-amber-400/40 shadow-purple-950/60 hover:border-amber-300"
               : "bg-white/95 text-amber-950 border-amber-400/80 shadow-stone-400/40 hover:border-amber-500"
@@ -2176,10 +2194,10 @@ export const WebShowcase: React.FC = () => {
         <button
           onClick={scrollToTop}
           aria-label="Scroll to top"
-          className="w-11 h-11 rounded-full bg-[#FF5733] hover:bg-[#E04B2A] text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer shadow-orange-950/40 shrink-0"
+          className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#FF5733] hover:bg-[#E04B2A] text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer shadow-orange-950/40 shrink-0"
           title="Scroll to top"
         >
-          <ArrowUp className="w-5 h-5 stroke-[2.5]" />
+          <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
         </button>
       </div>
 
