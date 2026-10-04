@@ -82,13 +82,13 @@ export function RouteShell({
     } else {
       // Public pages use the document as their scroll container. Explicitly
       // restore it because the app routes lock html/body for editor labs.
-      document.body.style.overflow = "visible";
-      document.body.style.overflowX = "hidden";
-      document.body.style.overflowY = "visible";
+      document.body.style.overflow = "";
+      document.body.style.overflowX = "";
+      document.body.style.overflowY = "";
       document.body.style.overscrollBehaviorY = "auto";
-      document.documentElement.style.overflow = "visible";
-      document.documentElement.style.overflowX = "hidden";
-      document.documentElement.style.overflowY = "visible";
+      document.documentElement.style.overflow = "";
+      document.documentElement.style.overflowX = "";
+      document.documentElement.style.overflowY = "";
       document.documentElement.style.scrollBehavior = "smooth";
       document.documentElement.style.scrollbarGutter = "stable";
     }

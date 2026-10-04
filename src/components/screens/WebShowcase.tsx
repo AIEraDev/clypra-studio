@@ -241,6 +241,18 @@ export const WebShowcase: React.FC = () => {
 
   const isDark = theme === "dark";
 
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
+        document.documentElement.classList.remove("light-theme");
+      } else {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.classList.add("light-theme");
+      }
+    }
+  }, [theme]);
+
   const [copiedMac, setCopiedMac] = useState(false);
   const [copiedLinux, setCopiedLinux] = useState(false);
   const [activeTab, setActiveTab] = useState<"mac" | "win" | "linux">("mac");
@@ -373,6 +385,11 @@ export const WebShowcase: React.FC = () => {
           border-radius: 4px;
         }
 
+        /* Smooth anchor link scrolling offset for sticky navbar */
+        html {
+          scroll-padding-top: 5.5rem;
+        }
+
         /* Continuous animation for sticky version pill */
         @keyframes stickyVersionPulse {
           0%, 100% {
@@ -389,41 +406,27 @@ export const WebShowcase: React.FC = () => {
         }
       `}</style>
 
-      {/* ── Sticky Top Navbar ─────────── */}
-      <div className="sticky top-0 z-50 w-full transition-all duration-300 pt-3 pb-2 backdrop-blur-sm">
+      {/* ── Fixed Sticky Top Navbar ─────────── */}
+      <div className="fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 pt-3 pb-2 pointer-events-none">
         <div className="max-w-6xl mx-auto px-6">
           <header
-            className={`w-full rounded-full px-5 py-2.5 transition-all duration-300 flex items-center justify-between backdrop-blur-xl ${
+            className={`w-full rounded-full px-5 py-2.5 transition-all duration-300 flex items-center justify-between backdrop-blur-xl pointer-events-auto ${
               isDark
                 ? "bg-[#181023]/90 border border-purple-500/20 text-stone-100 shadow-purple-950/40"
                 : "bg-white/95 border border-stone-200/80 text-stone-900 shadow-stone-300/50"
             } ${isScrolled ? "shadow-2xl border-opacity-40" : "shadow-lg"}`}
           >
-            {/* Logo & Brand & Version Display */}
-            <a href="#overview" className="flex items-center gap-3 group">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center relative">
-                <ClypraLogo size={32} className="relative z-10 transition-transform duration-300 group-hover:scale-105" />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-editorial text-lg font-bold tracking-tight">
-                  Clypra
-                </span>
-                {/* Version display instead of Studio, doing continuous animation while sticky scrolling */}
-                <div
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold transition-all duration-300 border ${
-                    isDark
-                      ? "bg-amber-400/10 text-amber-300 border-amber-400/35"
-                      : "bg-amber-100/90 text-amber-900 border-amber-300"
-                  } animate-sticky-version`}
-                  title="Latest Release"
-                >
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
-                  </span>
-                  <span>{release?.tag_name ?? "v1.5.8"}</span>
-                </div>
-              </div>
+            {/* Brand Title Only */}
+            <a href="#overview" className="flex items-center group py-0.5">
+              <span
+                className={`font-editorial text-xl font-bold tracking-tight transition-colors ${
+                  isDark
+                    ? "text-white group-hover:text-amber-300"
+                    : "text-[#281030] group-hover:text-purple-700"
+                }`}
+              >
+                Clypra
+              </span>
             </a>
 
           {/* Nav Links */}
@@ -525,7 +528,7 @@ export const WebShowcase: React.FC = () => {
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="overview"
-        className={`relative overflow-visible texture-grain pt-8 pb-32 md:pb-44 transition-colors duration-500 border-b ${
+        className={`relative overflow-visible texture-grain pt-24 md:pt-32 pb-32 md:pb-44 transition-colors duration-500 border-b ${
           isDark
             ? "bg-[#220d2a] text-white border-purple-900/30"
             : "bg-[#fbf9f6] text-stone-900 border-stone-200/80"
@@ -708,7 +711,13 @@ export const WebShowcase: React.FC = () => {
                       >
                         clypra_preview_engine.rs
                       </span>
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                      <span
+                        className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
+                          isDark
+                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                            : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                        }`}
+                      >
                         60 FPS Native
                       </span>
                     </div>
@@ -801,7 +810,9 @@ export const WebShowcase: React.FC = () => {
                     </div>
                   </div>
                   <div className="p-4 flex items-center justify-between text-xs">
-                    <span className="font-semibold">Deterministic Frame Accuracy</span>
+                    <span className={`font-semibold ${isDark ? "text-white" : "text-stone-900"}`}>
+                      Deterministic Frame Accuracy
+                    </span>
                     <span className="text-emerald-500 font-bold flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5" /> 100% Native
                     </span>
@@ -814,7 +825,13 @@ export const WebShowcase: React.FC = () => {
             <div className="lg:col-span-7 flex flex-col gap-6 text-left">
               {/* Amber Pill Badge (Directly from Reference 1) */}
               <div>
-                <span className="bg-amber-400/20 text-amber-800 dark:text-amber-300 border border-amber-400/40 font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase inline-block">
+                <span
+                  className={`font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase inline-block border ${
+                    isDark
+                      ? "bg-amber-400/20 text-amber-300 border-amber-400/40"
+                      : "bg-amber-100 text-amber-900 border-amber-300"
+                  }`}
+                >
                   WHAT WE DO
                 </span>
               </div>
@@ -852,8 +869,10 @@ export const WebShowcase: React.FC = () => {
                   <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center text-purple-400 mb-2">
                     <Monitor className="w-4 h-4" />
                   </div>
-                  <h3 className="font-bold text-xs mb-1">Local Processing</h3>
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
+                  <h3 className={`font-bold text-xs mb-1 ${isDark ? "text-white" : "text-stone-900"}`}>
+                    Local Processing
+                  </h3>
+                  <p className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
                     Media files never leave your filesystem. Zero cloud bandwidth bottleneck.
                   </p>
                 </div>
@@ -868,8 +887,10 @@ export const WebShowcase: React.FC = () => {
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 mb-2">
                     <Zap className="w-4 h-4" />
                   </div>
-                  <h3 className="font-bold text-xs mb-1">GPU Accelerated</h3>
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
+                  <h3 className={`font-bold text-xs mb-1 ${isDark ? "text-white" : "text-stone-900"}`}>
+                    GPU Accelerated
+                  </h3>
+                  <p className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
                     Sub-10ms frame dispatch with hardware VideoToolbox, D3D11, and VAAPI.
                   </p>
                 </div>
@@ -884,8 +905,10 @@ export const WebShowcase: React.FC = () => {
                   <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-500 mb-2">
                     <Code2 className="w-4 h-4" />
                   </div>
-                  <h3 className="font-bold text-xs mb-1">Open Contracts</h3>
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
+                  <h3 className={`font-bold text-xs mb-1 ${isDark ? "text-white" : "text-stone-900"}`}>
+                    Open Contracts
+                  </h3>
+                  <p className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
                     Design effects in Studio against the exact same API the native NLE consumes.
                   </p>
                 </div>
@@ -910,7 +933,13 @@ export const WebShowcase: React.FC = () => {
         <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-12">
           {/* Section Header */}
           <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-            <span className="self-center bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/40 font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase">
+            <span
+              className={`self-center font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase border ${
+                isDark
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                  : "bg-emerald-100 text-emerald-900 border-emerald-300"
+              }`}
+            >
               MULTI-PLATFORM RELEASES
             </span>
             <h2
@@ -920,7 +949,11 @@ export const WebShowcase: React.FC = () => {
             >
               Get Clypra Desktop
             </h2>
-            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 leading-relaxed">
+            <p
+              className={`text-xs sm:text-sm leading-relaxed ${
+                isDark ? "text-stone-400" : "text-stone-600"
+              }`}
+            >
               Clypra compiles standalone native executables for 6 target architectures.
               Choose your operating system below for instantaneous hardware acceleration.
             </p>
@@ -939,16 +972,26 @@ export const WebShowcase: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-editorial text-xl font-bold">macOS</h3>
-                  <p className="text-[10px] text-purple-500 dark:text-purple-400 font-mono tracking-wider uppercase mt-0.5">
+                  <p
+                    className={`text-[10px] font-mono tracking-wider uppercase mt-0.5 ${
+                      isDark ? "text-purple-300" : "text-purple-700 font-semibold"
+                    }`}
+                  >
                     Apple Silicon & Intel (.dmg)
                   </p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-lg font-bold">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold border ${
+                    isDark
+                      ? "bg-purple-500/10 border-purple-500/20 text-purple-300"
+                      : "bg-purple-50 border-purple-200 text-purple-800"
+                  }`}
+                >
                   
                 </div>
               </div>
 
-              <ul className="text-xs flex flex-col gap-2.5 grow text-stone-500 dark:text-stone-400">
+              <ul className={`text-xs flex flex-col gap-2.5 grow ${isDark ? "text-stone-300" : "text-stone-700 font-medium"}`}>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-purple-500 shrink-0" />
                   <span>Universal DMG for M1/M2/M3/M4 & Intel</span>
@@ -959,7 +1002,7 @@ export const WebShowcase: React.FC = () => {
                 </li>
               </ul>
 
-              <div className="mt-auto pt-4 border-t border-stone-200 dark:border-white/10 flex flex-col gap-3">
+              <div className={`mt-auto pt-4 border-t flex flex-col gap-3 ${isDark ? "border-white/10" : "border-stone-200"}`}>
                 <a
                   href={platformDownloads.mac.arm64.url}
                   className="w-full h-11 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-600/20"
@@ -969,8 +1012,12 @@ export const WebShowcase: React.FC = () => {
                 </a>
 
                 {/* Homebrew Tap box */}
-                <div className="p-2.5 rounded-lg bg-black/5 dark:bg-black/40 border border-stone-200 dark:border-white/5 flex items-center justify-between text-[10px] font-mono">
-                  <span className="truncate text-stone-600 dark:text-stone-300">
+                <div
+                  className={`p-2.5 rounded-lg border flex items-center justify-between text-[10px] font-mono ${
+                    isDark ? "bg-black/40 border-white/10" : "bg-stone-100 border-stone-300"
+                  }`}
+                >
+                  <span className={`truncate ${isDark ? "text-stone-300" : "text-stone-800 font-medium"}`}>
                     brew install AIEraDev/tap/clypra
                   </span>
                   <button
@@ -978,7 +1025,7 @@ export const WebShowcase: React.FC = () => {
                     className="p-1 hover:text-purple-500 transition-colors ml-2 cursor-pointer"
                     title="Copy command"
                   >
-                    {copiedMac ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedMac ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className={`w-3.5 h-3.5 ${isDark ? "text-stone-400" : "text-stone-600"}`} />}
                   </button>
                 </div>
               </div>
@@ -995,16 +1042,26 @@ export const WebShowcase: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-editorial text-xl font-bold">Windows</h3>
-                  <p className="text-[10px] text-cyan-600 dark:text-cyan-400 font-mono tracking-wider uppercase mt-0.5">
+                  <p
+                    className={`text-[10px] font-mono tracking-wider uppercase mt-0.5 ${
+                      isDark ? "text-cyan-300" : "text-cyan-700 font-semibold"
+                    }`}
+                  >
                     x64 & ARM64 Installer (.exe)
                   </p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-500 font-bold">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold border ${
+                    isDark
+                      ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-400"
+                      : "bg-cyan-50 border-cyan-200 text-cyan-700"
+                  }`}
+                >
                   <Monitor className="w-5 h-5" />
                 </div>
               </div>
 
-              <ul className="text-xs flex flex-col gap-2.5 grow text-stone-500 dark:text-stone-400">
+              <ul className={`text-xs flex flex-col gap-2.5 grow ${isDark ? "text-stone-300" : "text-stone-700 font-medium"}`}>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
                   <span>Full Direct3D 11 Video Acceleration (D3D11VA)</span>
@@ -1015,7 +1072,7 @@ export const WebShowcase: React.FC = () => {
                 </li>
               </ul>
 
-              <div className="mt-auto pt-4 border-t border-stone-200 dark:border-white/10 flex flex-col gap-3">
+              <div className={`mt-auto pt-4 border-t flex flex-col gap-3 ${isDark ? "border-white/10" : "border-stone-200"}`}>
                 <a
                   href={platformDownloads.win.x64.url}
                   className="w-full h-11 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-cyan-600/20"
@@ -1024,7 +1081,7 @@ export const WebShowcase: React.FC = () => {
                   <span>Download Windows Installer</span>
                 </a>
 
-                <div className="text-[10px] font-mono text-center text-stone-500 dark:text-stone-400">
+                <div className={`text-[10px] font-mono text-center ${isDark ? "text-stone-400" : "text-stone-600"}`}>
                   {platformDownloads.win.x64.size ? `Size: ${platformDownloads.win.x64.size} · ` : ""}
                   x64 & ARM64 builds available
                 </div>
@@ -1042,16 +1099,26 @@ export const WebShowcase: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-editorial text-xl font-bold">Linux</h3>
-                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono tracking-wider uppercase mt-0.5">
+                  <p
+                    className={`text-[10px] font-mono tracking-wider uppercase mt-0.5 ${
+                      isDark ? "text-emerald-300" : "text-emerald-700 font-semibold"
+                    }`}
+                  >
                     x64 & ARM64 (.tar.gz / .AppImage)
                   </p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold border ${
+                    isDark
+                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                      : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                  }`}
+                >
                   <Terminal className="w-5 h-5" />
                 </div>
               </div>
 
-              <ul className="text-xs flex flex-col gap-2.5 grow text-stone-500 dark:text-stone-400">
+              <ul className={`text-xs flex flex-col gap-2.5 grow ${isDark ? "text-stone-300" : "text-stone-700 font-medium"}`}>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                   <span>Portable AppImage & tarball distributions</span>
@@ -1062,7 +1129,7 @@ export const WebShowcase: React.FC = () => {
                 </li>
               </ul>
 
-              <div className="mt-auto pt-4 border-t border-stone-200 dark:border-white/10 flex flex-col gap-3">
+              <div className={`mt-auto pt-4 border-t flex flex-col gap-3 ${isDark ? "border-white/10" : "border-stone-200"}`}>
                 <a
                   href={platformDownloads.linux.x64.url}
                   className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20"
@@ -1072,8 +1139,12 @@ export const WebShowcase: React.FC = () => {
                 </a>
 
                 {/* Chmod Copy command */}
-                <div className="p-2.5 rounded-lg bg-black/5 dark:bg-black/40 border border-stone-200 dark:border-white/5 flex items-center justify-between text-[10px] font-mono">
-                  <span className="truncate text-stone-600 dark:text-stone-300">
+                <div
+                  className={`p-2.5 rounded-lg border flex items-center justify-between text-[10px] font-mono ${
+                    isDark ? "bg-black/40 border-white/10" : "bg-stone-100 border-stone-300"
+                  }`}
+                >
+                  <span className={`truncate ${isDark ? "text-stone-300" : "text-stone-800 font-medium"}`}>
                     chmod +x Clypra*.AppImage
                   </span>
                   <button
@@ -1081,7 +1152,7 @@ export const WebShowcase: React.FC = () => {
                     className="p-1 hover:text-emerald-500 transition-colors ml-2 cursor-pointer"
                     title="Copy command"
                   >
-                    {copiedLinux ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedLinux ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className={`w-3.5 h-3.5 ${isDark ? "text-stone-400" : "text-stone-600"}`} />}
                   </button>
                 </div>
               </div>
@@ -1097,25 +1168,33 @@ export const WebShowcase: React.FC = () => {
             {/* Header toggle */}
             <button
               onClick={() => setIsReleaseTableOpen((v) => !v)}
-              className="w-full px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              className={`w-full px-6 py-4 flex items-center justify-between cursor-pointer transition-colors ${
+                isDark ? "hover:bg-white/5" : "hover:bg-stone-100/70"
+              }`}
             >
               <div className="flex items-center gap-3">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-editorial text-sm font-bold">
+                <span className={`font-editorial text-sm font-bold ${isDark ? "text-white" : "text-stone-900"}`}>
                   All Supported Target Architectures (6 Builds)
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-stone-100 dark:bg-white/10 text-stone-600 dark:text-stone-300">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? "bg-white/10 text-stone-300 border-white/10"
+                      : "bg-stone-100 text-stone-700 border-stone-300 font-medium"
+                  }`}
+                >
                   {release ? release.tag_name : "Latest Releases"}
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-xs text-stone-500">
+              <div className={`flex items-center gap-1 text-xs ${isDark ? "text-stone-400" : "text-stone-600"}`}>
                 <span>{isReleaseTableOpen ? "Collapse Matrix" : "View Matrix"}</span>
                 {isReleaseTableOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </button>
 
             {isReleaseTableOpen && (
-              <div className="p-6 pt-0 border-t border-stone-200 dark:border-white/5">
+              <div className={`p-6 pt-0 border-t ${isDark ? "border-white/10" : "border-stone-200"}`}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-5">
                   {/* macOS Target Matrix */}
                   <div className="flex flex-col gap-3">
@@ -1133,7 +1212,7 @@ export const WebShowcase: React.FC = () => {
                       >
                         <div className="flex flex-col">
                           <span className="font-semibold">Apple Silicon</span>
-                          <span className="text-[10px] text-stone-400 font-mono">M1 / M2 / M3 / M4 (.dmg)</span>
+                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>M1 / M2 / M3 / M4 (.dmg)</span>
                         </div>
                         <span className="text-emerald-500 font-mono font-bold text-[10px] flex items-center gap-1">
                           <Download className="w-3 h-3" />
@@ -1150,7 +1229,7 @@ export const WebShowcase: React.FC = () => {
                       >
                         <div className="flex flex-col">
                           <span className="font-semibold">Intel Processors</span>
-                          <span className="text-[10px] text-stone-400 font-mono">x86_64 Mac (.dmg)</span>
+                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>x86_64 Mac (.dmg)</span>
                         </div>
                         <span className="text-emerald-500 font-mono font-bold text-[10px] flex items-center gap-1">
                           <Download className="w-3 h-3" />
@@ -1176,7 +1255,7 @@ export const WebShowcase: React.FC = () => {
                       >
                         <div className="flex flex-col">
                           <span className="font-semibold">Windows x64</span>
-                          <span className="text-[10px] text-stone-400 font-mono">Intel / AMD 64-bit (.exe)</span>
+                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>Intel / AMD 64-bit (.exe)</span>
                         </div>
                         <span className="text-cyan-500 font-mono font-bold text-[10px] flex items-center gap-1">
                           <Download className="w-3 h-3" />
@@ -1193,7 +1272,7 @@ export const WebShowcase: React.FC = () => {
                       >
                         <div className="flex flex-col">
                           <span className="font-semibold">Windows ARM64</span>
-                          <span className="text-[10px] text-stone-400 font-mono">Snapdragon X / ARM (.exe)</span>
+                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>Snapdragon X / ARM (.exe)</span>
                         </div>
                         <span className="text-cyan-500 font-mono font-bold text-[10px] flex items-center gap-1">
                           <Download className="w-3 h-3" />
@@ -1219,7 +1298,7 @@ export const WebShowcase: React.FC = () => {
                       >
                         <div className="flex flex-col">
                           <span className="font-semibold">Linux x64</span>
-                          <span className="text-[10px] text-stone-400 font-mono">x86_64 (.tar.gz / AppImage)</span>
+                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>x86_64 (.tar.gz / AppImage)</span>
                         </div>
                         <span className="text-emerald-500 font-mono font-bold text-[10px] flex items-center gap-1">
                           <Download className="w-3 h-3" />
@@ -1236,7 +1315,7 @@ export const WebShowcase: React.FC = () => {
                       >
                         <div className="flex flex-col">
                           <span className="font-semibold">Linux ARM64</span>
-                          <span className="text-[10px] text-stone-400 font-mono">AArch64 (.tar.gz / AppImage)</span>
+                          <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-600"}`}>AArch64 (.tar.gz / AppImage)</span>
                         </div>
                         <span className="text-emerald-500 font-mono font-bold text-[10px] flex items-center gap-1">
                           <Download className="w-3 h-3" />
@@ -1247,13 +1326,19 @@ export const WebShowcase: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-stone-200 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between text-xs text-stone-500 gap-2">
-                  <span>Continuous delivery pipeline powered by GitHub Actions & Tauri code signers.</span>
+                <div
+                  className={`mt-5 pt-4 border-t flex flex-col sm:flex-row items-center justify-between text-xs gap-2 ${
+                    isDark ? "border-white/10 text-stone-400" : "border-stone-200 text-stone-600"
+                  }`}
+                >
+                  <span>Continuous delivery pipeline powered by GitHub Actions &amp; Tauri code signers.</span>
                   <a
                     href="https://github.com/AIEraDev/clypra/releases"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 font-semibold"
+                    className={`hover:underline flex items-center gap-1 font-semibold ${
+                      isDark ? "text-purple-400" : "text-purple-700"
+                    }`}
                   >
                     <span>View GitHub Release Notes & Checksums</span>
                     <ExternalLink className="w-3 h-3" />
@@ -1279,7 +1364,13 @@ export const WebShowcase: React.FC = () => {
       >
         <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-12">
           <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-            <span className="self-center bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/40 font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase">
+            <span
+              className={`self-center font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase border ${
+                isDark
+                  ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
+                  : "bg-purple-100 text-purple-900 border-purple-300"
+              }`}
+            >
               STUDIO PLATFORM
             </span>
             <h2
@@ -1289,7 +1380,11 @@ export const WebShowcase: React.FC = () => {
             >
               Dedicated Creative Labs
             </h2>
-            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 leading-relaxed">
+            <p
+              className={`text-xs sm:text-sm leading-relaxed ${
+                isDark ? "text-stone-400" : "text-stone-600"
+              }`}
+            >
               Design, calibrate, and validate visual assets in focused browser environments.
               Every effect compiles to the same capability contracts used on the desktop.
             </p>
@@ -1307,18 +1402,38 @@ export const WebShowcase: React.FC = () => {
               <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-400">
                 <Layers className="w-5 h-5" />
               </div>
-              <h3 className="font-editorial text-lg font-bold">Video Effect Lab</h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              <h3 className={`font-editorial text-lg font-bold ${isDark ? "text-white" : "text-stone-900"}`}>
+                Video Effect Lab
+              </h3>
+              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                 Live WebGPU frame shaders with real-time parameter uniforms, frame stepping, and GPU memory profiling.
               </p>
               <div className="flex flex-wrap gap-1.5 pt-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                      : "bg-purple-50 text-purple-800 border-purple-200 font-medium"
+                  }`}
+                >
                   Film Grain
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                      : "bg-purple-50 text-purple-800 border-purple-200 font-medium"
+                  }`}
+                >
                   VHS Glitch
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                      : "bg-purple-50 text-purple-800 border-purple-200 font-medium"
+                  }`}
+                >
                   Bloom
                 </span>
               </div>
@@ -1335,18 +1450,38 @@ export const WebShowcase: React.FC = () => {
               <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-400">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <h3 className="font-editorial text-lg font-bold">Transition Lab</h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              <h3 className={`font-editorial text-lg font-bold ${isDark ? "text-white" : "text-stone-900"}`}>
+                Transition Lab
+              </h3>
+              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                 Dual-input temporal mixers with easing curves, frame blending, and instant timeline scrubbing previews.
               </p>
               <div className="flex flex-wrap gap-1.5 pt-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? "bg-blue-500/15 text-blue-300 border-blue-500/30"
+                      : "bg-blue-50 text-blue-800 border-blue-200 font-medium"
+                  }`}
+                >
                   Cross Dissolve
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? "bg-blue-500/15 text-blue-300 border-blue-500/30"
+                      : "bg-blue-50 text-blue-800 border-blue-200 font-medium"
+                  }`}
+                >
                   Directional Push
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? "bg-blue-500/15 text-blue-300 border-blue-500/30"
+                      : "bg-blue-50 text-blue-800 border-blue-200 font-medium"
+                  }`}
+                >
                   Wipe
                 </span>
               </div>
@@ -1363,18 +1498,38 @@ export const WebShowcase: React.FC = () => {
               <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400">
                 <Shield className="w-5 h-5" />
               </div>
-              <h3 className="font-editorial text-lg font-bold">Body Effect Lab</h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              <h3 className={`font-editorial text-lg font-bold ${isDark ? "text-white" : "text-stone-900"}`}>
+                Body Effect Lab
+              </h3>
+              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                 Interactive segmentation and pose tracking with real-time neon silhouettes, mask overlays, and depth blur.
               </p>
               <div className="flex flex-wrap gap-1.5 pt-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                      : "bg-emerald-50 text-emerald-800 border-emerald-200 font-medium"
+                  }`}
+                >
                   Neon Silhouette
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                      : "bg-emerald-50 text-emerald-800 border-emerald-200 font-medium"
+                  }`}
+                >
                   Portrait Bokeh
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                      : "bg-emerald-50 text-emerald-800 border-emerald-200 font-medium"
+                  }`}
+                >
                   Keyer
                 </span>
               </div>
@@ -1410,10 +1565,12 @@ export const WebShowcase: React.FC = () => {
         }`}
       >
         <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-10">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-stone-300 dark:border-white/10 pb-6">
+          <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 border-b pb-6 ${
+            isDark ? "border-white/10" : "border-stone-300"
+          }`}>
             <div>
               <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-amber-500">
-                SECURITY & GATEKEEPER
+                SECURITY &amp; GATEKEEPER
               </span>
               <h2
                 className={`font-editorial text-2xl sm:text-4xl font-extrabold tracking-tight mt-1 ${
@@ -1422,19 +1579,23 @@ export const WebShowcase: React.FC = () => {
               >
                 Installation Assistant
               </h2>
-              <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1">
+              <p className={`text-xs sm:text-sm mt-1 ${isDark ? "text-stone-400" : "text-stone-600"}`}>
                 How to authorize Clypra through system security dialogs
               </p>
             </div>
 
             {/* Platform tab buttons */}
-            <div className="flex rounded-xl p-1 bg-stone-200 dark:bg-white/5 border border-stone-300 dark:border-white/10 self-start md:self-auto">
+            <div className={`flex rounded-xl p-1 border self-start md:self-auto ${
+              isDark ? "bg-white/5 border-white/10" : "bg-stone-200/80 border-stone-300"
+            }`}>
               <button
                 onClick={() => setActiveTab("mac")}
                 className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === "mac"
                     ? "bg-purple-600 text-white shadow-sm"
-                    : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white"
+                    : isDark
+                    ? "text-stone-400 hover:text-white"
+                    : "text-stone-700 hover:text-stone-950 font-medium"
                 }`}
               >
                 macOS Gatekeeper
@@ -1444,7 +1605,9 @@ export const WebShowcase: React.FC = () => {
                 className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === "win"
                     ? "bg-cyan-600 text-white shadow-sm"
-                    : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white"
+                    : isDark
+                    ? "text-stone-400 hover:text-white"
+                    : "text-stone-700 hover:text-stone-950 font-medium"
                 }`}
               >
                 Windows SmartScreen
@@ -1454,7 +1617,9 @@ export const WebShowcase: React.FC = () => {
                 className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === "linux"
                     ? "bg-emerald-600 text-white shadow-sm"
-                    : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white"
+                    : isDark
+                    ? "text-stone-400 hover:text-white"
+                    : "text-stone-700 hover:text-stone-950 font-medium"
                 }`}
               >
                 Linux Executable
@@ -1471,9 +1636,9 @@ export const WebShowcase: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center gap-2 mb-2 font-bold text-xs uppercase font-mono text-amber-500">
-                  <span>Step 1: Download & Mount</span>
+                  <span>Step 1: Download &amp; Mount</span>
                 </div>
-                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+                <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                   Open the downloaded artifact (.dmg, .exe, or .AppImage) directly from your downloads folder.
                 </p>
               </div>
@@ -1486,7 +1651,7 @@ export const WebShowcase: React.FC = () => {
                 <div className="flex items-center gap-2 mb-2 font-bold text-xs uppercase font-mono text-purple-500">
                   <span>Step 2: Security Verification</span>
                 </div>
-                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+                <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                   {activeTab === "mac" &&
                     "Right-click (Control-click) Clypra.app in Applications and select 'Open' to authorize execution."}
                   {activeTab === "win" &&
@@ -1499,7 +1664,9 @@ export const WebShowcase: React.FC = () => {
 
             {/* Terminal snippet box */}
             <div className="lg:col-span-7">
-              <div className="rounded-xl overflow-hidden border border-stone-300 dark:border-white/10 shadow-xl bg-[#09070d] text-white">
+              <div className={`rounded-xl overflow-hidden border shadow-xl bg-[#09070d] text-white ${
+                isDark ? "border-white/10 shadow-black/60" : "border-stone-300 shadow-stone-300/80"
+              }`}>
                 <div className="bg-[#150f1f] px-4 py-3 flex items-center justify-between border-b border-white/5">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
@@ -1515,7 +1682,7 @@ export const WebShowcase: React.FC = () => {
                 <div className="p-5 font-mono text-xs text-left min-h-[160px] flex flex-col justify-between">
                   {activeTab === "mac" && (
                     <div className="flex flex-col gap-3">
-                      <div className="text-stone-400"># Install globally via Homebrew</div>
+                      <div className={isDark ? "text-stone-400" : "text-stone-300"}># Install globally via Homebrew</div>
                       <div className="p-3 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between">
                         <code className="text-purple-300 select-all">
                           brew install AIEraDev/tap/clypra
@@ -1527,7 +1694,7 @@ export const WebShowcase: React.FC = () => {
                           {copiedMac ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                         </button>
                       </div>
-                      <div className="text-[11px] text-stone-400 leading-relaxed">
+                      <div className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-300"}`}>
                         Bypasses Gatekeeper restrictions cleanly and configures PATH binaries.
                       </div>
                     </div>
@@ -1535,13 +1702,13 @@ export const WebShowcase: React.FC = () => {
 
                   {activeTab === "win" && (
                     <div className="flex flex-col gap-3">
-                      <div className="text-stone-400">&gt; Windows SmartScreen Bypass</div>
+                      <div className={isDark ? "text-stone-400" : "text-stone-300"}>&gt; Windows SmartScreen Bypass</div>
                       <div className="p-3 rounded-lg bg-white/5 border border-white/10 text-cyan-300 text-[11px] leading-relaxed">
                         1. Double-click Clypra installer (.exe)<br />
                         2. Click &quot;More info&quot; in the SmartScreen prompt<br />
                         3. Click &quot;Run anyway&quot;
                       </div>
-                      <div className="text-[11px] text-stone-400 leading-relaxed">
+                      <div className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-300"}`}>
                         Installs GPU decoding filters and registers desktop shortcuts.
                       </div>
                     </div>
@@ -1549,7 +1716,7 @@ export const WebShowcase: React.FC = () => {
 
                   {activeTab === "linux" && (
                     <div className="flex flex-col gap-3">
-                      <div className="text-stone-400"># Set executable bit and launch</div>
+                      <div className={isDark ? "text-stone-400" : "text-stone-300"}># Set executable bit and launch</div>
                       <div className="p-3 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between">
                         <code className="text-emerald-300 select-all">
                           chmod +x Clypra*.AppImage &amp;&amp; ./Clypra*.AppImage
@@ -1561,7 +1728,7 @@ export const WebShowcase: React.FC = () => {
                           {copiedLinux ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                         </button>
                       </div>
-                      <div className="text-[11px] text-stone-400 leading-relaxed">
+                      <div className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-300"}`}>
                         Or right-click AppImage → Properties → Permissions → Allow executing file.
                       </div>
                     </div>
@@ -1587,7 +1754,13 @@ export const WebShowcase: React.FC = () => {
       >
         <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-12">
           <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-            <span className="self-center bg-amber-400/20 text-amber-800 dark:text-amber-300 border border-amber-400/40 font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase">
+            <span
+              className={`self-center font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase border ${
+                isDark
+                  ? "bg-amber-400/20 text-amber-300 border-amber-400/40"
+                  : "bg-amber-100 text-amber-900 border-amber-300"
+              }`}
+            >
               ENGINEERING LOG
             </span>
             <h2
@@ -1597,7 +1770,7 @@ export const WebShowcase: React.FC = () => {
             >
               Recent Milestones
             </h2>
-            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 leading-relaxed">
+            <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
               Continuous performance improvements shipped across the Clypra ecosystem.
             </p>
           </div>
@@ -1610,13 +1783,21 @@ export const WebShowcase: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-300">
+                <span
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                    isDark ? "bg-emerald-500/20 text-emerald-300" : "bg-emerald-100 text-emerald-800"
+                  }`}
+                >
                   DEPLOYED
                 </span>
-                <span className="text-[10px] font-mono text-stone-400">CI/CD</span>
+                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
+                  CI/CD
+                </span>
               </div>
-              <h3 className="font-bold text-sm mb-1.5">Automated Multi-Arch Releases</h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
+                Automated Multi-Arch Releases
+              </h3>
+              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                 6 automated build matrices compiling macOS (ARM/Intel), Windows (x64/ARM64), and Linux with code signing.
               </p>
             </div>
@@ -1628,13 +1809,21 @@ export const WebShowcase: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-300">
+                <span
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                    isDark ? "bg-purple-500/20 text-purple-300" : "bg-purple-100 text-purple-800"
+                  }`}
+                >
                   OPTIMIZED
                 </span>
-                <span className="text-[10px] font-mono text-stone-400">RENDER PIPELINE</span>
+                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
+                  RENDER PIPELINE
+                </span>
               </div>
-              <h3 className="font-bold text-sm mb-1.5">Export Dimension Precision</h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
+                Export Dimension Precision
+              </h3>
+              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                 Aspect-locked dimensions, deterministic frame stepper, and pixel-exact WebGL surface rasterization.
               </p>
             </div>
@@ -1646,13 +1835,21 @@ export const WebShowcase: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-300">
+                <span
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                    isDark ? "bg-blue-500/20 text-blue-300" : "bg-blue-100 text-blue-800"
+                  }`}
+                >
                   PUBLISHED
                 </span>
-                <span className="text-[10px] font-mono text-stone-400">NPM REGISTRY</span>
+                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
+                  NPM REGISTRY
+                </span>
               </div>
-              <h3 className="font-bold text-sm mb-1.5">@clypra-studio/engine v1.8.0</h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
+                @clypra-studio/engine v1.8.0
+              </h3>
+              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                 Modular packages with workspace dependencies published to registry for external custom effect authors.
               </p>
             </div>
@@ -1664,13 +1861,21 @@ export const WebShowcase: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-300">
+                <span
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                    isDark ? "bg-cyan-500/20 text-cyan-300" : "bg-cyan-100 text-cyan-800"
+                  }`}
+                >
                   INTEGRATED
                 </span>
-                <span className="text-[10px] font-mono text-stone-400">HARDWARE GPU</span>
+                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
+                  HARDWARE GPU
+                </span>
               </div>
-              <h3 className="font-bold text-sm mb-1.5">Zero-Copy Decoder Prewarming</h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
+                Zero-Copy Decoder Prewarming
+              </h3>
+              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                 Pre-allocated frame pools with VideoToolbox &amp; D3D11VA yielding sub-10ms scrubbing response latency.
               </p>
             </div>
@@ -1682,13 +1887,21 @@ export const WebShowcase: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300">
+                <span
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                    isDark ? "bg-amber-500/20 text-amber-300" : "bg-amber-100 text-amber-800"
+                  }`}
+                >
                   ENHANCED
                 </span>
-                <span className="text-[10px] font-mono text-stone-400">DEV INFRA</span>
+                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
+                  DEV INFRA
+                </span>
               </div>
-              <h3 className="font-bold text-sm mb-1.5">Node 22 &amp; Vitest CI Automation</h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
+                Node 22 &amp; Vitest CI Automation
+              </h3>
+              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                 Full test coverage for frontend components, Rust contracts, and WebGPU shaders across all PR branches.
               </p>
             </div>
@@ -1700,13 +1913,21 @@ export const WebShowcase: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-600 dark:text-pink-300">
+                <span
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                    isDark ? "bg-pink-500/20 text-pink-300" : "bg-pink-100 text-pink-800"
+                  }`}
+                >
                   IN PROGRESS
                 </span>
-                <span className="text-[10px] font-mono text-stone-400">MOBILE ENGINE</span>
+                <span className={`text-[10px] font-mono ${isDark ? "text-stone-400" : "text-stone-500 font-medium"}`}>
+                  MOBILE ENGINE
+                </span>
               </div>
-              <h3 className="font-bold text-sm mb-1.5">Tauri v2 Mobile Core</h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+              <h3 className={`font-bold text-sm mb-1.5 ${isDark ? "text-white" : "text-stone-900"}`}>
+                Tauri v2 Mobile Core
+              </h3>
+              <p className={`text-xs leading-relaxed ${isDark ? "text-stone-300" : "text-stone-600"}`}>
                 Porting Clypra GPU pipeline to iOS and Android with gesture-based touch editing and cross-device project handover.
               </p>
             </div>
@@ -1728,8 +1949,14 @@ export const WebShowcase: React.FC = () => {
       >
         <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-12">
           <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-            <span className="self-center bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/40 font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase">
-              ARCHITECT & FOUNDER
+            <span
+              className={`self-center font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase border ${
+                isDark
+                  ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
+                  : "bg-purple-100 text-purple-900 border-purple-300"
+              }`}
+            >
+              ARCHITECT &amp; FOUNDER
             </span>
             <h2
               className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight ${
@@ -1738,7 +1965,7 @@ export const WebShowcase: React.FC = () => {
             >
               Meet the Creator
             </h2>
-            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 leading-relaxed">
+            <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
               Behind Clypra&apos;s native engine design and creator-first ergonomics.
             </p>
           </div>
@@ -1753,7 +1980,11 @@ export const WebShowcase: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
               {/* Creator Photo with tilted aesthetic */}
               <div className="lg:col-span-4 flex justify-center">
-                <div className="relative w-56 h-56 sm:w-64 sm:h-64 rounded-2xl overflow-hidden border border-white/20 shadow-2xl -rotate-2 group">
+                <div
+                  className={`relative w-56 h-56 sm:w-64 sm:h-64 rounded-2xl overflow-hidden border shadow-2xl -rotate-2 group ${
+                    isDark ? "border-white/20" : "border-stone-300 shadow-stone-300/80"
+                  }`}
+                >
                   <img
                     src="/founder.jpg"
                     alt="Abdul Kabir Musa - Clypra Creator"
@@ -1769,12 +2000,16 @@ export const WebShowcase: React.FC = () => {
                   <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-500">
                     Lead Architect
                   </span>
-                  <h3 className="font-editorial text-3xl sm:text-4xl font-extrabold tracking-tight mt-1">
+                  <h3
+                    className={`font-editorial text-3xl sm:text-4xl font-extrabold tracking-tight mt-1 ${
+                      isDark ? "text-white" : "text-stone-950"
+                    }`}
+                  >
                     Abdul Kabir Musa
                   </h3>
                 </div>
 
-                <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
+                <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? "text-stone-300" : "text-stone-700"}`}>
                   Clypra began as an ambitious endeavor to build a premium, desktop-class
                   NLE video editor combining the native performance of Rust with the agility
                   of React and modern WebGPU. Driven by a passion for responsive creative software,
@@ -1890,15 +2125,37 @@ export const WebShowcase: React.FC = () => {
         </div>
       </section>
 
-      {/* ── Floating Action Button (Reference 1 Inspired) ────────── */}
-      <button
-        onClick={scrollToTop}
-        aria-label="Scroll to top"
-        className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-[#FF5733] hover:bg-[#E04B2A] text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer shadow-orange-950/40"
-        title="Scroll to top"
-      >
-        <ArrowUp className="w-5 h-5 stroke-[2.5]" />
-      </button>
+      {/* ── Floating Controls at Bottom Right: Version Pill & Scroll-to-Top Button ── */}
+      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5">
+        {/* Floating Version Badge with continuous animation */}
+        <a
+          href="https://github.com/AIEraDev/clypra/releases"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-full font-mono text-xs font-bold transition-all duration-300 shadow-xl border backdrop-blur-md hover:scale-105 cursor-pointer ${
+            isDark
+              ? "bg-[#181023]/95 text-amber-300 border-amber-400/40 shadow-purple-950/60 hover:border-amber-300"
+              : "bg-white/95 text-amber-950 border-amber-400/80 shadow-stone-400/40 hover:border-amber-500"
+          } animate-sticky-version`}
+          title={`Latest Clypra Release: ${release?.tag_name ?? "v1.5.8"}`}
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+          </span>
+          <span>{release?.tag_name ?? "v1.5.8"}</span>
+        </a>
+
+        {/* Scroll-to-Top Floating Button */}
+        <button
+          onClick={scrollToTop}
+          aria-label="Scroll to top"
+          className="w-11 h-11 rounded-full bg-[#FF5733] hover:bg-[#E04B2A] text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer shadow-orange-950/40 shrink-0"
+          title="Scroll to top"
+        >
+          <ArrowUp className="w-5 h-5 stroke-[2.5]" />
+        </button>
+      </div>
 
       {/* ── Editorial Footer ────────────────────────────────────── */}
       <footer
