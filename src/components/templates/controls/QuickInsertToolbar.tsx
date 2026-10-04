@@ -2,7 +2,7 @@ import React from "react";
 import {
   Type,
   Square,
-  Sparkles,
+  PanelBottom,
   CreditCard,
   Tag,
   Image as ImageIcon,
@@ -58,7 +58,7 @@ export const QuickInsertToolbar: React.FC<QuickInsertToolbarProps> = ({
       type: "lower-third",
       label: "Lower Third",
       description: "Dual-tier broadcast name bar (Speaker 44px + Role 24px)",
-      icon: Sparkles,
+      icon: PanelBottom,
       accentColor: "text-purple-400 border-purple-500/30 hover:border-purple-500/60 bg-purple-500/10",
     },
     {

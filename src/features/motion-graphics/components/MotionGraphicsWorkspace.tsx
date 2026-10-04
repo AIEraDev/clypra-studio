@@ -6,7 +6,7 @@ import {
   Cpu,
   Monitor,
   CheckCircle2,
-  Sparkles,
+  Film,
   Layers,
   AlertCircle,
 } from "lucide-react";
@@ -166,7 +166,7 @@ export function MotionGraphicsWorkspace() {
 
         {/* Center Template Title */}
         <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-[#141420] border border-white/5 text-xs text-gray-300">
-          <Sparkles className="w-3.5 h-3.5 text-[#7c6fff]" />
+          <Film className="w-3.5 h-3.5 text-[#7c6fff]" />
           <span className="font-semibold text-white">{template.name}</span>
           <span className="text-gray-500">|</span>
           <span className="font-mono text-gray-400">{template.category}</span>

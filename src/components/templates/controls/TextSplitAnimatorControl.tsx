@@ -7,7 +7,7 @@ import {
   BezierControlPoints,
 } from "@clypra-studio/engine";
 import { BezierCurveEditor } from "./BezierCurveEditor";
-import { Split, Sparkles, Layers, Sliders, Move, RotateCw, Eye } from "lucide-react";
+import { Split, Layers, Sliders, Move, RotateCw, Eye } from "lucide-react";
 
 interface TextSplitAnimatorControlProps {
   animator?: TextSplitAnimator;

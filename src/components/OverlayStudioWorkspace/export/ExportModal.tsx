@@ -10,7 +10,7 @@ import {
   Film,
   Image as ImageIcon,
   Layers,
-  Sparkles,
+  Cpu,
   StopCircle,
 } from "lucide-react";
 import {
@@ -164,7 +164,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         <div className="flex items-center justify-between border-b border-white/5 bg-[#17171F] px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15 border border-violet-500/30 text-violet-400">
-              <Sparkles size={18} />
+              <Cpu size={18} />
             </div>
             <div>
               <h2 className="text-sm font-bold text-white tracking-wide">Production Export Engine</h2>

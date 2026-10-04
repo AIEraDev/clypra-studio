@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import {
   Download,
   ArrowRight,
-  Sparkles,
   Shield,
   Terminal,
   Monitor,
@@ -746,10 +745,10 @@ export const WebShowcase: React.FC = () => {
                       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[10px] font-mono text-white">
                         <div className="bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 flex items-center gap-1.5">
                           <Zap className="w-3 h-3 text-amber-400" />
-                          <span>Metal / D3D11 / VAAPI</span>
+                          <span>VideoToolbox / D3D11VA / VAAPI</span>
                         </div>
                         <div className="bg-emerald-500/90 text-stone-950 font-bold px-2.5 py-1 rounded-full">
-                          Zero Latency
+                          Sub-10ms Decode
                         </div>
                       </div>
                     </div>
@@ -762,21 +761,44 @@ export const WebShowcase: React.FC = () => {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════
-          SECTION 2: WHAT WE DO / ARCHITECTURE BREAKDOWN
-          Directly matches media_1791061115670.png!
-          Tilted photo cards on the left, amber badge & deep plum heading on the right.
+          SECTION 2: WHAT WE DO & CORE ARCHITECTURE
+          Upgraded to match Sections 3, 4, 5, 6, 7 editorial design standards!
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="architecture"
-        className={`relative overflow-x-clip texture-grain pt-28 pb-24 transition-colors duration-500 border-b ${
+        className={`relative overflow-x-clip texture-grain py-28 transition-colors duration-500 border-b ${
           isDark
             ? "bg-[#130f1b] text-stone-200 border-purple-900/20"
-            : "bg-[#faf7f2] text-stone-900 border-stone-200"
+            : "bg-[#faf7f2] text-stone-900 border-stone-300/70"
         }`}
       >
-        <div className="max-w-6xl mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
-            {/* Left Column: Tilted Visual Cards (As seen in Reference 1) */}
+        <div className="max-w-6xl mx-auto px-6 relative z-10 flex flex-col gap-14">
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-stone-300/60 dark:border-white/10">
+            <div className="max-w-xl text-left">
+              <span className={`text-[11px] font-mono font-bold tracking-widest uppercase ${
+                isDark ? "text-amber-400" : "text-amber-700"
+              }`}>
+                WHAT WE DO &amp; CORE ARCHITECTURE
+              </span>
+              <h2
+                className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 ${
+                  isDark ? "text-white" : "text-[#240e2b]"
+                }`}
+              >
+                Engineering creative software with native first principles.
+              </h2>
+            </div>
+            <p className={`text-xs sm:text-sm max-w-sm text-left leading-relaxed ${
+              isDark ? "text-stone-400" : "text-stone-600"
+            }`}>
+              Modern video editing shouldn&apos;t be throttled by fragile web containers or bogged down with heavy telemetry. Clypra compiles directly to optimized native machine code on your device.
+            </p>
+          </div>
+
+          {/* Featured Architecture Showcase (Tilted Hardware Preview + Systems Console) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            {/* Left Column: Tilted Hardware Pipeline Preview */}
             <div className="lg:col-span-5 relative flex justify-center px-3 sm:px-0">
               <div className="relative w-full max-w-[340px] sm:max-w-md">
                 {/* Background tilted card */}
@@ -832,96 +854,224 @@ export const WebShowcase: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Column: Editorial Headings & Core Philosophy */}
-            <div className="lg:col-span-7 flex flex-col gap-6 text-left">
-              {/* Amber Pill Badge (Directly from Reference 1) */}
-              <div>
-                <span
-                  className={`font-bold px-3 py-1 rounded-full text-[11px] tracking-widest uppercase inline-block border ${
-                    isDark
-                      ? "bg-amber-400/20 text-amber-300 border-amber-400/40"
-                      : "bg-amber-100 text-amber-900 border-amber-300"
-                  }`}
-                >
-                  WHAT WE DO
-                </span>
+            {/* Right Column: Native Systems Specification Console */}
+            <div className="lg:col-span-7">
+              <div
+                className={`p-6 sm:p-8 rounded-3xl border text-left flex flex-col justify-between transition-all ${
+                  isDark
+                    ? "bg-[#181024] border-white/10 shadow-xl shadow-black/40"
+                    : "bg-white border-stone-200/90 shadow-lg shadow-stone-300/30"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between border-b pb-4 border-stone-200 dark:border-white/10 mb-4">
+                    <span className={`font-mono text-xs font-bold uppercase tracking-wider ${
+                      isDark ? "text-amber-400" : "text-purple-900"
+                    }`}>
+                      Direct GPU Surface Architecture
+                    </span>
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded-full font-semibold border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                      Zero Web Containers
+                    </span>
+                  </div>
+
+                  <h3 className={`font-editorial text-2xl font-bold tracking-tight mb-2 ${
+                    isDark ? "text-white" : "text-stone-900"
+                  }`}>
+                    Pure Rust core with hardware-anchored frame dispatch
+                  </h3>
+                  <p className={`text-xs leading-relaxed mb-5 ${
+                    isDark ? "text-stone-300" : "text-stone-600"
+                  }`}>
+                    Rather than hosting the timeline in an electron webview, Clypra&apos;s core rendering engine runs natively on CPU and GPU surfaces. Frames pass directly from hardware decoders into GPU textures without intermediate RAM buffering or CPU stalls.
+                  </p>
+
+                  {/* Technical Specification Matrix */}
+                  <div className={`p-4 rounded-2xl border font-mono text-[11px] flex flex-col gap-2.5 ${
+                    isDark ? "bg-black/25 border-white/5 text-stone-300" : "bg-stone-50 border-stone-200 text-stone-700"
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-stone-400 dark:text-stone-500">Timeline Evaluator</span>
+                      <span className="font-semibold">Zero-IPC Rust Thread Pool</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-stone-400 dark:text-stone-500">Scrubbing Latency</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">&lt; 10ms Deterministic</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-stone-400 dark:text-stone-500">Audio Sync Clock</span>
+                      <span className="font-semibold">CPAL Hardware Sample Anchoring</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-stone-400 dark:text-stone-500">Memory Baseline</span>
+                      <span className="font-semibold">&lt; 120MB Idle (vs 1.5GB+ Web)</span>
+                    </div>
+                  </div>
+                </div>
               </div>
+            </div>
+          </div>
 
-              {/* Large Editorial Heading */}
-              <h2
-                className={`font-editorial text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.1] ${
-                  isDark ? "text-white" : "text-[#2e1435]"
-                }`}
-              >
-                Engineering creative software with native first principles.
-              </h2>
+          {/* 3 Architecture Pillars in full-width 3-column grid matching Section 4 */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Pillar 01 */}
+            <div
+              className={`p-6 sm:p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
+                isDark
+                  ? "bg-[#181024] border-white/10 hover:border-purple-400/40 shadow-xl shadow-black/40"
+                  : "bg-white border-stone-200/90 hover:border-stone-400 shadow-lg shadow-stone-300/30"
+              }`}
+            >
+              <div className="flex flex-col gap-6 text-left">
+                <div className="flex items-center justify-between border-b pb-4 border-stone-200 dark:border-white/10">
+                  <span className={`font-mono text-xl font-bold ${
+                    isDark ? "text-amber-400" : "text-purple-900"
+                  }`}>
+                    01
+                  </span>
+                  <span className={`text-[11px] font-mono font-semibold uppercase tracking-wider ${
+                    isDark ? "text-stone-400" : "text-stone-500"
+                  }`}>
+                    Filesystem Direct
+                  </span>
+                </div>
 
-              {/* Editorial Lead Paragraph */}
-              <p
-                className={`text-sm sm:text-base leading-relaxed ${
-                  isDark ? "text-stone-300" : "text-stone-700"
-                }`}
-              >
-                Modern video editing shouldn't be throttled by fragile web containers
-                or bogged down with heavy background telemetry. Clypra compiles directly
-                to optimized native machine code on your device, giving you instant
-                timeline previews, reliable audio sync, and predictable export renders.
-              </p>
-
-              {/* 3 Architecture Pillars */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                <div
-                  className={`p-4 rounded-xl border transition-all ${
-                    isDark
-                      ? "bg-[#181223] border-purple-500/20 hover:border-purple-500/40"
-                      : "bg-white border-stone-200 hover:border-stone-300 shadow-sm"
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center text-purple-400 mb-2">
-                    <Monitor className="w-4 h-4" />
-                  </div>
-                  <h3 className={`font-bold text-xs mb-1 ${isDark ? "text-white" : "text-stone-900"}`}>
-                    Local Processing
+                <div>
+                  <h3 className={`font-editorial text-2xl font-bold tracking-tight mb-2 ${
+                    isDark ? "text-white" : "text-stone-900"
+                  }`}>
+                    Local File Processing
                   </h3>
-                  <p className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
-                    Media files never leave your filesystem. Zero cloud bandwidth bottleneck.
+                  <p className={`text-xs leading-relaxed ${
+                    isDark ? "text-stone-300" : "text-stone-600"
+                  }`}>
+                    Media files never leave your machine. No slow cloud uploads, no recurring storage fees, and zero cloud bandwidth bottlenecks when handling large 4K ProRes and RAW assets.
                   </p>
                 </div>
 
-                <div
-                  className={`p-4 rounded-xl border transition-all ${
-                    isDark
-                      ? "bg-[#181223] border-purple-500/20 hover:border-purple-500/40"
-                      : "bg-white border-stone-200 hover:border-stone-300 shadow-sm"
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 mb-2">
-                    <Zap className="w-4 h-4" />
+                <div className={`p-4 rounded-2xl border font-mono text-[11px] flex flex-col gap-2.5 ${
+                  isDark ? "bg-black/25 border-white/5 text-stone-300" : "bg-stone-50 border-stone-200 text-stone-700"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Storage</span>
+                    <span className="font-semibold">Direct NVMe / SSD Stream</span>
                   </div>
-                  <h3 className={`font-bold text-xs mb-1 ${isDark ? "text-white" : "text-stone-900"}`}>
-                    GPU Accelerated
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Privacy</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">100% On-Device / Zero PII</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Throughput</span>
+                    <span className="font-semibold">Native Disk Speed (Up to 7 GB/s)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pillar 02 */}
+            <div
+              className={`p-6 sm:p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
+                isDark
+                  ? "bg-[#181024] border-white/10 hover:border-purple-400/40 shadow-xl shadow-black/40"
+                  : "bg-white border-stone-200/90 hover:border-stone-400 shadow-lg shadow-stone-300/30"
+              }`}
+            >
+              <div className="flex flex-col gap-6 text-left">
+                <div className="flex items-center justify-between border-b pb-4 border-stone-200 dark:border-white/10">
+                  <span className={`font-mono text-xl font-bold ${
+                    isDark ? "text-amber-400" : "text-purple-900"
+                  }`}>
+                    02
+                  </span>
+                  <span className={`text-[11px] font-mono font-semibold uppercase tracking-wider ${
+                    isDark ? "text-stone-400" : "text-stone-500"
+                  }`}>
+                    Hardware Surface
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className={`font-editorial text-2xl font-bold tracking-tight mb-2 ${
+                    isDark ? "text-white" : "text-stone-900"
+                  }`}>
+                    GPU Accelerated Pipeline
                   </h3>
-                  <p className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
-                    Sub-10ms frame dispatch with hardware VideoToolbox, D3D11, and VAAPI.
+                  <p className={`text-xs leading-relaxed ${
+                    isDark ? "text-stone-300" : "text-stone-600"
+                  }`}>
+                    Direct hardware VideoToolbox, D3D11VA, and VAAPI decoders stream uncompressed frames straight to GPU textures for seamless 60 FPS scrubbing without dropped frames.
                   </p>
                 </div>
 
-                <div
-                  className={`p-4 rounded-xl border transition-all ${
-                    isDark
-                      ? "bg-[#181223] border-purple-500/20 hover:border-purple-500/40"
-                      : "bg-white border-stone-200 hover:border-stone-300 shadow-sm"
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-500 mb-2">
-                    <Code2 className="w-4 h-4" />
+                <div className={`p-4 rounded-2xl border font-mono text-[11px] flex flex-col gap-2.5 ${
+                  isDark ? "bg-black/25 border-white/5 text-stone-300" : "bg-stone-50 border-stone-200 text-stone-700"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Decoders</span>
+                    <span className="font-semibold">VideoToolbox · D3D11VA · VAAPI</span>
                   </div>
-                  <h3 className={`font-bold text-xs mb-1 ${isDark ? "text-white" : "text-stone-900"}`}>
-                    Open Contracts
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Frame Budget</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">Sub-10ms @ 4K 60 FPS</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Surface</span>
+                    <span className="font-semibold">Direct GPU Blit to Canvas</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pillar 03 */}
+            <div
+              className={`p-6 sm:p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
+                isDark
+                  ? "bg-[#181024] border-white/10 hover:border-purple-400/40 shadow-xl shadow-black/40"
+                  : "bg-white border-stone-200/90 hover:border-stone-400 shadow-lg shadow-stone-300/30"
+              }`}
+            >
+              <div className="flex flex-col gap-6 text-left">
+                <div className="flex items-center justify-between border-b pb-4 border-stone-200 dark:border-white/10">
+                  <span className={`font-mono text-xl font-bold ${
+                    isDark ? "text-amber-400" : "text-purple-900"
+                  }`}>
+                    03
+                  </span>
+                  <span className={`text-[11px] font-mono font-semibold uppercase tracking-wider ${
+                    isDark ? "text-stone-400" : "text-stone-500"
+                  }`}>
+                    Ecosystem Standard
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className={`font-editorial text-2xl font-bold tracking-tight mb-2 ${
+                    isDark ? "text-white" : "text-stone-900"
+                  }`}>
+                    Open Standards &amp; Contracts
                   </h3>
-                  <p className={`text-[11px] leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
-                    Design effects in Studio against the exact same API the native NLE consumes.
+                  <p className={`text-xs leading-relaxed ${
+                    isDark ? "text-stone-300" : "text-stone-600"
+                  }`}>
+                    Author shaders, transitions, and text effects in Studio against the exact same open WGSL and OTIO contracts consumed by the native desktop NLE.
                   </p>
+                </div>
+
+                <div className={`p-4 rounded-2xl border font-mono text-[11px] flex flex-col gap-2.5 ${
+                  isDark ? "bg-black/25 border-white/5 text-stone-300" : "bg-stone-50 border-stone-200 text-stone-700"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Shader Specs</span>
+                    <span className="font-semibold">WGSL Compute Passes</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Interchange</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">OpenTimelineIO (.otio)</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-400 dark:text-stone-500">Interop</span>
+                    <span className="font-semibold">100% Studio-to-Desktop Parity</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -961,7 +1111,7 @@ export const WebShowcase: React.FC = () => {
             <p className={`text-xs sm:text-sm max-w-sm text-left leading-relaxed ${
               isDark ? "text-stone-400" : "text-stone-600"
             }`}>
-              Zero cloud telemetry. Clypra compiles directly to native binaries across 6 hardware architectures with direct GPU decoder bindings.
+              Zero PII telemetry. Clypra compiles directly to native binaries across 6 hardware architectures with direct GPU decoder bindings.
             </p>
           </div>
 
@@ -1326,7 +1476,7 @@ export const WebShowcase: React.FC = () => {
 
               <div className="pt-6 mt-6 border-t border-stone-200 dark:border-white/10 text-left">
                 <Link
-                  to="/studio/video-effects"
+                  to="/studio/video-lab"
                   className={`inline-flex items-center gap-2 text-xs font-bold transition-all group ${
                     isDark ? "text-amber-400 hover:text-amber-300" : "text-purple-800 hover:text-purple-950"
                   }`}
@@ -1395,7 +1545,7 @@ export const WebShowcase: React.FC = () => {
 
               <div className="pt-6 mt-6 border-t border-stone-200 dark:border-white/10 text-left">
                 <Link
-                  to="/studio/transitions"
+                  to="/studio/transition-lab"
                   className={`inline-flex items-center gap-2 text-xs font-bold transition-all group ${
                     isDark ? "text-amber-400 hover:text-amber-300" : "text-purple-800 hover:text-purple-950"
                   }`}
@@ -1464,7 +1614,7 @@ export const WebShowcase: React.FC = () => {
 
               <div className="pt-6 mt-6 border-t border-stone-200 dark:border-white/10 text-left">
                 <Link
-                  to="/studio/body-effects"
+                  to="/studio/body-lab"
                   className={`inline-flex items-center gap-2 text-xs font-bold transition-all group ${
                     isDark ? "text-amber-400 hover:text-amber-300" : "text-purple-800 hover:text-purple-950"
                   }`}
@@ -1810,7 +1960,7 @@ export const WebShowcase: React.FC = () => {
       ══════════════════════════════════════════════════════════════ */}
       <section
         id="milestones"
-        className={`relative overflow-x-clip texture-grain py-28 transition-colors duration-500 border-b ${
+        className={`relative texture-grain py-28 transition-colors duration-500 border-b ${
           isDark
             ? "bg-[#110a1b] text-stone-100 border-purple-900/20"
             : "bg-[#faf8f4] text-stone-900 border-stone-300/70"
@@ -1840,14 +1990,15 @@ export const WebShowcase: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-            {/* Left Column: Repository Velocity Metrics */}
-            <div className="lg:col-span-4 flex flex-col gap-5 text-left">
-              <div
-                className={`p-5 sm:p-6 rounded-3xl border ${
-                  isDark ? "bg-[#181024] border-white/10" : "bg-white border-stone-200/90 shadow-sm"
-                }`}
-              >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            {/* Left Column: Repository Velocity Metrics (Sticky while Section 6 is active) */}
+            <div className="lg:col-span-4 text-left">
+              <div className="lg:sticky lg:top-24">
+                <div
+                  className={`p-5 sm:p-6 rounded-3xl border ${
+                    isDark ? "bg-[#181024] border-white/10" : "bg-white border-stone-200/90 shadow-sm"
+                  }`}
+                >
                 <span className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
                   isDark ? "text-stone-400" : "text-stone-500"
                 }`}>
@@ -1896,49 +2047,50 @@ export const WebShowcase: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
 
             {/* Right Column: Chronological Engineering Dispatches (Ledger) */}
             <div className="lg:col-span-8 flex flex-col gap-4 text-left">
               {[
                 {
-                  version: "v1.8.1",
-                  subsystem: "CORE RENDER PIPELINE",
-                  title: "Direct3D 11 & Metal Zero-Copy Frame Buffers",
+                  version: "v1.5.8",
+                  subsystem: "NLE TOOLS & REALTIME PLAYBACK",
+                  title: "J/K/L Multi-Speed Shuttle, OpenTimelineIO & UNCH Sentinel",
                   date: "October 2026",
                   summary:
-                    "Migrated decoded video stream delivery from intermediate RAM copies to direct hardware GPU surface blits. Scrubbing 4K 60 FPS ProRes footage now completes within sub-10ms frame dispatch budgets on Apple Silicon and RTX GPUs.",
+                    "Introduced professional multi-speed J/K/L transport (up to 16x) with audio drift compensation, bidirectional OpenTimelineIO (.otio) interchange, SMPTE 12M timecode parsing, and precision Slip/Slide/Roll trimming tools. Integrated 12-byte UNCH repeat frame sentinels and selective Arm 2b lookahead priming up to 647 FPS on Intel iGPUs.",
                 },
                 {
-                  version: "v1.8.0",
-                  subsystem: "STUDIO ARCHITECTURE",
-                  title: "Modular Monorepo Extraction & NPM Workspaces",
+                  version: "v1.5.7",
+                  subsystem: "TELEMETRY & ADAPTIVE BRIDGE",
+                  title: "Pre-Request Telemetry Dispatch & Adaptive Readback Telemetry",
                   date: "September 2026",
                   summary:
-                    "Decoupled engine primitives into @clypra-studio/engine, @clypra-studio/types, and @clypra-studio/ui. Establishes clean public API contracts for community shader authors and headless render pipelines.",
+                    "Resolved Windows readback telemetry span capture by recording dispatch metrics before request execution across cache hits and misses. Added OS-specific canvas readback caps (960px macOS / 480px Windows) and adaptive cadence FPS tracking for the embedded preview bridge.",
                 },
                 {
-                  version: "v1.7.9",
-                  subsystem: "DISTRIBUTION MATRIX",
-                  title: "Automated 6-Architecture Release Pipeline",
+                  version: "v1.5.6",
+                  subsystem: "EMBEDDED SURFACE & AUDIO SYNC",
+                  title: "In-Canvas Preview Embedding & CPAL Hardware Clock Synchronization",
                   date: "September 2026",
                   summary:
-                    "Configured GitHub Actions matrix to compile, package, and generate cryptographic SHA-256 checksums for macOS (Apple Silicon + Intel), Windows (x64 + Snapdragon ARM64), and Linux (x86_64 + AArch64) on every tagged push.",
+                    "Embedded native preview directly inside the editor canvas to eliminate detached OS child windows across macOS, Windows, and Wayland. Eliminated -12ms audio/video drift with CPAL hardware anchoring and deferred filmstrip thumbnail generation during live playback.",
                 },
                 {
-                  version: "v1.7.5",
-                  subsystem: "RENDER DETERMINISM",
-                  title: "Aspect-Locked Export & WGSL Shader Prewarming",
-                  date: "August 2026",
+                  version: "v1.5.5",
+                  subsystem: "REALTIME ENGINE V2",
+                  title: "Realtime Playback Engine v2 & Offline Media Watchdog",
+                  date: "September 2026",
                   summary:
-                    "Resolved timeline export dimension drift with pixel-exact WebGL surface rasterization. Added eager WGSL pipeline caching at startup to prevent micro-stutters on initial frame effect playback.",
+                    "Delivered 10-phase native realtime engine with zero-IPC timeline evaluator, D3D12VA/VideoToolbox hardware decode, prioritized prefetch work planner, and render graph DAG. Introduced heartbeat watchdog for runtime offline asset detection and GPU texture cache eviction.",
                 },
                 {
-                  version: "v2.0 PREVIEW",
-                  subsystem: "MOBILE & RESEARCH",
-                  title: "Tauri v2 Mobile Core & Cross-Device Sync",
-                  date: "In Active Development",
+                  version: "v1.5.4",
+                  subsystem: "TIMELINE & PLAYBACK CONTROL",
+                  title: "Playback Speed Ramps, Freeze Frames & Creative Project Generator",
+                  date: "September 2026",
                   summary:
-                    "Porting Clypra's Rust rendering surface to touch interfaces on iPadOS and Android with gesture-driven timeline controls and localized SQLite project persistence with zero cloud dependency.",
+                    "Introduced variable speed mapping (0.1x–100x) with freeze-frame insertion, inspector Fit/Fill aspect controls, automated Microsoft Store MSIX packaging, and creative project naming with 6,160+ unique cinematic combinations.",
                 },
               ].map((item, i) => (
                 <div

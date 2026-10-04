@@ -4,8 +4,8 @@ import {
   Library,
   SlidersHorizontal,
   RotateCcw,
-  Sparkles,
-  Wand2,
+  Disc3,
+  Music,
 } from "lucide-react";
 import type { AudioLabViewMode, DemoSampleTrack } from "../types";
 
@@ -153,7 +153,7 @@ export function AudioHeader({
                   className="flex items-center gap-1.5 rounded-lg border border-[#28283A] bg-[#12121B] px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:border-teal-500/40 hover:bg-[#181824] hover:text-white"
                   title="Load a pre-configured sample sound to test"
                 >
-                  <Sparkles size={13} className="text-teal-400" />
+                  <Disc3 size={13} className="text-teal-400" />
                   <span>Load Sample</span>
                 </button>
                 <div className="absolute right-0 top-full z-30 mt-1 hidden w-56 rounded-xl border border-[#2A2A3E] bg-[#111119] p-1.5 shadow-2xl group-hover:block">
@@ -167,7 +167,7 @@ export function AudioHeader({
                       onClick={() => onLoadSample(sample)}
                       className="flex w-full items-start gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-gray-300 transition-colors hover:bg-teal-500/10 hover:text-teal-200"
                     >
-                      <Wand2 size={12} className="mt-0.5 shrink-0 text-teal-400" />
+                      <Music size={12} className="mt-0.5 shrink-0 text-teal-400" />
                       <div className="min-w-0 flex-1">
                         <div className="truncate font-medium">{sample.name}</div>
                         <div className="text-[10px] text-[#7A7A8E]">

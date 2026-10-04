@@ -8,7 +8,7 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
-  Sparkles,
+  Play,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -482,7 +482,7 @@ function LocalCard({
         }}
         className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-(--studio-border) bg-(--studio-control) py-1.5 text-[10px] font-bold text-white transition-colors hover:border-(--studio-accent) hover:text-(--studio-accent)"
       >
-        {active ? <Check size={11} /> : <Sparkles size={11} />}
+        {active ? <Check size={11} /> : <Play size={11} />}
         {active ? "Loaded in canvas" : "Use native starter"}
       </button>
     </article>

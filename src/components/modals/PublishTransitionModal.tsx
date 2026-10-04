@@ -10,7 +10,6 @@ import {
   FolderOpen,
   Image as ImageIcon,
   Video,
-  Sparkles,
   Code2,
   ChevronDown,
   ChevronUp,

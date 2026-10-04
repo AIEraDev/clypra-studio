@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   Loader2,
   Video,
-  Sparkles,
   UploadCloud,
 } from "lucide-react";
 import { toast } from "sonner";

@@ -54,18 +54,8 @@ const CATEGORY_ICONS: Record<
   primitives: Square,
   actions: Zap,
   commands: Download,
-  templates: SparklesIcon,
+  templates: Layers,
 };
-
-function SparklesIcon({
-  size = 14,
-  className = "",
-}: {
-  size?: number;
-  className?: string;
-}) {
-  return <Zap size={size} className={className} />;
-}
 
 export function InsertPalette({
   isOpen,

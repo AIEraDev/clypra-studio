@@ -8,7 +8,6 @@ import {
   Repeat,
   Copy,
   Check,
-  Sparkles,
   SlidersHorizontal,
   RefreshCw,
   ExternalLink,

@@ -8,7 +8,6 @@ import {
   Loader2,
   FolderPlus,
   ArrowLeft,
-  Sparkles,
   FileJson,
   UploadCloud,
   X,
@@ -30,7 +29,6 @@ import {
   Move,
   Settings,
   Image as ImageIcon,
-  Sparkle,
   Clock,
   Split,
   Anchor,
@@ -3098,7 +3096,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                 className="rounded-lg border border-teal-500/40 hover:bg-teal-500/10 px-3 py-1.5 text-xs font-bold text-teal-400 flex items-center gap-1.5 transition-colors"
                 title="Browse & publish builtin presets"
               >
-                <Sparkles size={14} /> Presets ({BUILTIN_CANVAS_TEMPLATES.length})
+                <Layers size={14} /> Presets ({BUILTIN_CANVAS_TEMPLATES.length})
               </button>
 
               <button
@@ -3133,7 +3131,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
           <div className="w-full max-w-3xl rounded-2xl border border-[#2A2A38] bg-[#121219] p-6 shadow-2xl flex flex-col max-h-[85vh]">
             <div className="flex items-center justify-between mb-4 shrink-0">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Sparkles size={16} className="text-teal-400" />
+                <Layers size={16} className="text-teal-400" />
                 Templates & Presets Library
               </h3>
               <button
@@ -3153,7 +3151,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
                     : "text-[#888899] hover:text-white"
                 }`}
               >
-                <Sparkles size={13} />
+                <Layers size={13} />
                 Builtin Presets ({BUILTIN_CANVAS_TEMPLATES.length})
               </button>
               <button
@@ -3404,7 +3402,7 @@ export function TemplateWorkspace({ onBackToDesign }: TemplateWorkspaceProps) {
             <div className="rounded-2xl border border-[#2A2A38] bg-[#121219] p-6 space-y-4">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="text-teal-400" size={18} />
+                  <Layers className="text-teal-400" size={18} />
                   <h2 className="text-sm font-bold text-white">
                     Start with a Builtin Preset
                   </h2>

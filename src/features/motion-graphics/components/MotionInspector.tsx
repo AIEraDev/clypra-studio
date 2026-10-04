@@ -1,5 +1,5 @@
 import React from "react";
-import { Sliders, Type, Sparkles, Clock, Layers } from "lucide-react";
+import { Sliders, Type, Clock, Layers } from "lucide-react";
 import type {
   MotionGraphicTemplate,
   MotionLayer,

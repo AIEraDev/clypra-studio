@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Palette, RotateCcw, Sparkles } from "lucide-react";
+import { Palette, RotateCcw, Pipette } from "lucide-react";
 import type { TextEffectConfig } from "@clypra-studio/engine";
 import {
   applyFillColorToAll,
@@ -100,7 +100,7 @@ export function PerCharColorEditor({ config, onChange }: PerCharColorEditorProps
               onClick={() => patchColors(rainbowCharFillColors(config.text || ""))}
               className="p-1 rounded border border-[#8B5CF6]/40 text-[#8B5CF6] hover:bg-[#8B5CF6]/10 cursor-pointer"
             >
-              <Sparkles size={11} />
+              <Pipette size={11} />
             </button>
           </div>
         )}

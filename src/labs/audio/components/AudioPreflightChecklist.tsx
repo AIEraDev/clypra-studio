@@ -6,7 +6,6 @@ import {
   Loader2,
   CloudUpload,
   ShieldAlert,
-  Sparkles,
   Zap,
 } from "lucide-react";
 import type { PreflightCheckItem } from "../types";

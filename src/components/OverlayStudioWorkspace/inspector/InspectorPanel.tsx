@@ -17,7 +17,6 @@ import {
   Type,
   Eye,
   EyeOff,
-  Wand2,
   Database,
   ChevronDown,
   ChevronRight,

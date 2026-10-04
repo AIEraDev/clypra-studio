@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, Ban, Layers, Shield, Tag, Bookmark } from "lucide-react";
+import { Sun, Ban, Layers, Shield, Tag, Bookmark } from "lucide-react";
 
 export interface BoxStylePreset {
   id: string;
@@ -99,7 +99,7 @@ export const BOX_STYLE_PRESETS: BoxStylePreset[] = [
     id: "neon-outline",
     name: "Neon Glow",
     description: "Cyberpunk outline box",
-    icon: Sparkles,
+    icon: Sun,
     panel: {
       backgroundColor: "#050508",
       backgroundOpacity: 0.85,

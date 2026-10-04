@@ -1,5 +1,5 @@
 import React from "react";
-import { HelpCircle, Loader2, Sparkles } from "lucide-react";
+import { HelpCircle, Loader2, Bookmark, Shuffle } from "lucide-react";
 
 export interface SavePresetModalProps {
   open: boolean;
@@ -20,7 +20,7 @@ export function SavePresetModal({ open, name, category, isGeneratingName, onName
     <div id="save-preset-overlay" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="w-[340px] rounded-xl border border-[#2A2A38] bg-[#1E1E26] p-5 shadow-2xl select-none">
         <h3 className="mb-1.5 flex items-center gap-1.5 font-sans text-sm font-semibold tracking-wide text-white">
-          <Sparkles size={14} className="text-[#7C6FFF]" />
+          <Bookmark size={14} className="text-[#7C6FFF]" />
           Save Visual Preset
         </h3>
         <p className="mb-4 font-sans text-xs leading-normal text-clypra-muted">Store this composition style in local presets for reuse in Templates.</p>
@@ -29,9 +29,9 @@ export function SavePresetModal({ open, name, category, isGeneratingName, onName
           <span className="mb-1 block font-mono text-[10px] uppercase text-clypra-muted">Preset name</span>
           <div className="flex gap-1.5">
             <input id="input-save-preset-name" type="text" placeholder="e.g. Acid Neon" value={name} onChange={(event) => onNameChange(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-[#2A2A38] bg-[#0E0E12] p-2 font-sans text-xs text-white focus:border-[#7C6FFF] focus:outline-none" />
-            <button type="button" onClick={onGenerateName} disabled={isGeneratingName} className="flex shrink-0 items-center justify-center gap-1 rounded-lg border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-2.5 font-sans text-xs text-[#7C6FFF] transition-all hover:bg-[#7C6FFF]/20 disabled:cursor-not-allowed disabled:opacity-50">
-              {isGeneratingName ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={11} />}
-              <span className="text-[10px] font-semibold">AI</span>
+            <button type="button" onClick={onGenerateName} disabled={isGeneratingName} title="Generate suggested preset name" className="flex shrink-0 items-center justify-center gap-1 rounded-lg border border-[#7C6FFF]/30 bg-[#7C6FFF]/10 px-2.5 font-sans text-xs text-[#7C6FFF] transition-all hover:bg-[#7C6FFF]/20 disabled:cursor-not-allowed disabled:opacity-50">
+              {isGeneratingName ? <Loader2 size={13} className="animate-spin" /> : <Shuffle size={11} />}
+              <span className="text-[10px] font-semibold">Auto</span>
             </button>
           </div>
         </label>
