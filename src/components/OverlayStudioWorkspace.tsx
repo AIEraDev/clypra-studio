@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Sparkles,
+  Plus,
   Undo2,
   Redo2,
   Save,
@@ -556,7 +556,7 @@ export function OverlayStudioWorkspace({
             title="New blank project"
             className="flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-bold text-gray-300 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
           >
-            <Sparkles size={12} /> New
+            <Plus size={12} /> New
           </button>
 
           {/* Open / Load Project */}

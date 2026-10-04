@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   Search,
   Plus,
-  Sparkles,
+  Shapes,
   Layers,
   Box,
   Type,
@@ -79,7 +79,7 @@ const PRIMITIVE_ICONS: Record<string, React.ReactNode> = {
   "image-primitive": <Image size={14} className="text-pink-400" />,
   "frame-primitive": <Box size={14} className="text-indigo-400" />,
   "repeater-primitive": <List size={14} className="text-sky-400" />,
-  "icon-primitive": <Sparkles size={14} className="text-yellow-400" />,
+  "icon-primitive": <Shapes size={14} className="text-yellow-400" />,
   "connector-primitive": <ArrowUpRight size={14} className="text-rose-400" />,
   "video-primitive": <Video size={14} className="text-cyan-400" />,
   "audio-primitive": <Volume2 size={14} className="text-orange-400" />,

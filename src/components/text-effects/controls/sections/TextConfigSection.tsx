@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Loader2, Sparkles, Type } from "lucide-react";
+import { Loader2, Shuffle, Type } from "lucide-react";
 import { resizeCharFillColors } from "@clypra-studio/engine";
 import { ControlSectionCard } from "../common/ControlSectionCard";
 import type { BaseControlSectionProps } from "../common/types";
@@ -107,14 +107,14 @@ export function TextConfigSection({
             onClick={handleGenerateAiEffectName}
             disabled={isGeneratingName}
             className="px-2.5 bg-[#7C6FFF]/10 hover:bg-[#7C6FFF]/20 active:bg-[#7C6FFF]/30 border border-[#7C6FFF]/30 rounded-lg text-clypra-accent font-sans text-xs flex items-center justify-center gap-1 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-            title="Generate Class Name with Gemini AI"
+            title="Generate suggested effect name"
           >
             {isGeneratingName ? (
               <Loader2 size={13} className="animate-spin text-clypra-accent" />
             ) : (
               <>
-                <Sparkles size={11} />
-                <span className="text-[10px] font-semibold">AI Name</span>
+                <Shuffle size={11} />
+                <span className="text-[10px] font-semibold">Suggest</span>
               </>
             )}
           </button>

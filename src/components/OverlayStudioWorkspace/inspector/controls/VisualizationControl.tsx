@@ -38,7 +38,6 @@ import {
   ArrowRight,
   TrendingUp,
   Table as TableIcon,
-  Sparkles,
   Video,
   Volume2,
   Film,

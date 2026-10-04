@@ -1,12 +1,11 @@
 import {
-  Sparkles,
+  Boxes,
   Play,
   Clock,
   Zap,
   Film,
   TrendingUp,
   Sliders,
-  Wand2,
 } from "lucide-react";
 import type { AnimationPreset, LayerAnimation } from "@clypra-studio/engine";
 
@@ -62,7 +61,7 @@ export const MOTION_STYLE_PRESETS: MotionStylePreset[] = [
     id: "dynamic-3d",
     name: "3D Flip",
     description: "3D tumble flip in, slide down",
-    icon: Sparkles,
+    icon: Boxes,
     animation: {
       in: "3d-flip",
       out: "slide-down",
@@ -130,7 +129,7 @@ export const LayerAnimationTimeline: React.FC<LayerAnimationTimelineProps> = ({
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider text-[#888899] flex items-center gap-1">
-            <Sparkles size={12} className="text-purple-400" />
+            <Film size={12} className="text-purple-400" />
             Motion Style Bundles
           </label>
           {onOpenCatalog && (
@@ -139,7 +138,7 @@ export const LayerAnimationTimeline: React.FC<LayerAnimationTimelineProps> = ({
               onClick={onOpenCatalog}
               className="text-[10px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20"
             >
-              <Wand2 size={10} /> Browse 12+ Styles
+              <Sliders size={10} /> Browse 12+ Styles
             </button>
           )}
         </div>

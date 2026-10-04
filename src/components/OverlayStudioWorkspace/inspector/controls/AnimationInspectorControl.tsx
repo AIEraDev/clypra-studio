@@ -8,7 +8,6 @@ import {
   Clock,
   Move,
   Layers,
-  Sparkles,
   SlidersHorizontal,
   Bookmark,
 } from "lucide-react";

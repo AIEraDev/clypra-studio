@@ -12,7 +12,7 @@ import {
   Plus,
   RotateCcw,
   Trash2,
-  Wand2,
+  Layers,
 } from "lucide-react";
 import type { Keyframe, SceneDocument } from "@clypra-studio/engine";
 import { ensureDefaultTimeline } from "@clypra-studio/engine";
@@ -452,7 +452,7 @@ export function TimelinePanel({
           }}
           title="Add demo shadow + mask reveal tracks"
         >
-          <Wand2 size={11} /> Demo tracks
+          <Layers size={11} /> Demo tracks
         </button>
       </div>
 

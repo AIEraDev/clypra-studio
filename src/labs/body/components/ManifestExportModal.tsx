@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { X, Copy, Check, Download, Code, Sparkles, Layers, ShieldCheck, CloudUpload, Loader2 } from "lucide-react";
+import { X, Copy, Check, Download, Code, FileCode, Layers, ShieldCheck, CloudUpload, Loader2 } from "lucide-react";
 import type {
   BodyEffectManifest,
   CompositingPrimitive,
@@ -165,7 +165,7 @@ export function ManifestExportModal({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant bg-surface-container-low shrink-0">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
+            <FileCode className="w-4 h-4 text-primary" />
             <h2 className="text-xs font-bold uppercase tracking-wider text-on-surface">
               Export Body Effect Manifest
             </h2>

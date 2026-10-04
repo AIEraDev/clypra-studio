@@ -9,7 +9,7 @@ import {
   Tag,
   FolderOpen,
   Image as ImageIcon,
-  Sparkles,
+  Shuffle,
 } from "lucide-react";
 import { useTextEffectR2Upload } from "../../hooks/useTextEffectR2Upload";
 import { toast } from "sonner";
@@ -325,17 +325,17 @@ export function PublishEffectModal({
         <div className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0">
           {activeTab === "metadata" ? (
             <>
-              {/* AI Generation Banner */}
+              {/* Auto Generation Banner */}
               <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Sparkles size={14} className="text-purple-300 shrink-0" />
+                    <Shuffle size={14} className="text-purple-300 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[11px] font-bold text-purple-200">
-                        AI-Powered Name
+                       <p className="text-[11px] font-bold text-purple-200">
+                        Auto-Suggest Name
                       </p>
                       <p className="text-[10px] text-purple-300/80">
-                        Generate creative effect name using Gemini
+                        Generate descriptive effect name from parameters
                       </p>
                     </div>
                   </div>
@@ -352,8 +352,8 @@ export function PublishEffectModal({
                       </>
                     ) : (
                       <>
-                        <Sparkles size={11} />
-                        Generate
+                        <Shuffle size={11} />
+                        Auto-Suggest
                       </>
                     )}
                   </button>

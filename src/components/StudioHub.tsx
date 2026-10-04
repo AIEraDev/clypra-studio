@@ -12,7 +12,7 @@ import {
   Sticker,
   Type,
   Video,
-  WandSparkles,
+  ArrowLeftRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ClypraLogo } from "./ClypraLogo";
@@ -58,7 +58,7 @@ const destinationGroups: StudioDestinationGroup[] = [
         href: "/studio/transition-lab",
         label: "Transition Lab",
         description: "Author dual-input transitions with native preview and export contracts.",
-        icon: WandSparkles,
+        icon: ArrowLeftRight,
         accent: "#fb7185",
       },
     ],

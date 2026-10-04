@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Lock, Mail, X, Loader2, Sparkles, UserRound } from "lucide-react";
+import { Lock, Mail, X, Loader2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { getStudioApiBaseUrl } from "../../services/apiConfig";
 
@@ -133,7 +133,7 @@ export function LoginModal({
         {/* Modal Branding Header */}
         <div className="mb-6 mt-2 text-center">
           <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#7C6FFF]/10 text-[#7C6FFF] shadow-[0_0_15px_rgba(124,111,255,0.15)]">
-            <Sparkles size={20} className="animate-pulse" />
+            <UserRound size={20} />
           </div>
           <h3 className="font-sans text-lg font-bold tracking-tight text-white">
             {mode === "register"

@@ -10,7 +10,6 @@ import {
   FolderOpen,
   Image as ImageIcon,
   Video,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useVideoEffectR2Upload } from "../../hooks/useVideoEffectR2Upload";
@@ -189,7 +188,7 @@ export function PublishVideoEffectModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-outline-variant p-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" />
+            <UploadCloud className="w-5 h-5 text-accent" />
             <div>
               <h2 className="font-sans text-sm font-semibold tracking-wide text-white">
                 Publish Video Effect to API

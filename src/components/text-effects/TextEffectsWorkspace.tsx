@@ -4,7 +4,7 @@ import type {
   SceneDocument,
   TextEffectConfig,
 } from "@clypra-studio/engine";
-import { Cpu, Shield, Sparkles } from "lucide-react";
+import { Cpu, Shield } from "lucide-react";
 import { CompositionToolbar } from "../CompositionToolbar";
 import { LabsPanel } from "../LabsPanel";
 import { PreviewCanvas } from "../PreviewCanvas";

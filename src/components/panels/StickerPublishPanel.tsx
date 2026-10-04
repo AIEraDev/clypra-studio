@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type { StickerCategory } from "../../types/publish";
-import { Loader2, Upload, Film, Sparkles } from "lucide-react";
+import { Loader2, Upload, Film, Scan } from "lucide-react";
 import { toast } from "sonner";
 import lottie from "lottie-web";
 import { Player } from "@lottiefiles/react-lottie-player";
@@ -516,19 +516,19 @@ export function StickerPublishPanel({
               <button
                 onClick={handleGenerateMetadata}
                 disabled={generatingMetadata || !imagePreview}
-                title="AI-generate name, tags, and category from animation thumbnail"
+                title="Auto-detect name, tags, and category from animation thumbnail"
                 className="px-3 py-1.5 bg-[#7C6FFF] hover:bg-[#6C5FEF] disabled:bg-[#2A2A38] disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-xs"
               >
                 {generatingMetadata ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <Scan className="w-3.5 h-3.5" />
                 )}
               </button>
             </div>
             {!imagePreview && (
               <p className="mt-1 text-[10px] text-gray-500">
-                Upload a Lottie JSON file first to use AI generation
+                Upload a Lottie JSON file first to auto-detect metadata
               </p>
             )}
           </div>

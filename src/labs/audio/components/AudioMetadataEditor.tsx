@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  Sparkles,
+  Sliders,
   Loader2,
   Tag,
   Hash,
@@ -96,9 +96,9 @@ export function AudioMetadataEditor({
           {aiStatus === "generating" ? (
             <Loader2 size={13} className="animate-spin text-purple-300" />
           ) : (
-            <Sparkles size={13} className="text-purple-400" />
+            <Sliders size={13} className="text-purple-400" />
           )}
-          <span>{aiStatus === "generating" ? "Enriching..." : "Auto-Enrich with AI"}</span>
+          <span>{aiStatus === "generating" ? "Enriching..." : "Auto-Enrich Metadata"}</span>
         </button>
       </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import {
   X,
   Search,
-  Sparkles,
+  Boxes,
   TrendingUp,
   Zap,
   Film,
@@ -16,7 +16,6 @@ import {
   Eye,
   Check,
   Layers,
-  Wand2,
 } from "lucide-react";
 import type { LayerAnimation } from "@clypra-studio/engine";
 
@@ -90,7 +89,7 @@ export const MOTION_CATALOG_PRESETS: MotionCatalogPreset[] = [
     category: "kinetic",
     categoryLabel: "Expressive & 3D",
     description: "3D tumble flip with perspective tilt into slide-down exit",
-    icon: Sparkles,
+    icon: Boxes,
     accentColor: "from-fuchsia-500/20 to-violet-500/20 text-fuchsia-400 border-fuchsia-500/40",
     badge: "3D MOTION",
     animation: {
@@ -288,7 +287,7 @@ export const MotionCatalogModal: React.FC<MotionCatalogModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#2A2A38] bg-[#141420]">
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/40 text-purple-400">
-              <Wand2 size={18} />
+              <Film size={18} />
             </div>
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
@@ -359,7 +358,7 @@ export const MotionCatalogModal: React.FC<MotionCatalogModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 min-h-[380px]">
           {filteredPresets.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">
-              <Sparkles size={32} className="text-[#3A3A4E] mb-2" />
+              <Film size={32} className="text-[#3A3A4E] mb-2" />
               <p className="text-sm font-semibold text-white">No motion styles match your search</p>
               <p className="text-xs text-[#777788] mt-1">Try adjusting your keyword or selected category.</p>
             </div>

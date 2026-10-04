@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Sparkles, Trash2 } from "lucide-react";
+import { Plus, Sun, Trash2 } from "lucide-react";
 import { ControlSectionCard } from "../common/ControlSectionCard";
 import { ControlColorPicker } from "../common/ControlColorPicker";
 import type { BaseControlSectionProps } from "../common/types";
@@ -14,7 +14,7 @@ export function GlowSection({
     <ControlSectionCard
       id="section-card-glow"
       title="5. Outer / Inner Glows"
-      icon={<Sparkles size={14} className="text-clypra-accent" />}
+      icon={<Sun size={14} className="text-clypra-accent" />}
       isCollapsed={isCollapsed}
       onToggle={onToggle}
     >

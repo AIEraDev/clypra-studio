@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Sparkles, Film, Check } from "lucide-react";
+import { Film, Check } from "lucide-react";
 import type { MotionGraphicTemplate } from "../types";
 import { MOTION_PRESETS } from "../presets/motionPresets";
 
