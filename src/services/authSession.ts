@@ -68,6 +68,13 @@ export function getUserFromToken(token: string): SessionUser | null {
   };
 }
 
+export function isStoredUserAdmin(): boolean {
+  const token = getStoredAuthToken();
+  if (!token || isTokenExpired(token)) return false;
+  const user = getUserFromToken(token);
+  return Boolean(user?.isAdmin);
+}
+
 let lastRefreshAttempt = 0;
 const MIN_REFRESH_INTERVAL_MS = 15_000; // Throttle to at most once every 15 seconds
 

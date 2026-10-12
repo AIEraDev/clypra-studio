@@ -39,7 +39,18 @@ export interface AudioPublishPayload {
   };
 }
 
-export type StickerCategory = "emoji" | "text" | "gaming" | "sports" | "animals" | "love" | "mood" | "food" | "travel" | "birthday" | "frames" | "shapes" | "fashion" | "retro" | "illustration";
+export type StickerCategory =
+  | "reaction"
+  | "emoji"
+  | "social"
+  | "arrow"
+  | "shape"
+  | "frame"
+  | "callout"
+  | "celebration"
+  | "nature"
+  | "object"
+  | "misc";
 
 export interface StickerPublishPayload {
   id: string;

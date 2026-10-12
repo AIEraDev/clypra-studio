@@ -324,7 +324,11 @@ export function AuthRoute({
   adminOnly?: boolean;
 }) {
   const [status, setStatus] = useState<AuthStatus>("checking");
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(() => {
+    const token = getStoredAuthToken();
+    if (!token || isTokenExpired(token)) return null;
+    return getUserFromToken(token);
+  });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(() =>
     getStoredAuthToken(),
@@ -464,7 +468,7 @@ export function AuthRoute({
   if (status === "checking")
     return <RouteLoading label="Checking your Clypra session…" />;
 
-  if (import.meta.env.DEV && (status === "unauthenticated" || (adminOnly && !user?.isAdmin))) {
+  if (import.meta.env.DEV && !adminOnly && status === "unauthenticated") {
     return <>{children}</>;
   }
 
