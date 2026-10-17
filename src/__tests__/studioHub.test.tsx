@@ -46,6 +46,11 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
 
     // Verify admin badge is not displayed
     expect(screen.queryByTestId("admin-badge")).not.toBeInTheDocument();
+
+    // Verify Sign In button is rendered for unauthenticated users
+    expect(screen.getByTestId("studio-sign-in-btn")).toBeInTheDocument();
+    expect(screen.getByText("Sign In")).toBeInTheDocument();
+    expect(screen.queryByTestId("user-profile-btn")).not.toBeInTheDocument();
   });
 
   it("renders all 11 standard workspaces and hides admin workspaces for non-admin logged-in users", () => {
@@ -76,6 +81,59 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.queryByText("Program Preview Performance")).not.toBeInTheDocument();
     expect(screen.queryByText("Admin Console")).not.toBeInTheDocument();
     expect(screen.queryByTestId("admin-badge")).not.toBeInTheDocument();
+
+    // Verify user profile button is rendered and Sign In button is hidden
+    expect(screen.getByTestId("user-profile-btn")).toBeInTheDocument();
+    expect(screen.getByText("creator")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-sign-in-btn")).not.toBeInTheDocument();
+  });
+
+  it("opens the LoginModal when Sign In button is clicked", () => {
+    render(
+      <MemoryRouter>
+        <StudioHub />
+      </MemoryRouter>
+    );
+
+    const signInBtn = screen.getByTestId("studio-sign-in-btn");
+    expect(signInBtn).toBeInTheDocument();
+    fireEvent.click(signInBtn);
+
+    expect(screen.getByRole("heading", { name: /access clypra studio/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("e.g. design@clypra.com")).toBeInTheDocument();
+  });
+
+  it("toggles the user dropdown and logs out when Log Out is clicked", () => {
+    const userToken = createMockJwt({
+      id: 10,
+      username: "animator",
+      email: "animator@clypra.com",
+      isAdmin: false,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+    localStorage.setItem(AUTH_TOKEN_KEY, userToken);
+
+    render(
+      <MemoryRouter>
+        <StudioHub />
+      </MemoryRouter>
+    );
+
+    const profileBtn = screen.getByTestId("user-profile-btn");
+    expect(profileBtn).toBeInTheDocument();
+    expect(screen.getByText("animator")).toBeInTheDocument();
+
+    // Open dropdown
+    fireEvent.click(profileBtn);
+    expect(screen.getByText("animator@clypra.com")).toBeInTheDocument();
+
+    // Click log out
+    const logoutBtn = screen.getByRole("button", { name: /log out/i });
+    fireEvent.click(logoutBtn);
+
+    // User is logged out, Sign In button appears
+    expect(screen.getByTestId("studio-sign-in-btn")).toBeInTheDocument();
+    expect(screen.queryByTestId("user-profile-btn")).not.toBeInTheDocument();
   });
 
   it("renders all 18 workspaces in a single list when user is logged in as admin", () => {

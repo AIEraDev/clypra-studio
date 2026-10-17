@@ -1,13 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   ArrowRight,
   ArrowLeftRight,
   Beaker,
+  ChevronDown,
   Eye,
   FileCode,
   Film,
   Layers,
+  LogOut,
   Music2,
   Palette,
   Search,
@@ -15,12 +17,21 @@ import {
   Sparkles,
   Sticker,
   Type,
+  User,
   Video,
   X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ClypraLogo } from "./ClypraLogo";
 import { useIsAdmin } from "../hooks/useIsAdmin";
+import { LoginModal } from "./LoginModal";
+import {
+  AUTH_TOKEN_KEY,
+  getStoredAuthToken,
+  getUserFromToken,
+  isTokenExpired,
+  type SessionUser,
+} from "../services/authSession";
 
 export type StudioDestination = {
   href: string;
@@ -230,6 +241,55 @@ export function DestinationCard({ destination }: { destination: StudioDestinatio
 export function StudioHub() {
   const isAdmin = useIsAdmin();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [user, setUser] = useState<SessionUser | null>(() => {
+    const token = getStoredAuthToken();
+    if (!token || isTokenExpired(token)) return null;
+    return getUserFromToken(token);
+  });
+
+  useEffect(() => {
+    const syncUser = () => {
+      const token = getStoredAuthToken();
+      if (!token || isTokenExpired(token)) {
+        setUser(null);
+      } else {
+        setUser(getUserFromToken(token));
+      }
+    };
+
+    window.addEventListener("storage", syncUser);
+    window.addEventListener("clypra-auth-refreshed", syncUser);
+
+    return () => {
+      window.removeEventListener("storage", syncUser);
+      window.removeEventListener("clypra-auth-refreshed", syncUser);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showUserDropdown) return;
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setShowUserDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleDocumentClick);
+    return () => document.removeEventListener("mousedown", handleDocumentClick);
+  }, [showUserDropdown]);
+
+  const handleLogout = () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    window.dispatchEvent(new CustomEvent("clypra-auth-refreshed"));
+    setUser(null);
+    setShowUserDropdown(false);
+  };
 
   const destinations: StudioDestination[] = useMemo(() => {
     return isAdmin
@@ -282,10 +342,62 @@ export function StudioHub() {
               Admin Session
             </div>
           )}
-          <div className="flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-300">
+          <div className="hidden sm:flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-300">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.8)]" />
             Native pipeline online
           </div>
+
+          <div className="mx-1 hidden h-4 w-px shrink-0 sm:block bg-(--studio-border)" />
+
+          {user ? (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowUserDropdown((open) => !open)}
+                data-testid="user-profile-btn"
+                className="flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-(--studio-border) bg-(--studio-panel) px-3 text-xs font-semibold text-white transition-colors hover:border-(--studio-accent)"
+                title={`Signed in as ${user.username}`}
+              >
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-(--studio-accent) text-[10px] font-bold uppercase text-black">
+                  {user.username.charAt(0)}
+                </span>
+                <span className="max-w-[120px] truncate">{user.username}</span>
+                <ChevronDown size={12} className="text-(--studio-muted)" />
+              </button>
+
+              {showUserDropdown && (
+                <div className="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-(--studio-border) bg-(--studio-raised) p-2 shadow-2xl">
+                  <div className="mb-1 truncate border-b border-(--studio-border) px-2.5 py-1.5 text-[11px] text-(--studio-muted)">
+                    <div className="font-semibold text-white truncate">
+                      {user.username}
+                    </div>
+                    <div className="truncate text-[10px]">{user.email}</div>
+                    {user.isAdmin && (
+                      <span className="mt-1 inline-block rounded bg-sky-400/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-sky-300">
+                        Administrator
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-red-400 transition-colors hover:bg-red-500/10"
+                  >
+                    <LogOut size={13} />
+                    <span>Log Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowLoginModal(true)}
+              data-testid="studio-sign-in-btn"
+              className="flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-[#7C6FFF]/40 bg-[#7C6FFF]/15 px-3.5 text-xs font-semibold text-[#B9B2FF] transition-all hover:bg-[#7C6FFF] hover:text-white hover:shadow-lg hover:shadow-[#7C6FFF]/25"
+              title="Sign in with your account or administrator credentials"
+            >
+              <User size={14} />
+              <span>Sign In</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -375,6 +487,21 @@ export function StudioHub() {
           )}
         </div>
       </main>
+
+      <LoginModal
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={(newToken, nextUser) => {
+          localStorage.setItem(AUTH_TOKEN_KEY, newToken);
+          window.dispatchEvent(
+            new CustomEvent("clypra-auth-refreshed", {
+              detail: { token: newToken, user: nextUser },
+            }),
+          );
+          setUser(nextUser);
+          setShowLoginModal(false);
+        }}
+      />
     </div>
   );
 }
