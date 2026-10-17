@@ -334,12 +334,11 @@ const routes: RouteObject[] = [
   {
     path: `${STUDIO_LAB_ROUTES.animation}/*`,
     element: (
-      <AuthLabRoute
-        metadata={METADATA.animationLab}
-        label="the Animation Lab"
-      >
-        <AnimationLabPage />
-      </AuthLabRoute>
+      <DocumentRoute metadata={METADATA.animationLab}>
+        <AdminRoute label="the Animation Lab">
+          {withSuspense(<AnimationLabPage />)}
+        </AdminRoute>
+      </DocumentRoute>
     ),
   },
   {

@@ -1,7 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Download, Upload, Save, Sparkles, Check, Share2 } from "lucide-react";
+import {
+  Download,
+  Upload,
+  Save,
+  Sparkles,
+  Check,
+  Share2,
+  Shield,
+} from "lucide-react";
 import { toast } from "sonner";
-import type { TextAnimationPreset, AnimationPhase } from "../../types/animation";
+import type {
+  TextAnimationPreset,
+  AnimationPhase,
+} from "../../types/animation";
+import { useIsAdmin } from "../../hooks/useIsAdmin";
 import { STARTER_ANIMATION_PRESETS } from "./data/starterPresets";
 import { AnimationPresetBrowser } from "./components/AnimationPresetBrowser";
 import { AnimationPreviewStage } from "./components/AnimationPreviewStage";
@@ -11,6 +23,7 @@ import { AnimationInspector } from "./components/AnimationInspector";
 const STORAGE_KEY = "clypra_studio_animation_presets_v1";
 
 export const AnimationLabWorkspace: React.FC = () => {
+  const isAdmin = useIsAdmin();
   // Load custom drafts or initialize with starter presets
   const [presets, setPresets] = useState<TextAnimationPreset[]>(() => {
     try {
@@ -31,7 +44,9 @@ export const AnimationLabWorkspace: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(0);
 
   const activePreset =
-    presets.find((p) => p.id === activePresetId) ?? presets[0] ?? STARTER_ANIMATION_PRESETS[0];
+    presets.find((p) => p.id === activePresetId) ??
+    presets[0] ??
+    STARTER_ANIMATION_PRESETS[0];
 
   const duration = activePreset.defaultDuration || 0.6;
 
@@ -72,7 +87,9 @@ export const AnimationLabWorkspace: React.FC = () => {
   // Persist to local storage on changes
   const handleUpdatePreset = (updated: TextAnimationPreset) => {
     setPresets((prev) =>
-      prev.map((p) => (p.id === updated.id ? { ...updated, updatedAt: Date.now() } : p)),
+      prev.map((p) =>
+        p.id === updated.id ? { ...updated, updatedAt: Date.now() } : p,
+      ),
     );
   };
 
@@ -154,6 +171,13 @@ export const AnimationLabWorkspace: React.FC = () => {
   };
 
   const handlePublish = () => {
+    if (!isAdmin) {
+      toast.error(
+        "Admin access required. Only administrators can publish animation presets.",
+      );
+      return;
+    }
+
     // Schema validation check
     if (!activePreset.name.trim()) {
       toast.error("Preset name cannot be empty.");
@@ -166,9 +190,13 @@ export const AnimationLabWorkspace: React.FC = () => {
 
     // Simulate publication
     handleSaveDraft();
-    toast.success(`Published "${activePreset.name}" to Clypra Animation Catalog!`, {
-      description: "Preset is now validated for Clypra Desktop runtime evaluation.",
-    });
+    toast.success(
+      `Published "${activePreset.name}" to Clypra Animation Catalog!`,
+      {
+        description:
+          "Preset is now validated for Clypra Desktop runtime evaluation.",
+      },
+    );
   };
 
   return (
@@ -176,12 +204,13 @@ export const AnimationLabWorkspace: React.FC = () => {
       {/* ── Sub-Header: Studio Actions ── */}
       <div className="flex shrink-0 items-center justify-between border-b border-[var(--studio-border)] bg-[var(--studio-panel)] px-4 py-2">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5 rounded-full bg-[var(--studio-active-soft)] px-2.5 py-1 text-xs font-bold text-[var(--studio-accent)]">
-            <Sparkles size={13} />
-            <span>CapCut Animation Authoring</span>
+          <span className="flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[11px] font-bold text-red-400">
+            <Shield size={12} />
+            <span>Admin Only</span>
           </span>
           <span className="text-xs text-[var(--studio-muted)]">
-            Active: <strong className="text-white">{activePreset.name}</strong> ({activePreset.phase})
+            Active: <strong className="text-white">{activePreset.name}</strong>{" "}
+            ({activePreset.phase})
           </span>
         </div>
 
@@ -204,7 +233,17 @@ export const AnimationLabWorkspace: React.FC = () => {
 
           <button
             onClick={handlePublish}
-            className="flex items-center gap-1.5 rounded-lg bg-[var(--studio-accent)] px-3.5 py-1.5 text-xs font-bold text-black transition-transform hover:scale-105"
+            disabled={!isAdmin}
+            title={
+              !isAdmin
+                ? "Administrator access required to publish presets"
+                : undefined
+            }
+            className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-transform ${
+              isAdmin
+                ? "bg-[var(--studio-accent)] text-black hover:scale-105"
+                : "cursor-not-allowed bg-gray-800 text-gray-500"
+            }`}
           >
             <Check size={14} />
             <span>Publish Preset</span>

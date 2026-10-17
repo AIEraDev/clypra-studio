@@ -36,18 +36,19 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     for (const destination of standardDestinations) {
       expect(screen.getByText(destination.label)).toBeInTheDocument();
     }
-    expect(standardDestinations).toHaveLength(12);
+    expect(standardDestinations).toHaveLength(11);
 
-    // Verify no admin destinations are rendered
+    // Verify no admin destinations (including Animation Lab) are rendered
     for (const adminDest of adminDestinations) {
       expect(screen.queryByText(adminDest.label)).not.toBeInTheDocument();
     }
+    expect(screen.queryByText("Animation Lab")).not.toBeInTheDocument();
 
     // Verify admin badge is not displayed
     expect(screen.queryByTestId("admin-badge")).not.toBeInTheDocument();
   });
 
-  it("renders all 12 standard workspaces and hides admin workspaces for non-admin logged-in users", () => {
+  it("renders all 11 standard workspaces and hides admin workspaces for non-admin logged-in users", () => {
     const regularUserToken = createMockJwt({
       id: 42,
       username: "creator",
@@ -65,11 +66,11 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
 
     // Standard workspaces present
     expect(screen.getByText("Text Effects Lab")).toBeInTheDocument();
-    expect(screen.getByText("Animation Lab")).toBeInTheDocument();
     expect(screen.getByText("Transition Lab")).toBeInTheDocument();
     expect(screen.getByText("Audio Library")).toBeInTheDocument();
 
-    // Admin workspaces absent
+    // Admin workspaces absent (including Animation Lab)
+    expect(screen.queryByText("Animation Lab")).not.toBeInTheDocument();
     expect(screen.queryByText("Motion Graphics Studio")).not.toBeInTheDocument();
     expect(screen.queryByText("Performance Intelligence")).not.toBeInTheDocument();
     expect(screen.queryByText("Program Preview Performance")).not.toBeInTheDocument();
@@ -97,17 +98,19 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.getByTestId("admin-badge")).toBeInTheDocument();
     expect(screen.getByText("Admin Session")).toBeInTheDocument();
 
-    // Verify all 12 standard workspaces are present
+    // Verify all 11 standard workspaces are present
     for (const destination of standardDestinations) {
       expect(screen.getByText(destination.label)).toBeInTheDocument();
     }
 
-    // Verify all 6 admin destinations are present in the unified list
+    // Verify all 7 admin destinations are present in the unified list (including Animation Lab)
     for (const adminDest of adminDestinations) {
       expect(screen.getByText(adminDest.label)).toBeInTheDocument();
     }
+    expect(screen.getByText("Animation Lab")).toBeInTheDocument();
 
-    expect(adminDestinations).toHaveLength(6);
+    expect(standardDestinations).toHaveLength(11);
+    expect(adminDestinations).toHaveLength(7);
     expect(screen.getByText("18 available · shared native pipeline")).toBeInTheDocument();
   });
 
@@ -209,4 +212,48 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     // Access denied message is shown
     expect(await screen.findByText("Admin access denied")).toBeInTheDocument();
   });
+
+  it("protects Animation Lab under AdminRoute so non-admin creators receive access denied", async () => {
+    const creatorToken = createMockJwt({
+      id: 99,
+      username: "creator",
+      email: "creator@clypra.com",
+      isAdmin: false,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+    localStorage.setItem(AUTH_TOKEN_KEY, creatorToken);
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        user: {
+          id: 99,
+          username: "creator",
+          email: "creator@clypra.com",
+          createdAt: "2026-01-01",
+          isAdmin: false,
+        },
+      }),
+    } as Response);
+
+    render(
+      <MemoryRouter initialEntries={["/studio/animation-lab"]}>
+        <Routes>
+          <Route
+            path="/studio/animation-lab"
+            element={
+              <AdminRoute label="the Animation Lab">
+                <div data-testid="animation-lab-content">Animation Lab Admin Area</div>
+              </AdminRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByTestId("animation-lab-content")).not.toBeInTheDocument();
+    expect(await screen.findByText("Admin access denied")).toBeInTheDocument();
+  });
 });
+

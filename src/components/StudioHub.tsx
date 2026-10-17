@@ -42,14 +42,6 @@ export const standardDestinations: StudioDestination[] = [
     status: "Native ready",
   },
   {
-    href: "/studio/animation-lab",
-    label: "Animation Lab",
-    description: "Author, fine-tune, preview, and publish CapCut-parity text animations.",
-    icon: Sparkles,
-    accent: "#00E5FF",
-    status: "CapCut Parity",
-  },
-  {
     href: "/studio/video-lab",
     label: "Video Effects Lab",
     description: "Build and publish single-input video effects on the native runtime.",
@@ -122,6 +114,15 @@ export const standardDestinations: StudioDestination[] = [
 ];
 
 export const adminDestinations: StudioDestination[] = [
+  {
+    href: "/studio/animation-lab",
+    label: "Animation Lab",
+    description: "Author, fine-tune, preview, and publish CapCut-parity text animations.",
+    icon: Sparkles,
+    accent: "#00E5FF",
+    status: "Admin Lab",
+    adminOnly: true,
+  },
   {
     href: "/studio/motion-graphics",
     label: "Motion Graphics Studio",
