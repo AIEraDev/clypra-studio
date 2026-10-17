@@ -32,6 +32,7 @@ const StickerLabPage = lazy(() => import("../pages/labs/StickerLabPage"));
 const OverlayLabPage = lazy(() => import("../pages/labs/OverlayLabPage"));
 const MotionGraphicsLabPage = lazy(() => import("../pages/labs/MotionGraphicsLabPage"));
 const AnimationLabPage = lazy(() => import("../pages/labs/AnimationLabPage"));
+const TextBubbleStudioPage = lazy(() => import("../pages/labs/TextBubbleStudioPage"));
 
 const METADATA = {
   showcase: {
@@ -120,6 +121,12 @@ const METADATA = {
     description:
       "Animation Lab - Design, test, and publish CapCut-parity In, Out, and Loop text animations.",
     title: "Clypra Studio - Animation Lab",
+  },
+  textBubblesLab: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/text-bubbles",
+    description:
+      "Text Bubble Studio - Author decorative text containers, paper tears, speech bubbles, and layout rules.",
+    title: "Clypra Studio - Text Bubble Studio",
   },
   adminPerformance: {
     canonical: "https://clypra.abdulkabirmusa.com/studio/admin/performance",
@@ -344,6 +351,20 @@ const routes: RouteObject[] = [
   {
     path: "/animation-lab",
     element: <Navigate to={STUDIO_LAB_ROUTES.animation} replace />,
+  },
+  {
+    path: `${STUDIO_LAB_ROUTES.textBubbles}/*`,
+    element: (
+      <DocumentRoute metadata={METADATA.textBubblesLab}>
+        <AdminRoute label="Text Bubble Studio">
+          {withSuspense(<TextBubbleStudioPage />)}
+        </AdminRoute>
+      </DocumentRoute>
+    ),
+  },
+  {
+    path: "/text-bubbles",
+    element: <Navigate to={STUDIO_LAB_ROUTES.textBubbles} replace />,
   },
   {
     path: `${STUDIO_RAIL_ROUTES.admin}/performance/audio`,

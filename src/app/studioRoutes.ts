@@ -10,6 +10,7 @@ export const STUDIO_RAIL_ROUTES = {
   filters: "/studio/filters",
   transitions: "/studio/transitions",
   animations: "/studio/animation-lab",
+  "text-bubbles": "/studio/text-bubbles",
   admin: "/studio/admin",
   labs: "/studio/labs",
 } as const;
@@ -22,6 +23,7 @@ export const STUDIO_LAB_ROUTES = {
   filter: "/studio/filter-lab",
   colorGrading: "/studio/color-grading",
   animation: "/studio/animation-lab",
+  textBubbles: "/studio/text-bubbles",
 } as const;
 
 export type RailItem = keyof typeof STUDIO_RAIL_ROUTES;

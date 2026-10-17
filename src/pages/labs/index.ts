@@ -5,3 +5,4 @@ export { FilterLabPage } from "./FilterLabPage";
 export { AudioLabPage } from "./AudioLabPage";
 export { StickerLabPage } from "./StickerLabPage";
 export { OverlayLabPage } from "./OverlayLabPage";
+export { TextBubbleStudioPage } from "./TextBubbleStudioPage";

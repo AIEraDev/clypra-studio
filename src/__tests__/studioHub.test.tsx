@@ -161,15 +161,16 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
       expect(screen.getByText(destination.label)).toBeInTheDocument();
     }
 
-    // Verify all 7 admin destinations are present in the unified list (including Animation Lab)
+    // Verify all 8 admin destinations are present in the unified list (including Animation Lab & Text Bubble Studio)
     for (const adminDest of adminDestinations) {
       expect(screen.getByText(adminDest.label)).toBeInTheDocument();
     }
     expect(screen.getByText("Animation Lab")).toBeInTheDocument();
+    expect(screen.getByText("Text Bubble Studio")).toBeInTheDocument();
 
     expect(standardDestinations).toHaveLength(11);
-    expect(adminDestinations).toHaveLength(7);
-    expect(screen.getByText("18 available · shared native pipeline")).toBeInTheDocument();
+    expect(adminDestinations).toHaveLength(8);
+    expect(screen.getByText("19 available · shared native pipeline")).toBeInTheDocument();
   });
 
   it("filters workspaces in real-time using the search input", () => {
@@ -313,5 +314,49 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.queryByTestId("animation-lab-content")).not.toBeInTheDocument();
     expect(await screen.findByText("Admin access denied")).toBeInTheDocument();
   });
+
+  it("protects Text Bubble Studio under AdminRoute so non-admin creators receive access denied", async () => {
+    const creatorToken = createMockJwt({
+      id: 101,
+      username: "creator2",
+      email: "creator2@clypra.com",
+      isAdmin: false,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+    localStorage.setItem(AUTH_TOKEN_KEY, creatorToken);
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        user: {
+          id: 101,
+          username: "creator2",
+          email: "creator2@clypra.com",
+          createdAt: "2026-01-01",
+          isAdmin: false,
+        },
+      }),
+    } as Response);
+
+    render(
+      <MemoryRouter initialEntries={["/studio/text-bubbles"]}>
+        <Routes>
+          <Route
+            path="/studio/text-bubbles"
+            element={
+              <AdminRoute label="Text Bubble Studio">
+                <div data-testid="text-bubbles-admin-content">Text Bubble Studio Admin Content</div>
+              </AdminRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByTestId("text-bubbles-admin-content")).not.toBeInTheDocument();
+    expect(await screen.findByText("Admin access denied")).toBeInTheDocument();
+  });
 });
+
 
