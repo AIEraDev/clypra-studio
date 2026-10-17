@@ -31,6 +31,7 @@ const AudioLabPage = lazy(() => import("../pages/labs/AudioLabPage"));
 const StickerLabPage = lazy(() => import("../pages/labs/StickerLabPage"));
 const OverlayLabPage = lazy(() => import("../pages/labs/OverlayLabPage"));
 const MotionGraphicsLabPage = lazy(() => import("../pages/labs/MotionGraphicsLabPage"));
+const AnimationLabPage = lazy(() => import("../pages/labs/AnimationLabPage"));
 
 const METADATA = {
   showcase: {
@@ -113,6 +114,12 @@ const METADATA = {
     description:
       "Color Grading Lab - Design, test, and publish native color grading adjustments.",
     title: "Clypra Studio - Color Grading Lab",
+  },
+  animationLab: {
+    canonical: "https://clypra.abdulkabirmusa.com/studio/animation-lab",
+    description:
+      "Animation Lab - Design, test, and publish CapCut-parity In, Out, and Loop text animations.",
+    title: "Clypra Studio - Animation Lab",
   },
   adminPerformance: {
     canonical: "https://clypra.abdulkabirmusa.com/studio/admin/performance",
@@ -323,6 +330,21 @@ const routes: RouteObject[] = [
         <FilterLabPage />
       </AuthLabRoute>
     ),
+  },
+  {
+    path: `${STUDIO_LAB_ROUTES.animation}/*`,
+    element: (
+      <AuthLabRoute
+        metadata={METADATA.animationLab}
+        label="the Animation Lab"
+      >
+        <AnimationLabPage />
+      </AuthLabRoute>
+    ),
+  },
+  {
+    path: "/animation-lab",
+    element: <Navigate to={STUDIO_LAB_ROUTES.animation} replace />,
   },
   {
     path: `${STUDIO_RAIL_ROUTES.admin}/performance/audio`,

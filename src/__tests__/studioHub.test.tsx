@@ -36,7 +36,7 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     for (const destination of standardDestinations) {
       expect(screen.getByText(destination.label)).toBeInTheDocument();
     }
-    expect(standardDestinations).toHaveLength(11);
+    expect(standardDestinations).toHaveLength(12);
 
     // Verify no admin destinations are rendered
     for (const adminDest of adminDestinations) {
@@ -47,7 +47,7 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.queryByTestId("admin-badge")).not.toBeInTheDocument();
   });
 
-  it("renders all 11 standard workspaces and hides admin workspaces for non-admin logged-in users", () => {
+  it("renders all 12 standard workspaces and hides admin workspaces for non-admin logged-in users", () => {
     const regularUserToken = createMockJwt({
       id: 42,
       username: "creator",
@@ -65,6 +65,7 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
 
     // Standard workspaces present
     expect(screen.getByText("Text Effects Lab")).toBeInTheDocument();
+    expect(screen.getByText("Animation Lab")).toBeInTheDocument();
     expect(screen.getByText("Transition Lab")).toBeInTheDocument();
     expect(screen.getByText("Audio Library")).toBeInTheDocument();
 
@@ -76,7 +77,7 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.queryByTestId("admin-badge")).not.toBeInTheDocument();
   });
 
-  it("renders all 17 workspaces in a single list when user is logged in as admin", () => {
+  it("renders all 18 workspaces in a single list when user is logged in as admin", () => {
     const adminToken = createMockJwt({
       id: 1,
       username: "superadmin",
@@ -96,7 +97,7 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.getByTestId("admin-badge")).toBeInTheDocument();
     expect(screen.getByText("Admin Session")).toBeInTheDocument();
 
-    // Verify all 11 standard workspaces are present
+    // Verify all 12 standard workspaces are present
     for (const destination of standardDestinations) {
       expect(screen.getByText(destination.label)).toBeInTheDocument();
     }
@@ -107,7 +108,7 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     }
 
     expect(adminDestinations).toHaveLength(6);
-    expect(screen.getByText("17 available · shared native pipeline")).toBeInTheDocument();
+    expect(screen.getByText("18 available · shared native pipeline")).toBeInTheDocument();
   });
 
   it("filters workspaces in real-time using the search input", () => {

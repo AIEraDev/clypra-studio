@@ -12,6 +12,7 @@ import {
   Palette,
   Search,
   Shield,
+  Sparkles,
   Sticker,
   Type,
   Video,
@@ -39,6 +40,14 @@ export const standardDestinations: StudioDestination[] = [
     icon: Type,
     accent: "#7c6fff",
     status: "Native ready",
+  },
+  {
+    href: "/studio/animation-lab",
+    label: "Animation Lab",
+    description: "Author, fine-tune, preview, and publish CapCut-parity text animations.",
+    icon: Sparkles,
+    accent: "#00E5FF",
+    status: "CapCut Parity",
   },
   {
     href: "/studio/video-lab",
