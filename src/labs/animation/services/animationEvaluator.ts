@@ -207,11 +207,13 @@ export function calculateStaggerProgress(
     seqIndex = ((itemIndex * 9301 + 49297) % 233280) % totalItems;
   }
 
-  const clampedOverlap = Math.max(0, Math.min(0.99, overlap));
-  const stepDelay = (1 - clampedOverlap) / Math.max(1, totalItems - 1);
-  const durationPerItem = 1 - (totalItems - 1) * stepDelay * (1 - clampedOverlap);
-  const startTime = seqIndex * stepDelay * (1 - clampedOverlap);
-  const activeWindow = Math.max(0.1, 1 - startTime);
+  const clampedOverlap = Math.max(0, Math.min(0.98, overlap));
+  // Each glyph has the same local duration. The delay between glyphs is
+  // derived from it so the final glyph finishes exactly at progress 1. This
+  // avoids the accelerating/uneven stagger produced by scaling the delay twice.
+  const activeWindow = 1 / (1 + (totalItems - 1) * (1 - clampedOverlap));
+  const stepDelay = activeWindow * (1 - clampedOverlap);
+  const startTime = seqIndex * stepDelay;
 
   const localT = (overallProgress - startTime) / activeWindow;
   return Math.max(0, Math.min(1, localT));

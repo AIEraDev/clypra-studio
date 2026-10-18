@@ -23,7 +23,7 @@ export const AnimationPresetBrowser: React.FC<AnimationPresetBrowserProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const categories = ["All", "Basic", "Motion", "3D", "Glitch"];
+  const categories = ["All", "Basic", "Motion", "3D", "Glitch", "VFX"];
 
   // Filter presets by phase, category, and search query
   const filteredPresets = presets.filter((p) => {
@@ -107,16 +107,24 @@ export const AnimationPresetBrowser: React.FC<AnimationPresetBrowserProps> = ({
                     : "border-[var(--studio-border)]"
                 }`}
               >
-                {/* Pro Badge */}
-                {p.isPro && (
-                  <span className="absolute top-1.5 left-1.5 z-10 text-[10px]">
-                    💎
-                  </span>
-                )}
-
                 {/* Preset Card Viewport Preview */}
-                <div className="flex h-14 w-full items-center justify-center rounded bg-black/40 text-sm font-bold text-white/90">
-                  <span>ABC</span>
+                <div
+                  className="flex h-14 w-full items-center justify-center rounded text-sm font-bold text-white/90"
+                  style={{
+                    background: p.procedural?.type === "flame"
+                      ? "radial-gradient(circle, #6f250e, #161014 68%)"
+                      : p.procedural?.type === "water" || p.procedural?.type === "chromatic"
+                        ? "linear-gradient(115deg, #142445, #352151, #12111d)"
+                        : p.procedural?.type === "neon"
+                          ? "radial-gradient(circle, #312060, #101018 70%)"
+                          : "rgba(0,0,0,.4)",
+                  }}
+                >
+                  <span
+                    style={p.procedural?.type === "neon" ? { textShadow: "0 0 10px #bc70ff" } : undefined}
+                  >
+                    ABC
+                  </span>
                 </div>
 
                 {/* Preset Title */}

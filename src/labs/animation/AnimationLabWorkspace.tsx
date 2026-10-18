@@ -7,6 +7,7 @@ import {
   Check,
   Share2,
   Shield,
+  ListChecks,
 } from "lucide-react";
 import { toast } from "sonner";
 import type {
@@ -14,13 +15,36 @@ import type {
   AnimationPhase,
 } from "../../types/animation";
 import { useIsAdmin } from "../../hooks/useIsAdmin";
+import { getStudioApiBaseUrl } from "../../services/apiConfig";
+import { getStoredAuthToken } from "../../services/authSession";
 import { STARTER_ANIMATION_PRESETS } from "./data/starterPresets";
 import { AnimationPresetBrowser } from "./components/AnimationPresetBrowser";
 import { AnimationPreviewStage } from "./components/AnimationPreviewStage";
 import { AnimationTimeline } from "./components/AnimationTimeline";
 import { AnimationInspector } from "./components/AnimationInspector";
+import { AnimationCatalogStatusModal } from "./components/AnimationCatalogStatusModal";
 
 const STORAGE_KEY = "clypra_studio_animation_presets_v1";
+
+function withoutLegacyDiamondFlag(preset: TextAnimationPreset): TextAnimationPreset {
+  const { isPro: _removed, ...cleanPreset } = preset as TextAnimationPreset & { isPro?: unknown };
+  return cleanPreset;
+}
+
+function mergeStarterPresets(savedPresets: TextAnimationPreset[]): TextAnimationPreset[] {
+  const sanitizedPresets = savedPresets.map(withoutLegacyDiamondFlag);
+  const savedById = new Map(sanitizedPresets.map((preset) => [preset.id, preset]));
+  const starterIds = new Set(STARTER_ANIMATION_PRESETS.map((preset) => preset.id));
+
+  // Preserve a creator's edits to existing presets while adding newly shipped
+  // presets to an older browser draft. Custom presets stay at the end.
+  return [
+    ...STARTER_ANIMATION_PRESETS.map(
+      (starter) => savedById.get(starter.id) ?? starter,
+    ),
+    ...sanitizedPresets.filter((preset) => !starterIds.has(preset.id)),
+  ];
+}
 
 export const AnimationLabWorkspace: React.FC = () => {
   const isAdmin = useIsAdmin();
@@ -30,7 +54,7 @@ export const AnimationLabWorkspace: React.FC = () => {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return mergeStarterPresets(parsed);
       }
     } catch (_) {}
     return STARTER_ANIMATION_PRESETS;
@@ -42,6 +66,7 @@ export const AnimationLabWorkspace: React.FC = () => {
   const [sampleText, setSampleText] = useState("ABC123");
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
 
   const activePreset =
     presets.find((p) => p.id === activePresetId) ??
@@ -170,34 +195,58 @@ export const AnimationLabWorkspace: React.FC = () => {
     toast.success(`Exported ${activePreset.name} as JSON.`);
   };
 
-  const handlePublish = () => {
+  const publishPreset = async (preset: TextAnimationPreset): Promise<TextAnimationPreset | null> => {
     if (!isAdmin) {
       toast.error(
         "Admin access required. Only administrators can publish animation presets.",
       );
-      return;
+      return null;
     }
 
-    // Schema validation check
-    if (!activePreset.name.trim()) {
+    if (!preset.name.trim()) {
       toast.error("Preset name cannot be empty.");
-      return;
+      return null;
     }
-    if (activePreset.tracks.length === 0) {
+    if (preset.tracks.length === 0) {
       toast.error("Preset must have at least one animated property track.");
-      return;
+      return null;
     }
 
-    // Simulate publication
-    handleSaveDraft();
-    toast.success(
-      `Published "${activePreset.name}" to Clypra Animation Catalog!`,
-      {
-        description:
-          "Preset is now validated for Clypra Desktop runtime evaluation.",
-      },
-    );
+    const token = getStoredAuthToken();
+    try {
+      const response = await fetch(`${getStudioApiBaseUrl()}/text-animations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify(preset),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || `Publication failed (${response.status})`);
+      }
+
+      const publishedPreset = (result.preset ?? preset) as TextAnimationPreset;
+      setPresets((current) => {
+        const next = current.map((candidate) =>
+          candidate.id === publishedPreset.id ? publishedPreset : candidate,
+        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
+      toast.success(`Published "${publishedPreset.name}" to the Animation API.`);
+      return publishedPreset;
+    } catch (publishError) {
+      toast.error(
+        publishError instanceof Error ? publishError.message : "Unable to publish the animation preset.",
+      );
+      return null;
+    }
   };
+
+  const handlePublish = () => void publishPreset(activePreset);
 
   return (
     <div className="flex h-full flex-col bg-[#0B0B10]">
@@ -215,6 +264,14 @@ export const AnimationLabWorkspace: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsCatalogOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-control)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:border-[var(--studio-accent)]"
+          >
+            <ListChecks size={13} />
+            <span>API Catalog</span>
+          </button>
+
           <button
             onClick={handleExportJson}
             className="flex items-center gap-1.5 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-control)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:border-[var(--studio-accent)]"
@@ -295,6 +352,13 @@ export const AnimationLabWorkspace: React.FC = () => {
           onUpdatePreset={handleUpdatePreset}
         />
       </div>
+      <AnimationCatalogStatusModal
+        isOpen={isCatalogOpen}
+        localPresets={presets}
+        canPublish={isAdmin}
+        onPublishPreset={publishPreset}
+        onClose={() => setIsCatalogOpen(false)}
+      />
     </div>
   );
 };

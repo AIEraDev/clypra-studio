@@ -105,25 +105,12 @@ export const AnimationInspector: React.FC<AnimationInspectorProps> = ({
                 <option value="Motion">Motion</option>
                 <option value="3D">3D</option>
                 <option value="Glitch">Glitch</option>
+                <option value="VFX">VFX</option>
                 <option value="Dynamic">Dynamic</option>
               </select>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
-            <input
-              type="checkbox"
-              id="isPro"
-              checked={Boolean(preset.isPro)}
-              onChange={(e) =>
-                onUpdatePreset({ ...preset, isPro: e.target.checked })
-              }
-              className="h-3.5 w-3.5 rounded accent-[var(--studio-accent)]"
-            />
-            <label htmlFor="isPro" className="cursor-pointer text-xs text-white/90">
-              💎 Pro Preset (Diamond Badge)
-            </label>
-          </div>
         </div>
       </div>
 

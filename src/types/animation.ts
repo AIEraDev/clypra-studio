@@ -80,7 +80,21 @@ export interface StaggerConfig {
 }
 
 export interface ProceduralVfxConfig {
-  type: "glitch" | "wave" | "melt" | "chromatic" | "dust" | "shiver";
+  type:
+    | "glitch"
+    | "wave"
+    | "melt"
+    | "chromatic"
+    | "dust"
+    | "shiver"
+    | "cursor"
+    | "pixel"
+    | "flame"
+    | "sparkle"
+    | "neon"
+    | "shine"
+    | "water"
+    | "petal";
   intensity: number;
   frequency?: number;
   seed?: number;
@@ -92,7 +106,6 @@ export interface TextAnimationPreset {
   phase: AnimationPhase;
   category: string;
   tags: string[];
-  isPro?: boolean;
 
   /** Recommended default duration in seconds (e.g. 0.5s for In/Out, 1.2s for Loop) */
   defaultDuration: number;

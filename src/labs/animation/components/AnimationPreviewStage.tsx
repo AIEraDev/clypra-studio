@@ -41,6 +41,49 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
     });
   }, [preset, progress, characters]);
 
+  const vfxType = preset.procedural?.type;
+  const vfxStrength = preset.procedural?.intensity ?? 0;
+  const vfxPhase = Math.sin(progress * Math.PI * 2);
+  const hasGradientText = ["chromatic", "water", "flame", "neon", "shine"].includes(
+    vfxType ?? "",
+  );
+  const vfxTextStyle: React.CSSProperties = (() => {
+    switch (vfxType) {
+      case "flame":
+        return {
+          backgroundImage: "linear-gradient(180deg, #fff6b3 4%, #ffb11a 45%, #f04416 100%)",
+          textShadow: `0 0 ${14 + vfxStrength * 18}px rgba(255, 91, 20, .78)`,
+        };
+      case "water":
+        return {
+          backgroundImage: "linear-gradient(105deg, #54f8ff, #477cff 36%, #ec48ff 66%, #69fcff)",
+          backgroundPosition: `${progress * 200}% 50%`,
+          textShadow: "0 0 18px rgba(75, 177, 255, .72)",
+        };
+      case "neon":
+        return {
+          backgroundImage: "linear-gradient(105deg, #59f8ff, #d85cff 48%, #74ffcb)",
+          textShadow: `0 0 ${9 + vfxStrength * 17}px rgba(113, 73, 255, .9)`,
+        };
+      case "shine":
+        return {
+          backgroundImage: `linear-gradient(105deg, #fff 0%, #fff 35%, #ffd280 ${45 + vfxPhase * 12}%, #fff 58%, #fff 100%)`,
+          textShadow: "0 0 16px rgba(255, 167, 89, .5)",
+        };
+      case "chromatic":
+        return {
+          color: "#f7ff7a",
+          textShadow: `${3 + vfxPhase * 2}px 0 #ff2458, ${-3 - vfxPhase * 2}px 0 #28d9ff`,
+        };
+      case "pixel":
+        return { textShadow: "2px 0 #fff, -2px 0 #6ef4ff", imageRendering: "pixelated" };
+      case "glitch":
+        return { textShadow: `${vfxPhase * 5}px 0 #ff4068, ${-vfxPhase * 5}px 0 #45e9ff` };
+      default:
+        return {};
+    }
+  })();
+
   return (
     <div className="flex h-full flex-col bg-[#0B0B10]">
       {/* ── Top Stage Toolbar ── */}
@@ -117,9 +160,12 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
           className="relative flex items-center justify-center font-bold tracking-normal transition-all"
           style={{
             fontSize: `${fontSize}px`,
-            color: bgMode === "light" ? "#111" : "#FFF",
+            color: hasGradientText ? "transparent" : bgMode === "light" ? "#111" : "#FFF",
             fontFamily: "Inter, system-ui, -apple-system, sans-serif",
             textShadow: bgMode === "light" ? "none" : "0 4px 24px rgba(0,0,0,0.6)",
+            backgroundClip: hasGradientText ? "text" : undefined,
+            WebkitBackgroundClip: hasGradientText ? "text" : undefined,
+            ...vfxTextStyle,
           }}
         >
           {characters.map((char, i) => {
@@ -158,6 +204,52 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
               </span>
             );
           })}
+          {vfxType === "cursor" && (
+            <span
+              aria-hidden="true"
+              className="ml-1 inline-block font-light text-[var(--studio-accent)]"
+              style={{ opacity: progress % 0.24 < 0.13 ? 1 : 0.1 }}
+            >
+              {preset.name === "Dot Cursor" ? "•" : "|"}
+            </span>
+          )}
+          {(["sparkle", "dust", "petal", "flame"].includes(vfxType ?? "")) && (
+            <div aria-hidden="true" className="pointer-events-none absolute inset-[-0.55em] overflow-visible">
+              {Array.from({ length: 10 }, (_, index) => {
+                const angle = index * 2.399;
+                const distance = 35 + (index % 4) * 18 + progress * 54;
+                const x = Math.cos(angle) * distance;
+                const y = Math.sin(angle) * distance - (vfxType === "flame" ? progress * 28 : 0);
+                const glyph = vfxType === "petal" ? "✦" : vfxType === "flame" ? "✧" : "•";
+                return (
+                  <span
+                    key={index}
+                    className="absolute left-1/2 top-1/2 text-[0.19em]"
+                    style={{
+                      color: vfxType === "flame" ? "#ff9d25" : vfxType === "petal" ? "#ff9ed8" : "#ffe89a",
+                      opacity: Math.max(0, (1 - progress) * 0.78),
+                      transform: `translate(${x}px, ${y}px) rotate(${index * 37}deg)`,
+                      filter: "drop-shadow(0 0 5px currentColor)",
+                    }}
+                  >
+                    {glyph}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          {["neon", "shine", "water"].includes(vfxType ?? "") && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-[-8%] h-[2px] rounded-full"
+              style={{
+                top: `${25 + progress * 55}%`,
+                opacity: 0.25 + Math.abs(vfxPhase) * 0.55,
+                background: vfxType === "water" ? "#64ecff" : vfxType === "neon" ? "#ca70ff" : "#ffe19d",
+                boxShadow: "0 0 15px currentColor",
+              }}
+            />
+          )}
         </div>
 
         {/* Watermark / Preset Phase Tag */}

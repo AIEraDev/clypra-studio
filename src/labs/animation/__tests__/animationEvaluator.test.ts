@@ -82,6 +82,12 @@ describe("Animation Lab Evaluator & Motion Engine", () => {
       // Character 3 starts earlier than Character 0
       expect(char3Progress).toBeGreaterThan(char0Progress);
     });
+
+    it("gives every glyph the same local timing window", () => {
+      const stagger = { unit: "character" as const, overlap: 0.5, order: "left-to-right" as const };
+      expect(calculateStaggerProgress(1, 0, 6, stagger)).toBe(1);
+      expect(calculateStaggerProgress(1, 5, 6, stagger)).toBe(1);
+    });
   });
 
   describe("Starter Preset Evaluation", () => {
@@ -121,6 +127,24 @@ describe("Animation Lab Evaluator & Motion Engine", () => {
 
       const end = evaluatePresetTransform(pulse, 1.0);
       expect(end.scaleX).toBeCloseTo(1.0, 2); // Returned to base
+    });
+
+    it("ships every requested CapCut-inspired preset with editable tracks", () => {
+      const names = [
+        "Blur to the Left", "Pixel Cursor", "Flip Bounce", "Chroma Water",
+        "3D Neon Turn", "Halved Text", "Flame Puff", "Sunset Rush",
+        "Ember Breath", "Flying Up", "Glitter Comet", "Double Cursor",
+        "Letter Reveal", "Flying In", "Electric Stream", "Cut Echoes",
+        "LED Text BG", "Offset Typing", "Petal Swish", "Dot Cursor",
+        "Center Splash", "Slanted Open", "Reflection Glitch", "Star Wiggle",
+        "Cyber Line", "Display Shine", "Dust Shine", "Coal Scrub-In",
+      ];
+
+      for (const name of names) {
+        const preset = STARTER_ANIMATION_PRESETS.find((candidate) => candidate.name === name);
+        expect(preset, `${name} should be included in the starter catalog`).toBeDefined();
+        expect(preset?.tracks.length).toBeGreaterThan(0);
+      }
     });
   });
 });
