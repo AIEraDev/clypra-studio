@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Create src/labs/animation/services/canvasCapture.ts with two exported async functions: captureAnimationThumbnail (SVG foreignObject → offscreen canvas → PNG File) and captureAnimationVideo (offscreen canvas frame renderer + MediaRecorder → webm/mp4 File | null). Add unit tests in src/labs/animation/__tests__/canvasCapture.test.ts.",
+  "status": "completed",
+  "steps": [
+    "Create /Users/AIEraDev/Documents/clypra-family/clypra-studio/src/labs/animation/services/canvasCapture.ts. Import TextAnimationPreset from '../../../types/animation' and evaluatePresetTransform from './animationEvaluator'.",
+
+    "Implement captureAnimationThumbnail(containerEl: HTMLDivElement): Promise<File>. Steps: (1) measure containerEl.getBoundingClientRect() for w/h; (2) clone the node with containerEl.cloneNode(true); (3) walk every element in the clone and copy window.getComputedStyle(originalEl).cssText to (cloneEl as HTMLElement).style.cssText so styles survive the SVG sandbox — iterate in parallel using NodeIterator or TreeWalker on both the original and clone; (4) build the SVG string: `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'><foreignObject width='100%' height='100%'><div xmlns='http://www.w3.org/1999/xhtml'>${clone.outerHTML}</div></foreignObject></svg>`; (5) create Blob('image/svg+xml') → URL.createObjectURL → new Image, wait for onload; (6) draw to offscreen canvas (w × h) via ctx.drawImage; (7) canvas.toBlob('image/png') wrapped in a Promise; (8) URL.revokeObjectURL; (9) return new File([blob], 'thumbnail.png', { type: 'image/png' }).",
+
+    "Implement captureAnimationVideo(preset: TextAnimationPreset, sampleText: string, duration: number, fps = 30): Promise<File | null>. Steps: (1) guard — if typeof MediaRecorder === 'undefined' || typeof (HTMLCanvasElement.prototype as any).captureStream === 'undefined' return null; (2) create offscreen canvas 800×400; (3) choose MIME from ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'] — first one where MediaRecorder.isTypeSupported(m) is true — if none return null; (4) const stream = (offscreen as any).captureStream(fps); (5) create MediaRecorder(stream, {mimeType}), collect ondataavailable chunks; (6) recorder.start(); (7) const totalFrames = Math.ceil(duration * fps); const characters = Array.from(sampleText || 'ABC123'); (8) for f from 0 to totalFrames-1: progress = totalFrames > 1 ? f/(totalFrames-1) : 0; fill bg (#08080C); set font 'bold 72px Inter, system-ui, sans-serif'; ctx.fillStyle='#FFFFFF'; measure total cluster width to find startX so text is centred; for each character i: ctx.save(), translate to (startX + cumulative glyph advance + translateX, h/2 + translateY), ctx.scale(scaleX,scaleY), ctx.rotate(rotation*Math.PI/180), ctx.globalAlpha=opacity, if blur>0 ctx.filter=`blur(${blur}px)`, ctx.fillText(char,0,0), ctx.restore(); pace with await new Promise(r=>setTimeout(r, 1000/fps)); (9) recorder.stop(); await onstop; (10) assemble Blob, determine ext (mp4 or webm), return new File.",
+
+    "Add JSDoc comments on both public functions documenting the DOM-based stage constraint, the VFX limitation (gradients not replicated in canvas renderer), and the best-effort MediaRecorder null return.",
+
+    "Create /Users/AIEraDev/Documents/clypra-family/clypra-studio/src/labs/animation/__tests__/canvasCapture.test.ts. Use vitest describe/it/expect. Test 1: captureAnimationVideo returns null in happy-dom (no MediaRecorder/captureStream). Test 2: captureAnimationThumbnail returns a File named 'thumbnail.png' — mock HTMLCanvasElement.prototype.toBlob to invoke callback with a fake Blob, mock URL.createObjectURL/revokeObjectURL, mock Image onload, provide a minimal div element. Test 3: captureAnimationVideo with STARTER_ANIMATION_PRESETS[0] and duration=0.5 returns null in happy-dom (confirming best-effort guard)."
+  ],
+  "acceptance_criteria": [
+    "canvasCapture.ts exports captureAnimationThumbnail and captureAnimationVideo with the exact signatures in the plan",
+    "pnpm tsc --noEmit reports zero TypeScript errors after the file is created",
+    "pnpm test passes — canvasCapture.test.ts tests all pass and existing animationEvaluator.test.ts tests are unaffected",
+    "captureAnimationVideo returns null when MediaRecorder is unavailable (happy-dom test environment confirms this)",
+    "JSDoc documents the VFX limitation and the best-effort null return"
+  ],
+  "verification": [
+    "cd /Users/AIEraDev/Documents/clypra-family/clypra-studio && pnpm tsc --noEmit",
+    "cd /Users/AIEraDev/Documents/clypra-family/clypra-studio && pnpm test"
+  ],
+  "blocked_reason": null,
+  "findings": "Exported functions: captureAnimationThumbnail(containerEl: HTMLDivElement): Promise<File> and captureAnimationVideo(preset: TextAnimationPreset, sampleText: string, duration: number, fps?: number): Promise<File | null>. Both live in src/labs/animation/services/canvasCapture.ts. captureAnimationVideo returns null in happy-dom (no MediaRecorder/captureStream) — confirmed by all 3 unit tests passing. Type quirk: HTMLCanvasElement.captureStream is not in the lib.dom typings so it is accessed via double cast (as unknown as { captureStream: ... }). MIME type selection order: vp9, vp8, webm, mp4 — first supported wins. Video dimensions fixed at 800x400. ctx.textBaseline set to 'middle' so characters render centred on the Y-axis. tracking from EvaluatedGlyphTransform is added as extra advance width between characters. Tests in src/labs/animation/__tests__/canvasCapture.test.ts — 3 tests, all pass."
+}
