@@ -6,7 +6,19 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { X, Copy, Check, Download, Code, FileCode, Layers, ShieldCheck, CloudUpload, Loader2 } from "lucide-react";
+import {
+  X,
+  Copy,
+  Check,
+  Download,
+  Code,
+  FileCode,
+  Layers,
+  ShieldCheck,
+  CloudUpload,
+  Loader2,
+} from "lucide-react";
+import { getStudioApiBaseUrl } from "../../../services/apiConfig";
 import type {
   BodyEffectManifest,
   CompositingPrimitive,
@@ -33,21 +45,27 @@ export function ManifestExportModal({
   const [isPublishing, setIsPublishing] = useState(false);
 
   // Form states initialized from active effect
-  const [id, setId] = useState(() => selectedEffect.toLowerCase().replace(/[^a-z0-9_-]/g, "-"));
+  const [id, setId] = useState(() =>
+    selectedEffect.toLowerCase().replace(/[^a-z0-9_-]/g, "-"),
+  );
   const [name, setName] = useState(() =>
     selectedEffect
       .split("-")
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ")
+      .join(" "),
   );
   const [category, setCategory] = useState<string>("Trending");
   const [description, setDescription] = useState(
-    "High-performance body segmentation effect authored in Clypra Studio"
+    "High-performance body segmentation effect authored in Clypra Studio",
   );
-  const [primitive, setPrimitive] = useState<CompositingPrimitive>("AlphaCutout");
+  const [primitive, setPrimitive] =
+    useState<CompositingPrimitive>("AlphaCutout");
   const [layerZOrder, setLayerZOrder] = useState<LayerZOrder>("behind-subject");
-  const [captureType, setCaptureType] = useState<CaptureAssetType>("silhouette_mask");
-  const [blendMode, setBlendMode] = useState<"normal" | "screen" | "multiply" | "overlay" | "add">("normal");
+  const [captureType, setCaptureType] =
+    useState<CaptureAssetType>("silhouette_mask");
+  const [blendMode, setBlendMode] = useState<
+    "normal" | "screen" | "multiply" | "overlay" | "add"
+  >("normal");
 
   // Generate canonical manifest object
   const manifest: BodyEffectManifest = useMemo(() => {
@@ -101,9 +119,22 @@ export function ManifestExportModal({
       defaultParams,
       tags: [category.toLowerCase(), primitive.toLowerCase(), layerZOrder],
     };
-  }, [id, name, category, description, primitive, layerZOrder, captureType, blendMode, parameters]);
+  }, [
+    id,
+    name,
+    category,
+    description,
+    primitive,
+    layerZOrder,
+    captureType,
+    blendMode,
+    parameters,
+  ]);
 
-  const jsonString = useMemo(() => JSON.stringify(manifest, null, 2), [manifest]);
+  const jsonString = useMemo(
+    () => JSON.stringify(manifest, null, 2),
+    [manifest],
+  );
 
   if (!isOpen) return null;
 
@@ -140,7 +171,7 @@ export function ManifestExportModal({
         manifest,
         assets: [],
       };
-      const apiBase = (import.meta as any).env?.VITE_API_URL || "https://clypra-worker-api.abdulkabirmusa.com";
+      const apiBase = getStudioApiBaseUrl();
       const res = await fetch(`${apiBase}/body-effects/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -151,7 +182,9 @@ export function ManifestExportModal({
         throw new Error(errorData.error || `HTTP ${res.status}`);
       }
       const data = await res.json();
-      toast.success(`Published to Catalog! Bundle hash: ${data.hash?.slice(0, 12)}...`);
+      toast.success(
+        `Published to Catalog! Bundle hash: ${data.hash?.slice(0, 12)}...`,
+      );
     } catch (err: any) {
       toast.error(`Publishing failed: ${err.message}`);
     } finally {
@@ -192,7 +225,11 @@ export function ManifestExportModal({
               <input
                 type="text"
                 value={id}
-                onChange={(e) => setId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-"))}
+                onChange={(e) =>
+                  setId(
+                    e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-"),
+                  )
+                }
                 className="w-full bg-surface-container border border-outline-variant rounded px-2 py-1 text-xs font-mono text-on-surface focus:outline-none focus:border-primary"
               />
             </div>
@@ -234,14 +271,18 @@ export function ManifestExportModal({
                 </label>
                 <select
                   value={primitive}
-                  onChange={(e) => setPrimitive(e.target.value as CompositingPrimitive)}
+                  onChange={(e) =>
+                    setPrimitive(e.target.value as CompositingPrimitive)
+                  }
                   className="w-full bg-surface-container border border-outline-variant rounded px-2 py-1 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
                 >
                   <option value="AlphaCutout">AlphaCutout</option>
                   <option value="MaskedGlow">MaskedGlow</option>
                   <option value="MaskedStroke">MaskedStroke</option>
                   <option value="MaskedDualBlur">MaskedDualBlur</option>
-                  <option value="SkeletalSpriteAnchor">SkeletalSpriteAnchor</option>
+                  <option value="SkeletalSpriteAnchor">
+                    SkeletalSpriteAnchor
+                  </option>
                 </select>
               </div>
             </div>
@@ -253,7 +294,9 @@ export function ManifestExportModal({
                 </label>
                 <select
                   value={layerZOrder}
-                  onChange={(e) => setLayerZOrder(e.target.value as LayerZOrder)}
+                  onChange={(e) =>
+                    setLayerZOrder(e.target.value as LayerZOrder)
+                  }
                   className="w-full bg-surface-container border border-outline-variant rounded px-2 py-1 text-xs text-on-surface focus:outline-none focus:border-primary"
                 >
                   <option value="behind-subject">behind-subject</option>
@@ -268,7 +311,9 @@ export function ManifestExportModal({
                 </label>
                 <select
                   value={captureType}
-                  onChange={(e) => setCaptureType(e.target.value as CaptureAssetType)}
+                  onChange={(e) =>
+                    setCaptureType(e.target.value as CaptureAssetType)
+                  }
                   className="w-full bg-surface-container border border-outline-variant rounded px-2 py-1 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
                 >
                   <option value="silhouette_mask">silhouette_mask</option>
@@ -310,9 +355,12 @@ export function ManifestExportModal({
             <div className="p-2.5 rounded bg-surface-container border border-outline-variant/60 flex items-start gap-2 text-[11px] text-on-surface-variant">
               <ShieldCheck className="w-4 h-4 text-secondary shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-on-surface">Universal Manifest Compliant</span>
+                <span className="font-bold text-on-surface">
+                  Universal Manifest Compliant
+                </span>
                 <p className="text-[10px] text-on-surface-variant/80 mt-0.5">
-                  Output matches the universal schema used by Clypra Desktop, Clypra Studio, and Clypra API.
+                  Output matches the universal schema used by Clypra Desktop,
+                  Clypra Studio, and Clypra API.
                 </p>
               </div>
             </div>
