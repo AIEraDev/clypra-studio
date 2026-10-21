@@ -12,6 +12,9 @@ interface AnimationPreviewStageProps {
   currentTime: number;
   onSeek: (time: number) => void;
   duration: number;
+  /** Called once the stage canvas container mounts, forwarding the DOM node
+   *  to the parent so it can drive canvas capture (FEAT-002). */
+  onStageMount?: (el: HTMLDivElement) => void;
 }
 
 export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
@@ -23,46 +26,70 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
   currentTime,
   onSeek,
   duration,
+  onStageMount,
 }) => {
   const [bgMode, setBgMode] = useState<"dark" | "checker" | "light">("dark");
   const [fontSize, setFontSize] = useState<number>(64);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Forward the stage container DOM node to the parent for canvas capture.
+  useEffect(() => {
+    if (containerRef.current && onStageMount) {
+      onStageMount(containerRef.current);
+    }
+  }, [onStageMount]);
+
   // Normalize current progress within preset duration [0, 1]
-  const progress = duration > 0 ? Math.max(0, Math.min(1, currentTime / duration)) : 0;
+  const progress =
+    duration > 0 ? Math.max(0, Math.min(1, currentTime / duration)) : 0;
 
   // Split sample text into individual characters for staggering
-  const characters = useMemo(() => Array.from(sampleText || "ABC123"), [sampleText]);
+  const characters = useMemo(
+    () => Array.from(sampleText || "ABC123"),
+    [sampleText],
+  );
 
   // Compute transform per glyph
   const glyphTransforms = useMemo(() => {
     return characters.map((char, index) => {
-      return evaluatePresetTransform(preset, progress, index, characters.length);
+      return evaluatePresetTransform(
+        preset,
+        progress,
+        index,
+        characters.length,
+      );
     });
   }, [preset, progress, characters]);
 
   const vfxType = preset.procedural?.type;
   const vfxStrength = preset.procedural?.intensity ?? 0;
   const vfxPhase = Math.sin(progress * Math.PI * 2);
-  const hasGradientText = ["chromatic", "water", "flame", "neon", "shine"].includes(
-    vfxType ?? "",
-  );
+  const hasGradientText = [
+    "chromatic",
+    "water",
+    "flame",
+    "neon",
+    "shine",
+  ].includes(vfxType ?? "");
   const vfxTextStyle: React.CSSProperties = (() => {
     switch (vfxType) {
       case "flame":
         return {
-          backgroundImage: "linear-gradient(180deg, #fff6b3 4%, #ffb11a 45%, #f04416 100%)",
+          backgroundImage:
+            "linear-gradient(180deg, #fff6b3 4%, #ffb11a 45%, #f04416 100%)",
           textShadow: `0 0 ${14 + vfxStrength * 18}px rgba(255, 91, 20, .78)`,
         };
       case "water":
         return {
-          backgroundImage: "linear-gradient(105deg, #54f8ff, #477cff 36%, #ec48ff 66%, #69fcff)",
+          backgroundImage:
+            "linear-gradient(105deg, #54f8ff, #477cff 36%, #ec48ff 66%, #69fcff)",
           backgroundPosition: `${progress * 200}% 50%`,
           textShadow: "0 0 18px rgba(75, 177, 255, .72)",
         };
       case "neon":
         return {
-          backgroundImage: "linear-gradient(105deg, #59f8ff, #d85cff 48%, #74ffcb)",
+          backgroundImage:
+            "linear-gradient(105deg, #59f8ff, #d85cff 48%, #74ffcb)",
           textShadow: `0 0 ${9 + vfxStrength * 17}px rgba(113, 73, 255, .9)`,
         };
       case "shine":
@@ -76,9 +103,14 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
           textShadow: `${3 + vfxPhase * 2}px 0 #ff2458, ${-3 - vfxPhase * 2}px 0 #28d9ff`,
         };
       case "pixel":
-        return { textShadow: "2px 0 #fff, -2px 0 #6ef4ff", imageRendering: "pixelated" };
+        return {
+          textShadow: "2px 0 #fff, -2px 0 #6ef4ff",
+          imageRendering: "pixelated",
+        };
       case "glitch":
-        return { textShadow: `${vfxPhase * 5}px 0 #ff4068, ${-vfxPhase * 5}px 0 #45e9ff` };
+        return {
+          textShadow: `${vfxPhase * 5}px 0 #ff4068, ${-vfxPhase * 5}px 0 #45e9ff`,
+        };
       default:
         return {};
     }
@@ -160,9 +192,14 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
           className="relative flex items-center justify-center font-bold tracking-normal transition-all"
           style={{
             fontSize: `${fontSize}px`,
-            color: hasGradientText ? "transparent" : bgMode === "light" ? "#111" : "#FFF",
+            color: hasGradientText
+              ? "transparent"
+              : bgMode === "light"
+                ? "#111"
+                : "#FFF",
             fontFamily: "Inter, system-ui, -apple-system, sans-serif",
-            textShadow: bgMode === "light" ? "none" : "0 4px 24px rgba(0,0,0,0.6)",
+            textShadow:
+              bgMode === "light" ? "none" : "0 4px 24px rgba(0,0,0,0.6)",
             backgroundClip: hasGradientText ? "text" : undefined,
             WebkitBackgroundClip: hasGradientText ? "text" : undefined,
             ...vfxTextStyle,
@@ -195,7 +232,8 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
                 style={{
                   opacity: transform.opacity,
                   transform: transformStyle,
-                  filter: transform.blur > 0 ? `blur(${transform.blur}px)` : "none",
+                  filter:
+                    transform.blur > 0 ? `blur(${transform.blur}px)` : "none",
                   marginRight: `${transform.tracking}px`,
                   whiteSpace: "pre",
                 }}
@@ -213,20 +251,31 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
               {preset.name === "Dot Cursor" ? "•" : "|"}
             </span>
           )}
-          {(["sparkle", "dust", "petal", "flame"].includes(vfxType ?? "")) && (
-            <div aria-hidden="true" className="pointer-events-none absolute inset-[-0.55em] overflow-visible">
+          {["sparkle", "dust", "petal", "flame"].includes(vfxType ?? "") && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-[-0.55em] overflow-visible"
+            >
               {Array.from({ length: 10 }, (_, index) => {
                 const angle = index * 2.399;
                 const distance = 35 + (index % 4) * 18 + progress * 54;
                 const x = Math.cos(angle) * distance;
-                const y = Math.sin(angle) * distance - (vfxType === "flame" ? progress * 28 : 0);
-                const glyph = vfxType === "petal" ? "✦" : vfxType === "flame" ? "✧" : "•";
+                const y =
+                  Math.sin(angle) * distance -
+                  (vfxType === "flame" ? progress * 28 : 0);
+                const glyph =
+                  vfxType === "petal" ? "✦" : vfxType === "flame" ? "✧" : "•";
                 return (
                   <span
                     key={index}
                     className="absolute left-1/2 top-1/2 text-[0.19em]"
                     style={{
-                      color: vfxType === "flame" ? "#ff9d25" : vfxType === "petal" ? "#ff9ed8" : "#ffe89a",
+                      color:
+                        vfxType === "flame"
+                          ? "#ff9d25"
+                          : vfxType === "petal"
+                            ? "#ff9ed8"
+                            : "#ffe89a",
                       opacity: Math.max(0, (1 - progress) * 0.78),
                       transform: `translate(${x}px, ${y}px) rotate(${index * 37}deg)`,
                       filter: "drop-shadow(0 0 5px currentColor)",
@@ -245,7 +294,12 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
               style={{
                 top: `${25 + progress * 55}%`,
                 opacity: 0.25 + Math.abs(vfxPhase) * 0.55,
-                background: vfxType === "water" ? "#64ecff" : vfxType === "neon" ? "#ca70ff" : "#ffe19d",
+                background:
+                  vfxType === "water"
+                    ? "#64ecff"
+                    : vfxType === "neon"
+                      ? "#ca70ff"
+                      : "#ffe19d",
                 boxShadow: "0 0 15px currentColor",
               }}
             />
@@ -254,7 +308,9 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
 
         {/* Watermark / Preset Phase Tag */}
         <div className="pointer-events-none absolute bottom-4 left-4 flex items-center gap-2 rounded bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white/70 backdrop-blur-md">
-          <span className="uppercase text-[var(--studio-accent)]">{preset.phase}</span>
+          <span className="uppercase text-[var(--studio-accent)]">
+            {preset.phase}
+          </span>
           <span className="opacity-40">•</span>
           <span>{preset.name}</span>
           <span className="opacity-40">•</span>
@@ -268,7 +324,11 @@ export const AnimationPreviewStage: React.FC<AnimationPreviewStageProps> = ({
           onClick={onTogglePlay}
           className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--studio-accent)] text-black transition-transform hover:scale-105"
         >
-          {isPlaying ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="ml-0.5" />}
+          {isPlaying ? (
+            <Pause size={14} fill="currentColor" />
+          ) : (
+            <Play size={14} fill="currentColor" className="ml-0.5" />
+          )}
         </button>
 
         <button
