@@ -1,7 +1,17 @@
-import type { TextBubblePreset, TextBubbleCategory } from "@clypra-studio/engine";
+import { createBubbleAssetDefinition, createFreeformBubbleAssetDefinition, validateBubbleAssetDefinition, type TextBubblePreset, type TextBubbleCategory } from "@clypra-studio/engine";
 import { DEFAULT_BUBBLE_CATALOG } from "../data/defaultBubbleCatalog";
 
 const STORAGE_KEY = "clypra_studio_bubble_presets_v1";
+const CURATED_PRESET_IDS = new Set(DEFAULT_BUBBLE_CATALOG.map((preset) => preset.id));
+
+function isCurrentCatalogPreset(preset: unknown): preset is TextBubblePreset {
+  if (!preset || typeof preset !== "object") return false;
+  const candidate = preset as Partial<TextBubblePreset>;
+  return CURATED_PRESET_IDS.has(candidate.id ?? "") || (
+    candidate.id?.startsWith("bubble-custom-") === true &&
+    (candidate.definition !== undefined || candidate.appearance !== undefined)
+  );
+}
 
 /**
  * Loads custom bubble presets from browser storage or falls back to default catalog.
@@ -11,9 +21,16 @@ export function loadBubblePresets(): TextBubblePreset[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (
+        Array.isArray(parsed) &&
+        parsed.length > 0 &&
+        parsed.every(isCurrentCatalogPreset)
+      ) {
         return parsed;
       }
+      // Retire the previous broad catalog rather than silently carrying old
+      // drafts into the intentionally small, curated collection.
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_BUBBLE_CATALOG));
     }
   } catch (err) {
     console.warn("Failed to parse custom bubble presets from localStorage:", err);
@@ -49,6 +66,7 @@ export function createCustomPreset(
     name: `Custom Bubble ${count}`,
     category,
     tags: ["custom", category],
+    definition: createBubbleAssetDefinition(),
     layout: {
       contentBounds: { x: 0.1, y: 0.1, width: 0.8, height: 0.8 },
       minWidth: 140,
@@ -64,6 +82,37 @@ export function createCustomPreset(
       color: "#ffffff",
     },
     sampleText: "Custom Bubble Text",
+  };
+}
+
+/** Starts a new authored asset directly in the freeform node editor. */
+export function createFreeformPreset(
+  category: TextBubbleCategory = "speech",
+  count = 1,
+): TextBubblePreset {
+  const preset = createCustomPreset(category, count);
+  return {
+    ...preset,
+    name: `Freeform Bubble ${count}`,
+    tags: ["custom", "freeform", category],
+    definition: createFreeformBubbleAssetDefinition(),
+  };
+}
+
+/** Starts a parametric bubble with deterministic Rough.js presentation enabled. */
+export function createRoughPreset(
+  category: TextBubbleCategory = "comic",
+  count = 1,
+): TextBubblePreset {
+  const preset = createCustomPreset(category, count);
+  const definition = preset.definition!;
+  definition.layers.outline.roughness = 0.3;
+  definition.layers.accent = { color: "#ffffff", opacity: 0.22, texture: "hatch" };
+  return {
+    ...preset,
+    name: `Hand-Drawn Bubble ${count}`,
+    tags: ["custom", "roughjs", "hand-drawn", category],
+    definition,
   };
 }
 
@@ -103,6 +152,11 @@ export function validateBubblePreset(preset: TextBubblePreset): {
     if (preset.layout.minWidth < 0 || preset.layout.minHeight < 0) {
       errors.push("Minimum dimensions cannot be negative.");
     }
+  }
+  if (!preset.definition && preset.id.startsWith("bubble-custom-")) {
+    errors.push("An editable bubble definition is required for published custom presets.");
+  } else if (preset.definition) {
+    errors.push(...validateBubbleAssetDefinition(preset.definition));
   }
 
   return {

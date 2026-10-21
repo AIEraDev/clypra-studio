@@ -1,6 +1,8 @@
 import React from "react";
 import { Sliders, Type, Layout, Palette } from "lucide-react";
 import type { TextBubblePreset, TextBubbleCategory } from "@clypra-studio/engine";
+import { BubbleAppearanceControls } from "./BubbleAppearanceControls";
+import { BubbleGeometryControls } from "./BubbleGeometryControls";
 
 interface BubbleLayoutInspectorProps {
   preset: TextBubblePreset;
@@ -25,14 +27,28 @@ export const BubbleLayoutInspector: React.FC<BubbleLayoutInspectorProps> = ({
   const p = preset.layout.padding ?? { top: 14, right: 18, bottom: 14, left: 18 };
 
   const handlePaddingChange = (side: keyof typeof p, val: number) => {
+    const padding = {
+      ...p,
+      [side]: Math.max(0, val),
+    };
+    const definition = preset.definition && {
+      ...preset.definition,
+      textLayout: {
+        ...preset.definition.textLayout,
+        padding: [
+          Math.min(0.5, padding.top / preset.layout.minHeight),
+          Math.min(0.5, padding.right / preset.layout.minWidth),
+          Math.min(0.5, padding.bottom / preset.layout.minHeight),
+          Math.min(0.5, padding.left / preset.layout.minWidth),
+        ] as [number, number, number, number],
+      },
+    };
     onUpdatePreset({
       ...preset,
+      ...(definition ? { definition } : {}),
       layout: {
         ...preset.layout,
-        padding: {
-          ...p,
-          [side]: Math.max(0, val),
-        },
+        padding,
       },
     });
   };
@@ -96,6 +112,9 @@ export const BubbleLayoutInspector: React.FC<BubbleLayoutInspectorProps> = ({
           </div>
         </div>
       </div>
+
+      <BubbleGeometryControls preset={preset} onUpdatePreset={onUpdatePreset} />
+      <BubbleAppearanceControls preset={preset} onUpdatePreset={onUpdatePreset} />
 
       {/* ── Section: Layout & Padding ── */}
       <div className="border-b border-[var(--studio-border)] p-4">

@@ -125,6 +125,8 @@ export interface TextAnimationPreset {
 
   /** URL or base64 data URI of the animated WebP/GIF preview thumbnail */
   thumbnailUrl: string;
+  /** URL of the short preview video (mp4/webm) shown in the preset browser */
+  previewVideoUrl?: string;
   /** Loop cycle duration used for the thumbnail preview (typically 1.2s) */
   previewLoopDuration: number;
 

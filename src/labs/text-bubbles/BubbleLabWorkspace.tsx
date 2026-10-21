@@ -1,18 +1,21 @@
 import React, { useState } from "react";
-import { Download, Save, Check, Shield } from "lucide-react";
+import { Download, FileCode2, Save, Check, Shield } from "lucide-react";
 import { toast } from "sonner";
-import type { TextBubblePreset, TextBubbleCategory } from "@clypra-studio/engine";
+import { compileBubbleSvg, type TextBubblePreset, type TextBubbleCategory } from "@clypra-studio/engine";
 import { useIsAdmin } from "../../hooks/useIsAdmin";
 import {
   loadBubblePresets,
   saveBubblePresets,
   createCustomPreset,
+  createFreeformPreset,
+  createRoughPreset,
   duplicatePreset,
   validateBubblePreset,
 } from "./services/bubblePresetService";
 import { BubblePresetBrowser } from "./components/BubblePresetBrowser";
 import { BubbleStagePreview } from "./components/BubbleStagePreview";
 import { BubbleLayoutInspector } from "./components/BubbleLayoutInspector";
+import { compileRoughBubbleSvg } from "./renderRoughBubble";
 
 export const BubbleLabWorkspace: React.FC = () => {
   const isAdmin = useIsAdmin();
@@ -50,6 +53,20 @@ export const BubbleLabWorkspace: React.FC = () => {
     toast.info(`Created new ${category.toUpperCase()} bubble preset.`);
   };
 
+  const handleNewFreeformPreset = (category: TextBubbleCategory) => {
+    const newPreset = createFreeformPreset(category, presets.length + 1);
+    setPresets((prev) => [newPreset, ...prev]);
+    setActivePresetId(newPreset.id);
+    toast.info(`Created new freeform ${category.toUpperCase()} bubble preset.`);
+  };
+
+  const handleNewRoughPreset = (category: TextBubbleCategory) => {
+    const newPreset = createRoughPreset(category, presets.length + 1);
+    setPresets((prev) => [newPreset, ...prev]);
+    setActivePresetId(newPreset.id);
+    toast.info(`Created new Rough.js ${category.toUpperCase()} bubble preset.`);
+  };
+
   const handleDuplicate = (target: TextBubblePreset) => {
     const dup = duplicatePreset(target);
     setPresets((prev) => [dup, ...prev]);
@@ -79,6 +96,24 @@ export const BubbleLabWorkspace: React.FC = () => {
     dlAnchor.setAttribute("download", `${activePreset.id}.json`);
     dlAnchor.click();
     toast.success(`Exported ${activePreset.name} as JSON.`);
+  };
+
+  const handleExportSvg = () => {
+    if (!activePreset.definition) {
+      toast.error("Only authored vector bubbles can be exported as SVG.");
+      return;
+    }
+    const svg = activePreset.definition.layers.outline.roughness > 0
+      ? compileRoughBubbleSvg(activePreset.definition)
+      : compileBubbleSvg(activePreset.definition);
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${activePreset.id}.svg`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${activePreset.name} as SVG.`);
   };
 
   const handlePublish = () => {
@@ -124,6 +159,14 @@ export const BubbleLabWorkspace: React.FC = () => {
             <Download size={13} />
             <span>Export JSON</span>
           </button>
+          <button
+            onClick={handleExportSvg}
+            disabled={!activePreset.definition}
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-control)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:border-[var(--studio-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FileCode2 size={13} />
+            <span>Export SVG</span>
+          </button>
 
           <button
             onClick={handleSaveDraft}
@@ -161,6 +204,8 @@ export const BubbleLabWorkspace: React.FC = () => {
           activePresetId={activePresetId}
           onSelectPreset={(id) => setActivePresetId(id)}
           onNewPreset={handleNewPreset}
+          onNewFreeformPreset={handleNewFreeformPreset}
+          onNewRoughPreset={handleNewRoughPreset}
           onDuplicatePreset={handleDuplicate}
           onDeletePreset={handleDelete}
         />

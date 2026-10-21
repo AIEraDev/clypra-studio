@@ -2,9 +2,9 @@ import React, { useRef, useEffect, useState } from "react";
 import { Grid, Moon, Sun, Maximize2, ShieldAlert } from "lucide-react";
 import {
   type TextBubblePreset,
-  renderBubbleBackground,
   resolveBubbleLayout,
 } from "@clypra-studio/engine";
+import { renderCuratedBubble } from "../renderCuratedBubble";
 
 interface BubbleStagePreviewProps {
   preset: TextBubblePreset;
@@ -36,7 +36,8 @@ export const BubbleStagePreview: React.FC<BubbleStagePreviewProps> = ({
     if (preset.layout.sizingMode) {
       setSizingMode(preset.layout.sizingMode);
     }
-  }, [preset.id]);
+    onSampleTextChange(preset.sampleText || "Sample Text");
+  }, [preset.id, onSampleTextChange]);
 
   // Render on HTML5 Canvas
   useEffect(() => {
@@ -63,8 +64,18 @@ export const BubbleStagePreview: React.FC<BubbleStagePreviewProps> = ({
     const textH = Math.ceil(fontSize * 1.2);
 
     // 2. Resolve outer bounds via layout resolver
+    const vectorPadding = preset.definition?.textLayout.padding;
+    const layoutPadding = vectorPadding
+      ? {
+          top: vectorPadding[0] * preset.layout.minHeight,
+          right: vectorPadding[1] * preset.layout.minWidth,
+          bottom: vectorPadding[2] * preset.layout.minHeight,
+          left: vectorPadding[3] * preset.layout.minWidth,
+        }
+      : preset.layout.padding;
     const layoutRes = resolveBubbleLayout(textW, textH, {
       ...preset.layout,
+      padding: layoutPadding,
       sizingMode,
     });
 
@@ -75,25 +86,20 @@ export const BubbleStagePreview: React.FC<BubbleStagePreviewProps> = ({
     const startY = Math.round((stageHeight - outerH) / 2);
 
     // 3. Render bubble background using shared engine helper
-    const bubbleColor =
-      preset.category === "comic" && preset.id.includes("dark")
-        ? "#18181b"
-        : preset.category === "banner"
-        ? "#facc15"
-        : "#ffffff";
-
-    renderBubbleBackground(ctx, preset.id, startX, startY, outerW, outerH, {
-      color: bubbleColor,
-    });
+    renderCuratedBubble(ctx, preset, startX, startY, outerW, outerH);
 
     // 4. Render text centered inside outer composition
     ctx.save();
     ctx.fillStyle = textStyle?.color || (preset.category === "paper" ? "#ef4444" : "#000000");
     ctx.font = fontDesc;
-    ctx.textAlign = "center";
+    ctx.textAlign = preset.definition?.textLayout.alignment ?? "center";
     ctx.textBaseline = "middle";
 
-    const textCenterX = startX + outerW / 2 + layoutRes.textOffsetX;
+    const textCenterX = preset.definition?.textLayout.alignment === "left"
+      ? startX + (layoutPadding?.left ?? 0) + layoutRes.textOffsetX
+      : preset.definition?.textLayout.alignment === "right"
+        ? startX + outerW - (layoutPadding?.right ?? 0) + layoutRes.textOffsetX
+        : startX + outerW / 2 + layoutRes.textOffsetX;
     const textCenterY = startY + outerH / 2 + layoutRes.textOffsetY;
 
     ctx.fillText(sampleText || "Sample Text", textCenterX, textCenterY);
@@ -118,7 +124,7 @@ export const BubbleStagePreview: React.FC<BubbleStagePreviewProps> = ({
       ctx.strokeRect(startX, startY, outerW, outerH);
 
       // Safe content area guide
-      const p = preset.layout.padding ?? { top: 14, right: 18, bottom: 14, left: 18 };
+      const p = layoutPadding ?? { top: 14, right: 18, bottom: 14, left: 18 };
       ctx.strokeStyle = "rgba(239, 68, 68, 0.5)";
       ctx.strokeRect(
         startX + p.left,

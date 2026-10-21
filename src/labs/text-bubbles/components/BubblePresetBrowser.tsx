@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Search, Copy, Trash2 } from "lucide-react";
+import { PenTool, Plus, Search, Copy, Trash2, WandSparkles } from "lucide-react";
 import {
   type TextBubblePreset,
   type TextBubbleCategory,
-  renderBubbleBackground,
 } from "@clypra-studio/engine";
+import { renderCuratedBubble } from "../renderCuratedBubble";
 
 interface BubblePresetBrowserProps {
   presets: TextBubblePreset[];
   activePresetId: string;
   onSelectPreset: (id: string) => void;
   onNewPreset: (category: TextBubbleCategory) => void;
+  onNewFreeformPreset: (category: TextBubbleCategory) => void;
+  onNewRoughPreset: (category: TextBubbleCategory) => void;
   onDuplicatePreset: (preset: TextBubblePreset) => void;
   onDeletePreset: (id: string) => void;
 }
@@ -55,15 +57,7 @@ function PresetThumbnailCanvas({
 
     // 1. Draw bubble decoration
     const pad = 6;
-    renderBubbleBackground(
-      ctx,
-      preset.id,
-      pad,
-      pad,
-      w - pad * 2,
-      h - pad * 2,
-      { color: preset.category === "comic" && preset.id.includes("dark") ? "#18181b" : "#ffffff" },
-    );
+    renderCuratedBubble(ctx, preset, pad, pad, w - pad * 2, h - pad * 2);
 
     // 2. Draw mini text
     ctx.save();
@@ -103,6 +97,8 @@ export const BubblePresetBrowser: React.FC<BubblePresetBrowserProps> = ({
   activePresetId,
   onSelectPreset,
   onNewPreset,
+  onNewFreeformPreset,
+  onNewRoughPreset,
   onDuplicatePreset,
   onDeletePreset,
 }) => {
@@ -226,8 +222,23 @@ export const BubblePresetBrowser: React.FC<BubblePresetBrowserProps> = ({
           className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-control)] font-semibold text-white transition-colors hover:border-[var(--studio-accent)] hover:text-[var(--studio-accent)]"
         >
           <Plus size={14} />
-          <span>New Bubble Preset</span>
+          <span>New Clean Bubble</span>
         </button>
+        <button
+          onClick={() => onNewFreeformPreset(selectedCategory === "all" ? "speech" : selectedCategory)}
+          className="mt-2 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--studio-accent)]/50 bg-[var(--studio-accent)]/10 font-semibold text-[var(--studio-accent)] transition-colors hover:bg-[var(--studio-accent)]/20"
+        >
+          <PenTool size={14} />
+          <span>New Vector Path Bubble</span>
+        </button>
+        <button
+          onClick={() => onNewRoughPreset(selectedCategory === "all" ? "comic" : selectedCategory)}
+          className="mt-2 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-amber-300/50 bg-amber-300/10 font-semibold text-amber-200 transition-colors hover:bg-amber-300/20"
+        >
+          <WandSparkles size={14} />
+          <span>New Hand-Drawn Bubble</span>
+        </button>
+        <p className="mt-2 text-center text-[10px] leading-relaxed text-[var(--studio-muted)]">Hand-drawn uses Rough.js. Vector path is for manual node editing.</p>
       </div>
     </div>
   );

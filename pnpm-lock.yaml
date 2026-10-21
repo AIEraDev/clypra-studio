@@ -9,29 +9,29 @@ importers:
   .:
     dependencies:
       '@clypra-studio/engine':
-        specifier: ^1.10.0
-        version: 1.10.0
+        specifier: ^1.10.1
+        version: 1.10.1
       '@clypra-studio/feature-providers':
-        specifier: ^0.1.1
-        version: 0.1.1
+        specifier: ^0.1.2
+        version: 0.1.2
       '@clypra-studio/native-render-wasm':
-        specifier: ^0.3.1
-        version: 0.3.1
+        specifier: ^0.3.2
+        version: 0.3.2
       '@clypra-studio/runtime':
-        specifier: ^0.2.3
-        version: 0.2.3
+        specifier: ^0.2.4
+        version: 0.2.4
       '@clypra-studio/shaders':
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.2.1
+        version: 0.2.1
       '@clypra-studio/types':
-        specifier: ^0.6.0
-        version: 0.6.0
+        specifier: ^0.6.2
+        version: 0.6.2
       '@clypra-studio/ui':
-        specifier: ^0.3.1
+        specifier: 0.3.1
         version: 0.3.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
       '@clypra/ui-color-picker':
-        specifier: ^0.2.1
-        version: 0.2.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
+        specifier: ^0.2.2
+        version: 0.2.2(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
       '@floating-ui/react':
         specifier: ^0.27.20
         version: 0.27.20(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -74,6 +74,9 @@ importers:
       react-router-dom:
         specifier: ^6.30.4
         version: 6.30.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      roughjs:
+        specifier: 4.6.6
+        version: 4.6.6
       sonner:
         specifier: ^2.0.8
         version: 2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -207,26 +210,32 @@ packages:
   '@clypra-studio/engine@1.10.0':
     resolution: {integrity: sha512-Xvr1eycefIPnO7C5JzvKkFEAdEugKmDbSyTuj25F7Y3lF+s4odVml+VeXeD/P5g/RCJv17fqsMgJFQZd/K1B6w==}
 
-  '@clypra-studio/engine@1.9.0':
-    resolution: {integrity: sha512-FpJVDGNUHmKBJ53e8RW0EwD70TZ9pbVnlzGir7bga7IeXZFuvcfeP6UG0Yj6LZD3QppEbmnSVZ+uwA1UmAtVQA==}
+  '@clypra-studio/engine@1.10.1':
+    resolution: {integrity: sha512-hPEkf+PtYu/ltklKFGfleGic3ptrqjqmVUEcWyQ5QGhOK05MGFrixGYE9Kl8Qfjr8RR0Tp9aoCSut5t2bca8AA==}
 
-  '@clypra-studio/feature-providers@0.1.1':
-    resolution: {integrity: sha512-YE6yIUPoB9ByaNSr9p9RcUvmhbl270w3OgciFV3j7ou81mo3kCv8uhr1mWzTfU90p+38N9bcnCx/zHErwog9ow==}
+  '@clypra-studio/feature-providers@0.1.2':
+    resolution: {integrity: sha512-IlJFqBsZzRJEbZmW2c8Mx0Xn0Ky3raecQMu+Y/CVbNrO0/vT4yP65cIo+TzaPwjJmBsqkBnDOtjSFPWBZP+weQ==}
 
-  '@clypra-studio/native-render-wasm@0.3.1':
-    resolution: {integrity: sha512-0xpqQ2vF8YDw/3VlzBneOuZmwUC/w2DPwS5p/jEG4L30YlCA2plXAN/h0Lyb2kQdYyh4noFqKOpDMxUMWwykTg==}
+  '@clypra-studio/native-render-wasm@0.3.2':
+    resolution: {integrity: sha512-kWUOL86O0GAfUPAEjl5cwuHrU5uXW0U40E4VQTUWKTgcFsQhcmqtG4YydPNa52hS4z2TpWg1+d2B19evomxfrQ==}
 
   '@clypra-studio/runtime@0.2.3':
     resolution: {integrity: sha512-6nmGUE8QWLx9UmFclOTPqrA7JQ7ELe7gw2A89rc27vn+XUMB5w4OBhzZEHsV1lz0sgKQ0b0XDpgSO9hQnIkD5A==}
 
+  '@clypra-studio/runtime@0.2.4':
+    resolution: {integrity: sha512-/EC4mncvDgumruBUbNGnXcrrdTnewpCHvVtxMYE7uW1nLxI/rg6A6+AXYKQs1CMPMzqyJlX1zrs4vwQ/SkXnug==}
+
   '@clypra-studio/shaders@0.2.0':
     resolution: {integrity: sha512-W7HoeJPymNirWWkE4a8A+7RM3TT/L2zRhptZOcYfoUvZEG4MRJY1HkGdkRj6i8kHnHilz/pn+MRSO07MmfMEVA==}
 
-  '@clypra-studio/types@0.6.0':
-    resolution: {integrity: sha512-ZYFQc94PILh+SUTXlKkF1w8BwFs5HOwdeUL6pTDGN6Jp0hLZYo/bPZqXpI3W0pNFszYRPCpkL8+enr1cXSGaAw==}
+  '@clypra-studio/shaders@0.2.1':
+    resolution: {integrity: sha512-MZ67HGdAnVhL2bvUh7AC6pbpkp1I3DxfHj2lT9XUeQG0/QcxGJieoDfLJdQX8UcBFwPsoqbClTKlty4vd61IZg==}
 
   '@clypra-studio/types@0.6.1':
     resolution: {integrity: sha512-rmpEBHRc90WvojUHRe2MH1RMWxa6ud0xuH5x/DIXwPEMSiQk+qLRAnVdqt2cB7vvApoDNFKpQ4kjKnBbhktH2w==}
+
+  '@clypra-studio/types@0.6.2':
+    resolution: {integrity: sha512-6XbWpi8FJo45Td/cDP1E0JKRsfU5+TzDlI2jQ8XCo9Z5ahmROwuV2UxMzGP8SFxb9iYd0RNTgI8pSss05SBOFA==}
 
   '@clypra-studio/ui@0.3.1':
     resolution: {integrity: sha512-vB/U7H1D4KEwWHxCkKLVI5rDwGfu9/39uucRh4RpMxkZvhI6zu9A+rUOXwCAt8ruf0/4opgc89GuGpAkMa3tZA==}
@@ -236,6 +245,12 @@ packages:
 
   '@clypra/ui-color-picker@0.2.1':
     resolution: {integrity: sha512-m8oftv1K7/sRHc7gauLsv7avdLhsSPKVs0DhXRlYDOuUhvLEgMWXgqiIGucrinhwTC7UfqdSejlsGWz9NDlNpQ==}
+    peerDependencies:
+      react: '>=18.0.0 || >=19.0.0'
+      react-dom: '>=18.0.0 || >=19.0.0'
+
+  '@clypra/ui-color-picker@0.2.2':
+    resolution: {integrity: sha512-gGxRj22yvHyu4ggjlaB1QbhNVT9vAxsb57SvJdTDyNFcAw7ZNBHWt3UGzhXNBzY2ra6pkS3stvYitqIQ4OweYA==}
     peerDependencies:
       react: '>=18.0.0 || >=19.0.0'
       react-dom: '>=18.0.0 || >=19.0.0'
@@ -1026,6 +1041,9 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
+  hachure-fill@0.5.2:
+    resolution: {integrity: sha512-3GKBOn+m2LX9iq+JC1064cSFprJY4jL1jCXTcpnfER5HYE2l/4EfWSGzkPa/ZDBmYI0ZOEj5VHV/eKnPGkHuOg==}
+
   happy-dom@20.11.6:
     resolution: {integrity: sha512-Hldbg8AdAa5a5oDcZpjqnGitp7JB0hqWmfv/8qr+kft4vzSD8BHsbdRfzYvL/0QcbKcURC/yyoygbeDQarPvYg==}
     engines: {node: '>=20.0.0'}
@@ -1187,6 +1205,9 @@ packages:
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
 
+  path-data-parser@0.1.0:
+    resolution: {integrity: sha512-NOnmBpt5Y2RWbuv0LMzsayp3lVylAHLPUTut412ZA3l+C4uw4ZVkQbjShYCQ8TCpUMdPapr4YjUqLYD6v68j+w==}
+
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
@@ -1200,6 +1221,12 @@ packages:
   picomatch@4.0.7:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
+
+  points-on-curve@0.2.0:
+    resolution: {integrity: sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A==}
+
+  points-on-path@0.2.1:
+    resolution: {integrity: sha512-25ClnWWuw7JbWZcgqY/gJ4FQWadKxGWk+3kR/7kD0tCaDtPPMj7oHu2ToLaVhfpnHrZzYby2w6tUA0eOIuUg8g==}
 
   postcss-value-parser@4.2.0:
     resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
@@ -1255,6 +1282,9 @@ packages:
     resolution: {integrity: sha512-T5vnZ2y4QqC3/4P+w2+JO+Q/OVdnPsv4XcSYJYMEn0R9/jjl5AgLwO9LAZMzP2lN71O6pypn91rB7lDstUkfrQ==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
+
+  roughjs@4.6.6:
+    resolution: {integrity: sha512-ZUz/69+SYpFN/g/lUlo2FXcIjRkSu3nDarreVdGGndHEBJ6cXPdKguS8JGxwj5HA5xIbVKSmLgr5b3AWxtRfvQ==}
 
   safe-buffer@5.1.2:
     resolution: {integrity: sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==}
@@ -1612,33 +1642,39 @@ snapshots:
       lottie-web: 5.13.0
       zod: 4.4.3
 
-  '@clypra-studio/engine@1.9.0':
+  '@clypra-studio/engine@1.10.1':
     dependencies:
-      '@clypra-studio/shaders': 0.2.0
-      '@clypra-studio/types': 0.6.1
+      '@clypra-studio/shaders': 0.2.1
+      '@clypra-studio/types': 0.6.2
       jszip: 3.10.1
       lottie-web: 5.13.0
       zod: 4.4.3
 
-  '@clypra-studio/feature-providers@0.1.1': {}
+  '@clypra-studio/feature-providers@0.1.2': {}
 
-  '@clypra-studio/native-render-wasm@0.3.1': {}
+  '@clypra-studio/native-render-wasm@0.3.2': {}
 
   '@clypra-studio/runtime@0.2.3':
     dependencies:
-      '@clypra-studio/types': 0.6.0
+      '@clypra-studio/types': 0.6.1
+
+  '@clypra-studio/runtime@0.2.4':
+    dependencies:
+      '@clypra-studio/types': 0.6.2
 
   '@clypra-studio/shaders@0.2.0': {}
 
-  '@clypra-studio/types@0.6.0': {}
+  '@clypra-studio/shaders@0.2.1': {}
 
   '@clypra-studio/types@0.6.1': {}
 
+  '@clypra-studio/types@0.6.2': {}
+
   '@clypra-studio/ui@0.3.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))':
     dependencies:
-      '@clypra-studio/engine': 1.9.0
+      '@clypra-studio/engine': 1.10.0
       '@clypra-studio/runtime': 0.2.3
-      '@clypra-studio/types': 0.6.0
+      '@clypra-studio/types': 0.6.1
       '@clypra/ui-color-picker': 0.2.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
@@ -1648,6 +1684,17 @@ snapshots:
       - use-sync-external-store
 
   '@clypra/ui-color-picker@0.2.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))':
+    dependencies:
+      '@floating-ui/react': 0.27.20(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+      zustand: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+      - use-sync-external-store
+
+  '@clypra/ui-color-picker@0.2.2(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))':
     dependencies:
       '@floating-ui/react': 0.27.20(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8
@@ -2253,6 +2300,8 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
+  hachure-fill@0.5.2: {}
+
   happy-dom@20.11.6:
     dependencies:
       '@types/node': 26.3.0
@@ -2374,6 +2423,8 @@ snapshots:
 
   pako@1.0.11: {}
 
+  path-data-parser@0.1.0: {}
+
   pathe@2.0.3: {}
 
   pathval@2.0.1: {}
@@ -2381,6 +2432,13 @@ snapshots:
   picocolors@1.1.1: {}
 
   picomatch@4.0.7: {}
+
+  points-on-curve@0.2.0: {}
+
+  points-on-path@0.2.1:
+    dependencies:
+      path-data-parser: 0.1.0
+      points-on-curve: 0.2.0
 
   postcss-value-parser@4.2.0: {}
 
@@ -2467,6 +2525,13 @@ snapshots:
       '@rollup/rollup-win32-x64-gnu': 4.63.0
       '@rollup/rollup-win32-x64-msvc': 4.63.0
       fsevents: 2.3.3
+
+  roughjs@4.6.6:
+    dependencies:
+      hachure-fill: 0.5.2
+      path-data-parser: 0.1.0
+      points-on-curve: 0.2.0
+      points-on-path: 0.2.1
 
   safe-buffer@5.1.2: {}
 
