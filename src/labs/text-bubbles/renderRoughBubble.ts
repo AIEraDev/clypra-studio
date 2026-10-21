@@ -1,10 +1,22 @@
+// NOTE: roughjs is an intentional dependency of the text-bubbles lab feature.
+// It is NOT part of the canvas-capture (FEAT-001/FEAT-002) work — it landed in
+// the same integration commit only because both features were developed together.
+// The hand-drawn sketch aesthetic it provides is a first-class visual requirement
+// of the text-bubbles preset authoring flow and cannot be replicated with native
+// <canvas> path operations without losing that aesthetic.
 import rough from "roughjs";
-import { compileBubblePath, type BubbleAssetDefinition } from "@clypra-studio/engine";
+import {
+  compileBubblePath,
+  type BubbleAssetDefinition,
+} from "@clypra-studio/engine";
 
 /**
  * Studio-only visualizer for the persisted roughness/seed contract. The shape
  * remains the canonical normalized SVG path; Rough.js only generates its
  * hand-drawn presentation at preview/export-artifact time.
+ *
+ * Belongs to: text-bubbles lab (src/labs/text-bubbles/).
+ * NOT part of canvas-capture (src/labs/animation/services/canvasCapture.ts).
  */
 export function renderRoughBubble(
   ctx: CanvasRenderingContext2D,
@@ -22,7 +34,12 @@ export function renderRoughBubble(
   ctx.globalAlpha = fill.opacity;
   roughCanvas.path(compileBubblePath(definition), {
     fill: fill.color,
-    fillStyle: accent?.texture === "hatch" ? "hachure" : accent?.texture === "chalk" ? "cross-hatch" : "solid",
+    fillStyle:
+      accent?.texture === "hatch"
+        ? "hachure"
+        : accent?.texture === "chalk"
+          ? "cross-hatch"
+          : "solid",
     fillWeight: 0.008,
     hachureGap: 0.04,
     hachureAngle: -25,
@@ -36,7 +53,11 @@ export function renderRoughBubble(
 }
 
 /** Serializes the same seeded Rough.js drawing used in the Studio preview. */
-export function compileRoughBubbleSvg(definition: BubbleAssetDefinition, width = 1000, height = 700): string {
+export function compileRoughBubbleSvg(
+  definition: BubbleAssetDefinition,
+  width = 1000,
+  height = 700,
+): string {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   svg.setAttribute("width", String(width));
@@ -45,7 +66,12 @@ export function compileRoughBubbleSvg(definition: BubbleAssetDefinition, width =
   const { fill, outline, accent } = definition.layers;
   const drawing = rough.svg(svg).path(compileBubblePath(definition), {
     fill: fill.color,
-    fillStyle: accent?.texture === "hatch" ? "hachure" : accent?.texture === "chalk" ? "cross-hatch" : "solid",
+    fillStyle:
+      accent?.texture === "hatch"
+        ? "hachure"
+        : accent?.texture === "chalk"
+          ? "cross-hatch"
+          : "solid",
     fillWeight: 0.008,
     hachureGap: 0.04,
     hachureAngle: -25,

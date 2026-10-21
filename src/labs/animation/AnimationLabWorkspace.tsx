@@ -241,6 +241,23 @@ export const AnimationLabWorkspace: React.FC = () => {
     toast.success(`Exported ${activePreset.name} as JSON.`);
   };
 
+  /**
+   * Legacy catalog-modal publish path — intentionally media-free.
+   *
+   * This function is wired into `AnimationCatalogStatusModal` via the
+   * `onPublishPreset` prop and POSTs only the preset JSON (no thumbnail or
+   * preview video). Presets published through the catalog modal will therefore
+   * have empty `thumbnailUrl` / `previewVideoUrl` on the API.
+   *
+   * The full-media path is `handlePublish` → `handlePublishConfirm` →
+   * `uploadAnimationPreset`, which captures a thumbnail + video from the live
+   * canvas and uploads them to R2 before patching the preset record.
+   *
+   * @deprecated Prefer the full-media publish flow triggered by the
+   *   "Publish Preset" button in the workspace header. This path is retained
+   *   for the catalog modal, which provides a quick re-publish of already-
+   *   known presets where media regeneration is not needed.
+   */
   const publishPreset = async (
     preset: TextAnimationPreset,
   ): Promise<TextAnimationPreset | null> => {
