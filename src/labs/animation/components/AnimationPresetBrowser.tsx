@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { Plus, Search, Sparkles, Copy, Trash2 } from "lucide-react";
-import type { TextAnimationPreset, AnimationPhase } from "../../../types/animation";
+import type {
+  TextAnimationPreset,
+  AnimationPhase,
+} from "../../../types/animation";
 
 interface AnimationPresetBrowserProps {
   presets: TextAnimationPreset[];
@@ -21,14 +24,10 @@ export const AnimationPresetBrowser: React.FC<AnimationPresetBrowserProps> = ({
 }) => {
   const [activePhase, setActivePhase] = useState<AnimationPhase>("in");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const categories = ["All", "Basic", "Motion", "3D", "Glitch", "VFX"];
-
-  // Filter presets by phase, category, and search query
+  // Filter presets by phase and search query
   const filteredPresets = presets.filter((p) => {
     if (p.phase !== activePhase) return false;
-    if (selectedCategory !== "All" && p.category !== selectedCategory) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchName = p.name.toLowerCase().includes(q);
@@ -72,23 +71,6 @@ export const AnimationPresetBrowser: React.FC<AnimationPresetBrowserProps> = ({
             className="h-7 w-full rounded-md border border-[var(--studio-border)] bg-[var(--studio-control)] pl-8 pr-2 text-xs text-white placeholder:text-[var(--studio-muted)] focus:border-[var(--studio-accent)] focus:outline-none"
           />
         </div>
-
-        {/* Category Filter Pills */}
-        <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition-colors ${
-                selectedCategory === cat
-                  ? "bg-[var(--studio-accent)] text-black"
-                  : "border border-[var(--studio-border)] bg-[var(--studio-control)] text-[var(--studio-muted)] hover:text-white"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* ── Preset Grid List ── */}
@@ -111,17 +93,23 @@ export const AnimationPresetBrowser: React.FC<AnimationPresetBrowserProps> = ({
                 <div
                   className="flex h-14 w-full items-center justify-center rounded text-sm font-bold text-white/90"
                   style={{
-                    background: p.procedural?.type === "flame"
-                      ? "radial-gradient(circle, #6f250e, #161014 68%)"
-                      : p.procedural?.type === "water" || p.procedural?.type === "chromatic"
-                        ? "linear-gradient(115deg, #142445, #352151, #12111d)"
-                        : p.procedural?.type === "neon"
-                          ? "radial-gradient(circle, #312060, #101018 70%)"
-                          : "rgba(0,0,0,.4)",
+                    background:
+                      p.procedural?.type === "flame"
+                        ? "radial-gradient(circle, #6f250e, #161014 68%)"
+                        : p.procedural?.type === "water" ||
+                            p.procedural?.type === "chromatic"
+                          ? "linear-gradient(115deg, #142445, #352151, #12111d)"
+                          : p.procedural?.type === "neon"
+                            ? "radial-gradient(circle, #312060, #101018 70%)"
+                            : "rgba(0,0,0,.4)",
                   }}
                 >
                   <span
-                    style={p.procedural?.type === "neon" ? { textShadow: "0 0 10px #bc70ff" } : undefined}
+                    style={
+                      p.procedural?.type === "neon"
+                        ? { textShadow: "0 0 10px #bc70ff" }
+                        : undefined
+                    }
                   >
                     ABC
                   </span>

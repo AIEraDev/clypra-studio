@@ -37,7 +37,7 @@ export interface PublishPayload {
   category: string;
 }
 
-const ACCEPTED_CATEGORIES = ["Basic", "Motion", "3D", "Glitch", "Custom"];
+const ACCEPTED_CATEGORIES = ["in", "out", "loop"];
 
 export const AnimationPublishModal: React.FC<AnimationPublishModalProps> = ({
   preset,
@@ -52,7 +52,7 @@ export const AnimationPublishModal: React.FC<AnimationPublishModalProps> = ({
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(
     initialThumbnailFile ?? null,
   );
-  const [category, setCategory] = useState(preset.category ?? "Basic");
+  const [category, setCategory] = useState(preset.phase?.toLowerCase() ?? "in");
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [thumbPreviewUrl, setThumbPreviewUrl] = useState<string | null>(null);
 
@@ -304,7 +304,7 @@ export const AnimationPublishModal: React.FC<AnimationPublishModalProps> = ({
                   key={cat}
                   type="button"
                   onClick={() => setCategory(cat)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer capitalize ${
                     category === cat
                       ? "bg-amber-400/20 text-amber-300 border border-amber-400/50"
                       : "bg-[#1A1A26] text-[#888899] border border-[#2A2A38] hover:border-[#444458] hover:text-white"

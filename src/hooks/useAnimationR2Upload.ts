@@ -8,14 +8,13 @@
  * This hook mirrors the shape of `useTextEffectR2Upload` so both publish
  * flows stay consistent.
  *
- * API endpoint: POST /text-animations
+ * API endpoint: POST /text-animations/upload
  * Auth: Bearer token from `getStoredAuthToken()` (admin only)
  *
  * Request body:
- *   preset               — full TextAnimationPreset definition
+ *   animation            — full TextAnimationPreset definition
  *   thumbnailDataUrl?    — base64 data URL, e.g. "data:image/png;base64,…"
  *   previewVideoDataUrl? — base64 data URL, e.g. "data:video/mp4;base64,…"
- *   previewVideoExt?     — "mp4" | "webm" (extension hint for the API)
  *
  * On success the React Query animation catalog cache is invalidated so
  * consumers (preset browsers, live previews) automatically refetch.
@@ -50,14 +49,12 @@ export interface AnimationUploadPayload {
   previewVideoExt?: "mp4" | "webm";
 }
 
-/** Shape of the successful API response from POST /text-animations. */
+/** Shape of the successful API response from POST /text-animations/upload. */
 export interface AnimationUploadResult {
   success: boolean;
   message: string;
-  /** The saved preset with thumbnailUrl and previewVideoUrl populated by the API. */
-  preset: TextAnimationPreset;
-  /** Total number of presets in the catalog after the upsert. */
-  count: number;
+  /** The saved animation with thumbnailUrl and previewVideoUrl populated by the API. */
+  animation: TextAnimationPreset;
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────────
@@ -74,7 +71,7 @@ export function useAnimationR2Upload() {
     mutationFn: async (payload) => {
       const token = getStoredAuthToken();
 
-      const response = await fetch(`${apiBase}/text-animations`, {
+      const response = await fetch(`${apiBase}/text-animations/upload`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -85,7 +82,6 @@ export function useAnimationR2Upload() {
           animation: payload.preset,
           thumbnailDataUrl: payload.thumbnailDataUrl,
           previewVideoDataUrl: payload.previewVideoDataUrl,
-          previewVideoExt: payload.previewVideoExt,
         }),
       });
 
@@ -137,8 +133,8 @@ export function useAnimationR2Upload() {
     status,
     /** Human-readable status message suitable for a toast or inline label. */
     message,
-    /** The fully saved preset returned by the API, or null if not yet complete. */
-    uploadedPreset: mutation.data?.preset ?? null,
+    /** The fully saved animation returned by the API, or null if not yet complete. */
+    uploadedAnimation: mutation.data?.animation ?? null,
     reset: mutation.reset,
   };
 }

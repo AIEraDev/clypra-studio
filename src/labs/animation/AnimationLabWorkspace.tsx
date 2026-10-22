@@ -394,12 +394,12 @@ export const AnimationLabWorkspace: React.FC = () => {
         previewVideoExt,
       });
 
-      // Reflect the API-returned preset (with populated media URLs) in the
+      // Reflect the API-returned animation (with populated media URLs) in the
       // local preset list so the browser card updates without a full reload.
-      if (result?.preset) {
+      if (result?.animation) {
         setPresets((current) => {
           const next = current.map((candidate) =>
-            candidate.id === result.preset.id ? result.preset : candidate,
+            candidate.id === result.animation.id ? result.animation : candidate,
           );
           localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
           return next;
