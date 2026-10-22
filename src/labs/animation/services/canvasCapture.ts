@@ -149,13 +149,20 @@ const VIDEO_CODEC_CANDIDATES: { mimeType: string; videoBitsPerSecond: number }[]
  * Frame rate : 60 fps
  * Bitrate    : 40 Mbps VP9 / 25 Mbps VP8 / 20 Mbps MP4
  *
+ * The video lasts `duration` seconds. The animation progress cycles with
+ * period `animationPeriod` (defaults to `duration`). When `animationPeriod`
+ * is shorter than `duration` the animation loops seamlessly inside the clip —
+ * e.g. previewLoopDuration=1.2s with animationPeriod=defaultDuration=0.6s
+ * produces two full cycles, giving a smooth GIF-like loop preview.
+ *
  * Best-effort: returns null when the runtime does not support MediaRecorder or
  * HTMLCanvasElement.captureStream (e.g. test environments, older Safari).
  *
- * @param preset     - The TextAnimationPreset to render.
- * @param sampleText - Text to render. Falls back to "ABC123" if empty.
- * @param duration   - Animation duration in seconds.
- * @param fps        - Frames per second (default: 60).
+ * @param preset           - The TextAnimationPreset to render.
+ * @param sampleText       - Text to render. Falls back to "ABC123" if empty.
+ * @param duration         - Total video duration in seconds.
+ * @param fps              - Frames per second (default: 60).
+ * @param animationPeriod  - One animation cycle length in seconds (default: duration).
  * @returns A WebM or MP4 File, or null when MediaRecorder is unavailable.
  */
 export async function captureAnimationVideo(
@@ -163,6 +170,7 @@ export async function captureAnimationVideo(
   sampleText: string,
   duration: number,
   fps = 60,
+  animationPeriod?: number,
 ): Promise<File | null> {
   if (typeof MediaRecorder === "undefined") {
     console.warn("[canvasCapture] MediaRecorder not supported — skipping video capture");
@@ -189,12 +197,16 @@ export async function captureAnimationVideo(
   }
 
   const { mimeType, videoBitsPerSecond } = chosen;
+  // The animation cycles with this period; if shorter than the total duration
+  // it loops seamlessly (e.g. 0.6s animation looping inside a 1.2s clip).
+  const period = animationPeriod && animationPeriod > 0 ? animationPeriod : duration;
   console.log("[canvasCapture] Recording 4K preview:", {
     codec: mimeType,
     videoBitsPerSecond,
     fps,
     resolution: `${CANVAS_W}×${CANVAS_H}`,
     duration,
+    period,
   });
 
   const offscreen = document.createElement("canvas");
@@ -222,7 +234,10 @@ export async function captureAnimationVideo(
   const characters = Array.from(sampleText || "ABC123");
 
   for (let f = 0; f < totalFrames; f++) {
-    const progress = totalFrames > 1 ? f / (totalFrames - 1) : 0;
+    // Time of this frame in seconds
+    const t = (f / fps);
+    // Progress cycles with `period` — wraps 0→1 every `period` seconds
+    const progress = (t % period) / period;
     drawFrame(ctx, characters, preset, progress);
     // Yield to the browser so captureStream grabs the rendered frame.
     await new Promise<void>((r) => setTimeout(r, 1000 / fps));

@@ -401,17 +401,22 @@ export const AnimationLabWorkspace: React.FC = () => {
     }
 
     // ── Video capture (best-effort, independent of thumbnail) ─────────────
-    // Use defaultDuration so the captured video matches exactly what the user
-    // sees in the stage preview. previewLoopDuration is 2× defaultDuration
-    // (e.g. 1.2s vs 0.6s) — using it would halve the apparent speed.
-    // Falls back to 0.6s (the hardcoded stage loop default).
-    const videoDuration = activePreset.defaultDuration || 0.6;
+    // Total clip   = previewLoopDuration (e.g. 1.2s) — long enough to loop.
+    // Anim period  = defaultDuration (e.g. 0.6s) — one full 0→1 cycle at the
+    //               same speed seen in the stage preview.
+    // Result: a 1.2s video showing the animation looping twice, pixel-perfect
+    // speed, no half-speed or freeze artifacts.
+    const videoDuration =
+      activePreset.previewLoopDuration || activePreset.defaultDuration || 1.2;
+    const animationPeriod = activePreset.defaultDuration || 0.6;
     let vid: File | null = null;
     try {
       vid = await captureAnimationVideo(
         activePreset,
         sampleText,
         videoDuration,
+        60,
+        animationPeriod,
       );
 
       if (!vid) {
