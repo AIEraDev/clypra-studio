@@ -401,13 +401,11 @@ export const AnimationLabWorkspace: React.FC = () => {
     }
 
     // ── Video capture (best-effort, independent of thumbnail) ─────────────
-    // Use previewLoopDuration from the preset so the captured video always
-    // represents a full canonical loop cycle (default 1.2s), regardless of
-    // where the scrubber is set. Falls back to defaultDuration → 0.8s.
-    // Returns null when MediaRecorder / captureStream is unavailable; the
-    // modal handles that gracefully with a manual upload fallback.
-    const videoDuration =
-      activePreset.previewLoopDuration || activePreset.defaultDuration || 0.8;
+    // Use defaultDuration so the captured video matches exactly what the user
+    // sees in the stage preview. previewLoopDuration is 2× defaultDuration
+    // (e.g. 1.2s vs 0.6s) — using it would halve the apparent speed.
+    // Falls back to 0.6s (the hardcoded stage loop default).
+    const videoDuration = activePreset.defaultDuration || 0.6;
     let vid: File | null = null;
     try {
       vid = await captureAnimationVideo(
