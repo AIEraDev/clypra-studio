@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStudioApiBaseUrl } from "../../../services/apiConfig";
+import { getStoredAuthToken } from "../../../services/authSession";
 import type { AudioAsset } from "../types";
+import { AUDIO_CATEGORIES } from "../types";
 
 export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
   {
@@ -118,12 +120,20 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
   },
 ];
 
-export function useAudioCatalog() {
-  const [tracks, setTracks] = useState<AudioAsset[]>(FALLBACK_CATALOG_TRACKS);
-  const [isLoading, setIsLoading] = useState(true);
+export interface UseAudioCatalogOptions {
+  enabled?: boolean;
+}
+
+export function useAudioCatalog(options?: UseAudioCatalogOptions) {
+  const enabled = options?.enabled ?? true;
+  const [tracks, setTracks] = useState<AudioAsset[]>([]);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "published" | "draft"
+  >("all");
   const [durationFilter, setDurationFilter] = useState<
     "all" | "short" | "medium" | "long"
   >("all");
@@ -134,52 +144,104 @@ export function useAudioCatalog() {
     setError(null);
     try {
       const baseUrl = getStudioApiBaseUrl();
-      const categories = [
-        "music",
-        "cinematic",
-        "upbeat",
-        "lo-fi",
-        "hip-hop",
-        "ambient",
-        "sfx",
-        "transition",
-        "ui",
-      ];
+      const token = getStoredAuthToken();
+      const headers: Record<string, string> = { Accept: "application/json" };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
 
-      const results = await Promise.all(
-        categories.map(async (category) => {
-          const res = await fetch(`${baseUrl}/audio/${category}`, {
-            headers: { Accept: "application/json" },
-          });
-          if (!res.ok) return [];
-          const data = await res.json();
-          return Array.isArray(data) ? data : [];
-        }),
-      );
-
-      const data = results.flat();
-      if (Array.isArray(data) && data.length > 0) {
-        setTracks(data as AudioAsset[]);
+      // Call master audio endpoint directly (single request)
+      const res = await fetch(`${baseUrl}/audio`, { headers });
+      let data: any[] = [];
+      if (res.ok) {
+        const json = await res.json();
+        data = Array.isArray(json) ? json : [];
       } else {
-        setTracks(FALLBACK_CATALOG_TRACKS);
+        // Fallback to category endpoints if root is unavailable
+        const results = await Promise.all(
+          AUDIO_CATEGORIES.map(async (category) => {
+            const catRes = await fetch(`${baseUrl}/audio/${category}`, {
+              headers,
+            });
+            if (!catRes.ok) return [];
+            const catJson = await catRes.json();
+            return Array.isArray(catJson) ? catJson : [];
+          }),
+        );
+        data = results.flat();
+      }
+      if (Array.isArray(data) && data.length > 0) {
+        const uniqueTracks = Array.from(
+          new Map(data.map((item) => [item.id, item])).values(),
+        );
+        setTracks(uniqueTracks as AudioAsset[]);
+      } else {
+        setTracks([]);
       }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load audio catalog",
       );
-      // Keep fallback tracks so UI remains usable
-      setTracks(FALLBACK_CATALOG_TRACKS);
+      setTracks([]);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  const togglePublish = useCallback(
+    async (track: AudioAsset, nextPublishState: boolean) => {
+      const baseUrl = getStudioApiBaseUrl();
+      const token = getStoredAuthToken();
+      const category = track.category?.toLowerCase() || "music";
+      const action = nextPublishState ? "publish" : "unpublish";
+
+      const res = await fetch(
+        `${baseUrl}/audio/${category}/${track.id}/${action}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ published: nextPublishState }),
+        },
+      );
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(
+          errJson.error ||
+            errJson.message ||
+            `Failed to ${nextPublishState ? "publish" : "unpublish"} audio track`,
+        );
+      }
+
+      // Optimistically update tracks list
+      setTracks((prev) =>
+        prev.map((t) =>
+          t.id === track.id ? { ...t, published: nextPublishState } : t,
+        ),
+      );
+    },
+    [],
+  );
+
   useEffect(() => {
-    void fetchCatalog();
-  }, [fetchCatalog]);
+    if (enabled) {
+      void fetchCatalog();
+    }
+  }, [fetchCatalog, enabled]);
 
   const filteredTracks = useMemo(() => {
     return tracks.filter((track) => {
+      // Publication status filter
+      if (statusFilter === "published" && track.published === false) {
+        return false;
+      }
+      if (statusFilter === "draft" && track.published !== false) {
+        return false;
+      }
+
       // Category filter
       if (
         selectedCategory !== "all" &&
@@ -213,10 +275,11 @@ export function useAudioCatalog() {
 
       return true;
     });
-  }, [tracks, selectedCategory, durationFilter, searchQuery]);
+  }, [tracks, selectedCategory, durationFilter, searchQuery, statusFilter]);
 
   return {
     tracks,
+    setTracks,
     filteredTracks,
     totalCount: tracks.length,
     isLoading,
@@ -225,10 +288,13 @@ export function useAudioCatalog() {
     setSearchQuery,
     selectedCategory,
     setSelectedCategory,
+    statusFilter,
+    setStatusFilter,
     durationFilter,
     setDurationFilter,
     activeTrack,
     setActiveTrack,
     refetch: fetchCatalog,
+    togglePublish,
   };
 }

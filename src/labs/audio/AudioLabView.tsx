@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { getStudioApiBaseUrl } from "../../services/apiConfig";
+import { getStoredAuthToken } from "../../services/authSession";
 import { useIsAdmin } from "../../hooks/useIsAdmin";
 import { useAudioCatalog } from "./hooks/useAudioCatalog";
 import { useAudioIngest } from "./hooks/useAudioIngest";
@@ -36,15 +37,13 @@ function formatElapsed(sec: number): string {
 
 export function AudioLabView() {
   const isAdmin = useIsAdmin();
-  const catalog = useAudioCatalog();
-
-  // Audio ingest state machine
-  const ingest = useAudioIngest(
-    true /* initialDone – shows mock data on load */,
-  );
 
   // Mode: "upload" vs "catalog"
   const [viewMode, setViewMode] = useState<"upload" | "catalog">("upload");
+  const catalog = useAudioCatalog({ enabled: viewMode === "catalog" });
+
+  // Audio ingest state machine
+  const ingest = useAudioIngest(false /* Start empty, no mock data */);
 
   // Cover art
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -52,25 +51,19 @@ export function AudioLabView() {
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   // Form details
-  const [name, setName] = useState("Neon Horizon");
-  const [slug, setSlug] = useState("neon-horizon");
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
   const [selectedCategory, setSelectedCategory] =
     useState<AudioCategory>("music");
-  const [description, setDescription] = useState(
-    "Driving analog bassline layered with gated reverb snares, lush juno chords, and nostalgic retro-futuristic arpeggios suitable for night drives.",
-  );
-  const [author, setAuthor] = useState("Kaelen Vance / Synthwave Audio Lab");
+  const [description, setDescription] = useState("");
+  const [author, setAuthor] = useState("");
   const [licenseType, setLicenseType] = useState("cc0");
   const [requireCredit, setRequireCredit] = useState(false);
-  const [sourceProvider, setSourceProvider] = useState("Bandcamp");
-  const [sourceUrl, setSourceUrl] = useState(
-    "https://kaelenvance.bandcamp.com/track/neon-horizon",
-  );
-  const [tempo, setTempo] = useState<number | string>(124);
-  const [seamlessLoop, setSeamlessLoop] = useState(true);
-  const [licenseDeed, setLicenseDeed] = useState(
-    "https://creativecommons.org/publicdomain/zero/1.0/",
-  );
+  const [sourceProvider, setSourceProvider] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [tempo, setTempo] = useState<number | string>("");
+  const [seamlessLoop, setSeamlessLoop] = useState(false);
+  const [licenseDeed, setLicenseDeed] = useState("");
   const [directPublish, setDirectPublish] = useState(false);
 
   // Tag management state
@@ -80,7 +73,7 @@ export function AudioLabView() {
   // Upload state
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploaded, setIsUploaded] = useState(false);
-  const [isEnriching, setIsEnriching] = useState(false);
+  const [publishingTrackId, setPublishingTrackId] = useState<string | null>(null);
 
   // Catalog preview
   const [catalogPlayingId, setCatalogPlayingId] = useState<string | null>(null);
@@ -220,7 +213,7 @@ export function AudioLabView() {
   const handleMediaFile = (file: File) => {
     setIsUploaded(false);
     ingest.ingestFile(file, (suggestedName, suggestedSlug) => {
-      if (!name || name === "Neon Horizon") {
+      if (!name) {
         setName(suggestedName);
         setSlug(suggestedSlug);
       }
@@ -259,61 +252,6 @@ export function AudioLabView() {
     setSelectedTags([]);
     setCustomTagInput("");
     toast.success("Workbench reset successfully");
-  };
-
-  // Auto-enrich metadata via AI
-  const handleAutoEnrich = async () => {
-    setIsEnriching(true);
-    try {
-      const response = await fetch(
-        `${getStudioApiBaseUrl()}/ai/audio-metadata`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileName: ingest.metadata.name || "audio-track.wav",
-            currentName: name,
-            currentCategory: selectedCategory.toLowerCase(),
-            currentDescription: description,
-            author,
-            duration: ingest.metadata.duration || 120,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("AI metadata enrichment service unavailable");
-      }
-
-      const data = await response.json();
-      if (data.name) {
-        setName(data.name);
-        setSlug(toKebab(data.name));
-      }
-      if (data.description) setDescription(data.description);
-      if (data.bpm) setTempo(Math.round(data.bpm));
-      if (typeof data.loopable === "boolean") setSeamlessLoop(data.loopable);
-      if (data.category) {
-        const match = AUDIO_CATEGORIES.find(
-          (c) => c.toLowerCase() === String(data.category).toLowerCase(),
-        );
-        if (match) setSelectedCategory(match);
-      }
-      toast.success("Metadata enriched by AI!");
-    } catch {
-      // Fallback enrichment if offline or service unavailable
-      if (!name) setName("Neon Horizon");
-      if (!slug) setSlug("neon-horizon");
-      if (!description) {
-        setDescription(
-          "Driving analog bassline layered with gated reverb snares, lush juno chords, and nostalgic retro-futuristic arpeggios.",
-        );
-      }
-      if (!tempo) setTempo(124);
-      toast.success("Synthesized metadata tags & attributes enriched");
-    } finally {
-      setIsEnriching(false);
-    }
   };
 
   // Upload Audio Submission
@@ -411,28 +349,32 @@ export function AudioLabView() {
         coverArtDataUrl,
       };
 
+      const token = getStoredAuthToken();
       const res = await fetch(`${getStudioApiBaseUrl()}/audio/upload`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
         throw new Error(
-          (errJson as any).message || `Upload failed: ${res.statusText}`,
+          (errJson as any).error ||
+            (errJson as any).message ||
+            `Upload failed (${res.status}: ${res.statusText})`,
         );
       }
 
       setIsUploaded(true);
       toast.success("Audio published successfully to Clypra catalog!");
       catalog.refetch();
-    } catch {
-      // Simulate success for local testing / mockup demonstration
-      setTimeout(() => {
-        setIsUploaded(true);
-        toast.success("Audio published successfully to catalog");
-      }, 1000);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Upload failed. Please try again.";
+      toast.error(message);
     } finally {
       setIsProcessing(false);
     }
@@ -495,6 +437,34 @@ export function AudioLabView() {
     ingest.setStatus("done");
     setViewMode("upload");
     toast.success(`Loaded "${track.name}" into editor`);
+  };
+
+  // Admin publish/unpublish toggle
+  const handleTogglePublish = async (
+    track: AudioAsset,
+    nextPublishState: boolean,
+  ) => {
+    if (!isAdmin) {
+      toast.error("Only administrators can change audio publication status.");
+      return;
+    }
+    setPublishingTrackId(track.id);
+    try {
+      await catalog.togglePublish(track, nextPublishState);
+      toast.success(
+        nextPublishState
+          ? `"${track.name}" published to catalog`
+          : `"${track.name}" unpublished successfully`,
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to update publication status",
+      );
+    } finally {
+      setPublishingTrackId(null);
+    }
   };
 
   return (
@@ -591,55 +561,6 @@ export function AudioLabView() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {/* State simulator for interactive review */}
-                      <div className="hidden sm:flex items-center gap-1 bg-surface-container-lowest px-1.5 py-0.5 rounded border border-outline-variant text-[11px] font-mono text-outline">
-                        <span className="text-on-surface-variant">Sim:</span>
-                        <button
-                          id="demo-idle"
-                          className="hover:text-primary px-1 transition-colors underline decoration-dotted"
-                          type="button"
-                          onClick={() => ingest.simIdle()}
-                        >
-                          Idle
-                        </button>
-                        <span>•</span>
-                        <button
-                          id="demo-extract"
-                          className="hover:text-primary px-1 transition-colors underline decoration-dotted"
-                          type="button"
-                          onClick={() =>
-                            ingest.simExtract(
-                              "cyberpunk_trailer_theme.mp4",
-                              (n, s) => {
-                                if (!name || name === "Neon Horizon") {
-                                  setName(n);
-                                  setSlug(s);
-                                }
-                              },
-                            )
-                          }
-                        >
-                          Extract
-                        </button>
-                        <span>•</span>
-                        <button
-                          id="demo-done"
-                          className="hover:text-primary px-1 transition-colors underline decoration-dotted"
-                          type="button"
-                          onClick={() => ingest.simDone()}
-                        >
-                          Done
-                        </button>
-                        <span>•</span>
-                        <button
-                          id="demo-error"
-                          className="hover:text-primary px-1 transition-colors underline decoration-dotted"
-                          type="button"
-                          onClick={() => ingest.simError()}
-                        >
-                          Err
-                        </button>
-                      </div>
                       <span
                         className={fileStatusClass}
                         id="file-status-indicator"
@@ -660,7 +581,7 @@ export function AudioLabView() {
 
                   {/* Dropzones Row — always visible */}
                   <div
-                    className="grid grid-cols-1 sm:grid-cols-[1fr_88px] gap-3"
+                    className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-3"
                     id="dropzones-container"
                   >
                     {/* Unified Audio & Video Dropzone */}
@@ -1025,7 +946,7 @@ export function AudioLabView() {
                         type="button"
                         onClick={() =>
                           ingest.retry((n, s) => {
-                            if (!name || name === "Neon Horizon") {
+                            if (!name) {
                               setName(n);
                               setSlug(s);
                             }
@@ -1114,30 +1035,12 @@ export function AudioLabView() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Display Name */}
                     <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <label
-                          className="font-label-md text-label-md text-on-surface-variant flex items-center gap-1"
-                          htmlFor="track-name"
-                        >
-                          Display name <span className="text-primary">*</span>
-                        </label>
-                        <button
-                          id="auto-enrich-btn"
-                          className="font-label-sm text-label-sm text-primary hover:underline transition-all inline-flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
-                          type="button"
-                          disabled={isEnriching}
-                          onClick={handleAutoEnrich}
-                        >
-                          {isEnriching ? (
-                            <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin mr-1"></span>
-                          ) : (
-                            <span className="material-symbols-outlined text-[13px]">
-                              magic_button
-                            </span>
-                          )}
-                          Auto-Enrich
-                        </button>
-                      </div>
+                      <label
+                        className="font-label-md text-label-md text-on-surface-variant flex items-center gap-1"
+                        htmlFor="track-name"
+                      >
+                        Display name <span className="text-primary">*</span>
+                      </label>
                       <input
                         className="w-full h-10 px-3 rounded bg-surface-container-low border border-outline-variant focus:border-primary focus:outline-none text-on-surface font-body-md text-body-md transition-colors placeholder:text-outline"
                         id="track-name"
@@ -1571,13 +1474,140 @@ export function AudioLabView() {
               </div>
             </div>
           </div>
+        ) : !isAdmin ? (
+          /* NON-ADMIN ACCESS GUARD */
+          <div className="w-full max-w-[720px] mx-auto px-4 py-16 text-center">
+            <div className="p-8 rounded-xl bg-surface-container border border-outline-variant flex flex-col items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-outline">
+                <span className="material-symbols-outlined text-[28px]">lock</span>
+              </div>
+              <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                Admin Access Required
+              </h2>
+              <p className="font-body-md text-body-md text-on-surface-variant max-w-md">
+                The Clypra Master Music Catalog and publishing management tools are restricted to administrators. Please sign in with an administrator account to view and publish tracks.
+              </p>
+              <button
+                type="button"
+                onClick={() => setViewMode("upload")}
+                className="mt-2 px-4 py-2 rounded bg-primary text-on-primary font-label-md text-label-md font-semibold hover:brightness-110 transition-colors cursor-pointer"
+              >
+                Back to Studio Upload
+              </button>
+            </div>
+          </div>
         ) : (
-          /* CATALOG VIEW MODE */
+          /* ADMIN MASTER CATALOG VIEW MODE */
           <div className="w-full max-w-[960px] mx-auto px-4 sm:px-6 py-6 pb-28">
             <div className="flex flex-col gap-6">
-              {/* Header and Search */}
+              {/* Header */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-lg bg-surface-container-low border border-outline-variant">
-                <div className="relative flex-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                    <span className="material-symbols-outlined text-[20px]">
+                      library_music
+                    </span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                        Master Music Catalog
+                      </h2>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-primary text-on-primary">
+                        Admin Only
+                      </span>
+                    </div>
+                    <p className="font-caption text-caption text-outline">
+                      Manage publication status and sync live with Clypra Assets
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={catalog.refetch}
+                    disabled={catalog.isLoading}
+                    className="h-9 px-3 rounded bg-surface-container text-on-surface-variant hover:text-primary border border-outline-variant transition-colors flex items-center gap-1.5 font-label-sm text-label-sm cursor-pointer disabled:opacity-50"
+                  >
+                    <span
+                      className={`material-symbols-outlined text-[16px] ${
+                        catalog.isLoading ? "animate-spin" : ""
+                      }`}
+                    >
+                      refresh
+                    </span>
+                    {catalog.isLoading ? "Refreshing…" : "Refresh"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("upload")}
+                    className="h-9 px-3 rounded bg-primary text-on-primary hover:brightness-110 font-label-sm text-label-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      add
+                    </span>
+                    Upload Track
+                  </button>
+                </div>
+              </div>
+
+              {/* Status Filter Tabs & Search Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-container-lowest border border-outline-variant w-fit">
+                  <button
+                    type="button"
+                    aria-label="Filter all tracks"
+                    className={`px-3 py-1 rounded text-label-sm font-label-sm transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      catalog.statusFilter === "all"
+                        ? "bg-surface-container text-primary font-semibold shadow-xs"
+                        : "text-on-surface-variant hover:text-on-surface"
+                    }`}
+                    onClick={() => catalog.setStatusFilter("all")}
+                  >
+                    <span>All</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[11px] bg-surface-container-highest text-on-surface">
+                      {catalog.tracks.length}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Filter published tracks"
+                    className={`px-3 py-1 rounded text-label-sm font-label-sm transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      catalog.statusFilter === "published"
+                        ? "bg-surface-container text-emerald-400 font-semibold shadow-xs"
+                        : "text-on-surface-variant hover:text-on-surface"
+                    }`}
+                    onClick={() => catalog.setStatusFilter("published")}
+                  >
+                    <span>Published</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[11px] bg-emerald-500/20 text-emerald-300">
+                      {
+                        catalog.tracks.filter((t) => t.published !== false)
+                          .length
+                      }
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Filter draft tracks"
+                    className={`px-3 py-1 rounded text-label-sm font-label-sm transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      catalog.statusFilter === "draft"
+                        ? "bg-surface-container text-amber-400 font-semibold shadow-xs"
+                        : "text-on-surface-variant hover:text-on-surface"
+                    }`}
+                    onClick={() => catalog.setStatusFilter("draft")}
+                  >
+                    <span>Drafts</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[11px] bg-amber-500/20 text-amber-300">
+                      {
+                        catalog.tracks.filter((t) => t.published === false)
+                          .length
+                      }
+                    </span>
+                  </button>
+                </div>
+
+                <div className="relative flex-1 max-w-sm">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">
                     search
                   </span>
@@ -1586,20 +1616,8 @@ export function AudioLabView() {
                     value={catalog.searchQuery}
                     onChange={(e) => catalog.setSearchQuery(e.target.value)}
                     placeholder="Search audio by title, genre, creator, or tags..."
-                    className="w-full h-10 pl-9 pr-3 rounded bg-surface-container border border-outline-variant focus:border-primary focus:outline-none text-on-surface font-body-md text-body-md transition-colors placeholder:text-outline"
+                    className="w-full h-9 pl-9 pr-3 rounded bg-surface-container border border-outline-variant focus:border-primary focus:outline-none text-on-surface font-body-md text-body-md transition-colors placeholder:text-outline text-sm"
                   />
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={catalog.refetch}
-                    className="h-10 px-3 rounded bg-surface-container text-on-surface-variant hover:text-primary border border-outline-variant transition-colors flex items-center gap-1.5 font-label-sm text-label-sm cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">
-                      refresh
-                    </span>
-                    Refresh
-                  </button>
                 </div>
               </div>
 
@@ -1607,20 +1625,19 @@ export function AudioLabView() {
               <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   type="button"
-                  className={`px-3 py-1.5 rounded text-label-sm font-label-sm border transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded text-caption font-label-sm border transition-colors cursor-pointer ${
                     catalog.selectedCategory === "all"
                       ? "bg-surface-container border-primary text-primary"
                       : "bg-surface-container-low border-outline-variant text-on-surface-variant hover:border-outline"
                   }`}
                   onClick={() => catalog.setSelectedCategory("all")}
                 >
-                  All Genres
+                  All Categories
                 </button>
                 {AUDIO_CATEGORIES.map((cat) => {
                   const isSel =
                     catalog.selectedCategory.toLowerCase() ===
                     cat.toLowerCase();
-                  // Display name mapping
                   const displayName =
                     cat === "ui-interface"
                       ? "UI & Interface"
@@ -1635,7 +1652,7 @@ export function AudioLabView() {
                     <button
                       key={cat}
                       type="button"
-                      className={`px-3 py-1.5 rounded text-label-sm font-label-sm border transition-colors cursor-pointer ${
+                      className={`px-2.5 py-1 rounded text-caption font-label-sm border transition-colors cursor-pointer ${
                         isSel
                           ? "bg-surface-container border-primary text-primary"
                           : "bg-surface-container-low border-outline-variant text-on-surface-variant hover:border-outline"
@@ -1654,10 +1671,17 @@ export function AudioLabView() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {catalog.filteredTracks.map((track) => {
                   const isPlaying = catalogPlayingId === track.id;
+                  const isPublishing = publishingTrackId === track.id;
+                  const isPublished = track.published !== false;
+
                   return (
                     <div
                       key={track.id}
-                      className="p-4 rounded-lg bg-surface-container border border-outline-variant flex flex-col justify-between gap-3 hover:border-outline transition-colors"
+                      className={`p-4 rounded-lg bg-surface-container border transition-colors flex flex-col justify-between gap-3 ${
+                        isPublished
+                          ? "border-outline-variant hover:border-outline"
+                          : "border-amber-500/30 bg-amber-500/[0.02] hover:border-amber-500/50"
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
@@ -1680,9 +1704,21 @@ export function AudioLabView() {
                             </p>
                           </div>
                         </div>
-                        <span className="font-caption text-caption px-1.5 py-0.5 rounded bg-surface-container-highest text-primary shrink-0 uppercase">
-                          {track.category}
-                        </span>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span
+                            className={`font-caption text-[11px] font-semibold px-2 py-0.5 rounded border ${
+                              isPublished
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                            }`}
+                          >
+                            {isPublished ? "Published" : "Draft"}
+                          </span>
+                          <span className="font-caption text-[11px] px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant uppercase">
+                            {track.category}
+                          </span>
+                        </div>
                       </div>
 
                       {track.description && (
@@ -1699,24 +1735,99 @@ export function AudioLabView() {
                           <span>•</span>
                           <span>{track.loopable ? "Loop" : "Single-shot"}</span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleLoadTrackFromCatalog(track)}
-                          className="px-2.5 py-1 text-label-sm font-label-sm rounded bg-primary text-on-primary font-semibold hover:brightness-110 transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">
-                            edit
-                          </span>
-                          Load into Studio
-                        </button>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={isPublishing}
+                            onClick={() =>
+                              handleTogglePublish(track, !isPublished)
+                            }
+                            className={`px-2.5 py-1 text-label-sm font-label-sm rounded border font-semibold transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 ${
+                              isPublished
+                                ? "border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
+                                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                            }`}
+                            title={
+                              isPublished
+                                ? "Unpublish from catalog"
+                                : "Publish to catalog"
+                            }
+                          >
+                            <span
+                              className={`material-symbols-outlined text-[14px] ${
+                                isPublishing ? "animate-spin" : ""
+                              }`}
+                            >
+                              {isPublishing
+                                ? "sync"
+                                : isPublished
+                                  ? "visibility_off"
+                                  : "publish"}
+                            </span>
+                            {isPublishing
+                              ? "Saving…"
+                              : isPublished
+                                ? "Unpublish"
+                                : "Publish"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleLoadTrackFromCatalog(track)}
+                            className="px-2.5 py-1 text-label-sm font-label-sm rounded bg-primary text-on-primary font-semibold hover:brightness-110 transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">
+                              edit
+                            </span>
+                            Load into Studio
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
                 })}
 
-                {catalog.filteredTracks.length === 0 && (
-                  <div className="col-span-full py-12 text-center text-outline font-label-md">
-                    No audio tracks matched your search query.
+                {catalog.filteredTracks.length === 0 && !catalog.isLoading && (
+                  <div className="col-span-full py-16 text-center flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-outline">
+                      <span className="material-symbols-outlined text-[24px]">
+                        music_off
+                      </span>
+                    </div>
+                    <p className="font-label-md text-label-md text-on-surface font-medium">
+                      No audio tracks found.
+                    </p>
+                    <p className="font-caption text-caption text-outline max-w-sm">
+                      {catalog.searchQuery ||
+                      catalog.selectedCategory !== "all" ||
+                      catalog.statusFilter !== "all"
+                        ? "No tracks match your current filters. Try resetting the search or category."
+                        : "The master catalog is currently empty. Upload your first audio track to get started."}
+                    </p>
+                    {catalog.searchQuery ||
+                    catalog.selectedCategory !== "all" ||
+                    catalog.statusFilter !== "all" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          catalog.setSearchQuery("");
+                          catalog.setSelectedCategory("all");
+                          catalog.setStatusFilter("all");
+                        }}
+                        className="mt-1 px-3 py-1.5 rounded bg-surface-container-highest text-on-surface hover:text-primary border border-outline-variant font-label-sm text-label-sm transition-colors cursor-pointer"
+                      >
+                        Clear Filters
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("upload")}
+                        className="mt-1 px-4 py-2 rounded bg-primary text-on-primary hover:brightness-110 font-label-sm text-label-sm font-semibold transition-colors cursor-pointer"
+                      >
+                        Upload First Track
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

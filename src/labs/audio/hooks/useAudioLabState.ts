@@ -354,6 +354,11 @@ export function useAudioLabState() {
   }, [audioFile, audioUrlOverride, author, category, description, duration, id, name, tagsInput]);
 
   const handlePublish = useCallback(async () => {
+    if (!isAdmin) {
+      toast.error("Admin access required. Only administrators can upload audio to production.");
+      return;
+    }
+
     if (!isReadyToPublish) {
       if (validationMessage) toast.error(validationMessage);
       return;

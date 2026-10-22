@@ -32,17 +32,18 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.getByText("Choose a workspace")).toBeInTheDocument();
     expect(screen.getByText("Studio destinations")).toBeInTheDocument();
 
-    // Verify all 11 standard workspaces are rendered
+    // Verify all 10 standard workspaces are rendered
     for (const destination of standardDestinations) {
       expect(screen.getByText(destination.label)).toBeInTheDocument();
     }
-    expect(standardDestinations).toHaveLength(11);
+    expect(standardDestinations).toHaveLength(10);
 
-    // Verify no admin destinations (including Animation Lab) are rendered
+    // Verify no admin destinations (including Animation Lab & Audio Lab) are rendered
     for (const adminDest of adminDestinations) {
       expect(screen.queryByText(adminDest.label)).not.toBeInTheDocument();
     }
     expect(screen.queryByText("Animation Lab")).not.toBeInTheDocument();
+    expect(screen.queryByText("Audio Lab")).not.toBeInTheDocument();
 
     // Verify admin badge is not displayed
     expect(screen.queryByTestId("admin-badge")).not.toBeInTheDocument();
@@ -53,7 +54,7 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.queryByTestId("user-profile-btn")).not.toBeInTheDocument();
   });
 
-  it("renders all 11 standard workspaces and hides admin workspaces for non-admin logged-in users", () => {
+  it("renders all 10 standard workspaces and hides admin workspaces for non-admin logged-in users", () => {
     const regularUserToken = createMockJwt({
       id: 42,
       username: "creator",
@@ -72,9 +73,9 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     // Standard workspaces present
     expect(screen.getByText("Text Effects Lab")).toBeInTheDocument();
     expect(screen.getByText("Transition Lab")).toBeInTheDocument();
-    expect(screen.getByText("Audio Library")).toBeInTheDocument();
 
-    // Admin workspaces absent (including Animation Lab)
+    // Admin workspaces absent (including Animation Lab & Audio Lab)
+    expect(screen.queryByText("Audio Lab")).not.toBeInTheDocument();
     expect(screen.queryByText("Animation Lab")).not.toBeInTheDocument();
     expect(screen.queryByText("Motion Graphics Studio")).not.toBeInTheDocument();
     expect(screen.queryByText("Performance Intelligence")).not.toBeInTheDocument();
@@ -136,7 +137,7 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.queryByTestId("user-profile-btn")).not.toBeInTheDocument();
   });
 
-  it("renders all 18 workspaces in a single list when user is logged in as admin", () => {
+  it("renders all 19 workspaces in a single list when user is logged in as admin", () => {
     const adminToken = createMockJwt({
       id: 1,
       username: "superadmin",
@@ -156,20 +157,21 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.getByTestId("admin-badge")).toBeInTheDocument();
     expect(screen.getByText("Admin Session")).toBeInTheDocument();
 
-    // Verify all 11 standard workspaces are present
+    // Verify all 10 standard workspaces are present
     for (const destination of standardDestinations) {
       expect(screen.getByText(destination.label)).toBeInTheDocument();
     }
 
-    // Verify all 8 admin destinations are present in the unified list (including Animation Lab & Text Bubble Studio)
+    // Verify all 9 admin destinations are present in the unified list (including Audio Lab, Animation Lab & Text Bubble Studio)
     for (const adminDest of adminDestinations) {
       expect(screen.getByText(adminDest.label)).toBeInTheDocument();
     }
+    expect(screen.getByText("Audio Lab")).toBeInTheDocument();
     expect(screen.getByText("Animation Lab")).toBeInTheDocument();
     expect(screen.getByText("Text Bubble Studio")).toBeInTheDocument();
 
-    expect(standardDestinations).toHaveLength(11);
-    expect(adminDestinations).toHaveLength(8);
+    expect(standardDestinations).toHaveLength(10);
+    expect(adminDestinations).toHaveLength(9);
     expect(screen.getByText("19 available · shared native pipeline")).toBeInTheDocument();
   });
 
@@ -196,13 +198,13 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     expect(screen.getByText("Text Effects Lab")).toBeInTheDocument();
     expect(screen.getByText("Text Templates")).toBeInTheDocument();
     expect(screen.getByText("Text Performance")).toBeInTheDocument();
-    expect(screen.queryByText("Audio Library")).not.toBeInTheDocument();
+    expect(screen.queryByText("Audio Lab")).not.toBeInTheDocument();
     expect(screen.queryByText("Sticker Lab")).not.toBeInTheDocument();
 
     // Clear filter button
     const clearBtn = screen.getByLabelText("Clear filter");
     fireEvent.click(clearBtn);
-    expect(screen.getByText("Audio Library")).toBeInTheDocument();
+    expect(screen.getByText("Audio Lab")).toBeInTheDocument();
     expect(screen.getByText("Sticker Lab")).toBeInTheDocument();
   });
 
@@ -355,6 +357,49 @@ describe("StudioHub Single List & Admin-Only Visibility", () => {
     );
 
     expect(screen.queryByTestId("text-bubbles-admin-content")).not.toBeInTheDocument();
+    expect(await screen.findByText("Admin access denied")).toBeInTheDocument();
+  });
+
+  it("protects Audio Lab under AdminRoute so non-admin creators receive access denied", async () => {
+    const creatorToken = createMockJwt({
+      id: 102,
+      username: "creator3",
+      email: "creator3@clypra.com",
+      isAdmin: false,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+    localStorage.setItem(AUTH_TOKEN_KEY, creatorToken);
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        user: {
+          id: 102,
+          username: "creator3",
+          email: "creator3@clypra.com",
+          createdAt: "2026-01-01",
+          isAdmin: false,
+        },
+      }),
+    } as Response);
+
+    render(
+      <MemoryRouter initialEntries={["/studio/audio"]}>
+        <Routes>
+          <Route
+            path="/studio/audio"
+            element={
+              <AdminRoute label="the Audio Lab">
+                <div data-testid="audio-lab-admin-content">Audio Lab Admin Content</div>
+              </AdminRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByTestId("audio-lab-admin-content")).not.toBeInTheDocument();
     expect(await screen.findByText("Admin access denied")).toBeInTheDocument();
   });
 });

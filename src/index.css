@@ -174,7 +174,117 @@
   --color-clypra-accent: #7c6fff;
   --color-clypra-muted: #666677;
   --color-clypra-text: #ffffff;
+
+  --color-surface-container-highest: #313540;
+  --color-inverse-on-surface: #2c303b;
+  --color-on-primary: #00382d;
+  --color-on-secondary-container: #00302b;
+  --color-outline: #84948e;
+  --color-secondary-container: #29a195;
+  --color-on-primary-container: #006150;
+  --color-on-secondary: #003732;
+  --color-primary-fixed: #42fdd6;
+  --color-on-secondary-fixed-variant: #005049;
+  --color-on-tertiary-fixed-variant: #5f4100;
+  --color-primary: #6fffdc;
+  --color-on-tertiary-container: #724f00;
+  --color-surface-variant: #313540;
+  --color-error: #ffb4ab;
+  --color-tertiary-fixed-dim: #f9bc48;
+  --color-secondary-fixed: #89f5e7;
+  --color-surface-bright: #353944;
+  --color-secondary-fixed-dim: #6bd8cb;
+  --color-surface-tint: #00e0ba;
+  --color-inverse-primary: #006b58;
+  --color-surface-container: #1b1f2a;
+  --color-on-error: #690005;
+  --color-outline-variant: #3b4a45;
+  --color-on-surface-variant: #b9cac3;
+  --color-tertiary-fixed: #ffdeaa;
+  --color-on-primary-fixed-variant: #005142;
+  --color-tertiary: #ffe4bb;
+  --color-surface-container-lowest: #0a0e18;
+  --color-on-surface: #dfe2f0;
+  --color-inverse-surface: #dfe2f0;
+  --color-error-container: #93000a;
+  --color-surface-dim: #0f131d;
+  --color-secondary: #6bd8cb;
+  --color-on-primary-fixed: #002019;
+  --color-primary-container: #00e5bf;
+  --color-tertiary-container: #ffc14d;
+  --color-on-error-container: #ffdad6;
+  --color-surface-container-high: #262a35;
+  --color-background: #0f131d;
+  --color-on-tertiary-fixed: #271900;
+  --color-on-secondary-fixed: #00201d;
+  --color-surface: #0f131d;
+  --color-on-background: #dfe2f0;
+  --color-surface-container-low: #171b26;
+  --color-on-tertiary: #422c00;
+  --color-primary-fixed-dim: #00e0ba;
+
+  --spacing-space-xl: 2rem;
+  --spacing-space-lg: 1.5rem;
+  --spacing-space-md: 1rem;
+  --spacing-margin-desktop: 2rem;
+  --spacing-gutter: 1rem;
+  --spacing-space-xs: 0.25rem;
+  --spacing-gutter-desktop: 1.5rem;
+  --spacing-margin: 1rem;
+  --spacing-space-sm: 0.5rem;
 }
+
+/* Audio Lab Typography & Utility Tokens */
+.font-body-sm { font-family: 'Inter', sans-serif; font-size: 13px; line-height: 18px; font-weight: 400; }
+.font-headline-md { font-family: 'Inter', sans-serif; font-size: 20px; line-height: 28px; letter-spacing: -0.01em; font-weight: 600; }
+.font-label-sm { font-family: 'Inter', sans-serif; font-size: 12px; line-height: 16px; font-weight: 500; }
+.font-label-md { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 20px; font-weight: 500; }
+.font-headline-sm { font-family: 'Inter', sans-serif; font-size: 16px; line-height: 24px; letter-spacing: -0.005em; font-weight: 600; }
+.font-body-lg { font-family: 'Inter', sans-serif; font-size: 15px; line-height: 22px; font-weight: 400; }
+.font-body-md { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 20px; font-weight: 400; }
+.font-caption { font-family: 'Inter', sans-serif; font-size: 11px; line-height: 14px; font-weight: 400; }
+.font-headline-lg { font-family: 'Inter', sans-serif; font-size: 24px; line-height: 32px; letter-spacing: -0.015em; font-weight: 600; }
+
+.text-body-sm { font-size: 13px; line-height: 18px; font-weight: 400; }
+.text-headline-md { font-size: 20px; line-height: 28px; letter-spacing: -0.01em; font-weight: 600; }
+.text-label-sm { font-size: 12px; line-height: 16px; font-weight: 500; }
+.text-label-md { font-size: 14px; line-height: 20px; font-weight: 500; }
+.text-headline-sm { font-size: 16px; line-height: 24px; letter-spacing: -0.005em; font-weight: 600; }
+.text-body-lg { font-size: 15px; line-height: 22px; font-weight: 400; }
+.text-body-md { font-size: 14px; line-height: 20px; font-weight: 400; }
+.text-caption { font-size: 11px; line-height: 14px; font-weight: 400; }
+.text-headline-lg { font-size: 24px; line-height: 32px; letter-spacing: -0.015em; font-weight: 600; }
+
+.px-margin-desktop { padding-left: 2rem; padding-right: 2rem; }
+.gap-space-xl { gap: 2rem; }
+.gap-space-lg { gap: 1.5rem; }
+.gap-space-md { gap: 1rem; }
+.gap-space-sm { gap: 0.5rem; }
+.gap-space-xs { gap: 0.25rem; }
+.px-space-xs { padding-left: 0.25rem; padding-right: 0.25rem; }
+.py-space-xs { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.py-space-md { padding-top: 1rem; padding-bottom: 1rem; }
+
+.bg-background { background-color: #0f131d; }
+.bg-surface-container-lowest { background-color: #0a0e18; }
+.bg-surface-container-low { background-color: #171b26; }
+.bg-surface-container { background-color: #1b1f2a; }
+.bg-surface-container-high { background-color: #262a35; }
+.bg-surface-container-highest { background-color: #313540; }
+.bg-primary { background-color: #6fffdc; }
+.bg-primary-container { background-color: #00e5bf; }
+
+.text-on-surface { color: #dfe2f0; }
+.text-on-surface-variant { color: #b9cac3; }
+.text-outline { color: #84948e; }
+.text-outline-variant { color: #3b4a45; }
+.text-primary { color: #6fffdc; }
+.text-on-primary { color: #00382d; }
+.text-error { color: #ffb4ab; }
+
+.border-outline-variant { border-color: #3b4a45; }
+.border-outline { border-color: #84948e; }
+.border-primary { border-color: #6fffdc; }
 
 body {
   background-color: #0e0e12;

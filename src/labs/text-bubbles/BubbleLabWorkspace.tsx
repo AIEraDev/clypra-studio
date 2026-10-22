@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { Download, FileCode2, Save, Check, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { compileBubbleSvg, type TextBubblePreset, type TextBubbleCategory } from "@clypra-studio/engine";
+import {
+  compileBubbleSvg,
+  type TextBubblePreset,
+  type TextBubbleCategory,
+} from "@clypra-studio/engine";
 import { useIsAdmin } from "../../hooks/useIsAdmin";
 import {
   loadBubblePresets,
@@ -20,7 +24,9 @@ import { compileRoughBubbleSvg } from "./renderRoughBubble";
 export const BubbleLabWorkspace: React.FC = () => {
   const isAdmin = useIsAdmin();
 
-  const [presets, setPresets] = useState<TextBubblePreset[]>(() => loadBubblePresets());
+  const [presets, setPresets] = useState<TextBubblePreset[]>(() =>
+    loadBubblePresets(),
+  );
   const [activePresetId, setActivePresetId] = useState<string>(
     presets[0]?.id ?? "bubble-paper-torn",
   );
@@ -32,15 +38,15 @@ export const BubbleLabWorkspace: React.FC = () => {
     presets.find((p) => p.id === activePresetId) ?? presets[0];
 
   const handleUpdatePreset = (updated: TextBubblePreset) => {
-    setPresets((prev) =>
-      prev.map((p) => (p.id === updated.id ? updated : p)),
-    );
+    setPresets((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
   };
 
   const handleSaveDraft = () => {
     const ok = saveBubblePresets(presets);
     if (ok) {
-      toast.success(`Saved "${activePreset.name}" and presets to local drafts!`);
+      toast.success(
+        `Saved "${activePreset.name}" and presets to local drafts!`,
+      );
     } else {
       toast.error("Failed to save drafts to browser storage.");
     }
@@ -103,9 +109,10 @@ export const BubbleLabWorkspace: React.FC = () => {
       toast.error("Only authored vector bubbles can be exported as SVG.");
       return;
     }
-    const svg = activePreset.definition.layers.outline.roughness > 0
-      ? compileRoughBubbleSvg(activePreset.definition)
-      : compileBubbleSvg(activePreset.definition);
+    const svg =
+      activePreset.definition.layers.outline.roughness > 0
+        ? compileRoughBubbleSvg(activePreset.definition)
+        : compileBubbleSvg(activePreset.definition);
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -131,9 +138,13 @@ export const BubbleLabWorkspace: React.FC = () => {
     }
 
     handleSaveDraft();
-    toast.success(`Published "${activePreset.name}" to Clypra Bubble Catalog!`, {
-      description: "Preset is now validated for Clypra Desktop runtime evaluation.",
-    });
+    toast.success(
+      `Published "${activePreset.name}" to Clypra Bubble Catalog!`,
+      {
+        description:
+          "Preset is now validated for Clypra Desktop runtime evaluation.",
+      },
+    );
   };
 
   return (
@@ -180,9 +191,7 @@ export const BubbleLabWorkspace: React.FC = () => {
             onClick={handlePublish}
             disabled={!isAdmin}
             title={
-              !isAdmin
-                ? "Administrator access required to publish presets"
-                : undefined
+              !isAdmin ? "Administrator access required to publish" : undefined
             }
             className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-transform ${
               isAdmin
@@ -191,7 +200,7 @@ export const BubbleLabWorkspace: React.FC = () => {
             }`}
           >
             <Check size={14} />
-            <span>Publish Preset</span>
+            <span>Publish</span>
           </button>
         </div>
       </div>

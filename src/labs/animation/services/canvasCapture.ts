@@ -21,79 +21,88 @@ import { evaluatePresetTransform } from "./animationEvaluator";
 // ── Thumbnail Capture ─────────────────────────────────────────────────────────
 
 /**
- * Captures a PNG thumbnail from a live DOM container element.
+ * Renders a PNG thumbnail of the animation preset at the midpoint of the
+ * animation (progress = 0.5) using the same offscreen canvas renderer as
+ * `captureAnimationVideo`.
  *
- * The function clones the container, inlines computed styles onto every element
- * so that CSS is preserved inside the SVG foreignObject sandbox, then renders
- * the clone to an offscreen canvas via a data-URI Image.
+ * This approach avoids the SVG foreignObject → canvas path, which browsers
+ * block due to cross-origin CSS tainting when the DOM contains external fonts
+ * or CSS custom properties. Rendering directly to an offscreen canvas is
+ * always permitted and produces a clean, untainted result.
  *
- * Constraint: the result reflects the current DOM paint state at call time —
- * mid-animation captures may contain partial transforms applied by the browser.
- *
- * @param containerEl - The live HTMLDivElement to snapshot.
+ * @param preset      - The TextAnimationPreset to render.
+ * @param sampleText  - Text to display. Falls back to "ABC123" if empty.
+ * @param duration    - Animation duration in seconds (used for context only;
+ *                      the thumbnail is always captured at progress = 0.5).
  * @returns A PNG File named "thumbnail.png".
  */
 export async function captureAnimationThumbnail(
-  containerEl: HTMLDivElement,
+  preset: TextAnimationPreset,
+  sampleText: string,
+  duration: number,
 ): Promise<File> {
-  const { width: w, height: h } = containerEl.getBoundingClientRect();
-
-  // Clone the node so we can inline styles without mutating the live DOM
-  const clone = containerEl.cloneNode(true) as HTMLElement;
-
-  // Walk both trees in parallel and copy computed styles from the originals
-  const originalIter = document.createTreeWalker(containerEl, NodeFilter.SHOW_ELEMENT);
-  const cloneIter = document.createTreeWalker(clone, NodeFilter.SHOW_ELEMENT);
-
-  let originalNode: Node | null = originalIter.currentNode;
-  let cloneNode: Node | null = cloneIter.currentNode;
-
-  while (originalNode !== null && cloneNode !== null) {
-    if (originalNode.nodeType === Node.ELEMENT_NODE) {
-      const computed = window.getComputedStyle(originalNode as Element).cssText;
-      (cloneNode as HTMLElement).style.cssText = computed;
-    }
-    originalNode = originalIter.nextNode();
-    cloneNode = cloneIter.nextNode();
-  }
-
-  // Build SVG with foreignObject wrapping the cloned markup
-  const svgString = [
-    `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>`,
-    `<foreignObject width='100%' height='100%'>`,
-    `<div xmlns='http://www.w3.org/1999/xhtml'>${clone.outerHTML}</div>`,
-    `</foreignObject>`,
-    `</svg>`,
-  ].join("");
-
-  const svgBlob = new Blob([svgString], { type: "image/svg+xml" });
-  const svgUrl = URL.createObjectURL(svgBlob);
-
-  // Load the SVG into an Image and draw it onto a canvas
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = reject;
-    image.src = svgUrl;
-  });
+  const W = 800;
+  const H = 400;
+  // Capture at the midpoint of the animation — typically the most visually
+  // representative frame (e.g. characters partially transitioned in/out).
+  const THUMB_PROGRESS = 0.5;
 
   const offscreen = document.createElement("canvas");
-  offscreen.width = w;
-  offscreen.height = h;
-  const ctx = offscreen.getContext("2d")!;
-  ctx.drawImage(img, 0, 0);
+  offscreen.width = W;
+  offscreen.height = H;
+  const ctx = offscreen.getContext("2d");
+  if (!ctx) throw new Error("Could not obtain 2D context for thumbnail canvas");
 
-  URL.revokeObjectURL(svgUrl);
+  const characters = Array.from(sampleText || "ABC123");
+  const n = characters.length;
 
-  // Export canvas to a PNG Blob
+  // Dark background matching the preview stage.
+  ctx.fillStyle = "#08080C";
+  ctx.fillRect(0, 0, W, H);
+
+  // Measure advances and evaluate per-character transforms at the midpoint.
+  ctx.font = "bold 72px Inter, system-ui, sans-serif";
+  const advances = characters.map((ch) => ctx.measureText(ch).width);
+  const transforms = characters.map((_, i) =>
+    evaluatePresetTransform(preset, THUMB_PROGRESS, i, n),
+  );
+
+  // Centre the text cluster horizontally.
+  const totalWidth = advances.reduce(
+    (sum, adv, i) => sum + adv + transforms[i].tracking,
+    0,
+  );
+  let cursorX = (W - totalWidth) / 2;
+
+  for (let i = 0; i < n; i++) {
+    const ch = characters[i];
+    const t = transforms[i];
+    const adv = advances[i];
+
+    ctx.save();
+    ctx.translate(cursorX + t.translateX, H / 2 + t.translateY);
+    ctx.scale(t.scaleX, t.scaleY);
+    ctx.rotate((t.rotation * Math.PI) / 180);
+    ctx.globalAlpha = Math.max(0, Math.min(1, t.opacity));
+    if (t.blur > 0) {
+      ctx.filter = `blur(${t.blur}px)`;
+    }
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 72px Inter, system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(ch, 0, 0);
+    ctx.restore();
+
+    cursorX += adv + t.tracking;
+  }
+
+  // Export the offscreen canvas as a PNG Blob. The canvas is untainted so
+  // toBlob() is always permitted.
   const pngBlob = await new Promise<Blob>((resolve, reject) => {
-    offscreen.toBlob(
-      (blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error("canvas.toBlob returned null"));
-      },
-      "image/png",
-    );
+    offscreen.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("canvas.toBlob returned null for thumbnail"));
+    }, "image/png");
   });
 
   return new File([pngBlob], "thumbnail.png", { type: "image/png" });
@@ -181,7 +190,9 @@ export async function captureAnimationVideo(
 
     // Measure total cluster width to centre the text
     ctx.font = "bold 72px Inter, system-ui, sans-serif";
-    const advances: number[] = characters.map((ch) => ctx.measureText(ch).width);
+    const advances: number[] = characters.map(
+      (ch) => ctx.measureText(ch).width,
+    );
     const transforms = characters.map((_, i) =>
       evaluatePresetTransform(preset, progress, i, n),
     );

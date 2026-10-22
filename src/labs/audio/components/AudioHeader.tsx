@@ -11,44 +11,46 @@ import type { AudioLabViewMode, DemoSampleTrack } from "../types";
 
 export const DEMO_PRESET_TRACKS: DemoSampleTrack[] = [
   {
-    id: "cinematic-deep-impact-riser",
-    name: "Cinematic Deep Impact Riser",
-    category: "cinematic",
+    id: "transition-deep-impact-riser",
+    name: "Deep Impact Riser",
+    category: "transitions",
     author: "Clypra Audio Labs",
     duration: 6.4,
     bpm: 110,
     loopable: false,
-    tags: ["cinematic", "trailer", "impact", "riser", "dramatic"],
-    description: "Sub-bass rumble crescendo peaking in a clean cinematic trailer impact.",
+    tags: ["transition", "trailer", "impact", "riser", "dramatic"],
+    description: "Sub-bass rumble crescendo peaking in a clean trailer impact.",
     license: {
       type: "cc0",
       attributionRequired: false,
     },
     source: {
       provider: "Clypra Studio Archive",
-      url: "https://clypra.abdulkabirmusa.com/assets/audio/cinematic-impact.mp3",
+      url: "https://clypra.abdulkabirmusa.com/assets/audio/transition-impact.mp3",
     },
-    audioUrl: "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/transition/woosh-long-cinematic.wav",
+    audioUrl:
+      "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/transition/woosh-long-cinematic.wav",
   },
   {
-    id: "lofi-midnight-study-beat",
-    name: "Lo-Fi Midnight Study Beat",
-    category: "lo-fi",
+    id: "ambient-midnight-study",
+    name: "Midnight Study Ambience",
+    category: "ambient",
     author: "Clypra Beatmakers",
     duration: 13.59,
     bpm: 84,
     loopable: true,
-    tags: ["lo-fi", "chill", "study", "beats", "vinyl", "warm"],
-    description: "Gentle chillhop loop with vinyl crackle, electric piano chords, and a relaxed groove.",
+    tags: ["ambient", "chill", "study", "atmospheric", "calm"],
+    description: "Gentle atmospheric loop with soft pads and relaxed groove.",
     license: {
       type: "royalty-free",
       attributionRequired: true,
     },
     source: {
       provider: "Clypra Open Commons",
-      url: "https://clypra.abdulkabirmusa.com/assets/audio/midnight-beat.mp3",
+      url: "https://clypra.abdulkabirmusa.com/assets/audio/midnight-ambient.mp3",
     },
-    audioUrl: "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/music/wii-u-song-pou-song-loop.wav",
+    audioUrl:
+      "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/music/wii-u-song-pou-song-loop.wav",
   },
   {
     id: "ambient-aurora-drone",
@@ -59,7 +61,8 @@ export const DEMO_PRESET_TRACKS: DemoSampleTrack[] = [
     bpm: 60,
     loopable: true,
     tags: ["ambient", "drone", "space", "meditation", "synth"],
-    description: "Expansive ethereal background pad engineered for dialogue beds and documentary montage.",
+    description:
+      "Expansive ethereal background pad engineered for dialogue beds and documentary montage.",
     license: {
       type: "public-domain",
       attributionRequired: false,
@@ -68,7 +71,8 @@ export const DEMO_PRESET_TRACKS: DemoSampleTrack[] = [
       provider: "Freesound Public Commons",
       url: "https://freesound.org/people/crokomoko/sounds/833509/",
     },
-    audioUrl: "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/chill/stay-with-me-please-i-need-you-here.wav",
+    audioUrl:
+      "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/chill/stay-with-me-please-i-need-you-here.wav",
   },
 ];
 
@@ -97,13 +101,16 @@ export function AudioHeader({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold tracking-tight text-white">Audio Lab</h1>
+              <h1 className="text-sm font-bold tracking-tight text-white">
+                Audio Lab
+              </h1>
               <span className="rounded-md border border-teal-500/20 bg-teal-500/10 px-2 py-0.5 text-[10px] font-semibold text-teal-300">
                 Studio Edition
               </span>
             </div>
             <p className="text-[11px] text-[#88889C]">
-              Interactive waveform inspection, metadata synthesis, and direct R2 delivery
+              Interactive waveform inspection, metadata synthesis, and direct R2
+              delivery
             </p>
           </div>
         </div>
@@ -119,7 +126,10 @@ export function AudioHeader({
                 : "text-[#88889C] hover:text-white"
             }`}
           >
-            <SlidersHorizontal size={14} className={viewMode === "studio" ? "text-teal-400" : ""} />
+            <SlidersHorizontal
+              size={14}
+              className={viewMode === "studio" ? "text-teal-400" : ""}
+            />
             <span>Studio Authoring</span>
           </button>
 
@@ -132,7 +142,10 @@ export function AudioHeader({
                 : "text-[#88889C] hover:text-white"
             }`}
           >
-            <Library size={14} className={viewMode === "catalog" ? "text-purple-400" : ""} />
+            <Library
+              size={14}
+              className={viewMode === "catalog" ? "text-purple-400" : ""}
+            />
             <span>Catalog Explorer</span>
             {catalogCount > 0 && (
               <span className="rounded-full bg-purple-500/20 px-1.5 py-0.2 text-[10px] font-mono font-medium text-purple-300">
@@ -167,9 +180,14 @@ export function AudioHeader({
                       onClick={() => onLoadSample(sample)}
                       className="flex w-full items-start gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-gray-300 transition-colors hover:bg-teal-500/10 hover:text-teal-200"
                     >
-                      <Music size={12} className="mt-0.5 shrink-0 text-teal-400" />
+                      <Music
+                        size={12}
+                        className="mt-0.5 shrink-0 text-teal-400"
+                      />
                       <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium">{sample.name}</div>
+                        <div className="truncate font-medium">
+                          {sample.name}
+                        </div>
                         <div className="text-[10px] text-[#7A7A8E]">
                           {sample.category} • {sample.duration}s
                         </div>

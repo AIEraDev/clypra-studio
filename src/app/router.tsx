@@ -55,7 +55,7 @@ const METADATA = {
   },
   audioLab: {
     canonical: "https://clypra.abdulkabirmusa.com/studio/audio",
-    description: "Prepare, validate, and publish editor-ready audio assets through Clypra Studio.",
+    description: "Admin audio authoring lab: prepare, validate, and publish editor-ready audio assets through Clypra Studio.",
     title: "Clypra Studio - Audio Lab",
   },
   stickerLab: {
@@ -239,7 +239,17 @@ const routes: RouteObject[] = [
   },
   {
     path: `${STUDIO_RAIL_ROUTES.audio}/*`,
-    element: <AuthLabRoute metadata={METADATA.audioLab} label="the Audio Lab"><AudioLabPage /></AuthLabRoute>,
+    element: (
+      <DocumentRoute metadata={METADATA.audioLab}>
+        <AdminRoute label="the Audio Lab">
+          {withSuspense(<AudioLabPage />)}
+        </AdminRoute>
+      </DocumentRoute>
+    ),
+  },
+  {
+    path: "/audio-lab",
+    element: <Navigate to={STUDIO_RAIL_ROUTES.audio} replace />,
   },
   {
     path: `${STUDIO_RAIL_ROUTES.stickers}/*`,

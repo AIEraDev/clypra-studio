@@ -135,7 +135,7 @@ export const AnimationPublishModal: React.FC<AnimationPublishModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#2A2A38]">
           <div>
-            <h2 className="text-sm font-bold text-white">Publish Preset</h2>
+            <h2 className="text-sm font-bold text-white">Publish</h2>
             <p className="text-[11px] text-[#888899] mt-0.5">
               Complete all fields before publishing{" "}
               <span className="text-violet-300 font-semibold">
@@ -364,7 +364,7 @@ export const AnimationPublishModal: React.FC<AnimationPublishModalProps> = ({
                 : "bg-[#2A2A38] text-[#555568] cursor-not-allowed"
             }`}
           >
-            Publish Preset
+            Publish
           </button>
         </div>
       </div>

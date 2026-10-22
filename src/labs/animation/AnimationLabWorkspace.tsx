@@ -254,7 +254,7 @@ export const AnimationLabWorkspace: React.FC = () => {
    * canvas and uploads them to R2 before patching the preset record.
    *
    * @deprecated Prefer the full-media publish flow triggered by the
-   *   "Publish Preset" button in the workspace header. This path is retained
+   *   "Publish" button in the workspace header. This path is retained
    *   for the catalog modal, which provides a quick re-publish of already-
    *   known presets where media regeneration is not needed.
    */
@@ -326,28 +326,37 @@ export const AnimationLabWorkspace: React.FC = () => {
     }
 
     setIsCapturing(true);
+
+    // ── Thumbnail capture (best-effort, independent of video) ─────────────
+    // Uses the same offscreen canvas renderer as captureAnimationVideo —
+    // renders a single frame at progress=0.5 and exports it as PNG.
+    // No DOM dependency; never taints the canvas.
+    let thumb: File | null = null;
     try {
-      // Capture thumbnail (DOM → canvas → PNG) and video in parallel.
-      // captureAnimationVideo returns null when MediaRecorder is unavailable —
-      // the modal gracefully accepts null and lets the user upload manually.
-      const [thumb, vid] = await Promise.all([
-        stageContainerRef.current
-          ? captureAnimationThumbnail(stageContainerRef.current)
-          : Promise.resolve(null),
-        captureAnimationVideo(activePreset, sampleText, duration),
-      ]);
-      setCapturedThumbnail(thumb);
-      setCapturedVideo(vid);
-    } catch {
-      toast.error(
-        "Failed to capture preview assets. You can still upload manually.",
+      thumb = await captureAnimationThumbnail(
+        activePreset,
+        sampleText,
+        duration,
       );
-      setCapturedThumbnail(null);
-      setCapturedVideo(null);
-    } finally {
-      setIsCapturing(false);
+    } catch (err) {
+      // Non-fatal — modal allows manual upload.
+      console.warn("[AnimationLab] Thumbnail capture failed:", err);
     }
 
+    // ── Video capture (best-effort, independent of thumbnail) ─────────────
+    // Returns null when MediaRecorder / captureStream is unavailable; the
+    // modal handles that gracefully with a manual upload fallback.
+    let vid: File | null = null;
+    try {
+      vid = await captureAnimationVideo(activePreset, sampleText, duration);
+    } catch (err) {
+      // Non-fatal — modal allows manual upload.
+      console.warn("[AnimationLab] Video capture failed:", err);
+    }
+
+    setCapturedThumbnail(thumb);
+    setCapturedVideo(vid);
+    setIsCapturing(false);
     setIsPublishModalOpen(true);
   };
 
@@ -445,9 +454,7 @@ export const AnimationLabWorkspace: React.FC = () => {
             onClick={handlePublish}
             disabled={!isAdmin || isCapturing}
             title={
-              !isAdmin
-                ? "Administrator access required to publish presets"
-                : undefined
+              !isAdmin ? "Administrator access required to publish" : undefined
             }
             className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-transform ${
               isAdmin && !isCapturing
@@ -463,7 +470,7 @@ export const AnimationLabWorkspace: React.FC = () => {
             ) : (
               <>
                 <Check size={14} />
-                <span>Publish Preset</span>
+                <span>Publish</span>
               </>
             )}
           </button>

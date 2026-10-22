@@ -56,6 +56,7 @@ export default defineConfig(() => {
     },
     optimizeDeps: {
       include: ["react", "react-dom", "@floating-ui/react"],
+      exclude: ["@ffmpeg/ffmpeg", "@ffmpeg/util"],
       entries: [
         // Studio app entry (always included by default, listed explicitly)
         "src/main.tsx",

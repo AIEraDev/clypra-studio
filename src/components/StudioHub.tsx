@@ -82,13 +82,6 @@ export const standardDestinations: StudioDestination[] = [
     accent: "#2dd4bf",
   },
   {
-    href: "/studio/audio",
-    label: "Audio Library",
-    description: "Manage sounds and publish audio assets used by the editor.",
-    icon: Music2,
-    accent: "#fbbf24",
-  },
-  {
     href: "/studio/overlays",
     label: "Overlay Workspace",
     description: "Compose native overlays, layers, and reusable visual components.",
@@ -126,6 +119,15 @@ export const standardDestinations: StudioDestination[] = [
 ];
 
 export const adminDestinations: StudioDestination[] = [
+  {
+    href: "/studio/audio",
+    label: "Audio Lab",
+    description: "Author, calibrate, validate, and publish lossless audio assets into production catalog.",
+    icon: Music2,
+    accent: "#6fffdc",
+    status: "Admin Lab",
+    adminOnly: true,
+  },
   {
     href: "/studio/animation-lab",
     label: "Animation Lab",
