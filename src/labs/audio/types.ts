@@ -1,16 +1,68 @@
 export const AUDIO_CATEGORIES = [
-  "music", // General music library
-  "cinematic", // YouTube creators, trailers, montages
-  "upbeat", // Social content, reels, highlights
-  "lo-fi", // Study/chill/productivity niche
-  "hip-hop", // Urban & modern beats
-  "ambient", // Background soundscapes
-  "sfx", // Sound effects & foley
-  "transition", // Whooshes, risers, impacts
-  "ui", // Clicks, pops, notifications
+  "music", // Background music and soundtracks
+  "sound-effects", // General sound effects (impacts, whooshes, etc.)
+  "transitions", // Transition sound effects (swooshes, risers, etc.)
+  "ambient", // Atmospheric and background ambience
+  "ui-interface", // UI sounds (clicks, beeps, notifications)
 ] as const;
 
 export type AudioCategory = (typeof AUDIO_CATEGORIES)[number];
+
+export const CATEGORY_TAG_SUGGESTIONS: Record<
+  AudioCategory,
+  readonly string[]
+> = {
+  music: [
+    "lo-fi",
+    "cinematic",
+    "upbeat",
+    "hip-hop",
+    "chill",
+    "indie",
+    "electronic",
+    "acoustic",
+    "jazz",
+    "ambient-music",
+  ],
+  "sound-effects": [
+    "impact",
+    "whoosh",
+    "riser",
+    "stinger",
+    "glitch",
+    "pop",
+    "hit",
+    "sweep",
+  ],
+  transitions: [
+    "whoosh",
+    "swipe",
+    "sweep",
+    "reverse-cymbal",
+    "riser",
+    "transition-sfx",
+  ],
+  ambient: [
+    "room-tone",
+    "crowd",
+    "city",
+    "nature",
+    "rain",
+    "office",
+    "atmosphere",
+    "background-noise",
+  ],
+  "ui-interface": [
+    "click",
+    "notification",
+    "typing",
+    "button",
+    "beep",
+    "alert",
+    "ui-sound",
+    "interface-sound",
+  ],
+};
 
 export const LICENSE_TYPES = [
   "cc0",
