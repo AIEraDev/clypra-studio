@@ -280,15 +280,22 @@ export const AnimationLabWorkspace: React.FC = () => {
 
     const token = getStoredAuthToken();
     try {
-      const response = await fetch(`${getStudioApiBaseUrl()}/text-animations`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // NOTE: The correct endpoint for publishing/updating animation presets
+      // (with optional thumbnail/video) is POST /text-animations/upload.
+      // This legacy path skips media capture — thumbnail and video will be
+      // empty until the preset is re-published via the full Publish button flow.
+      const response = await fetch(
+        `${getStudioApiBaseUrl()}/text-animations/upload`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: "include",
+          body: JSON.stringify({ animation: preset }),
         },
-        credentials: "include",
-        body: JSON.stringify(preset),
-      });
+      );
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(
@@ -296,7 +303,7 @@ export const AnimationLabWorkspace: React.FC = () => {
         );
       }
 
-      const publishedPreset = (result.preset ?? preset) as TextAnimationPreset;
+      const publishedPreset = (result.animation ?? result.preset ?? preset) as TextAnimationPreset;
       setPresets((current) => {
         const next = current.map((candidate) =>
           candidate.id === publishedPreset.id ? publishedPreset : candidate,
@@ -345,11 +352,18 @@ export const AnimationLabWorkspace: React.FC = () => {
     }
 
     // ── Video capture (best-effort, independent of thumbnail) ─────────────
+    // Use previewLoopDuration from the preset so the captured video always
+    // represents a full canonical loop cycle (default 1.2s), regardless of
+    // where the scrubber is set. Falls back to defaultDuration → 0.8s.
     // Returns null when MediaRecorder / captureStream is unavailable; the
     // modal handles that gracefully with a manual upload fallback.
+    const videoDuration =
+      activePreset.previewLoopDuration ||
+      activePreset.defaultDuration ||
+      0.8;
     let vid: File | null = null;
     try {
-      vid = await captureAnimationVideo(activePreset, sampleText, duration);
+      vid = await captureAnimationVideo(activePreset, sampleText, videoDuration);
     } catch (err) {
       // Non-fatal — modal allows manual upload.
       console.warn("[AnimationLab] Video capture failed:", err);
@@ -362,21 +376,7 @@ export const AnimationLabWorkspace: React.FC = () => {
   };
 
   const handlePublishConfirm = async (payload: PublishPayload) => {
-    // ── 1. Convert browser File objects to base64 data URLs ───────────────
-    // The API accepts base64 data URLs in the JSON body — consistent with the
-    // text-effects and filters publish flows — so no separate multipart upload
-    // is needed.
-    const [thumbnailDataUrl, previewVideoDataUrl] = await Promise.all([
-      fileToDataUrl(payload.thumbnailFile),
-      fileToDataUrl(payload.videoFile),
-    ]);
-
-    // ── 2. Extract the video file extension from the file name ────────────
-    const videoExtMatch = payload.videoFile.name.match(/\.(mp4|webm)$/i);
-    const previewVideoExt =
-      (videoExtMatch?.[1]?.toLowerCase() as "mp4" | "webm") ?? "mp4";
-
-    // ── 3. Enrich the preset with the selected category ───────────────────
+    // ── 1. Enrich the preset with the selected category ───────────────────
     const presetWithMeta: TextAnimationPreset = {
       ...payload.preset,
       category: payload.category,
@@ -384,12 +384,19 @@ export const AnimationLabWorkspace: React.FC = () => {
       // after it writes the binaries to R2 and derives the public URLs.
     };
 
-    // ── 4. Upload via hook: preset JSON + media binaries → API → R2 ───────
+    // ── 2. Determine video extension from the file name ───────────────────
+    const videoExtMatch = payload.videoFile.name.match(/\.(mp4|webm)$/i);
+    const previewVideoExt =
+      (videoExtMatch?.[1]?.toLowerCase() as "mp4" | "webm") ?? "webm";
+
+    // ── 3. Upload via hook: raw File objects streamed as multipart ─────────
+    // The hook sends multipart/form-data when videoFile / thumbnailFile are
+    // present, avoiding 1.33× base64 inflation for binary video payloads.
     try {
       const result = await uploadAnimationPreset({
         preset: presetWithMeta,
-        thumbnailDataUrl,
-        previewVideoDataUrl,
+        videoFile: payload.videoFile,
+        thumbnailFile: payload.thumbnailFile,
         previewVideoExt,
       });
 
