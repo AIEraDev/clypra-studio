@@ -17,6 +17,7 @@ import {
   Tag,
   CheckCircle2,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import type { TextAnimationPreset } from "../../../types/animation";
 
@@ -28,6 +29,8 @@ interface AnimationPublishModalProps {
   initialThumbnailFile?: File | null;
   /** Auto-captured preview video file (may be null if MediaRecorder is unavailable). */
   initialVideoFile?: File | null;
+  /** Whether the upload is in progress */
+  isUploading?: boolean;
 }
 
 export interface PublishPayload {
@@ -45,6 +48,7 @@ export const AnimationPublishModal: React.FC<AnimationPublishModalProps> = ({
   onClose,
   initialThumbnailFile,
   initialVideoFile,
+  isUploading = false,
 }) => {
   const [videoFile, setVideoFile] = useState<File | null>(
     initialVideoFile ?? null,
@@ -351,20 +355,32 @@ export const AnimationPublishModal: React.FC<AnimationPublishModalProps> = ({
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#2A2A38]">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg text-xs font-semibold text-[#888899] hover:text-white border border-[#2A2A38] hover:border-[#444458] transition-colors"
+            disabled={isUploading}
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              isUploading
+                ? "text-[#555568] border border-[#2A2A38] cursor-not-allowed"
+                : "text-[#888899] hover:text-white border border-[#2A2A38] hover:border-[#444458]"
+            }`}
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!canPublish}
-            className={`px-5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              canPublish
+            disabled={!canPublish || isUploading}
+            className={`flex items-center gap-1.5 px-5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              canPublish && !isUploading
                 ? "bg-violet-600 hover:bg-violet-500 text-white hover:scale-105"
                 : "bg-[#2A2A38] text-[#555568] cursor-not-allowed"
             }`}
           >
-            Publish
+            {isUploading ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                <span>Publishing…</span>
+              </>
+            ) : (
+              <span>Publish</span>
+            )}
           </button>
         </div>
       </div>

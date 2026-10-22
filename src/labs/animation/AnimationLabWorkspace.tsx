@@ -84,7 +84,8 @@ function fileToDataUrl(file: File): Promise<string> {
 
 export const AnimationLabWorkspace: React.FC = () => {
   const isAdmin = useIsAdmin();
-  const { uploadAnimationPreset } = useAnimationR2Upload();
+  const { uploadAnimationPreset, status: uploadStatus } =
+    useAnimationR2Upload();
   // Load custom drafts or initialize with starter presets
   const [presets, setPresets] = useState<TextAnimationPreset[]>(() => {
     try {
@@ -361,8 +362,6 @@ export const AnimationLabWorkspace: React.FC = () => {
   };
 
   const handlePublishConfirm = async (payload: PublishPayload) => {
-    setIsPublishModalOpen(false);
-
     // ── 1. Convert browser File objects to base64 data URLs ───────────────
     // The API accepts base64 data URLs in the JSON body — consistent with the
     // text-effects and filters publish flows — so no separate multipart upload
@@ -405,8 +404,15 @@ export const AnimationLabWorkspace: React.FC = () => {
           return next;
         });
       }
+
+      // Close modal only on success
+      setIsPublishModalOpen(false);
+      toast.success(`Published "${result?.animation.name}" successfully!`);
     } catch (err) {
-      // Errors are surfaced as toasts by the hook; nothing more to do here.
+      // Errors are surfaced as toasts by the hook; keep modal open for retry
+      toast.error(
+        err instanceof Error ? err.message : "Failed to publish animation",
+      );
     }
   };
 
@@ -542,6 +548,7 @@ export const AnimationLabWorkspace: React.FC = () => {
           }}
           initialThumbnailFile={capturedThumbnail}
           initialVideoFile={capturedVideo}
+          isUploading={uploadStatus === "uploading"}
         />
       )}
     </div>
