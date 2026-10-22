@@ -12,7 +12,8 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
     bpm: 110,
     loopable: false,
     tags: ["cinematic", "trailer", "impact", "riser", "dramatic", "sub-bass"],
-    description: "Sub-bass rumble crescendo peaking in a clean cinematic trailer impact.",
+    description:
+      "Sub-bass rumble crescendo peaking in a clean cinematic trailer impact.",
     license: {
       type: "cc0",
       attributionRequired: false,
@@ -21,7 +22,8 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
       provider: "Clypra Studio Archive",
       url: "https://clypra.abdulkabirmusa.com/assets/audio/cinematic-impact.mp3",
     },
-    audioUrl: "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/transition/woosh-long-cinematic.wav",
+    audioUrl:
+      "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/transition/woosh-long-cinematic.wav",
     published: true,
   },
   {
@@ -33,7 +35,8 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
     bpm: 92,
     loopable: true,
     tags: ["hip-hop", "synthwave", "beats", "lo-fi", "chill", "modern"],
-    description: "Smooth 92 BPM urban beat with warm vintage keys and sidechained analog bass.",
+    description:
+      "Smooth 92 BPM urban beat with warm vintage keys and sidechained analog bass.",
     license: {
       type: "royalty-free",
       attributionRequired: true,
@@ -42,7 +45,8 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
       provider: "Clypra Creative Commons",
       url: "https://clypra.abdulkabirmusa.com/assets/audio/cyber-groove.mp3",
     },
-    audioUrl: "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/music/wii-u-song-pou-song-loop.wav",
+    audioUrl:
+      "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/music/wii-u-song-pou-song-loop.wav",
     published: true,
   },
   {
@@ -54,7 +58,8 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
     bpm: 65,
     loopable: true,
     tags: ["ambient", "drone", "meditation", "atmospheric", "peaceful"],
-    description: "Serene atmospheric drone textured with organic tape noise and crystalline pads.",
+    description:
+      "Serene atmospheric drone textured with organic tape noise and crystalline pads.",
     license: {
       type: "public-domain",
       attributionRequired: false,
@@ -63,7 +68,8 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
       provider: "Freesound Public Commons",
       url: "https://freesound.org/people/crokomoko/sounds/833509/",
     },
-    audioUrl: "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/chill/stay-with-me-please-i-need-you-here.wav",
+    audioUrl:
+      "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/chill/stay-with-me-please-i-need-you-here.wav",
     published: true,
   },
   {
@@ -74,7 +80,8 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
     duration: 0.45,
     loopable: false,
     tags: ["transition", "swoosh", "fast", "motion", "clean"],
-    description: "Quick airy cut transition sound effect engineered for video cuts and pans.",
+    description:
+      "Quick airy cut transition sound effect engineered for video cuts and pans.",
     license: {
       type: "cc-by",
       attributionRequired: true,
@@ -83,7 +90,8 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
       provider: "Freesound",
       url: "https://freesound.org/people/lesaucisson/sounds/585257/",
     },
-    audioUrl: "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/transition/swoosh-1.mp3",
+    audioUrl:
+      "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/transition/swoosh-1.mp3",
     published: true,
   },
   {
@@ -94,7 +102,8 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
     duration: 0.52,
     loopable: false,
     tags: ["ui", "click", "tap", "minimal", "interaction"],
-    description: "Polished click sound effect for buttons, modal closures, and app micro-interactions.",
+    description:
+      "Polished click sound effect for buttons, modal closures, and app micro-interactions.",
     license: {
       type: "cc0",
       attributionRequired: false,
@@ -103,7 +112,8 @@ export const FALLBACK_CATALOG_TRACKS: AudioAsset[] = [
       provider: "Freesound",
       url: "https://freesound.org/people/AleXZavesa/sounds/853900/",
     },
-    audioUrl: "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/sfx/water-drop-tap-4.wav",
+    audioUrl:
+      "https://raw.githubusercontent.com/AIEraDev/clypra-api/main/data/audio/sfx/water-drop-tap-4.wav",
     published: true,
   },
 ];
@@ -114,7 +124,9 @@ export function useAudioCatalog() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [durationFilter, setDurationFilter] = useState<"all" | "short" | "medium" | "long">("all");
+  const [durationFilter, setDurationFilter] = useState<
+    "all" | "short" | "medium" | "long"
+  >("all");
   const [activeTrack, setActiveTrack] = useState<AudioAsset | null>(null);
 
   const fetchCatalog = useCallback(async () => {
@@ -122,22 +134,39 @@ export function useAudioCatalog() {
     setError(null);
     try {
       const baseUrl = getStudioApiBaseUrl();
-      const res = await fetch(`${baseUrl}/audio`, {
-        headers: { Accept: "application/json" },
-      });
+      const categories = [
+        "music",
+        "cinematic",
+        "upbeat",
+        "lo-fi",
+        "hip-hop",
+        "ambient",
+        "sfx",
+        "transition",
+        "ui",
+      ];
 
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: Failed to load audio catalog`);
-      }
+      const results = await Promise.all(
+        categories.map(async (category) => {
+          const res = await fetch(`${baseUrl}/audio/${category}`, {
+            headers: { Accept: "application/json" },
+          });
+          if (!res.ok) return [];
+          const data = await res.json();
+          return Array.isArray(data) ? data : [];
+        }),
+      );
 
-      const data = (await res.json()) as AudioAsset[];
+      const data = results.flat();
       if (Array.isArray(data) && data.length > 0) {
-        setTracks(data);
+        setTracks(data as AudioAsset[]);
       } else {
         setTracks(FALLBACK_CATALOG_TRACKS);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load audio catalog");
+      setError(
+        err instanceof Error ? err.message : "Failed to load audio catalog",
+      );
       // Keep fallback tracks so UI remains usable
       setTracks(FALLBACK_CATALOG_TRACKS);
     } finally {
@@ -152,13 +181,20 @@ export function useAudioCatalog() {
   const filteredTracks = useMemo(() => {
     return tracks.filter((track) => {
       // Category filter
-      if (selectedCategory !== "all" && track.category?.toLowerCase() !== selectedCategory.toLowerCase()) {
+      if (
+        selectedCategory !== "all" &&
+        track.category?.toLowerCase() !== selectedCategory.toLowerCase()
+      ) {
         return false;
       }
 
       // Duration filter
       if (durationFilter === "short" && track.duration >= 5) return false;
-      if (durationFilter === "medium" && (track.duration < 5 || track.duration > 30)) return false;
+      if (
+        durationFilter === "medium" &&
+        (track.duration < 5 || track.duration > 30)
+      )
+        return false;
       if (durationFilter === "long" && track.duration <= 30) return false;
 
       // Search query filter
@@ -166,7 +202,9 @@ export function useAudioCatalog() {
         const query = searchQuery.toLowerCase().trim();
         const matchesName = track.name?.toLowerCase().includes(query);
         const matchesAuthor = track.author?.toLowerCase().includes(query);
-        const matchesTags = track.tags?.some((t) => t.toLowerCase().includes(query));
+        const matchesTags = track.tags?.some((t) =>
+          t.toLowerCase().includes(query),
+        );
         const matchesDesc = track.description?.toLowerCase().includes(query);
         if (!matchesName && !matchesAuthor && !matchesTags && !matchesDesc) {
           return false;

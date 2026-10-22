@@ -66,7 +66,11 @@ export function useAnimationR2Upload() {
   const queryClient = useQueryClient();
   const apiBase = getStudioApiBaseUrl();
 
-  const mutation = useMutation<AnimationUploadResult, Error, AnimationUploadPayload>({
+  const mutation = useMutation<
+    AnimationUploadResult,
+    Error,
+    AnimationUploadPayload
+  >({
     mutationFn: async (payload) => {
       const token = getStoredAuthToken();
 
@@ -78,7 +82,7 @@ export function useAnimationR2Upload() {
         },
         credentials: "include",
         body: JSON.stringify({
-          preset: payload.preset,
+          animation: payload.preset,
           thumbnailDataUrl: payload.thumbnailDataUrl,
           previewVideoDataUrl: payload.previewVideoDataUrl,
           previewVideoExt: payload.previewVideoExt,
@@ -86,11 +90,13 @@ export function useAnimationR2Upload() {
       });
 
       // Attempt to parse error details regardless of status code.
-      const data = await response.json().catch(() => ({})) as any;
+      const data = (await response.json().catch(() => ({}))) as any;
 
       if (!response.ok) {
         throw new Error(
-          data?.error ?? data?.message ?? `Publish failed (HTTP ${response.status})`,
+          data?.error ??
+            data?.message ??
+            `Publish failed (HTTP ${response.status})`,
         );
       }
 
