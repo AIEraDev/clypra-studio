@@ -13,7 +13,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@clypra-studio/engine": "^1.10.1",
+    "@clypra-studio/engine": "^1.10.2",
     "@clypra-studio/feature-providers": "^0.1.2",
     "@clypra-studio/native-render-wasm": "^0.3.2",
     "@clypra-studio/runtime": "^0.2.4",
@@ -21,6 +21,9 @@
     "@clypra-studio/types": "^0.6.2",
     "@clypra-studio/ui": "0.3.1",
     "@clypra/ui-color-picker": "^0.2.2",
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@floating-ui/react": "^0.27.20",
     "@lottiefiles/react-lottie-player": "^3.6.0",
     "@tailwindcss/vite": "^4.1.14",
