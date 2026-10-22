@@ -134,11 +134,20 @@ export async function captureAnimationVideo(
   fps = 30,
 ): Promise<File | null> {
   // Guard: MediaRecorder and captureStream must be available
+  if (typeof MediaRecorder === "undefined") {
+    console.warn(
+      "[canvasCapture] Video capture unavailable: MediaRecorder API not supported by this browser",
+    );
+    return null;
+  }
+
   if (
-    typeof MediaRecorder === "undefined" ||
     typeof (HTMLCanvasElement.prototype as unknown as Record<string, unknown>)
       .captureStream === "undefined"
   ) {
+    console.warn(
+      "[canvasCapture] Video capture unavailable: HTMLCanvasElement.captureStream not supported by this browser",
+    );
     return null;
   }
 
@@ -158,7 +167,13 @@ export async function captureAnimationVideo(
     "video/mp4",
   ];
   const mimeType = candidates.find((m) => MediaRecorder.isTypeSupported(m));
-  if (!mimeType) return null;
+  if (!mimeType) {
+    console.warn(
+      "[canvasCapture] Video capture unavailable: No supported video codec found. Tested:",
+      candidates,
+    );
+    return null;
+  }
 
   const stream = (
     offscreen as unknown as { captureStream: (fps: number) => MediaStream }

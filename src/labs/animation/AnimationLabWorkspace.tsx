@@ -415,9 +415,26 @@ export const AnimationLabWorkspace: React.FC = () => {
         sampleText,
         videoDuration,
       );
+
+      if (!vid) {
+        // Guard clauses returned null - browser doesn't support video capture
+        console.warn(
+          "[AnimationLab] Video capture not supported in this browser. " +
+            "MediaRecorder or canvas.captureStream unavailable. " +
+            "User must upload video manually.",
+        );
+        toast.warning(
+          "Automatic video capture is not available in your browser. Please upload a preview video manually in the publish dialog.",
+          { duration: 6000 },
+        );
+      }
     } catch (err) {
-      // Non-fatal — modal allows manual upload.
-      console.warn("[AnimationLab] Video capture failed:", err);
+      // Unexpected error during capture
+      console.warn("[AnimationLab] Video capture failed with error:", err);
+      toast.warning(
+        "Video capture failed. Please upload a preview video manually.",
+        { duration: 5000 },
+      );
     }
 
     setCapturedThumbnail(thumb);
