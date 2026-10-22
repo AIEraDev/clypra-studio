@@ -303,10 +303,18 @@ export const AnimationLabWorkspace: React.FC = () => {
         );
       }
 
-      const publishedPreset = (result.animation ?? result.preset ?? preset) as TextAnimationPreset;
+      const publishedPreset = (result.animation ??
+        result.preset ??
+        preset) as TextAnimationPreset;
       setPresets((current) => {
         const next = current.map((candidate) =>
-          candidate.id === publishedPreset.id ? publishedPreset : candidate,
+          candidate.id === publishedPreset.id
+            ? {
+                ...candidate,
+                thumbnailUrl: publishedPreset.thumbnailUrl,
+                previewVideoUrl: publishedPreset.previewVideoUrl,
+              }
+            : candidate,
         );
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         return next;
@@ -358,12 +366,14 @@ export const AnimationLabWorkspace: React.FC = () => {
     // Returns null when MediaRecorder / captureStream is unavailable; the
     // modal handles that gracefully with a manual upload fallback.
     const videoDuration =
-      activePreset.previewLoopDuration ||
-      activePreset.defaultDuration ||
-      0.8;
+      activePreset.previewLoopDuration || activePreset.defaultDuration || 0.8;
     let vid: File | null = null;
     try {
-      vid = await captureAnimationVideo(activePreset, sampleText, videoDuration);
+      vid = await captureAnimationVideo(
+        activePreset,
+        sampleText,
+        videoDuration,
+      );
     } catch (err) {
       // Non-fatal — modal allows manual upload.
       console.warn("[AnimationLab] Video capture failed:", err);
@@ -405,7 +415,13 @@ export const AnimationLabWorkspace: React.FC = () => {
       if (result?.animation) {
         setPresets((current) => {
           const next = current.map((candidate) =>
-            candidate.id === result.animation.id ? result.animation : candidate,
+            candidate.id === result.animation.id
+              ? {
+                  ...candidate,
+                  thumbnailUrl: result.animation.thumbnailUrl,
+                  previewVideoUrl: result.animation.previewVideoUrl,
+                }
+              : candidate,
           );
           localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
           return next;
