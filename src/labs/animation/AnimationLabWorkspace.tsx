@@ -69,6 +69,17 @@ function mergeStarterPresets(
 // ── Utilities ──────────────────────────────────────────────────────────────
 
 /**
+ * Validates that a preset has a valid tracks array.
+ * Returns true if the preset has tracks and it's a non-empty array.
+ *
+ * This guard prevents runtime errors when presets are loaded from corrupted
+ * localStorage or when API summaries (which lack tracks) are merged into state.
+ */
+function isValidPreset(preset: TextAnimationPreset): boolean {
+  return preset.tracks != null && Array.isArray(preset.tracks);
+}
+
+/**
  * Convert a browser File object to a base64 data URL.
  * Used to serialise binary uploads into the JSON body sent to the API.
  */
@@ -92,10 +103,34 @@ export const AnimationLabWorkspace: React.FC = () => {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0)
-          return mergeStarterPresets(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Filter out any presets without valid tracks array
+          const validPresets = parsed.filter((preset) => {
+            const isValid = isValidPreset(preset);
+            if (!isValid) {
+              console.warn(
+                `[AnimationLab] Filtered out invalid preset "${preset?.id || "unknown"}" - missing or invalid tracks array`,
+              );
+            }
+            return isValid;
+          });
+
+          if (validPresets.length === 0) {
+            console.warn(
+              "[AnimationLab] All saved presets were invalid, falling back to starter presets",
+            );
+            return STARTER_ANIMATION_PRESETS;
+          }
+
+          return mergeStarterPresets(validPresets);
+        }
       }
-    } catch (_) {}
+    } catch (err) {
+      console.error(
+        "[AnimationLab] Failed to load presets from localStorage:",
+        err,
+      );
+    }
     return STARTER_ANIMATION_PRESETS;
   });
 
@@ -273,8 +308,14 @@ export const AnimationLabWorkspace: React.FC = () => {
       toast.error("Preset name cannot be empty.");
       return null;
     }
-    if (preset.tracks.length === 0) {
-      toast.error("Preset must have at least one animated property track.");
+    if (
+      !preset.tracks ||
+      !Array.isArray(preset.tracks) ||
+      preset.tracks.length === 0
+    ) {
+      toast.error(
+        "Preset must have a valid tracks array with at least one property.",
+      );
       return null;
     }
 
@@ -412,6 +453,8 @@ export const AnimationLabWorkspace: React.FC = () => {
 
       // Reflect the API-returned animation (with populated media URLs) in the
       // local preset list so the browser card updates without a full reload.
+      // Only patch in the media URLs from the API response while preserving
+      // the full local preset data (especially tracks).
       if (result?.animation) {
         setPresets((current) => {
           const next = current.map((candidate) =>

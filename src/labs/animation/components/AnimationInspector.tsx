@@ -13,24 +13,53 @@ interface AnimationInspectorProps {
   onUpdatePreset: (updated: TextAnimationPreset) => void;
 }
 
-const PROPERTY_OPTIONS: Array<{ property: AnimatableProperty; label: string; defaultFrom: number; defaultTo: number }> = [
+const PROPERTY_OPTIONS: Array<{
+  property: AnimatableProperty;
+  label: string;
+  defaultFrom: number;
+  defaultTo: number;
+}> = [
   { property: "opacity", label: "Opacity", defaultFrom: 0, defaultTo: 1 },
-  { property: "translateY", label: "Translate Y", defaultFrom: 40, defaultTo: 0 },
-  { property: "translateX", label: "Translate X", defaultFrom: -40, defaultTo: 0 },
-  { property: "scale", label: "Scale (Uniform)", defaultFrom: 0.5, defaultTo: 1 },
+  {
+    property: "translateY",
+    label: "Translate Y",
+    defaultFrom: 40,
+    defaultTo: 0,
+  },
+  {
+    property: "translateX",
+    label: "Translate X",
+    defaultFrom: -40,
+    defaultTo: 0,
+  },
+  {
+    property: "scale",
+    label: "Scale (Uniform)",
+    defaultFrom: 0.5,
+    defaultTo: 1,
+  },
   { property: "rotation", label: "Rotation", defaultFrom: -45, defaultTo: 0 },
   { property: "skewX", label: "Skew X", defaultFrom: 15, defaultTo: 0 },
   { property: "blur", label: "Blur", defaultFrom: 12, defaultTo: 0 },
-  { property: "tracking", label: "Tracking (Kerning)", defaultFrom: 8, defaultTo: 0 },
+  {
+    property: "tracking",
+    label: "Tracking (Kerning)",
+    defaultFrom: 8,
+    defaultTo: 0,
+  },
 ];
 
 export const AnimationInspector: React.FC<AnimationInspectorProps> = ({
   preset,
   onUpdatePreset,
 }) => {
-  const handleAddTrack = (prop: AnimatableProperty, from: number, to: number) => {
+  const handleAddTrack = (
+    prop: AnimatableProperty,
+    from: number,
+    to: number,
+  ) => {
     // Avoid duplicate tracks of the same property
-    if (preset.tracks.some((t) => t.property === prop)) return;
+    if ((preset.tracks ?? []).some((t) => t.property === prop)) return;
 
     const newTrack = {
       property: prop,
@@ -42,7 +71,7 @@ export const AnimationInspector: React.FC<AnimationInspectorProps> = ({
 
     onUpdatePreset({
       ...preset,
-      tracks: [...preset.tracks, newTrack],
+      tracks: [...(preset.tracks ?? []), newTrack],
     });
   };
 
@@ -63,7 +92,9 @@ export const AnimationInspector: React.FC<AnimationInspectorProps> = ({
             <input
               type="text"
               value={preset.name}
-              onChange={(e) => onUpdatePreset({ ...preset, name: e.target.value })}
+              onChange={(e) =>
+                onUpdatePreset({ ...preset, name: e.target.value })
+              }
               className="h-7 w-full rounded border border-[var(--studio-border)] bg-[var(--studio-control)] px-2 text-xs text-white focus:border-[var(--studio-accent)] focus:outline-none"
             />
           </div>
@@ -110,7 +141,6 @@ export const AnimationInspector: React.FC<AnimationInspectorProps> = ({
               </select>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -231,7 +261,9 @@ export const AnimationInspector: React.FC<AnimationInspectorProps> = ({
             <div>
               <div className="mb-1 flex justify-between text-[11px] text-[var(--studio-muted)]">
                 <span>Glyph Overlap</span>
-                <span>{((preset.stagger.overlap ?? 0.5) * 100).toFixed(0)}%</span>
+                <span>
+                  {((preset.stagger.overlap ?? 0.5) * 100).toFixed(0)}%
+                </span>
               </div>
               <input
                 type="range"
@@ -329,7 +361,9 @@ export const AnimationInspector: React.FC<AnimationInspectorProps> = ({
         </h3>
         <div className="grid grid-cols-2 gap-1.5">
           {PROPERTY_OPTIONS.map((opt) => {
-            const hasTrack = preset.tracks.some((t) => t.property === opt.property);
+            const hasTrack = (preset.tracks ?? []).some(
+              (t) => t.property === opt.property,
+            );
             return (
               <button
                 key={opt.property}
@@ -343,7 +377,12 @@ export const AnimationInspector: React.FC<AnimationInspectorProps> = ({
                     : "border-[var(--studio-border)] bg-[var(--studio-control)] text-white hover:border-[var(--studio-accent)]"
                 }`}
               >
-                <Plus size={11} className={hasTrack ? "opacity-20" : "text-[var(--studio-accent)]"} />
+                <Plus
+                  size={11}
+                  className={
+                    hasTrack ? "opacity-20" : "text-[var(--studio-accent)]"
+                  }
+                />
                 <span className="truncate">{opt.label}</span>
               </button>
             );

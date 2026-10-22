@@ -25,8 +25,14 @@ const AVAILABLE_EASINGS: Array<{ value: EasingCurve; label: string }> = [
   { value: "easeInBack", label: "Anticipate (In Back)" },
   { value: "easeOutBounce", label: "Bouncy (Bounce)" },
   { value: "easeOutElastic", label: "Elastic" },
-  { value: { type: "spring", damping: 14, stiffness: 120, mass: 1 }, label: "Spring (Soft)" },
-  { value: { type: "spring", damping: 8, stiffness: 180, mass: 1 }, label: "Spring (Snappy)" },
+  {
+    value: { type: "spring", damping: 14, stiffness: 120, mass: 1 },
+    label: "Spring (Soft)",
+  },
+  {
+    value: { type: "spring", damping: 8, stiffness: 180, mass: 1 },
+    label: "Spring (Snappy)",
+  },
 ];
 
 export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
@@ -42,7 +48,7 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
 
   // Add keyframe at current playhead progress
   const handleAddKeyframeAtPlayhead = (trackIndex: number) => {
-    const track = preset.tracks[trackIndex];
+    const track = (preset.tracks ?? [])[trackIndex];
     if (!track) return;
 
     // Determine value at current progress
@@ -56,7 +62,7 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
       (a, b) => a.progress - b.progress,
     );
 
-    const updatedTracks = [...preset.tracks];
+    const updatedTracks = [...(preset.tracks ?? [])];
     updatedTracks[trackIndex] = {
       ...track,
       keyframes: nextKeyframes,
@@ -74,7 +80,7 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
     field: "progress" | "value" | "easing",
     value: any,
   ) => {
-    const track = preset.tracks[trackIndex];
+    const track = (preset.tracks ?? [])[trackIndex];
     if (!track) return;
 
     const nextKeyframes = track.keyframes.map((kf, i) => {
@@ -86,7 +92,7 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
       nextKeyframes.sort((a, b) => a.progress - b.progress);
     }
 
-    const updatedTracks = [...preset.tracks];
+    const updatedTracks = [...(preset.tracks ?? [])];
     updatedTracks[trackIndex] = { ...track, keyframes: nextKeyframes };
 
     onUpdatePreset({
@@ -96,11 +102,11 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
   };
 
   const handleDeleteKeyframe = (trackIndex: number, kfIndex: number) => {
-    const track = preset.tracks[trackIndex];
+    const track = (preset.tracks ?? [])[trackIndex];
     if (!track || track.keyframes.length <= 1) return;
 
     const nextKeyframes = track.keyframes.filter((_, i) => i !== kfIndex);
-    const updatedTracks = [...preset.tracks];
+    const updatedTracks = [...(preset.tracks ?? [])];
     updatedTracks[trackIndex] = { ...track, keyframes: nextKeyframes };
 
     setSelectedKeyframe(null);
@@ -111,7 +117,9 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
   };
 
   const handleRemoveTrack = (trackIndex: number) => {
-    const updatedTracks = preset.tracks.filter((_, i) => i !== trackIndex);
+    const updatedTracks = (preset.tracks ?? []).filter(
+      (_, i) => i !== trackIndex,
+    );
     setSelectedKeyframe(null);
     onUpdatePreset({
       ...preset,
@@ -121,7 +129,7 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
 
   const activeKfData =
     selectedKeyframe !== null
-      ? preset.tracks[selectedKeyframe.trackIndex]?.keyframes[
+      ? (preset.tracks ?? [])[selectedKeyframe.trackIndex]?.keyframes[
           selectedKeyframe.kfIndex
         ]
       : null;
@@ -141,11 +149,13 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
         {selectedKeyframe && activeKfData && (
           <div className="flex items-center gap-3">
             <span className="text-[11px] text-[var(--studio-muted)]">
-              {preset.tracks[selectedKeyframe.trackIndex]?.property} @{" "}
+              {(preset.tracks ?? [])[selectedKeyframe.trackIndex]?.property} @{" "}
               {(activeKfData.progress * 100).toFixed(0)}%:
             </span>
             <div className="flex items-center gap-1">
-              <span className="text-[11px] text-[var(--studio-muted)]">Val:</span>
+              <span className="text-[11px] text-[var(--studio-muted)]">
+                Val:
+              </span>
               <input
                 type="number"
                 step={0.1}
@@ -162,7 +172,9 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
               />
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[11px] text-[var(--studio-muted)]">Curve:</span>
+              <span className="text-[11px] text-[var(--studio-muted)]">
+                Curve:
+              </span>
               <select
                 value={
                   typeof activeKfData.easing === "string"
@@ -207,7 +219,7 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
 
       {/* ── Tracks List & Lane Graph ── */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {preset.tracks.map((track, trackIdx) => (
+        {(preset.tracks ?? []).map((track, trackIdx) => (
           <div
             key={track.property + trackIdx}
             className="flex items-center border-b border-[var(--studio-border)]/50 hover:bg-white/[0.02]"
@@ -271,7 +283,10 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
                     key={kfIdx}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedKeyframe({ trackIndex: trackIdx, kfIndex: kfIdx });
+                      setSelectedKeyframe({
+                        trackIndex: trackIdx,
+                        kfIndex: kfIdx,
+                      });
                       onSeekProgress(kf.progress);
                     }}
                     style={{ left: `${kf.progress * 100}%` }}
@@ -287,9 +302,10 @@ export const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
           </div>
         ))}
 
-        {preset.tracks.length === 0 && (
+        {(preset.tracks ?? []).length === 0 && (
           <div className="flex h-24 items-center justify-center text-[var(--studio-muted)]">
-            No animated tracks yet. Add a property track from the right inspector.
+            No animated tracks yet. Add a property track from the right
+            inspector.
           </div>
         )}
       </div>

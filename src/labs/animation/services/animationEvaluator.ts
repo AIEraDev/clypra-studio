@@ -32,7 +32,10 @@ export const DEFAULT_TRANSFORM: EvaluatedGlyphTransform = {
 
 // ── Standard Easing Functions ──────────────────────────────────────────────
 
-export function evaluateEasing(curve: EasingCurve | undefined, t: number): number {
+export function evaluateEasing(
+  curve: EasingCurve | undefined,
+  t: number,
+): number {
   const p = Math.max(0, Math.min(1, t));
   if (!curve || curve === "linear") return p;
 
@@ -227,6 +230,14 @@ export function evaluatePresetTransform(
   glyphIndex: number = 0,
   totalGlyphs: number = 1,
 ): EvaluatedGlyphTransform {
+  // Defensive check: ensure preset has a valid tracks array
+  if (!preset.tracks || !Array.isArray(preset.tracks)) {
+    console.error(
+      `[animationEvaluator] Invalid preset "${preset.id}" - tracks is not an array. Returning default transform.`,
+    );
+    return { ...DEFAULT_TRANSFORM };
+  }
+
   const glyphProgress = calculateStaggerProgress(
     overallProgress,
     glyphIndex,

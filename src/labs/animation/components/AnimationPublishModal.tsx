@@ -334,8 +334,8 @@ export const AnimationPublishModal: React.FC<AnimationPublishModalProps> = ({
               <span className="text-[#aaaacc] capitalize">{preset.phase}</span>
               <span className="text-[#666678]">Tracks</span>
               <span className="text-[#aaaacc]">
-                {preset.tracks.length} track
-                {preset.tracks.length !== 1 ? "s" : ""}
+                {(preset.tracks ?? []).length} track
+                {(preset.tracks ?? []).length !== 1 ? "s" : ""}
               </span>
               <span className="text-[#666678]">Default duration</span>
               <span className="text-[#aaaacc]">{preset.defaultDuration}s</span>
